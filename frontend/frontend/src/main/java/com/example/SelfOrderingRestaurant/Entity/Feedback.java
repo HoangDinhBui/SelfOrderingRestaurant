@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.util.Date;
 
@@ -22,10 +23,6 @@ public class Feedback {
     private Integer feedbackId;
 
     @ManyToOne
-    @JoinColumn(name = "Customer_ID", referencedColumnName = "Customer_ID")
-    private Customer customer;
-
-    @ManyToOne
     @JoinColumn(name = "Order_ID", referencedColumnName = "Order_ID")
     private Order order;
 
@@ -35,6 +32,7 @@ public class Feedback {
     @Column(name = "Comment", columnDefinition = "TEXT")
     private String comment;
 
+    @CreationTimestamp
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "FeedbackDate", nullable = false, updatable = false)
     private Date feedbackDate = new Date();
