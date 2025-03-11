@@ -1,8 +1,7 @@
 package com.example.SelfOrderingRestaurant.Entity.Enum;
 
-public enum OrderItemStatus {
-    ORDERED,
-    PROCESSING,
-    SERVED,
+public enum ShiftStatus {
+    SCHEDULED,
+    COMPLETED,
     CANCELLED
 }

@@ -1,20 +1,18 @@
 package com.example.SelfOrderingRestaurant.Dto;
 
-import lombok.Getter;
-import lombok.Setter;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserDTO {
-    private Long userId;
-    private String username;
+public class CustomerDTO {
+    private Long customerId;
+    private String fullname;
+    private String phone;
     private String email;
-    private String userType;
-    private String status;
+    private Integer points;
 }
-
-

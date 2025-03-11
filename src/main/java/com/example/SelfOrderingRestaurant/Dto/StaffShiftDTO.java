@@ -1,20 +1,18 @@
 package com.example.SelfOrderingRestaurant.Dto;
 
-import lombok.Getter;
-import lombok.Setter;
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
+import java.time.LocalDate;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class UserDTO {
-    private Long userId;
-    private String username;
-    private String email;
-    private String userType;
+public class StaffShiftDTO {
+    private Long shiftId;
+    private Long staffId;
+    private LocalDate date;
     private String status;
 }
-
-
