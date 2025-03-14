@@ -3,6 +3,7 @@ import com.example.SelfOrderingRestaurant.Entity.Enum.NotificationType;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Entity
@@ -18,18 +19,21 @@ public class Notification {
     private Integer notificationId;
 
     @ManyToOne
-    @JoinColumn(name = "User_ID", referencedColumnName = "User_ID")
+    @JoinColumn(name = "User_ID", referencedColumnName = "User_ID", nullable = false)
     private User user;
 
-    @Column(name = "Title")
+    @Column(name = "Title", nullable = false)
     private String title;
 
     @Column(name = "Content", columnDefinition = "TEXT")
     private String content;
 
+    @Column(name = "ExpiryDate")
+    private LocalDateTime expiryDate;
+
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "CreateAt", nullable = false)
-    private Date createAt = new Date();
+    private LocalDateTime createAt = LocalDateTime.now();
 
     @Column(name = "IsRead")
     private Boolean isRead = false;

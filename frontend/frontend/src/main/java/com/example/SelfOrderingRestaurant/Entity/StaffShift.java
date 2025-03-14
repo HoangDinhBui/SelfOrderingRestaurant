@@ -1,14 +1,16 @@
 package com.example.SelfOrderingRestaurant.Entity;
 import com.example.SelfOrderingRestaurant.Entity.Enum.ShiftStatus;
+import com.example.SelfOrderingRestaurant.Entity.Enum.StaffShiftStatus;
 import com.example.SelfOrderingRestaurant.Entity.Key.StaffShiftKey;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.io.Serializable;
+import java.time.LocalDate;
 import java.util.Date;
 
 @Entity
-@Table(name = "staffshift")
+@Table(name = "staffshifts")
 @Getter
 @Setter
 @AllArgsConstructor
@@ -27,11 +29,7 @@ public class StaffShift {
     @JoinColumn(name = "Staff_ID")
     private Staff staff;
 
-    @Temporal(TemporalType.DATE)
-    @Column(name = "Date", nullable = false)
-    private Date date;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "Status")
-    private ShiftStatus status;
+    private StaffShiftStatus status;
 }

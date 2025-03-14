@@ -1,7 +1,7 @@
 package com.example.SelfOrderingRestaurant.Entity.Enum;
 
 public enum UserType {
-    Customer,
-    Staff,
-    Admin
+    CUSTOMER,
+    STAFF,
+    ADMIN
 }

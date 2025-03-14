@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 
 @Entity
 @Table(name = "dishingredients")
@@ -26,8 +27,5 @@ public class DishIngredient {
     private Ingredient ingredient;
 
     @Column(name = "Quantity", nullable = false)
-    private Double quantity;
-
-    @Column(name = "Unit")
-    private String unit;
+    private BigDecimal quantity;
 }

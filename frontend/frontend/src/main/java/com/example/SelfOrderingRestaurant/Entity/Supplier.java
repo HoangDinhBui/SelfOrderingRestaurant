@@ -20,7 +20,7 @@ public class Supplier {
     @Column(name = "ContactPerson")
     private String contactPerson;
 
-    @Column(name = "Phone")
+    @Column(name = "Phone", unique = true)
     private String phone;
 
     @Column(name = "Email", unique = true)

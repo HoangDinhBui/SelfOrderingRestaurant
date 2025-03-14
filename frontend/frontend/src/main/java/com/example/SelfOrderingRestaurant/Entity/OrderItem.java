@@ -8,6 +8,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+
 @Entity
 @Table(name = "orderitems")
 @Getter
@@ -32,15 +34,15 @@ public class OrderItem {
     private Integer quantity;
 
     @Column(name = "UnitPrice", precision = 10, scale = 2)
-    private Double unitPrice;
+    private BigDecimal unitPrice;
 
     @Column(name = "Notes", columnDefinition = "TEXT")
     private String notes;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "Status", columnDefinition = "ENUM('Ordered', 'Processing', 'Served', 'Cancelled') DEFAULT 'Ordered'")
+    @Column(name = "Status")
     private OrderItemStatus status = OrderItemStatus.ORDERED;
 
-    @Column(name = "SubTotal", precision = 10, scale = 2)
-    private Double subTotal;
+    @Column(name = "SubTotal", insertable = false, updatable = false)
+    private BigDecimal subTotal;
 }

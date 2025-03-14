@@ -13,17 +13,17 @@ import lombok.Setter;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class Tables {
+public class DinningTable {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "TableNumber", updatable = false, nullable = false)
     private Integer tableNumber;
 
     @Column(name = "Capacity", nullable = false)
     private Integer capacity;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "Status", columnDefinition = "ENUM('Available', 'Occupied' DEFAULT 'Available'")
-    private TableStatus tableStatus = TableStatus.Available;
+    @Column(name = "Status")
+    private TableStatus tableStatus = TableStatus.AVAILABLE;
 
     @Column(name = "Location")
     private String location;

@@ -7,6 +7,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Entity
@@ -32,20 +34,20 @@ public class Dish {
     private String description;
 
     @Column(name = "Price", precision = 10, scale = 2, nullable = false)
-    private Double price;
+    private BigDecimal price;
 
     @Column(name = "Image")
     private String image;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "Status", columnDefinition = "ENUM('Available', 'Unavailable') DEFAULT 'Available'")
+    @Column(name = "Status")
     private DishStatus status = DishStatus.AVAILABLE;
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "CreatedAt", updatable = false)
-    private Date createdAt = new Date();
+    private LocalDateTime createdAt = LocalDateTime.now();
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "UpdatedAt")
-    private Date updatedAt = new Date();
+    private LocalDateTime updatedAt = LocalDateTime.now();
 }

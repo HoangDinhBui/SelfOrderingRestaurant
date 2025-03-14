@@ -3,6 +3,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.sql.Time;
+import java.time.LocalTime;
 
 @Entity
 @Table(name = "shifts")
@@ -20,8 +21,8 @@ public class Shift {
     private String name;
 
     @Column(name = "StartTime", nullable = false)
-    private Time startTime;
+    private LocalTime startTime;
 
     @Column(name = "EndTime", nullable = false)
-    private Time endTime;
+    private LocalTime endTime;
 }

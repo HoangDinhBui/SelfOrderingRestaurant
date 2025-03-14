@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Entity
@@ -16,11 +17,15 @@ import java.util.Date;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
-public class Feedback {
+public class CustomerFeedback {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "Feedback_ID")
     private Integer feedbackId;
+
+    @ManyToOne
+    @JoinColumn(name = "Customer_ID", nullable = false)
+    private Customer customer;
 
     @ManyToOne
     @JoinColumn(name = "Order_ID", referencedColumnName = "Order_ID")
@@ -35,9 +40,9 @@ public class Feedback {
     @CreationTimestamp
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "FeedbackDate", nullable = false, updatable = false)
-    private Date feedbackDate = new Date();
+    private LocalDateTime feedbackDate = LocalDateTime.now();
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "Status", columnDefinition = "ENUM('New', 'Reviewed')")
+    @Column(name = "Status")
     private FeedbackStatus status = FeedbackStatus.NEW;
 }

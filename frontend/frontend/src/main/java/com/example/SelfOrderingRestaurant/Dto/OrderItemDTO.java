@@ -1,10 +1,16 @@
 package com.example.SelfOrderingRestaurant.Dto;
 
-import lombok.Data;
+import lombok.*;
+
+import java.util.List;
 
 @Data
+@AllArgsConstructor
+@Getter
+@Setter
+@NoArgsConstructor
 public class OrderItemDTO {
-    private Long dishId;
-    private int quantity;
+    private Integer dishId;
+    private Integer quantity;
     private String notes;
 }
