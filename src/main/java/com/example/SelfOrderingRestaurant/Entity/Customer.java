@@ -18,20 +18,15 @@ import java.util.Date;
 public class Customer {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long customerId;
+    @Column(name = "Customer_ID")
+    private Integer customerId;
 
     @OneToOne
-    @JoinColumn(name = "user_id", unique = true)
+    @JoinColumn(name = "User_ID", unique = true)
     private User user;
 
     @Column(name = "Fullname", nullable = false)
     private String fullname;
-
-    @Column(name = "Phone")
-    private String phone;
-
-    @Column(name = "Email", unique = true)
-    private String email;
 
     @Temporal(TemporalType.DATE)
     @Column(name = "JoinDate")

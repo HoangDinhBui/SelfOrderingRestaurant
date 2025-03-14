@@ -1,13 +1,85 @@
 package com.example.SelfOrderingRestaurant.Service;
 
-import com.example.SelfOrderingRestaurant.Repository.DishRepository;
-import com.example.SelfOrderingRestaurant.Repository.OrderItemRepository;
-import com.example.SelfOrderingRestaurant.Repository.OrderRepository;
+import com.example.SelfOrderingRestaurant.Dto.OrderItemDTO;
+import com.example.SelfOrderingRestaurant.Dto.OrderRequestDTO;
+import com.example.SelfOrderingRestaurant.Dto.OrderResponseDTO;
+import com.example.SelfOrderingRestaurant.Entity.*;
+import com.example.SelfOrderingRestaurant.Entity.DinningTable;
+import com.example.SelfOrderingRestaurant.Entity.Enum.OrderStatus;
+import com.example.SelfOrderingRestaurant.Entity.Enum.PaymentStatus;
+import com.example.SelfOrderingRestaurant.Entity.Key.OrderItemKey;
+import com.example.SelfOrderingRestaurant.Repository.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 
 @Service
 public class OrderService {
-    private final OrderRepository orderRepository;
-    private final OrderItemRepository orderItemRepository;
-    private final DishRepository dishRepository;
+    @Autowired
+    private OrderRepository orderRepository;
+    @Autowired
+    private OrderItemRepository orderItemRepository;
+    @Autowired
+    private DishRepository dishRepository;
+    @Autowired
+    private DinningTableRepository dinningTableRepository;
+    @Autowired
+    private CustomerRepository customerRepository;
+
+    @Transactional
+    public OrderResponseDTO createOrder(OrderRequestDTO request) {
+        Customer customer = customerRepository.findById(request.getCustomerId())
+                .orElseThrow(() -> new IllegalArgumentException("Customer not found"));
+
+        DinningTable dinningTable = dinningTableRepository.findById(request.getTableId())
+                .orElseThrow(() -> new IllegalArgumentException("Table not found"));
+
+        Order order = new Order();
+        order.setCustomer(customer);
+        order.setTables(dinningTable);
+        order.setStatus(OrderStatus.PENDING);
+        order.setPaymentStatus(PaymentStatus.UNPAID);
+        order.setNotes(request.getNotes());
+        order.setOrderDate(new Date());
+
+        order = orderRepository.save(order);
+        System.out.println("Saved order ID: " + order.getOrderId());
+
+        List<OrderItemDTO> orderItemDTOs = new ArrayList<>();
+        BigDecimal totalAmount = BigDecimal.ZERO;
+
+        for (OrderItemDTO itemRequest : request.getItems()) {
+            Dish dish = dishRepository.findById(itemRequest.getDishId())
+                    .orElseThrow(() -> new IllegalArgumentException("Dish not found"));
+
+            BigDecimal subTotal = dish.getPrice().multiply(BigDecimal.valueOf(itemRequest.getQuantity()));
+            totalAmount = totalAmount.add(subTotal);
+
+            OrderItemKey orderItemKey = new OrderItemKey();
+            orderItemKey.setOrderId(order.getOrderId());
+            orderItemKey.setDishId(dish.getDishId());
+
+            OrderItem orderItem = new OrderItem();
+            orderItem.setId(orderItemKey);
+            orderItem.setOrder(order);
+            orderItem.setDish(dish);
+            orderItem.setQuantity(itemRequest.getQuantity());
+            orderItem.setUnitPrice(dish.getPrice());
+            orderItem.setNotes(itemRequest.getNotes());
+
+            orderItemRepository.save(orderItem);
+
+            OrderItemDTO orderItemDTO = new OrderItemDTO(dish.getDishId(), itemRequest.getQuantity(), itemRequest.getNotes());
+            orderItemDTOs.add(orderItemDTO);
+        }
+        order.setTotalAmount(totalAmount);
+        orderRepository.save(order);
+
+        return new OrderResponseDTO(order.getOrderId(), order.getStatus().name(), totalAmount, order.getPaymentStatus().name(), orderItemDTOs);
+    }
 }

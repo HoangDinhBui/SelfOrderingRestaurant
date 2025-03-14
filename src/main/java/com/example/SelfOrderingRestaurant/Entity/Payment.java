@@ -8,6 +8,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Entity
@@ -22,7 +24,7 @@ public class Payment {
     @Column(name = "Payment_ID")
     private Integer paymentId;
 
-    @ManyToOne
+    @OneToOne
     @JoinColumn(name = "Order_ID", referencedColumnName = "Order_ID")
     private Order order;
 
@@ -31,7 +33,7 @@ public class Payment {
     private Customer customer;
 
     @Column(name = "Amount", precision = 10, scale = 2, nullable = false)
-    private Double amount;
+    private BigDecimal amount;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "PaymentMethod")
@@ -39,7 +41,7 @@ public class Payment {
 
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "PaymentDate", nullable = false, updatable = false)
-    private Date paymentDate = new Date();
+    private LocalDateTime paymentDate = LocalDateTime.now();
 
     @Column(name = "TransactionID", unique = true)
     private String transactionId;
@@ -47,7 +49,4 @@ public class Payment {
     @Enumerated(EnumType.STRING)
     @Column(name = "Status")
     private PaymentStatus status;
-
-    @Column(name = "Notes", columnDefinition = "TEXT")
-    private String notes;
 }

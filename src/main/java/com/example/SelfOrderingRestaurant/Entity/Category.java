@@ -29,6 +29,6 @@ public class Category {
     private String image;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "Status", columnDefinition = "ENUM('Active', 'Inactive') DEFAULT 'Active'")
+    @Column(name = "Status")
     private CategoryStatus status = CategoryStatus.ACTIVE;
 }

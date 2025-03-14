@@ -1,15 +1,12 @@
 spring:
   datasource:
-    url: jdbc:mysql://localhost:3306/SeftOrderingRestaurant
+    url: jdbc:mysql://localhost:3306/selforderingrestaurant
     username: root
-    password: Dinhho@ng1910
+    password: 123456
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
       ddl-auto: update
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.MySQLDialect
-  servlet:
-    multipart:
-      max-file-size: 10MB
+        dialect: org.hibernate.dialect.MySQL8Dialect

@@ -8,6 +8,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Entity
@@ -20,7 +23,7 @@ public class Staff {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "Staff_ID")
-    private Integer id;
+    private Integer staffId;
 
     @OneToOne
     @JoinColumn(name = "User_ID", referencedColumnName = "User_ID", unique = true)
@@ -33,10 +36,10 @@ public class Staff {
     private String position;
 
     @Column(name = "Salary")
-    private Double salary;
+    private BigDecimal salary;
 
     @Column(name = "HireDate")
-    private Date hireDate;
+    private LocalDateTime hireDate;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "Status")

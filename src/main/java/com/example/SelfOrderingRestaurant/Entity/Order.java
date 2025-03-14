@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.util.Date;
 
 @Entity
@@ -20,15 +21,15 @@ public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "Order_ID")
-    private Integer id;
+    private Integer orderId;
 
     @ManyToOne
     @JoinColumn(name = "Staff_ID", referencedColumnName = "Staff_ID")
     private Staff staff;
 
     @ManyToOne
-    @JoinColumn(name = "Table_ID", referencedColumnName = "Table_ID")
-    private Tables tables;
+    @JoinColumn(name = "TableNumber", referencedColumnName = "TableNumber")
+    private DinningTable tables;
 
     @ManyToOne
     @JoinColumn(name = "Customer_ID", referencedColumnName = "Customer_ID")
@@ -39,14 +40,14 @@ public class Order {
     private Date orderDate = new Date();
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "Status", columnDefinition = "ENUM('Pending', 'Processing', 'Complete', 'Cancelled') DEFAULT 'Pending'")
+    @Column(name = "Status")
     private OrderStatus status = OrderStatus.PENDING;
 
     @Column(name = "TotalAmount", precision = 10, scale = 2)
-    private Double totalAmount;
+    private BigDecimal totalAmount;
 
     @Column(name = "Discount", precision = 10, scale = 2)
-    private Double discount;
+    private BigDecimal discount;
 
     @Column(name = "Notes", columnDefinition = "TEXT")
     private String notes;

@@ -3,6 +3,8 @@ import com.example.SelfOrderingRestaurant.Entity.Enum.IngredientStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.math.BigDecimal;
+
 @Entity
 @Table(name = "ingredients")
 @Getter
@@ -28,13 +30,13 @@ public class Ingredient {
     @Column(name = "Unit")
     private String unit;
 
-    @Column(name = "CostPerUnit", precision = 10, scale = 2)
-    private Double costPerUnit;
+    @Column(name = "CostPerUnit")
+    private BigDecimal costPerUnit;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "Status", columnDefinition = "ENUM('Available', 'Low', 'OutOfStock') DEFAULT 'Available'")
+    @Column(name = "Status")
     private IngredientStatus status = IngredientStatus.AVAILABLE;
 
     @Column(name = "MinimumQuantity")
-    private Integer minimumQuantity;
+    private Integer minimumQuantity = 1;
 }

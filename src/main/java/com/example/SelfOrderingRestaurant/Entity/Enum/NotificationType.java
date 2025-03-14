@@ -1,7 +1,7 @@
 package com.example.SelfOrderingRestaurant.Entity.Enum;
 
 public enum NotificationType {
-    ORDERSTATUS,
-    TABLEREQUEST,
+    ORDER_STATUS,
+    TABLE_REQUEST,
     SYSTEM
 }

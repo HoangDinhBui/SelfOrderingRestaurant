@@ -42,7 +42,7 @@ public class User {
     private UserType userType;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "Status", columnDefinition = "ENUM('Active', 'Inactive') DEFAULT 'Active'")
+    @Column(name = "Status")
     private UserStatus userStatus;
 
     @Column(name = "CreateAt")
