@@ -20,7 +20,7 @@ public class OrderController {
     @Autowired
     OrderService orderService;
 
-    @PostMapping("/orders")
+    @PostMapping("/CreateOrders")
     public ResponseEntity<?> createOrder(@RequestBody OrderRequestDTO orderDTO) {
         try {
             System.out.println("Received OrderDTO: " + orderDTO);
