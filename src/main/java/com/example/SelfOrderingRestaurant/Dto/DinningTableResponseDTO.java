@@ -4,7 +4,7 @@ import lombok.Data;
 
 @Data
 public class DinningTableResponseDTO {
-    private Integer table_id; // Đổi thành table_id để phù hợp với yêu cầu
+    private Integer table_id;
     private Integer capacity;
-    private String status; // Đổi thành String để phù hợp với yêu cầu
+    private String status;
 }

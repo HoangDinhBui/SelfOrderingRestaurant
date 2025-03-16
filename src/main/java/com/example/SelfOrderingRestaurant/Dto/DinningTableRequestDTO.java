@@ -5,5 +5,5 @@ import lombok.Data;
 
 @Data
 public class DinningTableRequestDTO {
-    private TableStatus status; // Chỉ cần trường status để cập nhật trạng thái
+    private TableStatus status;
 }

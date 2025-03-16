@@ -17,27 +17,24 @@ public class DinningTableService {
     @Autowired
     private DinningTableRepository dinningTableRepository;
 
-    // 5.1 Get All Tables
     public List<DinningTableResponseDTO> getAllTables() {
         return dinningTableRepository.findAll().stream()
                 .map(this::convertToResponseDTO)
                 .collect(Collectors.toList());
     }
 
-    // 5.2 Update Table Status
     public void updateTableStatus(Integer tableNumber, TableStatus status) {
         DinningTable table = dinningTableRepository.findById(tableNumber)
                 .orElseThrow(() -> new RuntimeException("Table not found"));
-        table.setTableStatus(status); // Cập nhật trạng thái của bàn
-        dinningTableRepository.save(table); // Lưu thay đổi vào database
+        table.setTableStatus(status);
+        dinningTableRepository.save(table);
     }
 
-    // Chuyển đổi từ Entity sang ResponseDTO
     private DinningTableResponseDTO convertToResponseDTO(DinningTable table) {
         DinningTableResponseDTO responseDTO = new DinningTableResponseDTO();
-        responseDTO.setTable_id(table.getTableNumber()); // Sử dụng tableNumber làm table_id
+        responseDTO.setTable_id(table.getTableNumber());
         responseDTO.setCapacity(table.getCapacity());
-        responseDTO.setStatus(table.getTableStatus().toString()); // Chuyển enum thành chuỗi
+        responseDTO.setStatus(table.getTableStatus().toString());
         return responseDTO;
     }
 }

@@ -16,14 +16,12 @@ public class DinningTableController {
     @Autowired
     private DinningTableService dinningTableService;
 
-    // 5.1 Get All Tables
     @GetMapping
     public ResponseEntity<List<DinningTableResponseDTO>> getAllTables() {
         List<DinningTableResponseDTO> tables = dinningTableService.getAllTables();
         return ResponseEntity.ok(tables);
     }
 
-    // 5.2 Update Table Status
     @PutMapping("/{table_id}")
     public ResponseEntity<String> updateTableStatus(
             @PathVariable("table_id") Integer tableId,
