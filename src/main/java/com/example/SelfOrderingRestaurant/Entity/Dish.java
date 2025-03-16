@@ -1,6 +1,6 @@
 package com.example.SelfOrderingRestaurant.Entity;
 
-import com.example.SelfOrderingRestaurant.Entity.Enum.DishStatus;
+import com.example.SelfOrderingRestaurant.Enum.DishStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -9,7 +9,6 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.Date;
 
 @Entity
 @Table(name = "dishes")

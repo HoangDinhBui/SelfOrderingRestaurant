@@ -1,10 +1,9 @@
 package com.example.SelfOrderingRestaurant.Entity;
-import com.example.SelfOrderingRestaurant.Entity.Enum.NotificationType;
+import com.example.SelfOrderingRestaurant.Enum.NotificationType;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 
 @Entity
 @Table(name = "notifications")

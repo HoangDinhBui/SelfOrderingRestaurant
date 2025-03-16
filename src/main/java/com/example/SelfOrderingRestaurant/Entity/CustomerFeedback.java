@@ -1,6 +1,6 @@
 package com.example.SelfOrderingRestaurant.Entity;
 
-import com.example.SelfOrderingRestaurant.Entity.Enum.FeedbackStatus;
+import com.example.SelfOrderingRestaurant.Enum.FeedbackStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -9,7 +9,6 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 
 @Entity
 @Table(name = "customerfeedback")

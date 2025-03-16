@@ -1,8 +1,6 @@
-package com.example.SelfOrderingRestaurant.Dto;
+package com.example.SelfOrderingRestaurant.Dto.Request.OrderRequestDTO;
 
 import lombok.*;
-
-import java.util.List;
 
 @Data
 @AllArgsConstructor

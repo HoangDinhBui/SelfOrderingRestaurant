@@ -1,6 +1,6 @@
 package com.example.SelfOrderingRestaurant.Entity;
 
-import com.example.SelfOrderingRestaurant.Entity.Enum.OrderItemStatus;
+import com.example.SelfOrderingRestaurant.Enum.OrderItemStatus;
 import com.example.SelfOrderingRestaurant.Entity.Key.OrderItemKey;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;

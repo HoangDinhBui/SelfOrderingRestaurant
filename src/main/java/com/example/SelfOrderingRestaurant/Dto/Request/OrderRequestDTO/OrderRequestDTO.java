@@ -1,6 +1,5 @@
-package com.example.SelfOrderingRestaurant.Dto;
+package com.example.SelfOrderingRestaurant.Dto.Request.OrderRequestDTO;
 
-import com.example.SelfOrderingRestaurant.Entity.OrderItem;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import jakarta.validation.constraints.NotNull;

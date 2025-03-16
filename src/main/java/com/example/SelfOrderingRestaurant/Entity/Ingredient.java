@@ -1,5 +1,5 @@
 package com.example.SelfOrderingRestaurant.Entity;
-import com.example.SelfOrderingRestaurant.Entity.Enum.IngredientStatus;
+import com.example.SelfOrderingRestaurant.Enum.IngredientStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
