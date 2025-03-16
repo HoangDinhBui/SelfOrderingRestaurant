@@ -1,7 +1,7 @@
 package com.example.SelfOrderingRestaurant.Entity;
 
-import com.example.SelfOrderingRestaurant.Entity.Enum.UserStatus;
-import com.example.SelfOrderingRestaurant.Entity.Enum.UserType;
+import com.example.SelfOrderingRestaurant.Enum.UserStatus;
+import com.example.SelfOrderingRestaurant.Enum.UserType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
