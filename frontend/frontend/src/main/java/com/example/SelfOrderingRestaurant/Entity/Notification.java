@@ -14,30 +14,30 @@ import java.time.LocalDateTime;
 public class Notification {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "Notification_ID")
+    @Column(name = "notification_id")
     private Integer notificationId;
 
     @ManyToOne
-    @JoinColumn(name = "User_ID", referencedColumnName = "User_ID", nullable = false)
+    @JoinColumn(name = "user_id", referencedColumnName = "user_id", nullable = false)
     private User user;
 
-    @Column(name = "Title", nullable = false)
+    @Column(name = "title", nullable = false)
     private String title;
 
-    @Column(name = "Content", columnDefinition = "TEXT")
+    @Column(name = "content", columnDefinition = "TEXT")
     private String content;
 
-    @Column(name = "ExpiryDate")
+    @Column(name = "expiryDate")
     private LocalDateTime expiryDate;
 
     @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "CreateAt", nullable = false)
+    @Column(name = "create_at", nullable = false)
     private LocalDateTime createAt = LocalDateTime.now();
 
-    @Column(name = "IsRead")
+    @Column(name = "is_read")
     private Boolean isRead = false;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "Type")
+    @Column(name = "type")
     private NotificationType type;
 }

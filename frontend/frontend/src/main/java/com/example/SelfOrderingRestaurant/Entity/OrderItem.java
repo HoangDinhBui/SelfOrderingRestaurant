@@ -11,7 +11,7 @@ import lombok.Setter;
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "orderitems")
+@Table(name = "order_items")
 @Getter
 @Setter
 @AllArgsConstructor
@@ -22,27 +22,27 @@ public class OrderItem {
 
     @ManyToOne
     @MapsId("orderId")
-    @JoinColumn(name = "Order_ID")
+    @JoinColumn(name = "order_id")
     private Order order;
 
     @ManyToOne
     @MapsId("dishId")
-    @JoinColumn(name = "Dish_ID")
+    @JoinColumn(name = "dish_id")
     private Dish dish;
 
-    @Column(name = "Quantity", nullable = false)
+    @Column(name = "quantity", nullable = false)
     private Integer quantity;
 
-    @Column(name = "UnitPrice", precision = 10, scale = 2)
+    @Column(name = "unit_price", precision = 10, scale = 2)
     private BigDecimal unitPrice;
 
-    @Column(name = "Notes", columnDefinition = "TEXT")
+    @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "Status")
+    @Column(name = "status")
     private OrderItemStatus status = OrderItemStatus.ORDERED;
 
-    @Column(name = "SubTotal", insertable = false, updatable = false)
+    @Column(name = "sub_total", insertable = false, updatable = false)
     private BigDecimal subTotal;
 }

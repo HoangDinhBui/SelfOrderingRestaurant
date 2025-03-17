@@ -14,29 +14,29 @@ import java.math.BigDecimal;
 public class Ingredient {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "Ingredient_ID")
+    @Column(name = "ingredient_id")
     private Integer ingredientId;
 
     @ManyToOne
-    @JoinColumn(name = "Supplier_ID", referencedColumnName = "Supplier_ID")
+    @JoinColumn(name = "supplier_id", referencedColumnName = "supplier_id")
     private Supplier supplier;
 
-    @Column(name = "Name", nullable = false)
+    @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "Description", columnDefinition = "TEXT")
+    @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    @Column(name = "Unit")
+    @Column(name = "unit")
     private String unit;
 
-    @Column(name = "CostPerUnit")
+    @Column(name = "cost_per_unit")
     private BigDecimal costPerUnit;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "Status")
+    @Column(name = "status")
     private IngredientStatus status = IngredientStatus.AVAILABLE;
 
-    @Column(name = "MinimumQuantity")
+    @Column(name = "minimum_quantity")
     private Integer minimumQuantity = 1;
 }

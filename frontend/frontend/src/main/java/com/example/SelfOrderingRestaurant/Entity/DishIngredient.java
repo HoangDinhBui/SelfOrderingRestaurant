@@ -7,7 +7,7 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "dishingredients")
+@Table(name = "dish_ingredients")
 @Getter
 @Setter
 @AllArgsConstructor
@@ -18,14 +18,14 @@ public class DishIngredient {
 
     @ManyToOne
     @MapsId("dishId")
-    @JoinColumn(name = "Dish_ID")
+    @JoinColumn(name = "dish_id")
     private Dish dish;
 
     @ManyToOne
     @MapsId("ingredientId")
-    @JoinColumn(name = "Ingredient_ID")
+    @JoinColumn(name = "ingredient_id")
     private Ingredient ingredient;
 
-    @Column(name = "Quantity", nullable = false)
+    @Column(name = "quantity", nullable = false)
     private BigDecimal quantity;
 }
