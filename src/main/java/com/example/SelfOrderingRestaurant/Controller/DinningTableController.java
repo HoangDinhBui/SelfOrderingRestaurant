@@ -1,7 +1,7 @@
 package com.example.SelfOrderingRestaurant.Controller;
 
-import com.example.SelfOrderingRestaurant.Dto.DinningTableRequestDTO;
-import com.example.SelfOrderingRestaurant.Dto.DinningTableResponseDTO;
+import com.example.SelfOrderingRestaurant.Dto.Request.DinningTableRequestDTO.DinningTableRequestDTO;
+import com.example.SelfOrderingRestaurant.Dto.Response.DinningTableResponseDTO.DinningTableResponseDTO;
 import com.example.SelfOrderingRestaurant.Service.DinningTableService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
