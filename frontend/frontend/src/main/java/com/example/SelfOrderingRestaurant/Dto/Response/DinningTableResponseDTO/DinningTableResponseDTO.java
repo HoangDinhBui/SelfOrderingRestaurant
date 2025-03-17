@@ -1,4 +1,4 @@
-package com.example.SelfOrderingRestaurant.Dto;
+package com.example.SelfOrderingRestaurant.Dto.Response.DinningTableResponseDTO;
 
 import lombok.Data;
 

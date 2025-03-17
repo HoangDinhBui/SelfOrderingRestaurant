@@ -1,9 +1,8 @@
 package com.example.SelfOrderingRestaurant.Service;
 
-import com.example.SelfOrderingRestaurant.Dto.DinningTableRequestDTO;
-import com.example.SelfOrderingRestaurant.Dto.DinningTableResponseDTO;
+import com.example.SelfOrderingRestaurant.Dto.Response.DinningTableResponseDTO.DinningTableResponseDTO;
 import com.example.SelfOrderingRestaurant.Entity.DinningTable;
-import com.example.SelfOrderingRestaurant.Entity.Enum.TableStatus;
+import com.example.SelfOrderingRestaurant.Enum.TableStatus;
 import com.example.SelfOrderingRestaurant.Repository.DinningTableRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
