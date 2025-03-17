@@ -22,7 +22,7 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable) // Tắt CSRF
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/order/**","/error").permitAll() // API order không cần auth
+                        .requestMatchers("/api/order/**","/error","/api/tables/**").permitAll() // API order không cần auth
                         .anyRequest().authenticated() // Các API khác vẫn yêu cầu login
                 )
                 .sessionManagement(session -> session
