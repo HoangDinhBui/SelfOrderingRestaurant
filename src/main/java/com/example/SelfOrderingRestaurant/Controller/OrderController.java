@@ -22,36 +22,23 @@ public class OrderController {
     @Autowired
     OrderService orderService;
 
-    @PostMapping("/CreateOrders")
+    @PostMapping("/orders")
     public ResponseEntity<?> createOrder(@RequestBody OrderRequestDTO orderDTO) {
-        try {
-            System.out.println("Received OrderDTO: " + orderDTO);
-            return ResponseEntity.ok(orderService.createOrder(orderDTO));
-        } catch (Exception e) {
-            e.printStackTrace(); // In lỗi chi tiết trong IntelliJ
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Lỗi khi xử lý đơn hàng: " + e.getMessage());
-        }
+        System.out.println("Received OrderDTO: " + orderDTO);
+        return ResponseEntity.ok(orderService.createOrder(orderDTO));
     }
 
-    @GetMapping("/GetOrders")
-    public List<GetAllOrdersResponseDTO> getOrders() {
-        return orderService.getAllOrders();
+    @GetMapping("/orders")
+    public ResponseEntity<?> getOrders() {
+        List<GetAllOrdersResponseDTO> orders = orderService.getAllOrders();
+        return ResponseEntity.ok(orders);
     }
 
-    @PutMapping("/UpdateOrderStatus/{orderId}")
+    @PutMapping("/orders/{orderId}")
     public ResponseEntity<?> updateOrderStatus(
             @PathVariable Long orderId,
             @RequestBody UpdateOrderStatusRequestDTO request) {
-        try {
-            orderService.updateOrderStatus(orderId, request.getStatus());
-            return ResponseEntity.ok("Order updated successfully!");
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Lỗi khi cập nhật trạng thái đơn hàng: " + e.getMessage());
-        }
+        orderService.updateOrderStatus(orderId, request.getStatus());
+        return ResponseEntity.ok("Order updated successfully!");
     }
 }

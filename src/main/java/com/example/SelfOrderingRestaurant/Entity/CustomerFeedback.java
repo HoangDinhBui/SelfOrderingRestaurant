@@ -11,7 +11,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "customerfeedback")
+@Table(name = "customer_feedback")
 @Getter
 @Setter
 @AllArgsConstructor
@@ -19,29 +19,29 @@ import java.time.LocalDateTime;
 public class CustomerFeedback {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "Feedback_ID")
+    @Column(name = "feedback_id")
     private Integer feedbackId;
 
     @ManyToOne
-    @JoinColumn(name = "Customer_ID", nullable = false)
+    @JoinColumn(name = "customer_id", nullable = false)
     private Customer customer;
 
     @ManyToOne
-    @JoinColumn(name = "Order_ID", referencedColumnName = "Order_ID")
+    @JoinColumn(name = "order_id", referencedColumnName = "Order_ID")
     private Order order;
 
-    @Column(name = "Rating", nullable = false)
+    @Column(name = "rating", nullable = false)
     private Integer rating;
 
-    @Column(name = "Comment", columnDefinition = "TEXT")
+    @Column(name = "comment", columnDefinition = "TEXT")
     private String comment;
 
     @CreationTimestamp
     @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "FeedbackDate", nullable = false, updatable = false)
+    @Column(name = "feedback_date", nullable = false, updatable = false)
     private LocalDateTime feedbackDate = LocalDateTime.now();
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "Status")
+    @Column(name = "status")
     private FeedbackStatus status = FeedbackStatus.NEW;
 }

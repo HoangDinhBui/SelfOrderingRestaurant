@@ -20,32 +20,32 @@ import java.time.LocalDateTime;
 public class Payment {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "Payment_ID")
+    @Column(name = "payment_id")
     private Integer paymentId;
 
     @OneToOne
-    @JoinColumn(name = "Order_ID", referencedColumnName = "Order_ID")
+    @JoinColumn(name = "order_id", referencedColumnName = "order_id")
     private Order order;
 
     @ManyToOne
-    @JoinColumn(name = "Customer_ID", referencedColumnName = "Customer_ID")
+    @JoinColumn(name = "customer_id", referencedColumnName = "customer_id")
     private Customer customer;
 
-    @Column(name = "Amount", precision = 10, scale = 2, nullable = false)
+    @Column(name = "amount", precision = 10, scale = 2, nullable = false)
     private BigDecimal amount;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "PaymentMethod")
+    @Column(name = "payment_method")
     private PaymentMethod paymentMethod;
 
     @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "PaymentDate", nullable = false, updatable = false)
+    @Column(name = "payment_date", nullable = false, updatable = false)
     private LocalDateTime paymentDate = LocalDateTime.now();
 
-    @Column(name = "TransactionID", unique = true)
+    @Column(name = "transaction_id", unique = true)
     private String transactionId;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "Status")
+    @Column(name = "status")
     private PaymentStatus status;
 }

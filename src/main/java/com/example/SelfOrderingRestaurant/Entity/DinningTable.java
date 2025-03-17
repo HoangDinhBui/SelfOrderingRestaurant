@@ -15,19 +15,19 @@ import lombok.Setter;
 @NoArgsConstructor
 public class DinningTable {
     @Id
-    @Column(name = "TableNumber", updatable = false, nullable = false)
+    @Column(name = "table_number", updatable = false, nullable = false)
     private Integer tableNumber;
 
-    @Column(name = "Capacity", nullable = false)
+    @Column(name = "capacity", nullable = false)
     private Integer capacity;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "Status")
+    @Column(name = "status")
     private TableStatus tableStatus = TableStatus.AVAILABLE;
 
-    @Column(name = "Location")
+    @Column(name = "location")
     private String location;
 
-    @Column(name = "QRCode")
+    @Column(name = "qr_code")
     private String qrCode;
 }

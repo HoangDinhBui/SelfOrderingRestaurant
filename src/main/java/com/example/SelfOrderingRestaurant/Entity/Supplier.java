@@ -11,21 +11,21 @@ import lombok.*;
 public class Supplier {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "Supplier_ID")
+    @Column(name = "supplier_id")
     private Integer supplierId;
 
-    @Column(name = "Name", nullable = false)
+    @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "ContactPerson")
+    @Column(name = "contact_person")
     private String contactPerson;
 
-    @Column(name = "Phone", unique = true)
+    @Column(name = "phone", unique = true)
     private String phone;
 
-    @Column(name = "Email", unique = true)
+    @Column(name = "email", unique = true)
     private String email;
 
-    @Column(name = "Address", columnDefinition = "TEXT")
+    @Column(name = "address", columnDefinition = "TEXT")
     private String address;
 }
