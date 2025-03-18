@@ -50,4 +50,5 @@ public class Dish {
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "UpdatedAt")
     private LocalDateTime updatedAt = LocalDateTime.now();
+
 }
