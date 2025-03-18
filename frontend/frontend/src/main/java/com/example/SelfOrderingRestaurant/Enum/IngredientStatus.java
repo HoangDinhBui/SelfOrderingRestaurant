@@ -1,4 +1,4 @@
-package com.example.SelfOrderingRestaurant.Entity.Enum;
+package com.example.SelfOrderingRestaurant.Enum;
 
 public enum IngredientStatus {
     AVAILABLE,

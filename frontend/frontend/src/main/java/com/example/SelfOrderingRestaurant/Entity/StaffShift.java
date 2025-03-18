@@ -1,12 +1,12 @@
 package com.example.SelfOrderingRestaurant.Entity;
-import com.example.SelfOrderingRestaurant.Entity.Enum.StaffShiftStatus;
+import com.example.SelfOrderingRestaurant.Enum.StaffShiftStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "staffshifts")
+@Table(name = "staff_shifts")
 @Getter
 @Setter
 @AllArgsConstructor
@@ -14,21 +14,21 @@ import java.time.LocalDate;
 public class StaffShift {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "StaffShift_ID")
+    @Column(name = "staff_shift_id")
     private Integer StaffShiftKey;
 
     @ManyToOne
-    @JoinColumn(name = "Shift_ID")
+    @JoinColumn(name = "shift_id")
     private Shift shift;
 
     @ManyToOne
-    @JoinColumn(name = "Staff_ID")
+    @JoinColumn(name = "staff_id")
     private Staff staff;
 
-    @Column(name = "Date", nullable = false)
+    @Column(name = "date", nullable = false)
     private LocalDate date;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "Status")
+    @Column(name = "status")
     private StaffShiftStatus status;
 }

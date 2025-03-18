@@ -18,20 +18,20 @@ import java.util.Date;
 public class Customer {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "Customer_ID")
+    @Column(name = "customer_id")
     private Integer customerId;
 
     @OneToOne
-    @JoinColumn(name = "User_ID", unique = true)
+    @JoinColumn(name = "user_id", unique = true)
     private User user;
 
-    @Column(name = "Fullname", nullable = false)
+    @Column(name = "fullname", nullable = false)
     private String fullname;
 
     @Temporal(TemporalType.DATE)
-    @Column(name = "JoinDate")
+    @Column(name = "join_date")
     private Date joinDate;
 
-    @Column(name = "Points", columnDefinition = "INT DEFAULT 0 CHECK (Points >= 0)")
+    @Column(name = "points", columnDefinition = "INT DEFAULT 0 CHECK (Points >= 0)")
     private Integer points = 0;
 }

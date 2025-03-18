@@ -1,12 +1,13 @@
 package com.example.SelfOrderingRestaurant.Service;
 
-import com.example.SelfOrderingRestaurant.Dto.OrderItemDTO;
-import com.example.SelfOrderingRestaurant.Dto.OrderRequestDTO;
-import com.example.SelfOrderingRestaurant.Dto.OrderResponseDTO;
+import com.example.SelfOrderingRestaurant.Dto.Request.OrderRequestDTO.OrderItemDTO;
+import com.example.SelfOrderingRestaurant.Dto.Request.OrderRequestDTO.OrderRequestDTO;
+import com.example.SelfOrderingRestaurant.Dto.Response.OrderResponseDTO.GetAllOrdersResponseDTO;
+import com.example.SelfOrderingRestaurant.Dto.Response.OrderResponseDTO.OrderResponseDTO;
 import com.example.SelfOrderingRestaurant.Entity.*;
 import com.example.SelfOrderingRestaurant.Entity.DinningTable;
-import com.example.SelfOrderingRestaurant.Entity.Enum.OrderStatus;
-import com.example.SelfOrderingRestaurant.Entity.Enum.PaymentStatus;
+import com.example.SelfOrderingRestaurant.Enum.OrderStatus;
+import com.example.SelfOrderingRestaurant.Enum.PaymentStatus;
 import com.example.SelfOrderingRestaurant.Entity.Key.OrderItemKey;
 import com.example.SelfOrderingRestaurant.Repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +18,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class OrderService {
@@ -81,5 +83,44 @@ public class OrderService {
         orderRepository.save(order);
 
         return new OrderResponseDTO(order.getOrderId(), order.getStatus().name(), totalAmount, order.getPaymentStatus().name(), orderItemDTOs);
+    }
+
+    public List<GetAllOrdersResponseDTO> getAllOrders() {
+        List<Order> orders = orderRepository.findAll();
+
+        return orders.stream().map(order -> {
+            List<OrderItem> orderItems = orderItemRepository.findByOrder(order);
+
+            List<OrderItemDTO> items = orderItems.stream()
+                    .map(item -> new OrderItemDTO(
+                            item.getId().getDishId(),
+                            item.getQuantity(),
+                            item.getNotes()
+                    )).collect(Collectors.toList());
+
+            return new GetAllOrdersResponseDTO(
+                    order.getOrderId(),
+                    order.getCustomer().getFullname(),
+                    order.getTables().getTableNumber(),
+                    order.getStatus().name(),
+                    order.getTotalAmount(),
+                    order.getPaymentStatus().name(),
+                    items
+            );
+        }).collect(Collectors.toList());
+    }
+
+    @Transactional
+    public void updateOrderStatus(Long orderId, String status) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Order not found"));
+
+        try {
+            OrderStatus newStatus = OrderStatus.valueOf(status.toUpperCase());
+            order.setStatus(newStatus);
+            orderRepository.save(order);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid order status: " + status);
+        }
     }
 }
