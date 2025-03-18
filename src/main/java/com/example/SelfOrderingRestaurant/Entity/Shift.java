@@ -14,15 +14,15 @@ import java.time.LocalTime;
 public class Shift {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "Shift_ID")
+    @Column(name = "shift_id")
     private Integer shiftId;
 
-    @Column(name = "Name", nullable = false)
+    @Column(name = "name", nullable = false)
     private String name;
 
-    @Column(name = "StartTime", nullable = false)
+    @Column(name = "start_time", nullable = false)
     private LocalTime startTime;
 
-    @Column(name = "EndTime", nullable = false)
+    @Column(name = "end_time", nullable = false)
     private LocalTime endTime;
 }

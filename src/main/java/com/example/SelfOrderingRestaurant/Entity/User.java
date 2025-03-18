@@ -1,7 +1,7 @@
 package com.example.SelfOrderingRestaurant.Entity;
 
-import com.example.SelfOrderingRestaurant.Entity.Enum.UserStatus;
-import com.example.SelfOrderingRestaurant.Entity.Enum.UserType;
+import com.example.SelfOrderingRestaurant.Enum.UserStatus;
+import com.example.SelfOrderingRestaurant.Enum.UserType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -19,37 +19,37 @@ import java.util.Date;
 public class User {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "User_ID")
+    @Column(name = "user_id")
     private Integer id;
 
-    @Column(name = "Username", unique = true, nullable = false)
+    @Column(name = "username", unique = true, nullable = false)
     private String username;
 
-    @Column(name = "Password", nullable = false)
+    @Column(name = "password", nullable = false)
     private String password;
 
-    @Column(name = "GoogleID", unique = true)
+    @Column(name = "google_id", unique = true)
     private String googleId;
 
-    @Column(name = "Email", unique = true)
+    @Column(name = "email", unique = true)
     private String email;
 
-    @Column(name = "Phone")
+    @Column(name = "phone")
     private String phone;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "UserType")
+    @Column(name = "user_type")
     private UserType userType;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "Status")
+    @Column(name = "status")
     private UserStatus userStatus;
 
-    @Column(name = "CreateAt")
+    @Column(name = "create_at")
     @Temporal(TemporalType.TIMESTAMP)
     private Date createdAt;
 
-    @Column(name = "LastLogin")
+    @Column(name = "last_login")
     @Temporal(TemporalType.TIMESTAMP)
     private Date lastLogin;
 }

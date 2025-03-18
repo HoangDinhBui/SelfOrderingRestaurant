@@ -1,6 +1,6 @@
 package com.example.SelfOrderingRestaurant.Entity;
 
-import com.example.SelfOrderingRestaurant.Entity.Enum.UserStatus;
+import com.example.SelfOrderingRestaurant.Enum.UserStatus;
 import jakarta.persistence.*;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -9,9 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Date;
 
 @Entity
 @Table(name = "staff")
@@ -22,23 +20,23 @@ import java.util.Date;
 public class Staff {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "Staff_ID")
+    @Column(name = "staff_id")
     private Integer staffId;
 
     @OneToOne
-    @JoinColumn(name = "User_ID", referencedColumnName = "User_ID", unique = true)
+    @JoinColumn(name = "user_id", referencedColumnName = "user_id", unique = true)
     private User user;
 
-    @Column(name = "Fullname", nullable = false)
+    @Column(name = "fullname", nullable = false)
     private String fullname;
 
-    @Column(name = "Position")
+    @Column(name = "position")
     private String position;
 
-    @Column(name = "Salary")
+    @Column(name = "salary")
     private BigDecimal salary;
 
-    @Column(name = "HireDate")
+    @Column(name = "hire_date")
     private LocalDateTime hireDate;
 
     @Enumerated(EnumType.STRING)

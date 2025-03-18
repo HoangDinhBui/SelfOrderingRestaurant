@@ -13,20 +13,20 @@ import java.util.Date;
 public class Inventory {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "InventoryID")
+    @Column(name = "inventory_id")
     private Integer inventoryId;
 
     @ManyToOne
-    @JoinColumn(name = "IngredientID", referencedColumnName = "Ingredient_ID")
+    @JoinColumn(name = "ingredient_id", referencedColumnName = "ingredient_id")
     private Ingredient ingredient;
 
-    @Column(name = "Quantity", nullable = false)
+    @Column(name = "quantity", nullable = false)
     private Double quantity;
 
-    @Column(name = "Unit")
+    @Column(name = "unit")
     private String unit;
 
     @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "LastUpdated", nullable = false)
+    @Column(name = "last_updated", nullable = false)
     private Date lastUpdated = new Date();
 }
