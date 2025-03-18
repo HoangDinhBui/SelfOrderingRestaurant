@@ -25,7 +25,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/order/**",
                                          "/error",
                                          "/api/tables/**",
-                                         "/api/staff/**"
+                                         "/api/staff/**",
+                                         "/api/category/**"
                         ).permitAll() // API order không cần auth
                         .anyRequest().authenticated() // Các API khác vẫn yêu cầu login
                 )
