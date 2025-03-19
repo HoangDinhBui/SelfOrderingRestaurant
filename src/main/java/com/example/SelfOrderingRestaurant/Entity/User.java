@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Entity
@@ -46,8 +47,7 @@ public class User {
     private UserStatus userStatus;
 
     @Column(name = "create_at")
-    @Temporal(TemporalType.TIMESTAMP)
-    private Date createdAt;
+    private LocalDateTime createdAt;
 
     @Column(name = "last_login")
     @Temporal(TemporalType.TIMESTAMP)
