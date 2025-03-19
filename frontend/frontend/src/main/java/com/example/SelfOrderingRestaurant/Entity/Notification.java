@@ -18,7 +18,7 @@ public class Notification {
     private Integer notificationId;
 
     @ManyToOne
-    @JoinColumn(name = "user_id", referencedColumnName = "user_id", nullable = false)
+    @JoinColumn(name = "user_id")
     private User user;
 
     @Column(name = "title", nullable = false)
@@ -27,10 +27,10 @@ public class Notification {
     @Column(name = "content", columnDefinition = "TEXT")
     private String content;
 
-    @Column(name = "expiryDate")
+    @Column(name = "expiry_date")
     private LocalDateTime expiryDate;
 
-    @Temporal(TemporalType.TIMESTAMP)
+
     @Column(name = "create_at", nullable = false)
     private LocalDateTime createAt = LocalDateTime.now();
 
