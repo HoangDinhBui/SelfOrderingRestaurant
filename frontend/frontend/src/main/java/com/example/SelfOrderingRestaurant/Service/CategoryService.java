@@ -1,6 +1,6 @@
 package com.example.SelfOrderingRestaurant.Service;
 
-import com.example.SelfOrderingRestaurant.Dto.Request.CategoryDTO.CategoryDTO;
+import com.example.SelfOrderingRestaurant.Dto.Request.CategoryRequestDTO.CategoryDTO;
 import com.example.SelfOrderingRestaurant.Entity.Category;
 import com.example.SelfOrderingRestaurant.Repository.CategoryRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,17 +48,14 @@ public class CategoryService {
         return response;
     }
 
-    public Optional<Category> updateCategory(Integer id, CategoryDTO request) {
-        Optional<Category> category = categoryRepository.findById(id);
-        if(category.isPresent()) {
-            Category categoryToUpdate = category.get();
-            categoryToUpdate.setName(request.getName());
-            categoryToUpdate.setDescription(request.getDescription());
-            categoryToUpdate.setImage(request.getImage());
-            categoryToUpdate.setStatus(request.getStatus());
-            categoryRepository.save(categoryToUpdate);
-        }
-        return category;
+    public void updateCategory(Integer id, CategoryDTO request) {
+        categoryRepository.findById(id).ifPresent(category -> {
+            category.setName(request.getName());
+            category.setDescription(request.getDescription());
+            category.setImage(request.getImage());
+            category.setStatus(request.getStatus());
+            categoryRepository.save(category);
+        });
     }
 
     public boolean deleteCategory(Integer id) {

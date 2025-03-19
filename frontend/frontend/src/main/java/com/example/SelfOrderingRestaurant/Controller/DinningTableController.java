@@ -26,7 +26,7 @@ public class DinningTableController {
     public ResponseEntity<String> updateTableStatus(
             @PathVariable("table_id") Integer tableId,
             @RequestBody DinningTableRequestDTO dinningTableRequestDTO) {
-        dinningTableService.updateTableStatus(tableId, dinningTableRequestDTO.getStatus());
+        dinningTableService.updateTableStatus(tableId, dinningTableRequestDTO.getTableStatus());
         return ResponseEntity.ok("Table status updated successfully!");
     }
 }

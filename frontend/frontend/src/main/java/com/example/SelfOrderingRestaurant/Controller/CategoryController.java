@@ -1,6 +1,6 @@
 package com.example.SelfOrderingRestaurant.Controller;
 
-import com.example.SelfOrderingRestaurant.Dto.Request.CategoryDTO.CategoryDTO;
+import com.example.SelfOrderingRestaurant.Dto.Request.CategoryRequestDTO.CategoryDTO;
 import com.example.SelfOrderingRestaurant.Service.CategoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -30,7 +30,8 @@ public class CategoryController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updateCategory(@PathVariable Integer id,
                                             @RequestBody CategoryDTO request) {
-        return ResponseEntity.ok(categoryService.updateCategory(id, request));
+        categoryService.updateCategory(id, request);
+        return ResponseEntity.ok("Update category successfully");
     }
 
     @DeleteMapping("/{id}")

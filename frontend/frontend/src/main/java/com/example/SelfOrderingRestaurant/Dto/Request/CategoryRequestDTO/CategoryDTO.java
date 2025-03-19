@@ -1,6 +1,5 @@
-package com.example.SelfOrderingRestaurant.Dto.Request.CategoryDTO;
+package com.example.SelfOrderingRestaurant.Dto.Request.CategoryRequestDTO;
 
-import com.example.SelfOrderingRestaurant.Entity.Category;
 import com.example.SelfOrderingRestaurant.Enum.CategoryStatus;
 import lombok.*;
 
