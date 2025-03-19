@@ -26,7 +26,8 @@ public class SecurityConfig {
                                          "/error",
                                          "/api/tables/**",
                                          "/api/staff/**",
-                                         "/api/category/**"
+                                         "/api/category/**",
+                                         "/api/ingredient/**"
                         ).permitAll() // API order không cần auth
                         .anyRequest().authenticated() // Các API khác vẫn yêu cầu login
                 )
