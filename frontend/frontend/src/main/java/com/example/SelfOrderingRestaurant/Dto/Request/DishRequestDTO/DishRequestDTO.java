@@ -1,12 +1,11 @@
-package com.example.SelfOrderingRestaurant.Dto;
+package com.example.SelfOrderingRestaurant.Dto.Request.DishRequestDTO;
 
-import com.example.SelfOrderingRestaurant.Entity.Enum.DishStatus;
+import com.example.SelfOrderingRestaurant.Enum.DishStatus;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
-import java.util.List;
 
 @Data
 @NoArgsConstructor
