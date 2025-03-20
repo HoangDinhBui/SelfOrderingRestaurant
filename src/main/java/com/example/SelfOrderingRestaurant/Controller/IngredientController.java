@@ -26,7 +26,8 @@ public class IngredientController {
 
     @PostMapping
     public ResponseEntity<?> createIngredient(@RequestBody CreateIngredienRequestDTO request) {
-        return ResponseEntity.ok(ingredientService.createIngedient(request));
+        ingredientService.createIngedient(request);
+        return ResponseEntity.ok("Ingredient created successfully");
     }
 
     @PutMapping("/{id}")
