@@ -1,9 +1,10 @@
 package com.example.SelfOrderingRestaurant.Dto.Response.DinningTableResponseDTO;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Getter
-@Setter
+@Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class DinningTableResponseDTO {
