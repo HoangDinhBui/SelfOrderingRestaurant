@@ -34,7 +34,7 @@ public class OrderService {
     private CustomerRepository customerRepository;
 
     @Transactional
-    public OrderResponseDTO createOrder(OrderRequestDTO request) {
+    public void createOrder(OrderRequestDTO request) {
         Customer customer = customerRepository.findById(request.getCustomerId())
                 .orElseThrow(() -> new IllegalArgumentException("Customer not found"));
 
@@ -81,8 +81,6 @@ public class OrderService {
         }
         order.setTotalAmount(totalAmount);
         orderRepository.save(order);
-
-        return new OrderResponseDTO(order.getOrderId(), order.getStatus().name(), totalAmount, order.getPaymentStatus().name(), orderItemDTOs);
     }
 
     public List<GetAllOrdersResponseDTO> getAllOrders() {

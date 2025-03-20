@@ -56,7 +56,6 @@ public class StaffService {
         staffShift.setStaff(staff);
         staffShift.setShift(shift);
         staffShift.setDate(date);
-        staffShift.setStatus(StaffShiftStatus.ASSIGNED);
 
         staffShiftRepository.save(staffShift);
     }

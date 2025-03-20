@@ -27,7 +27,7 @@ public class CategoryService {
     }
 
     @Transactional
-    public CategoryDTO createCategory(CategoryDTO request) {
+    public void createCategory(CategoryDTO request) {
         if(categoryRepository.findByName(request.getName()).isPresent()) {
             throw new IllegalArgumentException("Category already exists");
         }
@@ -37,15 +37,7 @@ public class CategoryService {
         category.setImage(request.getImage());
         category.setStatus(request.getStatus());
 
-        Category categorySaved = categoryRepository.save(category);
-
-        CategoryDTO response = new CategoryDTO();
-        response.setName(categorySaved.getName());
-        response.setDescription(categorySaved.getDescription());
-        response.setImage(categorySaved.getImage());
-        response.setStatus(categorySaved.getStatus());
-
-        return response;
+        categoryRepository.save(category);
     }
 
     public void updateCategory(Integer id, CategoryDTO request) {

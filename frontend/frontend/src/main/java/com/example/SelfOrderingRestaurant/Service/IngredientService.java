@@ -34,28 +34,19 @@ public class IngredientService {
     }
 
     @Transactional
-    public CreateIngredienRequestDTO createIngedient(CreateIngredienRequestDTO request) {
+    public void createIngedient(CreateIngredienRequestDTO request) {
         Supplier supplier = supplierRepository.findById(request.getSupplierId())
                 .orElseThrow(() -> new RuntimeException("Supplier not found"));
 
         Ingredient ingredient = new Ingredient();
         ingredient.setName(request.getName());
         ingredient.setCostPerUnit(request.getCostPerUnit());
+        ingredient.setUnit(request.getUnit());
         ingredient.setStatus(request.getStatus());
         ingredient.setMinimumQuantity(request.getMinimumQuantity());
         ingredient.setSupplier(supplier);
 
-        Ingredient ingredientSaved = ingredientRepository.save(ingredient);
-
-        CreateIngredienRequestDTO response = new CreateIngredienRequestDTO();
-        response.setName(ingredientSaved.getName());
-        response.setUnit(ingredientSaved.getUnit());
-        response.setCostPerUnit(ingredientSaved.getCostPerUnit());
-        response.setStatus(ingredientSaved.getStatus());
-        response.setMinimumQuantity(ingredientSaved.getMinimumQuantity());
-        response.setSupplierId(ingredientSaved.getSupplier().getSupplierId());
-
-        return response;
+        ingredientRepository.save(ingredient);
     }
 
     @Transactional
