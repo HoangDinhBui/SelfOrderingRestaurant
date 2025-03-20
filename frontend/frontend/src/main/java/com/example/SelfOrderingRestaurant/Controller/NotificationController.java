@@ -19,5 +19,4 @@ public class NotificationController {
         List<NotificationResponseDTO> notifications = notificationService.getNotificationsByUserId(userId);
         return ResponseEntity.ok(notifications);
     }
-
 }
