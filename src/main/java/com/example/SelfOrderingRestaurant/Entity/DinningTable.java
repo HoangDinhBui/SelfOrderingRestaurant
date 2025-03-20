@@ -22,7 +22,7 @@ public class DinningTable {
     private Integer capacity;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status")
+    @Column(name = "status", nullable = false)
     private TableStatus tableStatus = TableStatus.AVAILABLE;
 
     @Column(name = "location")
