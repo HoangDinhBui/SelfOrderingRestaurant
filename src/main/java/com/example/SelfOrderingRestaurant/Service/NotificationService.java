@@ -16,7 +16,7 @@ public class NotificationService {
     private NotificationRepository notificationRepository;
      @Transactional
     public List<NotificationResponseDTO> getNotificationsByUserId(Integer userId){
-        List<Notification> notifications = notificationRepository.findByUser_Id(userId);
+        List<Notification> notifications = notificationRepository.findByUserUserId(userId);
         return notifications.stream()
                 .map(n -> new NotificationResponseDTO(
                         n.getNotificationId(),

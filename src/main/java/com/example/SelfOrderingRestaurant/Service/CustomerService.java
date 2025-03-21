@@ -21,10 +21,11 @@ public class CustomerService {
     }
 
     public CustomerResponseDTO getCustomerById(Integer id) {
-        Customer customer = customerRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Customer not found"));
-        return mapToDTO(customer);
+       return customerRepository.findById(id)
+               .map(this::mapToDTO)
+               .orElse(null);
     }
+
 
     public CustomerResponseDTO createCustomer(CustomerRequestDTO requestDTO) {
         Customer customer = new Customer();
@@ -38,7 +39,7 @@ public class CustomerService {
         Customer customer = customerRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Customer not found"));
         customer.setFullname(requestDTO.getFullname());
-        customer.setJoinDate(requestDTO.getJoinDate());
+        customer.setPoints(requestDTO.getPoints());
         return mapToDTO(customerRepository.save(customer));
     }
 
