@@ -27,7 +27,8 @@ public class SecurityConfig {
                                          "/api/tables/**",
                                          "/api/staff/**",
                                         "/api/notifications/**",
-                                        "/api/customers/**"
+                                        "/api/customers/**",
+                                        "/api/shifts/**"
                         ).permitAll() // API order không cần auth
                         .anyRequest().authenticated() // Các API khác vẫn yêu cầu login
                 )
