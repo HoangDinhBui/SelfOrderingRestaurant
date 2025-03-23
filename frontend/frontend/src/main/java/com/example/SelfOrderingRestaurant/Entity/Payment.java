@@ -32,7 +32,7 @@ public class Payment {
     private Customer customer;
 
     @Column(name = "amount", precision = 10, scale = 2, nullable = false)
-    private BigDecimal amount;
+    private Long amount;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_method")
@@ -42,7 +42,7 @@ public class Payment {
     @Column(name = "payment_date", nullable = false, updatable = false)
     private LocalDateTime paymentDate = LocalDateTime.now();
 
-    @Column(name = "transaction_id", unique = true)
+    @Column(name = "transaction_id", unique = true, nullable = true)
     private String transactionId;
 
     @Enumerated(EnumType.STRING)

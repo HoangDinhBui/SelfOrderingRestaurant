@@ -33,7 +33,7 @@ public class Dish {
     private String description;
 
     @Column(name = "price", precision = 10, scale = 2, nullable = false)
-    private BigDecimal price;
+    private Long price;
 
     @Column(name = "image")
     private String image;

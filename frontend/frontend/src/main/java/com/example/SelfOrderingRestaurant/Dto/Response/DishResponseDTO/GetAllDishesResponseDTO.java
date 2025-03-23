@@ -13,6 +13,6 @@ import java.math.BigDecimal;
 public class GetAllDishesResponseDTO {
     private Integer dishId;
     private String dishName;
-    private BigDecimal price;
+    private Long price;
     private DishStatus status;
 }
