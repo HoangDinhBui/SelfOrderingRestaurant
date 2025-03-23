@@ -34,7 +34,7 @@ public class OrderItem {
     private Integer quantity;
 
     @Column(name = "unit_price", precision = 10, scale = 2)
-    private BigDecimal unitPrice;
+    private Long unitPrice;
 
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
@@ -44,5 +44,5 @@ public class OrderItem {
     private OrderItemStatus status = OrderItemStatus.ORDERED;
 
     @Column(name = "sub_total", insertable = false, updatable = false)
-    private BigDecimal subTotal;
+    private Long subTotal;
 }

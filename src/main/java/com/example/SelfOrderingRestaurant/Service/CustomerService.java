@@ -17,7 +17,8 @@ public class CustomerService {
     }
 
     public List<CustomerResponseDTO> getAllCustomers() {
-        return customerRepository.findAll().stream().map(this::mapToDTO).collect(Collectors.toList());
+        return customerRepository.findAll().stream()
+                .map(this::mapToDTO).collect(Collectors.toList());
     }
 
     public CustomerResponseDTO getCustomerById(Integer id) {

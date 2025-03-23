@@ -12,7 +12,7 @@ import java.util.List;
 public class OrderResponseDTO {
     private Integer orderId;
     private String status;
-    private BigDecimal totalAmount;
+    private Long totalAmount;
     private String paymentStatus;
     private List<OrderItemDTO> items;
 }

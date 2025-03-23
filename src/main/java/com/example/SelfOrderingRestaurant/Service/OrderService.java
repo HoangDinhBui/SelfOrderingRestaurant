@@ -53,14 +53,14 @@ public class OrderService {
         System.out.println("Saved order ID: " + order.getOrderId());
 
         List<OrderItemDTO> orderItemDTOs = new ArrayList<>();
-        BigDecimal totalAmount = BigDecimal.ZERO;
+        Long totalAmount = 0L;
 
         for (OrderItemDTO itemRequest : request.getItems()) {
             Dish dish = dishRepository.findById(itemRequest.getDishId())
                     .orElseThrow(() -> new IllegalArgumentException("Dish not found"));
 
-            BigDecimal subTotal = dish.getPrice().multiply(BigDecimal.valueOf(itemRequest.getQuantity()));
-            totalAmount = totalAmount.add(subTotal);
+            Long subTotal = dish.getPrice()* itemRequest.getQuantity();
+            totalAmount = totalAmount + subTotal;
 
             OrderItemKey orderItemKey = new OrderItemKey();
             orderItemKey.setOrderId(order.getOrderId());
@@ -109,7 +109,7 @@ public class OrderService {
     }
 
     @Transactional
-    public void updateOrderStatus(Long orderId, String status) {
+    public void updateOrderStatus(Integer orderId, String status) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found"));
 
