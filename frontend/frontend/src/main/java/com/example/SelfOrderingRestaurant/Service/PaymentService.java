@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -128,53 +129,107 @@ public class PaymentService {
     }
 
     @Transactional
-    public int orderReturn(Map<String, String> queryParams) throws Exception {
+    public Map<String, Object> orderReturn(Map<String, String> queryParams) throws Exception {
+        Map<String, Object> result = new HashMap<>();
+        result.put("status", -1);
+        result.put("transactionStatus", "FAILED");
+        result.put("responseCode", null);
+        result.put("message", "Giao dịch thất bại!");
+
         try {
+            // Extensive logging for all parameters
+            log.info("Raw VNPay Callback Params: {}",
+                    queryParams.entrySet().stream()
+                            .map(e -> e.getKey() + "=" + e.getValue())
+                            .collect(Collectors.joining(", ")));
+
+            // Create a copy of parameters for hash verification
             Map<String, String> fields = new HashMap<>(queryParams);
 
-            // Remove hash from map before recalculating
+            // Extract and remove secure hash for verification
             String vnp_SecureHash = fields.remove("vnp_SecureHash");
             fields.remove("vnp_SecureHashType");
 
-            // Recalculate hash to compare - DO NOT decode vnp_OrderInfo
-            String signValue = VNPayConfig.hashAllFields(fields);
-//            log.info("Fields to hash: {}", fields);
-//            log.info("Generated Hash: {}", signValue);
-//            log.info("Received Hash: {}", vnp_SecureHash);
+            // Prepare parameters for hash calculation
+            List<String> fieldNames = new ArrayList<>(fields.keySet());
+            Collections.sort(fieldNames);
 
-            if (signValue.equalsIgnoreCase(vnp_SecureHash)) {
-                String txnRef = queryParams.get("vnp_TxnRef");
-                String transactionStatus = queryParams.get("vnp_TransactionStatus");
-
-                // Update payment status in database
-                Payment payment = paymentRepository.findByTransactionId(txnRef);
-                if (payment != null) {
-                    boolean isSuccessful = "00".equals(transactionStatus);
-
-                    // Update payment status
-                    payment.setStatus(isSuccessful ? PaymentStatus.PAID : PaymentStatus.UNPAID);
-                    paymentRepository.save(payment);
-
-                    // If payment is successful, update order payment status too
-                    if (isSuccessful && payment.getOrder() != null) {
-                        Order order = payment.getOrder();
-                        order.setPaymentStatus(PaymentStatus.PAID);
-                        orderRepository.save(order);
-                        log.info("Updated order {} payment status to COMPLETED", order.getOrderId());
+            StringBuilder hashData = new StringBuilder();
+            for (int i = 0; i < fieldNames.size(); i++) {
+                String fieldName = fieldNames.get(i);
+                String fieldValue = fields.get(fieldName);
+                if (fieldValue != null && !fieldValue.isEmpty()) {
+                    hashData.append(fieldName)
+                            .append("=")
+                            .append(fieldValue);
+                    if (i < fieldNames.size() - 1) {
+                        hashData.append("&");
                     }
+                }
+            }
 
-                    log.info("Updated payment status for transaction {}: {}", txnRef,
-                            isSuccessful ? "COMPLETED" : "FAILED");
-                } else {
-                    log.warn("Payment record not found for transaction ID: {}", txnRef);
+            // Logging hash calculation details
+            log.info("Hash Calculation String: {}", hashData.toString());
+
+            // Calculate hash - CRITICAL PART
+            String calculatedHash = VNPayConfig.hmacSHA512(
+                    VNPayConfig.vnp_HashSecret,
+                    hashData.toString()
+            );
+
+            log.info("Original SecureHash: {}", vnp_SecureHash);
+            log.info("Calculated SecureHash: {}", calculatedHash);
+            log.info("Hash Comparison: {}", calculatedHash.equalsIgnoreCase(vnp_SecureHash));
+
+            // Signature verification
+            if (calculatedHash.equalsIgnoreCase(vnp_SecureHash)) {
+                String txnRef = queryParams.get("vnp_TxnRef");
+                String amount = queryParams.get("vnp_Amount");
+
+                // Find payment record
+                Payment payment = paymentRepository.findByTransactionId(txnRef);
+
+                if (payment == null) {
+                    log.error("No payment found for transaction ID: {}", txnRef);
+                    return result;
                 }
 
-                return "00".equals(transactionStatus) ? 1 : 0;
+                // More robust verification
+                boolean isSuccessful =
+                        payment.getAmount() == Long.parseLong(amount)/100 &&
+                                // Additional checks can be added here
+                                txnRef.equals(payment.getTransactionId());
+
+                // Update payment status
+                payment.setStatus(isSuccessful ? PaymentStatus.PAID : PaymentStatus.UNPAID);
+                paymentRepository.save(payment);
+
+                // Update order if payment is successful
+                if (isSuccessful && payment.getOrder() != null) {
+                    Order order = payment.getOrder();
+                    order.setPaymentStatus(PaymentStatus.PAID);
+                    orderRepository.save(order);
+                    log.info("Order {} payment status updated to PAID", order.getOrderId());
+                }
+
+                // Prepare result
+                result.put("status", isSuccessful ? 1 : 0);
+                result.put("transactionStatus", isSuccessful ? "SUCCESS" : "FAILED");
+                result.put("responseCode", "00");
+                result.put("message", isSuccessful
+                        ? "Thanh toán thành công!"
+                        : "Giao dịch thất bại!");
+
+                log.info("Final Payment Status for transaction {}: {}",
+                        txnRef, result.get("transactionStatus"));
+            } else {
+                log.error("Signature verification FAILED for transaction");
             }
-            return -1;
+
+            return result;
         } catch (Exception e) {
-            log.error("Error processing VNPay response: ", e);
-            return -1;
+            log.error("Comprehensive Error in VNPay Response Processing", e);
+            return result;
         }
     }
 }

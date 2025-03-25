@@ -55,18 +55,32 @@ public class PaymentController {
             Map<String, String> params = parseQueryString(queryString);
             log.info("🔹 Parsed params: {}", params);
 
-            int result = paymentService.orderReturn(params);
+            Map<String, Object> result = paymentService.orderReturn(params);
+            int status = (int) result.get("status");
+            String transactionStatus = (String) result.get("transactionStatus");
+            String responseCode = (String) result.get("responseCode");
 
-            if (result == 1) {
-                return ResponseEntity.ok("Thanh toán thành công!");
-            } else if (result == 0) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Giao dịch thất bại!");
+            log.info("🔹 Payment Result - Status: {}, Transaction Status: {}, Response Code: {}",
+                    status, transactionStatus, responseCode);
+
+            Map<String, String> responseBody = new HashMap<>();
+            responseBody.put("transactionStatus", transactionStatus);
+            responseBody.put("responseCode", responseCode);
+
+            if (status == 1) {
+                responseBody.put("message", "Thanh toán thành công!");
+                return ResponseEntity.ok(responseBody);
+            } else if (status == 0) {
+                responseBody.put("message", "Giao dịch thất bại!");
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseBody);
             } else {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Sai chữ ký hoặc giao dịch bị thay đổi!");
+                responseBody.put("message", "Sai chữ ký hoặc giao dịch bị thay đổi!");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseBody);
             }
         } catch (Exception e) {
             log.error("Lỗi xử lý VNPay: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Lỗi xử lý VNPay: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Lỗi xử lý VNPay: " + e.getMessage());
         }
     }
 
