@@ -52,4 +52,11 @@ public class User {
     @Column(name = "last_login")
     @Temporal(TemporalType.TIMESTAMP)
     private Date lastLogin;
+
+    // Add these new columns for password reset
+    @Column(name = "reset_password_token")
+    private String resetPasswordToken;
+
+    @Column(name = "reset_password_expiry")
+    private LocalDateTime resetPasswordExpiry;
 }
