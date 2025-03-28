@@ -132,104 +132,57 @@ public class AuthService {
     }
 
     @Transactional
-    public AuthResponseDto googleLogin(GoogleLoginRequestDto request) throws GeneralSecurityException, IOException {
-        try {
-            log.info("Server Google Client ID: {}", googleClientId);
-            log.info("Received ID Token: {}", request.getIdToken());
+    public AuthResponseDto staffGoogleLogin(GoogleLoginRequestDto request) throws GeneralSecurityException, IOException {
+        GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
+                new NetHttpTransport(),
+                new GsonFactory()
+        )
+                .setAudience(Collections.singletonList(googleClientId))
+                .setIssuer("https://accounts.google.com")
+                .build();
 
-            // Decode token without verification first to inspect
-            GoogleIdToken parsedToken = GoogleIdToken.parse(
-                    new GsonFactory(),
-                    request.getIdToken()
-            );
+        GoogleIdToken idToken = verifier.verify(request.getIdToken());
 
-            if (parsedToken != null) {
-                GoogleIdToken.Payload payload = parsedToken.getPayload();
-
-                log.info("Token Details:");
-                log.info("Issuer: {}", payload.getIssuer());
-                log.info("Audience: {}", payload.getAudience());
-                log.info("Subject: {}", payload.getSubject());
-                log.info("Email: {}", payload.getEmail());
-            }
-
-            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(
-                    new NetHttpTransport(),
-                    new GsonFactory()
-            )
-                    .setAudience(Collections.singletonList(googleClientId))
-                    .setIssuer("https://accounts.google.com")
-                    .build();
-
-            GoogleIdToken idToken = verifier.verify(request.getIdToken());
-
-            if (idToken == null) {
-                throw new AuthenticationException(
-                        "Token verification failed. Possible causes: " +
-                                "incorrect client ID, expired token, or network issues."
-                );
-            }
-
-            GoogleIdToken.Payload payload = idToken.getPayload();
-
-            // Additional payload validation
-            validateTokenPayload(payload);
-
-            String googleId = payload.getSubject();
-            String email = payload.getEmail();
-            String name = (String) payload.get("name");
-
-            // Check if user exists with Google ID
-            Optional<User> existingUser = userRepository.findByGoogleId(googleId);
-
-            User user = existingUser.orElseGet(() -> {
-//                if (request.getPassword() == null || request.getPassword().isEmpty()) {
-//                    throw new AuthenticationException("Password is required for Google login.");
-//                }
-                // Create new user if not exists
-                User newUser = new User();
-                newUser.setGoogleId(googleId);
-                newUser.setEmail(email);
-                newUser.setUsername(email.split("@")[0]);
-                newUser.setUserType(UserType.CUSTOMER);
-                newUser.setUserStatus(UserStatus.ACTIVE);
-                newUser.setCreatedAt(LocalDateTime.now());
-                newUser.setLastLogin(new Date());
-
-                //newUser.setPassword(passwordEncoder.encode(request.getPassword()));
-
-                User savedUser = userRepository.save(newUser);
-
-                // Create customer profile
-                Customer customer = new Customer();
-                customer.setUser(savedUser);
-                customer.setFullname(name != null ? name : email.split("@")[0]);
-                customer.setJoinDate(new Date());
-                customer.setPoints(0);
-                customerRepository.save(customer);
-
-                return savedUser;
-            });
-
-            // Generate tokens
-            String accessToken = jwtTokenService.generateAccessToken(user);
-            String refreshToken = jwtTokenService.generateRefreshToken(user);
-
-            // Return response
-            AuthResponseDto response = new AuthResponseDto();
-            response.setAccessToken(accessToken);
-            response.setRefreshToken(refreshToken);
-            response.setUsername(user.getUsername());
-            response.setEmail(user.getEmail());
-            response.setUserType(user.getUserType().name());
-
-            return response;
-        } catch (GeneralSecurityException | IOException e) {
-            // Log the actual exception details
-            // Replace with proper logging mechanism
-            log.error("Google authentication failed", e);
-            throw new RuntimeException("Google authentication failed: " + e.getMessage(), e);
+        if (idToken == null) {
+            throw new RuntimeException("Token verification failed");
         }
+
+        GoogleIdToken.Payload payload = idToken.getPayload();
+        String email = payload.getEmail();
+        String googleId = payload.getSubject();
+
+        // Chỉ chấp nhận email Gmail
+        if (!email.endsWith("@gmail.com")) {
+            throw new RuntimeException("Only Gmail accounts are allowed");
+        }
+
+        Optional<User> existingUser = userRepository.findByGoogleId(googleId);
+
+        User user = existingUser.orElseGet(() -> {
+            User newUser = new User();
+            newUser.setGoogleId(googleId);
+            newUser.setEmail(email);
+            newUser.setUsername(email.split("@")[0]);
+            newUser.setUserType(UserType.STAFF); // Mặc định là staff
+            newUser.setUserStatus(UserStatus.ACTIVE);
+            newUser.setCreatedAt(LocalDateTime.now());
+            newUser.setLastLogin(new Date());
+
+            return userRepository.save(newUser);
+        });
+
+        // Tạo token
+        String accessToken = jwtTokenService.generateAccessToken(user);
+        String refreshToken = jwtTokenService.generateRefreshToken(user);
+
+        AuthResponseDto response = new AuthResponseDto();
+        response.setAccessToken(accessToken);
+        response.setRefreshToken(refreshToken);
+        response.setUsername(user.getUsername());
+        response.setEmail(user.getEmail());
+        response.setUserType(user.getUserType().name());
+
+        return response;
     }
 
     private void validateTokenPayload(GoogleIdToken.Payload payload) {
