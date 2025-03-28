@@ -1,5 +1,6 @@
 package com.example.SelfOrderingRestaurant.Entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -23,6 +24,7 @@ public class Customer {
 
     @OneToOne
     @JoinColumn(name = "user_id", unique = true)
+    @JsonIgnore
     private User user;
 
     @Column(name = "fullname", nullable = false)

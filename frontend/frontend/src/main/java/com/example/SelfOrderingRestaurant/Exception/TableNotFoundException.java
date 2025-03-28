@@ -1,4 +1,4 @@
-package com.example.SelfOrderingRestaurant.Exception.TableException;
+package com.example.SelfOrderingRestaurant.Exception;
 
 public class TableNotFoundException extends RuntimeException {
     public TableNotFoundException(String message) {
