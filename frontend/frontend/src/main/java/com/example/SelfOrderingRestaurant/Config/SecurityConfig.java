@@ -38,14 +38,14 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
-                        // Cho phép các endpoint không cần xác thực
+                        // Cho phép các endpoint OAuth2 login cho staff
                         .requestMatchers(
                                 "/api/auth/**"
                         ).permitAll()
-                        // Các request khác cần xác thực
+                        // Các request khác đều cần xác thực
                         .anyRequest().authenticated()
                 )
-        .httpBasic(AbstractHttpConfigurer::disable);
+                .httpBasic(AbstractHttpConfigurer::disable);
 
         return http.build();
     }

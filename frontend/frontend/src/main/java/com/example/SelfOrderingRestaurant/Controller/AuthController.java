@@ -19,25 +19,11 @@ import java.security.GeneralSecurityException;
 public class AuthController {
     private final AuthService authService;
 
-    @PostMapping("/register")
-    public ResponseEntity<AuthResponseDto> register(
-            @Valid @RequestBody RegisterRequestDto request
-    ) {
-        return ResponseEntity.ok(authService.register(request));
-    }
-
-    @PostMapping("/login")
-    public ResponseEntity<AuthResponseDto> login(
-            @Valid @RequestBody LoginRequestDto request
-    ) {
-        return ResponseEntity.ok(authService.login(request));
-    }
-
-    @PostMapping("/google-login")
-    public ResponseEntity<AuthResponseDto> googleLogin(
+    @PostMapping("/staff/google-login")
+    public ResponseEntity<AuthResponseDto> staffGoogleLogin(
             @Valid @RequestBody GoogleLoginRequestDto request
     ) throws GeneralSecurityException, IOException {
-        return ResponseEntity.ok(authService.googleLogin(request));
+        return ResponseEntity.ok(authService.staffGoogleLogin(request));
     }
 
     @PostMapping("/logout")
