@@ -26,6 +26,13 @@ public class AuthController {
         return ResponseEntity.ok(authService.staffGoogleLogin(request));
     }
 
+    @PostMapping("/login")
+    public ResponseEntity<AuthResponseDto> login(
+            @Valid @RequestBody LoginRequestDto request
+    ) {
+        return ResponseEntity.ok(authService.login(request));
+    }
+
     @PostMapping("/logout")
     public ResponseEntity<Void> logout() {
         authService.logout();

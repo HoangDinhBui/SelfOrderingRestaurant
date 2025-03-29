@@ -4,10 +4,12 @@ import com.example.SelfOrderingRestaurant.Dto.Request.RegisterRequestDto;
 import com.example.SelfOrderingRestaurant.Dto.Request.UserRequestDTO.*;
 import com.example.SelfOrderingRestaurant.Dto.Response.UserResponseDTO.AuthResponseDto;
 import com.example.SelfOrderingRestaurant.Entity.Customer;
+import com.example.SelfOrderingRestaurant.Entity.Staff;
 import com.example.SelfOrderingRestaurant.Entity.User;
 import com.example.SelfOrderingRestaurant.Enum.UserStatus;
 import com.example.SelfOrderingRestaurant.Enum.UserType;
 import com.example.SelfOrderingRestaurant.Repository.CustomerRepository;
+import com.example.SelfOrderingRestaurant.Repository.StaffRepository;
 import com.example.SelfOrderingRestaurant.Repository.UserRepository;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
@@ -28,6 +30,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.security.GeneralSecurityException;
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -39,7 +42,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AuthService {
     private final UserRepository userRepository;
-    private final CustomerRepository customerRepository;
+    private final StaffRepository staffRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenService jwtTokenService;
     private final AuthenticationManager authenticationManager;
@@ -51,7 +54,7 @@ public class AuthService {
     private final Logger log = LoggerFactory.getLogger(AuthService.class);
 
     @Transactional
-    public AuthResponseDto register(RegisterRequestDto request) {
+    public AuthResponseDto registerStaff(RegisterRequestDto request) {
         // Check if username or email already exists
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new RuntimeException("Username already exists");
@@ -66,19 +69,21 @@ public class AuthService {
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setPhone(request.getPhone());
-        user.setUserType(UserType.CUSTOMER);
+        user.setUserType(UserType.STAFF);
         user.setUserStatus(UserStatus.ACTIVE);
         user.setCreatedAt(LocalDateTime.now());
 
         User savedUser = userRepository.save(user);
 
-        // Create customer profile
-        Customer customer = new Customer();
-        customer.setUser(savedUser);
-        customer.setFullname(request.getFullname());
-        customer.setJoinDate(new Date());
-        customer.setPoints(0);
-        customerRepository.save(customer);
+        // Create staff profile instead of customer profile
+        Staff staff = new Staff();
+        staff.setUser(savedUser);
+        staff.setFullname(request.getFullname());
+        staff.setHireDate(LocalDateTime.now()); // Set hire date to current time
+        staff.setPosition("New Staff"); // Default position
+        staff.setSalary(BigDecimal.ZERO); // Default salary, can be updated later
+        staff.setStatus(UserStatus.ACTIVE);
+        staffRepository.save(staff);
 
         // Generate tokens
         String accessToken = jwtTokenService.generateAccessToken(savedUser);
@@ -96,14 +101,12 @@ public class AuthService {
     }
 
     public AuthResponseDto login(LoginRequestDto request) {
-        System.out.println("Before authentication");
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         request.getUsernameOrEmail(),
                         request.getPassword()
                 )
         );
-        System.out.println("After authentication");
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
