@@ -1,15 +1,18 @@
 package com.example.SelfOrderingRestaurant.Service;
 
+import com.example.SelfOrderingRestaurant.Dto.Request.StaffRequestDTO.UpdateStaffDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.StaffResponseDTO.GetAllStaffResponseDTO;
 import com.example.SelfOrderingRestaurant.Entity.Shift;
 import com.example.SelfOrderingRestaurant.Entity.Staff;
 import com.example.SelfOrderingRestaurant.Entity.StaffShift;
 import com.example.SelfOrderingRestaurant.Enum.StaffShiftStatus;
+import com.example.SelfOrderingRestaurant.Enum.UserStatus;
 import com.example.SelfOrderingRestaurant.Repository.ShiftRepository;
 import com.example.SelfOrderingRestaurant.Repository.StaffShiftRepository;
 import com.example.SelfOrderingRestaurant.Repository.StaffRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -58,5 +61,47 @@ public class StaffService {
         staffShift.setDate(date);
 
         staffShiftRepository.save(staffShift);
+    }
+
+    @Transactional
+    public GetAllStaffResponseDTO getStaffById(Integer id) {
+        Staff staff = staffRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Staff not found with id: " + id));
+        return new GetAllStaffResponseDTO(
+                staff.getStaffId(),
+                staff.getFullname(),
+                staff.getPosition()
+        );
+    }
+
+    @Transactional
+    public void updateStaff(Integer id, UpdateStaffDTO staffUpdateDTO) {
+        Staff staff = staffRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Staff not found with id: " + id));
+
+        // Update staff information
+        if (staffUpdateDTO.getPosition() != null) {
+            staff.setPosition(staffUpdateDTO.getPosition());
+        }
+
+        if (staffUpdateDTO.getSalary() != null) {
+            staff.setSalary(staffUpdateDTO.getSalary());
+        }
+
+        if (staffUpdateDTO.getStatus() != null) {
+            staff.setStatus(staffUpdateDTO.getStatus());
+        }
+
+        Staff updatedStaff = staffRepository.save(staff);
+    }
+
+    @Transactional
+    public void deleteStaff(Integer id) {
+        Staff staff = staffRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Staff not found with id: " + id));
+
+        // Instead of completely deleting, we can set the status to INACTIVE
+        staff.setStatus(UserStatus.INACTIVE);
+        staffRepository.save(staff);
     }
 }

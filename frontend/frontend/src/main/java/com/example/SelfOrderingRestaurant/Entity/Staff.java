@@ -36,8 +36,8 @@ public class Staff {
     @Column(name = "salary")
     private BigDecimal salary;
 
-    @Column(name = "hire_date")
-    private LocalDateTime hireDate;
+    @Column(name = "hire_date", nullable = false)
+    private LocalDateTime hireDate = LocalDateTime.now();
 
     @Enumerated(EnumType.STRING)
     @Column(name = "Status")

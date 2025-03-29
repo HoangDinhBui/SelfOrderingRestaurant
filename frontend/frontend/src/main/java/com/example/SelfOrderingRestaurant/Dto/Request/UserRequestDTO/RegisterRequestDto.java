@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 @Data
 public class RegisterRequestDto {
     @NotBlank(message = "Username is required")
@@ -12,7 +14,7 @@ public class RegisterRequestDto {
     private String username;
 
     @NotBlank(message = "Email is required")
-    @Email  (message = "Invalid email format")
+    @Email(message = "Invalid email format")
     private String email;
 
     @NotBlank(message = "Password is required")
@@ -20,5 +22,12 @@ public class RegisterRequestDto {
     private String password;
 
     private String phone;
+
+    @NotBlank(message = "Full name is required")
     private String fullname;
+
+    @NotBlank(message = "Position is required")
+    private String position;
+
+    private BigDecimal salary;
 }
