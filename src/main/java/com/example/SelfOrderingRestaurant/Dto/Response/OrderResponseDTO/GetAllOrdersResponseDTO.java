@@ -18,7 +18,7 @@ public class GetAllOrdersResponseDTO {
     private String customerName;
     private int tableNumber;
     private String status;
-    private Long totalAmount;
+    private BigDecimal totalAmount;
     private String paymentStatus;
     private List<OrderItemDTO> items;
 }

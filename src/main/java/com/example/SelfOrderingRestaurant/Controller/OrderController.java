@@ -24,7 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/order")
+@RequestMapping("/api")
 @RequiredArgsConstructor
 @PermitAll
 public class OrderController {
@@ -45,7 +45,13 @@ public class OrderController {
         return ResponseEntity.ok(orders);
     }
 
-    @PutMapping("/orders/{orderId}")
+    @GetMapping("/orders/{orderId}")
+    public ResponseEntity<?> getOrderById(@PathVariable Integer orderId) {
+        OrderResponseDTO order = orderService.getOrderById(orderId);
+        return ResponseEntity.ok(order);
+    }
+
+    @PutMapping("/staff/orders/{orderId}/status")
     public ResponseEntity<?> updateOrderStatus(
             @PathVariable Integer orderId,
             @RequestBody UpdateOrderStatusRequestDTO request) {

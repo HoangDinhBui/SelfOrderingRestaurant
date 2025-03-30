@@ -11,8 +11,10 @@ import java.util.List;
 @AllArgsConstructor
 public class OrderResponseDTO {
     private Integer orderId;
+    private String customerName;
+    private Integer tableNumber;
     private String status;
-    private Long totalAmount;
+    private BigDecimal totalAmount;
     private String paymentStatus;
     private List<OrderItemDTO> items;
 }

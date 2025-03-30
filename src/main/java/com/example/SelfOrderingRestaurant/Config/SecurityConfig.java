@@ -41,7 +41,14 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         // Cho phép truy cập không cần xác thực cho auth và customer endpoints
-                        .requestMatchers("/api/auth/**", "/api/customer/**").permitAll()
+                        .requestMatchers("/api/auth/**",
+                                "/api/customer/**",
+                                "api/payment/**",
+                                "/api/orders",
+                                "/api/orders/**",
+                                "/api/menu",
+                                "/api/menu/**",
+                                "/error").permitAll()
 
                         // Yêu cầu vai trò STAFF hoặc ADMIN cho các endpoints của staff
                         .requestMatchers("/api/staff/**").hasAnyRole("STAFF", "ADMIN")

@@ -35,11 +35,22 @@ public class OrderService {
 
     @Transactional
     public void createOrder(OrderRequestDTO request) {
-        Customer customer = customerRepository.findById(request.getCustomerId())
-                .orElseThrow(() -> new IllegalArgumentException("Customer not found"));
-
         DinningTable dinningTable = dinningTableRepository.findById(request.getTableId())
                 .orElseThrow(() -> new IllegalArgumentException("Table not found"));
+
+        Customer customer;
+        if (request.getCustomerId() != null) {
+            customer = customerRepository.findById(request.getCustomerId())
+                    .orElseThrow(() -> new IllegalArgumentException("Customer not found"));
+        } else {
+            // Create a temporary customer for walk-in orders
+            customer = new Customer();
+            customer.setFullname(request.getCustomerName() != null ?
+                    request.getCustomerName() : "Walk-in Customer");
+            customer.setJoinDate(new Date());
+            customer.setPoints(0);
+            customer = customerRepository.save(customer);
+        }
 
         Order order = new Order();
         order.setCustomer(customer);
@@ -53,14 +64,14 @@ public class OrderService {
         System.out.println("Saved order ID: " + order.getOrderId());
 
         List<OrderItemDTO> orderItemDTOs = new ArrayList<>();
-        Long totalAmount = 0L;
+        BigDecimal totalAmount = BigDecimal.ZERO;
 
         for (OrderItemDTO itemRequest : request.getItems()) {
             Dish dish = dishRepository.findById(itemRequest.getDishId())
                     .orElseThrow(() -> new IllegalArgumentException("Dish not found"));
 
-            Long subTotal = dish.getPrice()* itemRequest.getQuantity();
-            totalAmount = totalAmount + subTotal;
+            BigDecimal subTotal = dish.getPrice().multiply(BigDecimal.valueOf(itemRequest.getQuantity()));
+            totalAmount = totalAmount.add(subTotal);
 
             OrderItemKey orderItemKey = new OrderItemKey();
             orderItemKey.setOrderId(order.getOrderId());
@@ -106,6 +117,30 @@ public class OrderService {
                     items
             );
         }).collect(Collectors.toList());
+    }
+
+    public OrderResponseDTO getOrderById(Integer orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Order not found"));
+
+        List<OrderItem> orderItems = orderItemRepository.findByOrder(order);
+
+        List<OrderItemDTO> items = orderItems.stream()
+                .map(item -> new OrderItemDTO(
+                        item.getId().getDishId(),
+                        item.getQuantity(),
+                        item.getNotes()
+                )).collect(Collectors.toList());
+
+        return new OrderResponseDTO(
+                order.getOrderId(),
+                order.getCustomer().getFullname(),
+                order.getTables().getTableNumber(),
+                order.getStatus().name(),
+                order.getTotalAmount(),
+                order.getPaymentStatus().name(),
+                items
+        );
     }
 
     @Transactional
