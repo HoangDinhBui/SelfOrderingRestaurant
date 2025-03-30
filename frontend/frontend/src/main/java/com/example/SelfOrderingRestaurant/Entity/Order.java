@@ -44,7 +44,7 @@ public class Order {
     private OrderStatus status = OrderStatus.PENDING;
 
     @Column(name = "total_amount", precision = 10, scale = 2)
-    private Long totalAmount;
+    private BigDecimal totalAmount;
 
     @Column(name = "discount", precision = 10, scale = 2)
     private BigDecimal discount;

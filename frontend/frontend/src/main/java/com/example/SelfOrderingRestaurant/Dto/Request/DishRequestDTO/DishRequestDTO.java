@@ -13,7 +13,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 public class DishRequestDTO {
     private String name;
-    private Long price;
+    private BigDecimal price;
     private Integer categoryId;
     private String description;
     private String image;

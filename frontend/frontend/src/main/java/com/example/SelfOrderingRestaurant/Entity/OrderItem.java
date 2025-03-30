@@ -34,7 +34,7 @@ public class OrderItem {
     private Integer quantity;
 
     @Column(name = "unit_price", precision = 10, scale = 2)
-    private Long unitPrice;
+    private BigDecimal unitPrice;
 
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;

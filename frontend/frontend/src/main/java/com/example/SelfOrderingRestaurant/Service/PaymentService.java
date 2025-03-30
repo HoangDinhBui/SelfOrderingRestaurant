@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
@@ -196,8 +197,7 @@ public class PaymentService {
 
                 // More robust verification
                 boolean isSuccessful =
-                        payment.getAmount() == Long.parseLong(amount)/100 &&
-                                // Additional checks can be added here
+                        payment.getAmount().compareTo(new BigDecimal(amount).divide(BigDecimal.valueOf(100))) == 0 &&
                                 txnRef.equals(payment.getTransactionId());
 
                 // Update payment status

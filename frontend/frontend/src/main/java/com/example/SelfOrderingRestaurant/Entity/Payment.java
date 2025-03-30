@@ -32,7 +32,7 @@ public class Payment {
     private Customer customer;
 
     @Column(name = "amount", precision = 10, scale = 2, nullable = false)
-    private Long amount;
+    private BigDecimal amount;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_method")
