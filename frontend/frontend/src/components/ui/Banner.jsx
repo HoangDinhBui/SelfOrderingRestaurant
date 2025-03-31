@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Banner = () => {
+  const navigate = useNavigate();
+
   const banners = [
     { image: "/src/assets/img/banner2.jpg", title: "Up to 40% OFF", subtitle: "ON YOUR FIRST ORDER" },
     { image: "/src/assets/img/callstaff.jpg", title: "Free Delivery", subtitle: "FOR ORDERS OVER $50" },
@@ -34,7 +37,10 @@ const Banner = () => {
       <div className="absolute inset-0 flex flex-col items-end justify-center p-4 text-white text-right">
         <h2 className="text-lg font-bold">{banners[currentIndex].title}</h2>
         <p className="text-xs mt-1">{banners[currentIndex].subtitle}</p>
-        <button className="mt-2 bg-white text-red-500 font-bold px-3 py-1 rounded-lg shadow-md hover:bg-gray-200">
+        <button
+          onClick={() => navigate("/order")} // Điều hướng đến trang Order
+          className="mt-2 bg-white text-red-500 font-bold px-3 py-1 rounded-lg shadow-md hover:bg-gray-200"
+        >
           ORDER NOW
         </button>
       </div>
