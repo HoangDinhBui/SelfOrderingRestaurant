@@ -29,6 +29,9 @@ const Order = () => {
     },
   ]);
 
+  const [showModal, setShowModal] = useState(false); // State để điều khiển modal
+  const [showConfirmation, setShowConfirmation] = useState(false);
+
   // Tính tổng tiền
   const totalPrice = cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
 
@@ -46,6 +49,12 @@ const Order = () => {
   // Xử lý xóa món ăn
   const removeItem = (id) => {
     setCartItems((prevItems) => prevItems.filter((item) => item.id !== id));
+  };
+
+  // Xử lý khi nhấn "YES" trong modal
+  const handleConfirmOrder = () => {
+    setShowModal(false); // Đóng modal
+    setShowConfirmation(true); // Hiển thị bảng mới
   };
 
   return (
@@ -171,7 +180,10 @@ const Order = () => {
                       +
                     </button>
                   </div>
-                  <button className="bg-gray-200 px-4 py-2 rounded-lg hover:bg-gray-300">
+                  <button
+                    onClick={() => navigate(`/note/${item.id}`, { state: { name: item.name } })} // Truyền tên món ăn qua state
+                    className="!bg-gray-400 text-white px-4 py-2 rounded-lg hover:bg-gray-800"
+                  >
                     Note
                   </button>
                 </div>
@@ -183,7 +195,10 @@ const Order = () => {
         {/* Tổng tiền */}
         <div className="mt-6 flex justify-between items-center w-full max-w-2xl">
           {/* Nút Order */}
-          <button className="!bg-red-500 text-white py-2 px-6 rounded-lg flex items-center hover:bg-red-600">
+          <button
+            onClick={() => setShowModal(true)} // Hiển thị modal khi nhấn Order
+            className="!bg-red-500 text-white py-2 px-6 rounded-lg flex items-center hover:bg-red-600"
+          >
             Order
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -206,6 +221,94 @@ const Order = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal */}
+      {showModal && (
+        <div className="fixed inset-0  bg-opacity-20 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="relative bg-white p-6 rounded-lg shadow-lg w-96 border border-gray-300">
+            {/* Nút đóng modal */}
+            <button
+              onClick={() => setShowModal(false)} // Đóng modal
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-800"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="2"
+                stroke="currentColor"
+                className="w-6 h-6"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+
+            {/* Nội dung modal */}
+            <img
+              src="/src/assets/img/logo.jpg" // Đường dẫn đến logo
+              alt="Restaurant Logo"
+              className="mx-auto mb-4 w-50 h-50 object-contain" // Căn giữa và chỉnh kích thước logo
+            />
+            <p className="text-center text-gray-700 mb-6">
+              ARE YOU SURE YOU WANT TO ORDER THESE DISHES?
+            </p>
+            <div className="flex justify-center space-x-4">
+              <button
+                onClick={handleConfirmOrder}
+                className="!bg-black text-white px-6 py-2 rounded-lg hover:bg-gray-800"
+              >
+                YES
+              </button>
+              <button
+                onClick={() => setShowModal(false)} // Đóng modal
+                className="!bg-gray-200 border border-black text-black px-6 py-2 rounded-lg hover:bg-gray-200"
+              >
+                NO
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bảng mới */}
+      {showConfirmation && (
+        <div className="fixed inset-0  bg-opacity-20 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="relative bg-white p-6 rounded-lg shadow-lg w-96 border border-gray-300">
+            {/* Nút đóng modal */}
+            <button
+              onClick={() => setShowConfirmation(false)} // Đóng modal
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-800"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="2"
+                stroke="currentColor"
+                className="w-6 h-6"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+            <img
+              src="/src/assets/img/logo.jpg" // Đường dẫn đến logo
+              alt="Restaurant Logo"
+              className="mx-auto mb-4 w-50 h-50 object-contain" // Căn giữa và chỉnh kích thước logo
+            />
+            <p className="text-center text-gray-700 mb-6">
+              WE HAVE RECEIVED YOUR PAYMENT REQUEST, PLEASE WAIT A MOMENT
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
