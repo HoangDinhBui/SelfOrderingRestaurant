@@ -106,39 +106,37 @@ const Menu = () => {
         </div>
 
         <div className="space-y-4">
-          {menuItems.map((item) => (
-            <div key={item.id} className="bg-white rounded-lg shadow-sm flex items-center p-3">
-              <div className="w-32 h-32 flex-shrink-0">
-                <img 
-                  src={item.image} 
-                  alt={item.name} 
-                  className="w-full h-full object-cover rounded-lg"
-                />
+        {menuItems.map((item) => (
+          <div key={item.id} className="bg-white rounded-lg shadow-sm flex items-center p-3">
+            <div className="w-32 h-32 flex-shrink-0">
+              <img 
+                src={item.image} 
+                alt={item.name} 
+                className="w-full h-full object-cover rounded-lg"
+              />
+            </div>
+            <div className="flex-1 ml-4">
+              <h3 className="font-bold text-lg text-left">{item.name}</h3>
+              <div className="flex items-center mt-1">
+                <span className="font-bold text-black text-lg">{item.discountedPrice}</span>
+                <span className="text-gray-400 text-sm line-through ml-2">{item.originalPrice}</span>
               </div>
-              <div className="flex-1 ml-4">
-                <h3 className="font-bold text-lg text-left">{item.name}</h3>
-                <div className="flex items-center mt-1">
-                  <span className="font-bold text-black text-lg">{item.discountedPrice}</span>
-                  <span className="text-gray-400 text-sm line-through ml-2">{item.originalPrice}</span>
-                </div>
-                <div className="flex items-center mt-1">
-                  <span className="text-yellow-500 text-lg">★</span>
-                  <span className="ml-1 text-sm">{item.rating}</span>
-                  <span className="ml-2 text-sm text-gray-600">{item.category}</span>
-                </div>
-                <div className="flex justify-between items-center mt-2">
-                  <p className="font-bold text-lg">{item.price}</p>
-                  <button className="!bg-red-400 text-white py-2 px-6 rounded-lg flex items-center">
-                    View 
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                    </svg>
-                  </button>
-                </div>
+              <div className="flex justify-between items-center mt-2">
+                <p className="font-bold text-lg">{item.price}</p>
+                <button
+                  onClick={() => navigate(`/view/${item.id}`)} // Điều hướng đến trang chi tiết
+                  className="!bg-red-400 text-white py-2 px-6 rounded-lg flex items-center"
+                >
+                  View
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                  </svg>
+                </button>
               </div>
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
+      </div>
       </div>
     </div>
   );
