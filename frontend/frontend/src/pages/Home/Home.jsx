@@ -1,6 +1,7 @@
 import Header from "../../components/layout/Header";
 import Banner from "../../components/ui/Banner";
 import Button from "../../components/ui/Button";
+import { useNavigate } from "react-router-dom";
 
 const Home = () => {
   const specialDishes = [
@@ -8,8 +9,10 @@ const Home = () => {
     { name: "Beef-steak", price: "10.99", image: "/src/assets/img/TodaySpecial2.jpg", type: "Meat" }
   ];
 
+  const navigate = useNavigate(); // Sử dụng useNavigate để chuyển hướng
+
   return (
-    <div className="container mx-auto p-4">
+    <div className="px-2 py-4">
       <Header />
       <Banner />
 
@@ -38,7 +41,7 @@ const Home = () => {
               href="/login"
               className="absolute inset-0 flex items-center justify-center bg-black/20 font-bold rounded-lg"
             >
-             
+              Login
             </a>
           </div>
         </div>
@@ -62,7 +65,7 @@ const Home = () => {
           {/* Nút Call Payment */}
           <div className="relative">
             <button
-              className="absolute inset-0 flex items-center justify-center text-black font-bold rounded-lg "
+              className="absolute inset-0 flex items-center justify-center text-black font-bold rounded-lg"
               style={{
                 backgroundImage: "url('/src/assets/img/callpayment.jpg')",
                 backgroundSize: "cover",
@@ -76,6 +79,7 @@ const Home = () => {
           {/* Nút View Menu - Order */}
           <div className="relative col-span-2">
             <button
+              onClick={() => navigate("/menu")} // Chuyển hướng đến trang Menu
               className="absolute inset-0 flex items-center justify-center text-black font-bold rounded-lg"
               style={{
                 backgroundImage: "url('/src/assets/img/viewmenu.jpg')",
