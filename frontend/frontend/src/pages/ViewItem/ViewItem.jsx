@@ -99,9 +99,12 @@ const ViewItem = () => {
                     <span className="text-sm text-gray-600">{item.category}</span>
                 </div>
             </div>
-          <button className="!bg-gray-400 px-4 py-2 rounded-lg hover:bg-gray-300">
-            Note
-          </button>
+            <button
+              onClick={() => navigate(`/note/${id}`, { state: { name: item.name } })} // Truyền tên món ăn qua state
+              className="!bg-gray-400 text-white px-4 py-2 rounded-lg hover:bg-gray-800"
+            >
+              Note
+            </button>
         </div>
 
         {/* Mô tả */}
