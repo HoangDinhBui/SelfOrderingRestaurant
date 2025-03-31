@@ -40,6 +40,7 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/api/auth/login").permitAll()
                         // Cho phép truy cập không cần xác thực cho auth và customer endpoints
                         .requestMatchers("/api/auth/**",
                                 "/api/customer/**",
@@ -48,6 +49,7 @@ public class SecurityConfig {
                                 "/api/orders/**",
                                 "/api/menu",
                                 "/api/menu/**",
+                                "/api/notifications/**",
                                 "/error").permitAll()
 
                         // Yêu cầu vai trò STAFF hoặc ADMIN cho các endpoints của staff

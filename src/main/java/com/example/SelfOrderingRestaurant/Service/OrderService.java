@@ -45,8 +45,13 @@ public class OrderService {
         } else {
             // Create a temporary customer for walk-in orders
             customer = new Customer();
-            customer.setFullname(request.getCustomerName() != null ?
-                    request.getCustomerName() : "Walk-in Customer");
+            String guestName = request.getCustomerName();
+            if (guestName == null || guestName.trim().isEmpty()) {
+                // Create a timestamp-based unique ID for the guest
+                String uniqueId = String.valueOf(System.currentTimeMillis());
+                guestName = "Guest_" + uniqueId;
+            }
+            customer.setFullname(guestName);
             customer.setJoinDate(new Date());
             customer.setPoints(0);
             customer = customerRepository.save(customer);
