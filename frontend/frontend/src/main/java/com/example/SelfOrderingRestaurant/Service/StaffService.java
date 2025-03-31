@@ -50,15 +50,15 @@ public class StaffService {
         Shift shift = shiftRepository.findById(shiftId)
                 .orElseThrow(() -> new RuntimeException("Shift not found"));
 
-        boolean alreadyAssigned = staffShiftRepository.existsByStaffAndShiftAndDate(staff, shift, date);
-        if (alreadyAssigned) {
-            throw new RuntimeException("Staff is already assigned to this shift on this date.");
+        if (staffShiftRepository.existsByStaffAndShiftAndDate(staff, shift, date)) {
+            throw new RuntimeException("Staff is already assigned to this shift on this date");
         }
 
         StaffShift staffShift = new StaffShift();
         staffShift.setStaff(staff);
         staffShift.setShift(shift);
         staffShift.setDate(date);
+        staffShift.setStatus(StaffShiftStatus.ASSIGNED);
 
         staffShiftRepository.save(staffShift);
     }

@@ -103,7 +103,7 @@ public class AuthService {
     public AuthResponseDto login(LoginRequestDto request) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
-                        request.getUsernameOrEmail(),
+                        request.getLogin(),
                         request.getPassword()
                 )
         );
@@ -111,8 +111,8 @@ public class AuthService {
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         User user = userRepository.findByUsernameOrEmail(
-                request.getUsernameOrEmail(),
-                request.getUsernameOrEmail()
+                request.getLogin(),
+                request.getLogin()
         ).orElseThrow(() -> new RuntimeException("User not found"));
 
         // Update last login
