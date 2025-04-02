@@ -60,33 +60,7 @@ const Order = () => {
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col items-center">
       {/* Header */}
-      <div className="bg-white py-3 shadow-md sticky top-0 z-10 w-full">
-        <div className="container mx-auto flex items-center justify-between px-4">
-          {/* Nút quay lại */}
-          <button
-            onClick={() => navigate("/")}
-            className="p-2 rounded-full bg-gray-200 hover:bg-gray-300"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth="2"
-              stroke="currentColor"
-              className="w-4 h-4"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-
-          {/* Tiêu đề căn giữa */}
-          <div className="text-lg font-bold text-center flex-1">Back To Menu</div>
-
-          {/* Phần trống để giữ cân bằng */}
-          <div className="w-8"></div>
-        </div>
-      </div>
-
+      
       {/* Input Search */}
       <div className="container mx-auto p-4">
         <input
@@ -96,6 +70,45 @@ const Order = () => {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
+
+        {/* Nút Menu và Home */}
+        <div className="flex justify-between mt-4">
+          {/* Nút Menu */}
+          <button
+            onClick={() => navigate("/menu")} // Điều hướng về trang Menu
+            className="p-2 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center !font-bold "
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+              stroke="currentColor"
+              className="w-4 h-4 mr-1"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+            Menu
+          </button>
+
+          {/* Nút Home */}
+          <button
+            onClick={() => navigate("/")} // Điều hướng về trang Home
+            className="p-2 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center !font-bold"
+          >
+            Home
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth="2"
+              stroke="currentColor"
+              className="w-4 h-4 ml-1"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M7 7l10 10M7 17L17 7" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       {/* Danh sách món ăn đã chọn */}
@@ -157,7 +170,7 @@ const Order = () => {
                   </div>
                   <button
                     onClick={() => removeItem(item.id)}
-                    className="text-red-500 hover:text-red-700"
+                    className="!bg-gray-200 text-red-500 hover:text-red-700"
                   >
                     ✕
                   </button>
@@ -168,14 +181,14 @@ const Order = () => {
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={() => updateQuantity(item.id, -1)}
-                      className="bg-gray-200 px-2 py-1 rounded hover:bg-gray-300"
+                      className="!bg-gray-200 px-2 py-1 rounded hover:bg-gray-300"
                     >
                       -
                     </button>
-                    <span className="text-sm">{item.quantity}</span>
+                    <span className=" text-sm">{item.quantity}</span>
                     <button
                       onClick={() => updateQuantity(item.id, 1)}
-                      className="bg-gray-200 px-2 py-1 rounded hover:bg-gray-300"
+                      className="!bg-gray-200 px-2 py-1 rounded hover:bg-gray-300"
                     >
                       +
                     </button>

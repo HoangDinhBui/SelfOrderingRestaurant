@@ -5,6 +5,7 @@ import Menu from './pages/Menu/Menu';
 import Order from './pages/Order/Order'; // Import trang Order
 import ViewItem from "./pages/ViewItem/ViewItem";
 import Note from "./pages/Note/Note";
+import Payment from "./pages/PayMent/Payment";
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
         <Route path="/order" element={<Order />} /> {/* Thêm route cho trang Order */}
         <Route path="/view/:id" element={<ViewItem />} />
         <Route path="/note/:id" element={<Note />} />
+        <Route path="/payment" element={<Payment />} />
       </Routes>
     </Router>
   );
