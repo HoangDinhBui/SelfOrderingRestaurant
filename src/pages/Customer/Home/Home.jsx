@@ -1,6 +1,6 @@
-import Header from "../../components/layout/Header";
-import Banner from "../../components/ui/Banner";
-import Button from "../../components/ui/Button";
+import Header from "../../../components/layout/Header";
+import Banner from "../../../components/ui/Banner";
+import Button from "../../../components/ui/Button";
 import { useNavigate } from "react-router-dom";
 
 const Home = () => {
