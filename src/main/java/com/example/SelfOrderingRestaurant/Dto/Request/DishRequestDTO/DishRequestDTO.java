@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 
@@ -16,6 +17,6 @@ public class DishRequestDTO {
     private BigDecimal price;
     private Integer categoryId;
     private String description;
-    private String image;
+    private MultipartFile image;
     private DishStatus status;
 }

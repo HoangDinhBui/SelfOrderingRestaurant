@@ -41,7 +41,6 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/auth/login").permitAll()
-                        // Cho phép truy cập không cần xác thực cho auth và customer endpoints
                         .requestMatchers("/api/auth/**",
                                 "/api/customer/**",
                                 "api/payment/**",

@@ -8,7 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("api/suppliers")
+@RequestMapping("api/admin/suppliers")
 public class SupplierController {
     @Autowired
     private SupplierService supplierService;
