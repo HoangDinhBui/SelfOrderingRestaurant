@@ -65,6 +65,7 @@ const Home = () => {
           {/* Nút Call Payment */}
           <div className="relative">
             <button
+              onClick={() => navigate("/payment")} // Chuyển hướng đến trang Payment
               className="absolute inset-0 flex items-center justify-center text-black font-bold rounded-lg"
               style={{
                 backgroundImage: "url('/src/assets/img/callpayment.jpg')",
