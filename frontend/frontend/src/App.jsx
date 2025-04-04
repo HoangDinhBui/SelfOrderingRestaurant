@@ -8,7 +8,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 // import Evaluate from "./pages/Customer/Evaluate/Evaluate";
 import Login from "./pages/Staff/Login/Login";
 import StaffInformation from "./pages/Staff/StaffInformation/StaffInformation";
-
+import OrderManagement from "./pages/Staff/OrderManagement/OrderManagement";
 function App() {
   return (
     <Router>
@@ -22,7 +22,8 @@ function App() {
           <Route path="/evaluate" element={<Evaluate />} />  */}
           <Route path="/login" element={<Login />} /> 
           <Route path="/staff-information" element={<StaffInformation />} />
-
+          <Route path="/order-management" element={<OrderManagement />} />
+        
         
 
           
