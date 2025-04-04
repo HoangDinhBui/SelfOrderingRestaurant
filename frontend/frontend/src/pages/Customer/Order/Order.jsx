@@ -412,7 +412,17 @@ const Order = () => {
           <div className="mt-6 flex justify-between items-center w-full max-w-2xl">
             <button
               onClick={() => setShowModal(true)}
-              className="bg-red-500 text-white py-2 px-6 rounded-lg flex items-center hover:bg-red-600"
+              style={{
+                backgroundColor: "#f87171",
+                color: "white",
+                padding: "0.5rem 1.5rem",
+                borderRadius: "0.5rem",
+                display: "flex",
+                alignItems: "center",
+                transition: "background-color 0.3s ease",
+              }}
+              onMouseEnter={(e) => (e.target.style.backgroundColor = "#f65b5b")}
+              onMouseLeave={(e) => (e.target.style.backgroundColor = "#f87171")}
             >
               Order
               <svg
@@ -430,6 +440,7 @@ const Order = () => {
                 />
               </svg>
             </button>
+
             <div className="border border-gray-300 rounded-lg px-4 py-2 bg-white flex items-center">
               <p className="text-lg font-bold">
                 {totalPrice.toLocaleString()} VND
@@ -478,13 +489,38 @@ const Order = () => {
             <div className="flex justify-center space-x-4">
               <button
                 onClick={createOrder}
-                className="bg-black text-white px-6 py-2 rounded-lg hover:bg-gray-800"
+                style={{
+                  backgroundColor: "#34D399", // Màu xanh lá
+                  color: "white",
+                  padding: "0.5rem 1.5rem",
+                  borderRadius: "0.5rem",
+                  transition: "background-color 0.3s ease",
+                }}
+                onMouseEnter={(e) =>
+                  (e.target.style.backgroundColor = "#10B981")
+                } // Màu xanh lá đậm khi hover
+                onMouseLeave={(e) =>
+                  (e.target.style.backgroundColor = "#34D399")
+                } // Trả về màu xanh lá ban đầu khi rời chuột
               >
                 Yes
               </button>
+
               <button
                 onClick={() => setShowModal(false)}
-                className="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400"
+                style={{
+                  backgroundColor: "#E2E8F0", // Màu xám nhạt
+                  color: "#4A5568", // Màu chữ xám đậm
+                  padding: "0.5rem 1.5rem",
+                  borderRadius: "0.5rem",
+                  transition: "background-color 0.3s ease",
+                }}
+                onMouseEnter={(e) =>
+                  (e.target.style.backgroundColor = "#CBD5E0")
+                } // Màu xám trung bình khi hover
+                onMouseLeave={(e) =>
+                  (e.target.style.backgroundColor = "#E2E8F0")
+                } // Trả về màu xám nhạt ban đầu khi rời chuột
               >
                 No
               </button>
