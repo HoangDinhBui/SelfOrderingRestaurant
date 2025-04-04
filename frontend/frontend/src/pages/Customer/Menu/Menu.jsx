@@ -1,8 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { useContext } from "react";
+import { MenuContext } from "../../../context/MenuContext";
+
 import axios from "axios";
 
 const Menu = () => {
+  const { getDishById } = useContext(MenuContext);
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -28,28 +32,49 @@ const Menu = () => {
         setMenuItems(response.data);
         setLoading(false);
       })
-      .catch(() => {
+      .catch((error) => {
+        console.error("Error loading menu:", error);
         setError("Failed to load menu. Please try again!");
         setLoading(false);
       });
   }, []);
 
-  const categoryMap = {
-    1: "Appetizers", // Assuming GarlicBread is an appetizer
-    2: "Main Course", // Assuming Steak is a main course
-    3: "Appetizers", // Assuming Spaghetti Carbonara is an appetizer
-    // Add more mappings as needed
+  // Function to handle the View button click
+  const handleViewDish = async (dishId) => {
+    try {
+      // First, show loading state
+      setLoading(true);
+
+      // Make API call to get dish details
+      // Use context's getDishById instead of direct axios call
+      const dishData = await getDishById(dishId);
+
+      // Store dish details in localStorage
+      localStorage.setItem("currentDish", JSON.stringify(dishData));
+
+      // Navigate to dish details page
+      navigate(`/view/${dishId}`);
+    } catch (error) {
+      console.error(`Error fetching dish ${dishId}:`, error);
+      setError("Failed to load dish details. Please try again!");
+      setLoading(false);
+    }
   };
 
   // Filter dishes based on search term and selected category
   const filteredItems = menuItems.filter((item) => {
-    const matchesSearch = item.dishName
+    // Handle potential null or undefined values for dishName
+    const itemName = item.dishName || item.name || "";
+    const matchesSearch = itemName
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
-    const itemCategory = categoryMap[item.dishId] || "";
+
+    // Use categoryName from the API response instead of the hardcoded categoryMap
     const matchesCategory =
       selectedCategory === "All" ||
-      itemCategory.toLowerCase() === selectedCategory.toLowerCase();
+      (item.categoryName &&
+        item.categoryName.toLowerCase() === selectedCategory.toLowerCase());
+
     return matchesSearch && matchesCategory;
   });
 
@@ -108,7 +133,7 @@ const Menu = () => {
             <h3 className="font-bold text-lg">Select Category</h3>
           </div>
 
-          {/* Updated category buttons to match design */}
+          {/* Category buttons */}
           <div className="grid grid-cols-4 gap-2">
             {categories.map((category) => (
               <button
@@ -144,7 +169,7 @@ const Menu = () => {
                   <div className="w-24 h-24 flex-shrink-0">
                     <img
                       src={item.imageUrl || "/placeholder-dish.jpg"}
-                      alt={item.dishName}
+                      alt={item.dishName || item.name || "Dish"}
                       className="w-full h-full object-cover rounded-lg"
                       onError={(e) => {
                         e.target.onerror = null;
@@ -153,7 +178,9 @@ const Menu = () => {
                     />
                   </div>
                   <div className="flex-1 ml-4">
-                    <h3 className="font-bold text-lg">{item.dishName}</h3>
+                    <h3 className="font-bold text-lg">
+                      {item.dishName || item.name}
+                    </h3>
                     <div className="text-gray-500 text-sm mt-1">
                       ⭐ {item.categoryName}
                     </div>
@@ -161,13 +188,13 @@ const Menu = () => {
                       <div
                         className="font-semibold text-lg p-2 px-4 rounded-lg bg-gray-100 text-gray-800"
                         style={{
-                          border: "1px solid #e5e7eb", // Thêm border để tạo shape
+                          border: "1px solid #e5e7eb",
                         }}
                       >
-                        {Number(item.price)} VND
+                        {Number(item.price).toLocaleString()} VND
                       </div>
                       <button
-                        onClick={() => navigate(`/view/${item.dishId}`)}
+                        onClick={() => handleViewDish(item.dishId)}
                         style={{
                           backgroundColor: "#f87171",
                           color: "white",
@@ -176,7 +203,7 @@ const Menu = () => {
                           transition: "background-color 200ms",
                         }}
                         onMouseOver={(e) =>
-                          (e.currentTarget.style.backgroundColor = "#f87171")
+                          (e.currentTarget.style.backgroundColor = "#ef4444")
                         }
                         onMouseOut={(e) =>
                           (e.currentTarget.style.backgroundColor = "#f87171")
