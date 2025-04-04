@@ -1,36 +1,79 @@
+import { useEffect } from "react";
 import Header from "../../../components/layout/Header";
 import Banner from "../../../components/ui/Banner";
-import Button from "../../../components/ui/Button";
 import { useNavigate } from "react-router-dom";
+import { useContext } from "react";
+import { CartContext } from "../../../context/CartContext";
 
 const Home = () => {
+  const { cartItemCount, loading, fetchCartData } = useContext(CartContext);
+  const navigate = useNavigate();
+
   const specialDishes = [
-    { name: "Lemon Macarons", price: "10.99", image: "/src/assets/img/TodaySpeacial1.jpg", type: "Cake" },
-    { name: "Beef-steak", price: "10.99", image: "/src/assets/img/TodaySpecial2.jpg", type: "Meat" }
+    {
+      name: "Lemon Macarons",
+      price: "10.99",
+      image: "/src/assets/img/TodaySpeacial1.jpg",
+      type: "Cake",
+    },
+    {
+      name: "Beef-steak",
+      price: "10.99",
+      image: "/src/assets/img/TodaySpecial2.jpg",
+      type: "Meat",
+    },
   ];
 
-  const navigate = useNavigate(); // Sử dụng useNavigate để chuyển hướng
+  // Fetch cart data when component mounts
+  useEffect(() => {
+    // Try to load from localStorage first
+    const cachedCartData = localStorage.getItem("cartData");
+    if (cachedCartData) {
+      try {
+        const parsedData = JSON.parse(cachedCartData);
+        // Note: We don't need to set cart item count here as it's managed by the context
+      } catch (e) {
+        console.error("Error parsing cached cart data", e);
+      }
+    }
+
+    // Then fetch fresh data from the server
+    fetchCartData();
+  }, []);
+
+  // Handler for Order Now button
+  const handleOrderNow = async () => {
+    try {
+      // Refresh cart data before navigating
+      await fetchCartData();
+      // Navigate to Order page
+      navigate("/order");
+    } catch (err) {
+      console.error("Error navigating to order page:", err);
+    }
+  };
 
   return (
     <div className="px-2 py-4">
       <Header />
       <Banner />
 
-      {/* Bố cục 2 cột */}
+      {/* 2-column layout */}
       <section className="mt-4 grid grid-cols-2 gap-4">
-        {/* Cột bên trái */}
+        {/* Left column */}
         <div>
-          {/* Thông tin khách hàng */}
+          {/* Customer information */}
           <div className="text-center mb-4">
             <p className="text-lg">
-              Good Morning <span className="text-blue-500 font-semibold">Customer!</span>
+              Good Morning{" "}
+              <span className="text-blue-500 font-semibold">Customer!</span>
             </p>
             <p className="text-gray-600">
               We will deliver your food to your table: <strong>A6</strong>
             </p>
           </div>
 
-          {/* Nút Login */}
+          {/* Login button */}
           <div className="relative">
             <img
               src="/src/assets/img/homelogin.jpg"
@@ -46,9 +89,9 @@ const Home = () => {
           </div>
         </div>
 
-        {/* Cột bên phải */}
+        {/* Right column */}
         <div className="grid grid-cols-2 gap-4">
-          {/* Nút Call Staff */}
+          {/* Call Staff button */}
           <div className="relative">
             <button
               className="absolute inset-0 flex items-center justify-center text-black font-bold rounded-lg"
@@ -62,10 +105,10 @@ const Home = () => {
             </button>
           </div>
 
-          {/* Nút Call Payment */}
+          {/* Call Payment button */}
           <div className="relative">
             <button
-              onClick={() => navigate("/payment")} // Chuyển hướng đến trang Payment
+              onClick={() => navigate("/payment")}
               className="absolute inset-0 flex items-center justify-center text-black font-bold rounded-lg"
               style={{
                 backgroundImage: "url('/src/assets/img/callpayment.jpg')",
@@ -77,10 +120,10 @@ const Home = () => {
             </button>
           </div>
 
-          {/* Nút View Menu - Order */}
+          {/* View Menu - Order button */}
           <div className="relative col-span-2">
             <button
-              onClick={() => navigate("/menu")} // Chuyển hướng đến trang Menu
+              onClick={() => navigate("/menu")}
               className="absolute inset-0 flex items-center justify-center text-black font-bold rounded-lg"
               style={{
                 backgroundImage: "url('/src/assets/img/viewmenu.jpg')",
@@ -94,9 +137,31 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Danh sách món ăn đặc biệt */}
+      {/* Order Now button with cart info */}
       <section className="mt-6">
-        {/* Tiêu đề và nút mũi tên */}
+        <button
+          onClick={handleOrderNow}
+          className="w-full bg-red-500 text-white py-3 rounded-lg font-bold flex items-center justify-center relative"
+          disabled={loading}
+        >
+          {loading ? (
+            <span>Loading...</span>
+          ) : (
+            <>
+              Order Now
+              {cartItemCount > 0 && (
+                <span className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white text-red-500 rounded-full h-6 w-6 flex items-center justify-center text-sm font-bold">
+                  {cartItemCount}
+                </span>
+              )}
+            </>
+          )}
+        </button>
+      </section>
+
+      {/* Today's special dishes */}
+      <section className="mt-6">
+        {/* Title and arrow button */}
         <div className="flex items-center space-x-2 mb-3">
           <h2 className="text-xl font-bold">Today's Special</h2>
           <button className="text-black text-sm font-semibold flex items-center">
@@ -108,26 +173,30 @@ const Home = () => {
               stroke="currentColor"
               className="w-4 h-4 ml-1"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M9 5l7 7-7 7"
+              />
             </svg>
           </button>
         </div>
 
-        {/* Danh sách món ăn */}
+        {/* Dish list */}
         <div className="grid grid-cols-2 gap-4">
           {specialDishes.map((dish, index) => (
             <div key={index} className="flex flex-col items-start">
-              {/* Hình ảnh món ăn */}
+              {/* Dish image */}
               <img
                 src={dish.image}
                 alt={dish.name}
                 className="w-full h-[150px] object-cover rounded-lg mb-2"
               />
-              {/* Loại món ăn */}
+              {/* Dish type */}
               <p className="text-sm text-gray-500">{dish.type}</p>
-              {/* Tên món ăn */}
+              {/* Dish name */}
               <p className="text-lg font-semibold">{dish.name}</p>
-              {/* Giá món ăn */}
+              {/* Dish price */}
               <p className="text-sm font-bold text-gray-800">${dish.price}</p>
             </div>
           ))}
