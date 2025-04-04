@@ -1,7 +1,9 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { MenuProvider } from "./context/MenuContext";
+import { CartProvider } from "./context/CartContext"; // Đã thêm CartProvider
 import Home from "./pages/Customer/Home/Home";
 import Menu from "./pages/Customer/Menu/Menu";
+import Order from "./pages/Customer/Order/Order";
 import Order from "./pages/Customer/Order/Order";
 import ViewItem from "./pages/Customer/ViewItem/ViewItem";
 import Note from "./pages/Customer/Note/Note";
@@ -13,31 +15,31 @@ import StaffInformation from "./pages/Staff/StaffInformation/StaffInformation";
 import OrderManagement from "./pages/Staff/OrderManagement/OrderManagement";
 import NotificationManagement from "./pages/Staff/NotificationManagement/NotificationManagement";
 import DishManagement from "./pages/Staff/DishManagement/DishManagement";
+import Login from "./pages/Staff/Login";
+import "./axiosConfig";
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        {/* Customer routes (commented out) */}
-        <Route path="/" element={<Home />} />
-        <Route path="/menu" element={<Menu />} />
-        <Route path="/order" element={<Order />} />
-        <Route path="/view/:id" element={<ViewItem />} />
-        <Route path="/note/:id" element={<Note />} />
-        <Route path="/payment" element={<Payment />} />
-        <Route path="/evaluate" element={<Evaluate />} />
-
-        {/* Staff/Admin routes */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/staff-information" element={<StaffInformation />} />
-        <Route path="/order-management" element={<OrderManagement />} />
-        <Route
-          path="/notification-management"
-          element={<NotificationManagement />}
-        />
-        <Route path="/dish-management" element={<DishManagement />} />
-      </Routes>
-    </Router>
+    <CartProvider>
+      {" "}
+      {/* Bọc toàn bộ ứng dụng trong CartProvider */}
+      <MenuProvider>
+        {" "}
+        {/* MenuProvider vẫn được giữ nguyên */}
+        <Router>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/menu" element={<Menu />} />
+            <Route path="/order" element={<Order />} />
+            <Route path="/view/:id" element={<ViewItem />} />
+            <Route path="/note/:id" element={<Note />} />
+            <Route path="/payment" element={<Payment />} />
+            <Route path="/evaluate" element={<Evaluate />} />
+            <Route path="/login" element={<Login />} />
+          </Routes>
+        </Router>
+      </MenuProvider>
+    </CartProvider>
   );
 }
 
