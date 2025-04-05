@@ -11,6 +11,7 @@ const Order = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [tableId, setTableId] = useState(1); // Default table ID
+  const [processingOrder, setProcessingOrder] = useState(false);
   const {
     cartItems,
     setCartItems,
@@ -132,9 +133,11 @@ const Order = () => {
     }
   };
 
-  // Create order via API
+  // Create order via API and process payment
   const createOrder = async () => {
     try {
+      setProcessingOrder(true);
+
       const orderData = {
         tableId: tableId,
         customerName: "Guest",
@@ -146,7 +149,27 @@ const Order = () => {
         notes: "",
       };
 
-      await axios.post(`${API_BASE_URL}/api/orders`, orderData);
+      // Create the order first
+      const orderResponse = await axios.post(
+        `${API_BASE_URL}/api/orders`,
+        orderData
+      );
+
+      // Get the orderId from the response
+      let orderId;
+      if (orderResponse.data && orderResponse.data.orderId) {
+        orderId = orderResponse.data.orderId;
+      } else {
+        console.error("Order created but no orderId returned");
+        throw new Error("Could not get orderId from response");
+      }
+
+      // Process the payment with default "CASH" method
+      await axios.post(`${API_BASE_URL}/api/payment/process`, {
+        orderId: orderId,
+        paymentMethod: "CASH", // Default to cash payment
+      });
+
       setShowModal(false);
       setShowConfirmation(true);
 
@@ -154,15 +177,17 @@ const Order = () => {
       setCartItems([]);
       localStorage.removeItem("cartData");
 
-      // After a few seconds, navigate back to menu
+      // After a few seconds, navigate to payment page
       setTimeout(() => {
         setShowConfirmation(false);
-        navigate("/menu");
+        navigate(`/payment?orderId=${orderId}`);
       }, 3000);
     } catch (err) {
-      console.error("Error creating order:", err);
-      setError("Failed to create order. Please try again.");
+      console.error("Error in order/payment flow:", err);
+      setError("Failed to process your order. Please try again.");
       setShowModal(false);
+    } finally {
+      setProcessingOrder(false);
     }
   };
 
@@ -322,7 +347,7 @@ const Order = () => {
               <p className="text-gray-500">Your cart is empty</p>
               <button
                 onClick={() => navigate("/menu")}
-                className="mt-4 bg-red-500 text-white py-2 px-6 rounded-lg"
+                className="mt-4 !bg-red-500 text-white py-2 px-6 rounded-lg"
               >
                 Browse Menu
               </button>
@@ -384,19 +409,7 @@ const Order = () => {
                           state: { name: item.dishName },
                         })
                       }
-                      style={{
-                        backgroundColor: "#b0b0b0", // Màu nền xám
-                        color: "white", // Màu chữ trắng
-                        padding: "0.5rem 1rem", // Padding cho nút
-                        borderRadius: "0.5rem", // Border radius cho nút
-                        transition: "background-color 0.3s ease", // Hiệu ứng chuyển màu khi hover
-                      }}
-                      onMouseEnter={(e) =>
-                        (e.target.style.backgroundColor = "#808080")
-                      } // Khi hover, đổi màu nền
-                      onMouseLeave={(e) =>
-                        (e.target.style.backgroundColor = "#b0b0b0")
-                      } // Khi không hover, trả về màu ban đầu
+                      className="!bg-rose-400 text-white px-4 py-1 rounded-md hover:bg-rose-500 transition duration-300"
                     >
                       Note
                     </button>
@@ -412,9 +425,9 @@ const Order = () => {
           <div className="mt-6 flex justify-between items-center w-full max-w-2xl">
             <button
               onClick={() => setShowModal(true)}
-              className="bg-red-500 text-white py-2 px-6 rounded-lg flex items-center hover:bg-red-600"
+              className="!bg-red-400 text-white px-6 py-2 rounded-lg flex items-center hover:bg-red-500 transition-colors duration-300"
             >
-              Order
+              {processingOrder ? "Processing..." : "Order"}
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 className="h-5 w-5 ml-2"
@@ -441,7 +454,7 @@ const Order = () => {
 
       {/* Confirmation Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-20 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-opacity-20 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="relative bg-white p-6 rounded-lg shadow-lg w-96 border border-gray-300">
             <button
               onClick={() => setShowModal(false)}
@@ -478,13 +491,13 @@ const Order = () => {
             <div className="flex justify-center space-x-4">
               <button
                 onClick={createOrder}
-                className="bg-black text-white px-6 py-2 rounded-lg hover:bg-gray-800"
+                className="!bg-green-400 text-white px-6 py-2 rounded-lg hover:bg-green-500 transition-colors duration-300"
               >
-                Yes
+                {processingOrder ? "Processing..." : "Yes"}
               </button>
               <button
                 onClick={() => setShowModal(false)}
-                className="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400"
+                className="bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-6 rounded-lg transition"
               >
                 No
               </button>
@@ -513,10 +526,10 @@ const Order = () => {
             </svg>
             <h3 className="text-xl font-bold mb-2">Order Successful!</h3>
             <p className="text-gray-600 mb-4">
-              Your order has been placed successfully. Please wait for the staff
-              to prepare your dishes.
+              Your order has been placed successfully. You will be redirected to
+              the payment page.
             </p>
-            <p className="text-sm text-gray-500">Redirecting to menu...</p>
+            <p className="text-sm text-gray-500">Redirecting...</p>
           </div>
         </div>
       )}
