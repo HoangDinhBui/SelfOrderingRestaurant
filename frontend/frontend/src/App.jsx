@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-// import Home from "./pages/Customer/Home/Home";
+import Home from "./pages/Customer/Home/Home";
 // import Menu from './pages/Customer/Menu/Menu';
 // import Order from './pages/Customer/Order/Order'; // Import trang Order
 // import ViewItem from "./pages/Customer/ViewItem/ViewItem";
@@ -8,25 +8,26 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 // import Evaluate from "./pages/Customer/Evaluate/Evaluate";
 import Login from "./pages/Staff/Login/Login";
 import StaffInformation from "./pages/Staff/StaffInformation/StaffInformation";
+
 import OrderManagement from "./pages/Staff/OrderManagement/OrderManagement";
+
+import DishManagement from "./pages/Admin/DishManagement";
+
 function App() {
   return (
     <Router>
         <Routes>
           {/* <Route path="/" element={<Home />} />
-          <Route path="/menu" element={<Menu />} />
+          {/* <Route path="/menu" element={<Menu />} />
           <Route path="/order" element={<Order />} /> 
           <Route path="/view/:id" element={<ViewItem />} /> 
           <Route path="/note/:id" element={<Note />} />
           <Route path="/payment" element={<Payment />} />
           <Route path="/evaluate" element={<Evaluate />} />  */}
-          <Route path="/login" element={<Login />} /> 
-          <Route path="/staff-information" element={<StaffInformation />} />
-          <Route path="/order-management" element={<OrderManagement />} />
-        
-        
 
-          
+
+          {/* <Route path="/login" element={<Login />} /> 
+          <Route path="/" element={<StaffInformation />} /> */}
         </Routes>
     </Router>
   );
