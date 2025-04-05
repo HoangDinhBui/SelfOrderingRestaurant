@@ -4,18 +4,12 @@ import { CartProvider } from "./context/CartContext"; // Đã thêm CartProvider
 import Home from "./pages/Customer/Home/Home";
 import Menu from "./pages/Customer/Menu/Menu";
 import Order from "./pages/Customer/Order/Order";
-import Order from "./pages/Customer/Order/Order";
 import ViewItem from "./pages/Customer/ViewItem/ViewItem";
 import Note from "./pages/Customer/Note/Note";
 import Payment from "./pages/Customer/PayMent/Payment";
 import Evaluate from "./pages/Customer/Evaluate/Evaluate";
-
 import Login from "./pages/Staff/Login/Login";
 import StaffInformation from "./pages/Staff/StaffInformation/StaffInformation";
-import OrderManagement from "./pages/Staff/OrderManagement/OrderManagement";
-import NotificationManagement from "./pages/Staff/NotificationManagement/NotificationManagement";
-import DishManagement from "./pages/Staff/DishManagement/DishManagement";
-import Login from "./pages/Staff/Login";
 import "./axiosConfig";
 
 function App() {
@@ -28,6 +22,7 @@ function App() {
         {/* MenuProvider vẫn được giữ nguyên */}
         <Router>
           <Routes>
+            {/* Customer Routes */}
             <Route path="/" element={<Home />} />
             <Route path="/menu" element={<Menu />} />
             <Route path="/order" element={<Order />} />
@@ -35,7 +30,10 @@ function App() {
             <Route path="/note/:id" element={<Note />} />
             <Route path="/payment" element={<Payment />} />
             <Route path="/evaluate" element={<Evaluate />} />
+
+            {/* Staff Routes */}
             <Route path="/login" element={<Login />} />
+            <Route path="/staff-information" element={<StaffInformation />} />
           </Routes>
         </Router>
       </MenuProvider>
