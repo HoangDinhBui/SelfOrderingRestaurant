@@ -40,14 +40,12 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/auth/login").permitAll()
                         .requestMatchers("/api/auth/**",
                                 "/api/customer/**",
                                 "api/payment/**",
-                                "/api/orders",
                                 "/api/orders/**",
-                                "/api/menu",
-                                "/api/menu/**",
+                                "/api/dishes/**",
+                                "/api/images/**",
                                 "/api/notifications/**",
                                 "/error").permitAll()
 
@@ -80,7 +78,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000")); // Your frontend URL
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "http://localhost:5173"));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);

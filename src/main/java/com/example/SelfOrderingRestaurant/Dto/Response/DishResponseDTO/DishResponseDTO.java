@@ -11,8 +11,11 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @NoArgsConstructor
 public class DishResponseDTO {
-    private String name;
+    private Integer dishId;
+    private String dishName;
     private BigDecimal price;
-    private Integer categoryId;
     private DishStatus status;
+    private String imageUrl;
+    private String description;
+    private String categoryName;
 }

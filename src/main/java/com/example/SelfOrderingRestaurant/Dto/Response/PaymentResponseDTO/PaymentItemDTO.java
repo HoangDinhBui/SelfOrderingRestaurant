@@ -1,7 +1,6 @@
-package com.example.SelfOrderingRestaurant.Dto.Request.OrderRequestDTO;
+package com.example.SelfOrderingRestaurant.Dto.Response.PaymentResponseDTO;
 
 import lombok.*;
-
 import java.math.BigDecimal;
 
 @Data
@@ -9,10 +8,10 @@ import java.math.BigDecimal;
 @Getter
 @Setter
 @NoArgsConstructor
-public class OrderItemDTO {
+public class PaymentItemDTO {
     private Integer dishId;
-    private Integer quantity;
-    private String notes;
     private String dishName;
     private BigDecimal price;
+    private Integer quantity;
+    private String notes;
 }

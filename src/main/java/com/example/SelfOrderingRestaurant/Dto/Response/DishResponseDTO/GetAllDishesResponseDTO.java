@@ -15,4 +15,7 @@ public class GetAllDishesResponseDTO {
     private String dishName;
     private BigDecimal price;
     private DishStatus status;
+    private String imageUrl;
+    private String description;
+    private String categoryName;
 }

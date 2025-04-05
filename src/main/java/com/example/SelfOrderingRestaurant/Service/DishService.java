@@ -66,12 +66,34 @@ public class DishService {
                 .collect(Collectors.toList());
     }
 
+    public DishResponseDTO getDishById(Integer dishId) {
+        Dish dish = dishRepository.findById(dishId)
+                .orElseThrow(() -> new IllegalArgumentException("Dish not found with id: " + dishId));
+
+        return mapToDishResponseDTO(dish);
+    }
+
+    private DishResponseDTO mapToDishResponseDTO(Dish dish) {
+        DishResponseDTO response = new DishResponseDTO();
+        response.setDishId(dish.getDishId());
+        response.setDishName(dish.getName());
+        response.setPrice(dish.getPrice());
+        response.setStatus(dish.getStatus());
+        response.setImageUrl(dish.getImage());
+        response.setDescription(dish.getDescription());
+        response.setCategoryName(dish.getCategory().getName());
+        return response;
+    }
+
     private GetAllDishesResponseDTO mapToGetAllDishesResponseDTO(Dish dish) {
         return new GetAllDishesResponseDTO(
                 dish.getDishId(),
                 dish.getName(),
                 dish.getPrice(),
-                dish.getStatus()
+                dish.getStatus(),
+                dish.getImage(),
+                dish.getDescription(),
+                dish.getCategory().getName()
         );
     }
 
