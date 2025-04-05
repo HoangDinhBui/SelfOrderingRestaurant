@@ -4,6 +4,7 @@ import com.example.SelfOrderingRestaurant.Dto.Request.OrderRequestDTO.OrderItemD
 import com.example.SelfOrderingRestaurant.Dto.Request.OrderRequestDTO.OrderRequestDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.OrderResponseDTO.GetAllOrdersResponseDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.OrderResponseDTO.OrderResponseDTO;
+import com.example.SelfOrderingRestaurant.Dto.Response.OrderResponseDTO.OrderCartResponseDTO;
 import com.example.SelfOrderingRestaurant.Entity.*;
 import com.example.SelfOrderingRestaurant.Entity.DinningTable;
 import com.example.SelfOrderingRestaurant.Enum.OrderStatus;
@@ -13,11 +14,11 @@ import com.example.SelfOrderingRestaurant.Repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.annotation.SessionScope;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,9 +33,11 @@ public class OrderService {
     private DinningTableRepository dinningTableRepository;
     @Autowired
     private CustomerRepository customerRepository;
+    @Autowired
+    private OrderCartService orderCartService;
 
     @Transactional
-    public void createOrder(OrderRequestDTO request) {
+    public Integer createOrder(OrderRequestDTO request) {
         DinningTable dinningTable = dinningTableRepository.findById(request.getTableId())
                 .orElseThrow(() -> new IllegalArgumentException("Table not found"));
 
@@ -66,6 +69,7 @@ public class OrderService {
         order.setOrderDate(new Date());
 
         order = orderRepository.save(order);
+        Integer orderId = order.getOrderId();
         System.out.println("Saved order ID: " + order.getOrderId());
 
         List<OrderItemDTO> orderItemDTOs = new ArrayList<>();
@@ -92,11 +96,22 @@ public class OrderService {
 
             orderItemRepository.save(orderItem);
 
-            OrderItemDTO orderItemDTO = new OrderItemDTO(dish.getDishId(), itemRequest.getQuantity(), itemRequest.getNotes());
+            OrderItemDTO orderItemDTO = new OrderItemDTO();
+            orderItemDTO.setDishId(dish.getDishId());
+            orderItemDTO.setQuantity(itemRequest.getQuantity());
+            orderItemDTO.setNotes(itemRequest.getNotes());
+            orderItemDTO.setDishName(dish.getName());
+            orderItemDTO.setPrice(dish.getPrice());
+
             orderItemDTOs.add(orderItemDTO);
         }
         order.setTotalAmount(totalAmount);
         orderRepository.save(order);
+
+        // Clear the cart after creating the order
+        orderCartService.clearCart();
+
+        return orderId;
     }
 
     public List<GetAllOrdersResponseDTO> getAllOrders() {
@@ -106,11 +121,15 @@ public class OrderService {
             List<OrderItem> orderItems = orderItemRepository.findByOrder(order);
 
             List<OrderItemDTO> items = orderItems.stream()
-                    .map(item -> new OrderItemDTO(
-                            item.getId().getDishId(),
-                            item.getQuantity(),
-                            item.getNotes()
-                    )).collect(Collectors.toList());
+                    .map(item -> {
+                        OrderItemDTO dto = new OrderItemDTO();
+                        dto.setDishId(item.getId().getDishId());
+                        dto.setQuantity(item.getQuantity());
+                        dto.setNotes(item.getNotes());
+                        dto.setDishName(item.getDish().getName());
+                        dto.setPrice(item.getDish().getPrice());
+                        return dto;
+                    }).collect(Collectors.toList());
 
             return new GetAllOrdersResponseDTO(
                     order.getOrderId(),
@@ -131,11 +150,15 @@ public class OrderService {
         List<OrderItem> orderItems = orderItemRepository.findByOrder(order);
 
         List<OrderItemDTO> items = orderItems.stream()
-                .map(item -> new OrderItemDTO(
-                        item.getId().getDishId(),
-                        item.getQuantity(),
-                        item.getNotes()
-                )).collect(Collectors.toList());
+                .map(item -> {
+                    OrderItemDTO dto = new OrderItemDTO();
+                    dto.setDishId(item.getId().getDishId());
+                    dto.setQuantity(item.getQuantity());
+                    dto.setNotes(item.getNotes());
+                    dto.setDishName(item.getDish().getName());
+                    dto.setPrice(item.getDish().getPrice());
+                    return dto;
+                }).collect(Collectors.toList());
 
         return new OrderResponseDTO(
                 order.getOrderId(),
@@ -160,5 +183,22 @@ public class OrderService {
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Invalid order status: " + status);
         }
+    }
+
+    // Cart management methods
+    public OrderCartResponseDTO addDishToOrderCart(OrderItemDTO orderItemDTO) {
+        return orderCartService.addItem(orderItemDTO);
+    }
+
+    public OrderCartResponseDTO getCurrentOrderCart() {
+        return orderCartService.getCart();
+    }
+
+    public OrderCartResponseDTO removeItemFromCart(Integer dishId) {
+        return orderCartService.removeItem(dishId);
+    }
+
+    public OrderCartResponseDTO updateItemQuantity(Integer dishId, int quantity) {
+        return orderCartService.updateItemQuantity(dishId, quantity);
     }
 }

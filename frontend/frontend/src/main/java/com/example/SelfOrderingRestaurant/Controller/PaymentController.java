@@ -1,7 +1,16 @@
 package com.example.SelfOrderingRestaurant.Controller;
 
-import com.example.SelfOrderingRestaurant.Dto.Request.PaymentRequestDTO.PaymentRequestDTO;
+import com.example.SelfOrderingRestaurant.Dto.Request.PaymentRequestDTO.PaymentVNPayRequestDTO;
+import com.example.SelfOrderingRestaurant.Dto.Request.PaymentRequestDTO.ProcessPaymentRequestDTO;
+import com.example.SelfOrderingRestaurant.Dto.Response.PaymentResponseDTO.OrderPaymentDetailsDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.PaymentResponseDTO.PaymentResponseDTO;
+import com.example.SelfOrderingRestaurant.Dto.Response.PaymentResponseDTO.PaymentVNPayResponseDTO;
+import com.example.SelfOrderingRestaurant.Entity.Order;
+import com.example.SelfOrderingRestaurant.Entity.Payment;
+import com.example.SelfOrderingRestaurant.Enum.PaymentMethod;
+import com.example.SelfOrderingRestaurant.Enum.PaymentStatus;
+import com.example.SelfOrderingRestaurant.Repository.OrderRepository;
+import com.example.SelfOrderingRestaurant.Repository.PaymentRepository;
 import com.example.SelfOrderingRestaurant.Service.PaymentService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -10,10 +19,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 @RestController
 @RequestMapping("api/payment")
@@ -22,9 +31,11 @@ import java.util.Map;
 public class PaymentController {
 
     private final PaymentService paymentService;
+    private final PaymentRepository paymentRepository;
+    private final OrderRepository orderRepository;
 
     @PostMapping("/vnpay")
-    public ResponseEntity<?> createPayment(@RequestBody PaymentRequestDTO request, HttpServletRequest httpRequest) {
+    public ResponseEntity<?> createPayment(@RequestBody PaymentVNPayRequestDTO request, HttpServletRequest httpRequest) {
         try {
 //            log.info("🔹 Creating VNPay Payment: {}", request);
 
@@ -35,7 +46,7 @@ public class PaymentController {
 
             String paymentUrl = paymentService.createOrder(request.getTotal(), request.getOrderInfo(), request.getReturnUrl());
 
-            return ResponseEntity.ok(PaymentResponseDTO.builder()
+            return ResponseEntity.ok(PaymentVNPayResponseDTO.builder()
                     .paymentUrl(paymentUrl)
                     .message("VNPay payment URL generated successfully.")
                     .build());
@@ -101,5 +112,117 @@ public class PaymentController {
             }
         }
         return result;
+    }
+
+    @PostMapping("/process")
+    public ResponseEntity<?> processPayment(@RequestBody ProcessPaymentRequestDTO request) {
+        try {
+            log.info("Processing payment for order ID: {}, with payment method: {}",
+                    request.getOrderId(), request.getPaymentMethod());
+
+            if (request.getOrderId() == null) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "success", false,
+                        "message", "Order ID cannot be null"
+                ));
+            }
+
+            // Find the order
+            Order order = orderRepository.findById(request.getOrderId())
+                    .orElseThrow(() -> new IllegalArgumentException("Order not found with ID: " + request.getOrderId()));
+
+            // Convert payment method string to enum
+            PaymentMethod method;
+            try {
+                method = PaymentMethod.valueOf(request.getPaymentMethod().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                method = PaymentMethod.CASH; // Default to CASH if invalid
+            }
+
+            // Generate a transaction ID
+            String txnRef = generateTransactionId();
+
+            // Create payment record
+            Payment payment = new Payment();
+            payment.setOrder(order);
+            payment.setCustomer(order.getCustomer());
+            payment.setAmount(order.getTotalAmount());
+            payment.setPaymentMethod(method);
+            payment.setStatus(PaymentStatus.PAID); // For cash and credit, mark as paid immediately
+            payment.setTransactionId(txnRef);
+            payment.setPaymentDate(LocalDateTime.now());
+
+            paymentRepository.save(payment);
+
+            // Update order payment status
+            order.setPaymentStatus(PaymentStatus.PAID);
+            orderRepository.save(order);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Payment processed successfully");
+            response.put("transactionId", txnRef);
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Error processing payment: {}", e.getMessage(), e);
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+    private String generateTransactionId() {
+        Random rand = new Random();
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 8; i++) {
+            sb.append(rand.nextInt(10));
+        }
+        return sb.toString();
+    }
+
+    @GetMapping("/payment/status/{orderId}")
+    public ResponseEntity<?> getPaymentStatus(@PathVariable Integer orderId) {
+        try {
+            OrderPaymentDetailsDTO paymentDetails = paymentService.getOrderPaymentDetails(orderId);
+            return ResponseEntity.ok(paymentDetails);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Payment not found for order ID: " + orderId);
+        } catch (Exception e) {
+            log.error("Error fetching payment status: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to retrieve payment status: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/payment/cash/{orderId}")
+    public ResponseEntity<?> processCashPayment(@PathVariable Integer orderId) {
+        try {
+            paymentService.processCashPayment(orderId);
+            return ResponseEntity.ok("Cash payment processed successfully");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Order not found with ID: " + orderId);
+        } catch (Exception e) {
+            log.error("Error processing cash payment for order {}: {}", orderId, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to process cash payment: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/payment/{paymentId}")
+    public ResponseEntity<?> getPaymentById(@PathVariable Integer paymentId) {
+        try {
+            PaymentResponseDTO payment = paymentService.getPaymentById(paymentId);
+            return ResponseEntity.ok(payment);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Payment not found with ID: " + paymentId);
+        } catch (Exception e) {
+            log.error("Error fetching payment: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to retrieve payment: " + e.getMessage());
+        }
     }
 }

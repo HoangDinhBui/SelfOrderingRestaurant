@@ -1,13 +1,18 @@
 package com.example.SelfOrderingRestaurant.Service;
 
 import com.example.SelfOrderingRestaurant.Config.VNPayConfig;
+import com.example.SelfOrderingRestaurant.Dto.Request.OrderRequestDTO.OrderItemDTO;
+import com.example.SelfOrderingRestaurant.Dto.Response.PaymentResponseDTO.OrderPaymentDetailsDTO;
+import com.example.SelfOrderingRestaurant.Dto.Response.PaymentResponseDTO.PaymentItemDTO;
+import com.example.SelfOrderingRestaurant.Dto.Response.PaymentResponseDTO.PaymentResponseDTO;
 import com.example.SelfOrderingRestaurant.Entity.Order;
+import com.example.SelfOrderingRestaurant.Entity.OrderItem;
 import com.example.SelfOrderingRestaurant.Entity.Payment;
 import com.example.SelfOrderingRestaurant.Enum.PaymentMethod;
 import com.example.SelfOrderingRestaurant.Enum.PaymentStatus;
+import com.example.SelfOrderingRestaurant.Repository.OrderItemRepository;
 import com.example.SelfOrderingRestaurant.Repository.OrderRepository;
 import com.example.SelfOrderingRestaurant.Repository.PaymentRepository;
-import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.slf4j.Logger;
@@ -15,6 +20,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -29,6 +35,7 @@ import java.util.stream.Collectors;
 public class PaymentService {
     final Logger log = LoggerFactory.getLogger(PaymentService.class);
     final OrderRepository orderRepository;
+    final OrderItemRepository orderItemRepository;
     final PaymentRepository paymentRepository;
 
     @Transactional
@@ -231,5 +238,90 @@ public class PaymentService {
             log.error("Comprehensive Error in VNPay Response Processing", e);
             return result;
         }
+    }
+
+    public OrderPaymentDetailsDTO getOrderPaymentDetails(Integer orderId) {
+        // Lấy order từ DB
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Order not found with ID: " + orderId));
+
+        // Lấy các món trong đơn hàng
+        List<OrderItem> orderItems = orderItemRepository.findByOrder(order);
+
+        // Chuyển sang DTO cho từng món thanh toán
+        List<PaymentItemDTO> paymentItems = orderItems.stream()
+                .map(item -> {
+                    PaymentItemDTO dto = new PaymentItemDTO();
+                    dto.setDishId(item.getDish().getDishId());
+                    dto.setDishName(item.getDish().getName());
+                    dto.setPrice(item.getDish().getPrice());
+                    dto.setQuantity(item.getQuantity());
+                    dto.setNotes(item.getNotes());
+                    return dto;
+                })
+                .collect(Collectors.toList());
+
+        // Tạo đối tượng trả về
+        OrderPaymentDetailsDTO paymentDetails = new OrderPaymentDetailsDTO();
+        paymentDetails.setOrderId(order.getOrderId());
+        paymentDetails.setTableId(order.getTables().getTableNumber());
+        paymentDetails.setOrderDate(order.getOrderDate());
+        paymentDetails.setPaymentStatus(
+                "PAID".equals(order.getPaymentStatus()) ? PaymentStatus.PAID : PaymentStatus.UNPAID
+        );
+        paymentDetails.setItems(paymentItems);
+        paymentDetails.setDiscount(order.getDiscount() != null ? order.getDiscount() : BigDecimal.ZERO);
+        paymentDetails.setTotalAmount(order.getTotalAmount());
+
+        return paymentDetails;
+    }
+
+    @Transactional
+    public void processCashPayment(Integer orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Order not found with ID: " + orderId));
+
+        // Check if payment record already exists for the order
+        Payment payment = paymentRepository.findByOrder_OrderId(orderId);
+
+        if (payment == null) {
+            // Create new payment record for cash payment
+            payment = new Payment();
+            payment.setOrder(order);
+            payment.setCustomer(order.getCustomer());
+            payment.setAmount(order.getTotalAmount());
+            payment.setPaymentMethod(PaymentMethod.CASH);
+            payment.setPaymentDate(LocalDateTime.now());
+        } else {
+            // Update existing payment record
+            payment.setPaymentMethod(PaymentMethod.CASH);
+            payment.setPaymentDate(LocalDateTime.now());
+        }
+
+        // Set status to PAID
+        payment.setStatus(PaymentStatus.PAID);
+        paymentRepository.save(payment);
+
+        // Update order payment status
+        order.setPaymentStatus(PaymentStatus.PAID);
+        orderRepository.save(order);
+
+        log.info("Cash payment processed successfully for order ID: {}", orderId);
+    }
+
+    public PaymentResponseDTO getPaymentById(Integer paymentId) {
+        Payment payment = paymentRepository.findById(paymentId)
+                .orElseThrow(() -> new IllegalArgumentException("Payment not found with ID: " + paymentId));
+
+        PaymentResponseDTO responseDTO = new PaymentResponseDTO();
+        responseDTO.setPaymentId(payment.getPaymentId());
+        responseDTO.setOrderId(payment.getOrder().getOrderId());
+        responseDTO.setAmount(payment.getAmount());
+        responseDTO.setPaymentMethod(payment.getPaymentMethod().name());
+        responseDTO.setPaymentDate(payment.getPaymentDate().toString());
+        responseDTO.setStatus(payment.getStatus().name());
+        responseDTO.setTransactionId(payment.getTransactionId());
+
+        return responseDTO;
     }
 }
