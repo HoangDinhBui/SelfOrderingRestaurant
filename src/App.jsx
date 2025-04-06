@@ -11,7 +11,7 @@ import Login from "./pages/Staff/Login/Login";
 import StaffInformation from "./pages/Staff/StaffInformation/StaffInformation";
 import OrderManagement from "./pages/Staff/OrderManagement/OrderManagement";
 import NotificationManagement from "./pages/Staff/NotificationManagement/NotificationManagement";
-import DishManagement from "./pages/Admin/DishManagement";
+import DishManagement from "./pages/Staff/DishManagement/DishManagement";
 
 function App() {
   return (
