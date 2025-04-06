@@ -541,7 +541,7 @@ const Order = () => {
 
       {/* Success Confirmation Message */}
       {showConfirmation && (
-        <div className="fixed inset-0 bg-black bg-opacity-20 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-opacity-20 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-lg shadow-lg w-96 text-center border border-gray-300">
             <svg
               xmlns="http://www.w3.org/2000/svg"
