@@ -113,6 +113,16 @@ const Order = () => {
     fetchCartData();
   }, [fetchCartData]);
 
+  // Debug - Log cart items with notes when they change
+  useEffect(() => {
+    const itemsWithNotes = cartItems.filter(
+      (item) => item.notes && item.notes.trim() !== ""
+    );
+    if (itemsWithNotes.length > 0) {
+      console.log("Items with notes:", itemsWithNotes);
+    }
+  }, [cartItems]);
+
   // Update quantity via API with proper error handling
   const updateQuantity = async (id, delta) => {
     const item = cartItems.find((item) => item.dishId === id);
@@ -380,6 +390,14 @@ const Order = () => {
                     <div>
                       <h3 className="font-bold text-lg text-left">
                         {item.dishName}
+                        {item.notes && item.notes.trim() !== "" && (
+                          <span
+                            className="ml-2 text-rose-500"
+                            title="Has notes"
+                          >
+                            📝
+                          </span>
+                        )}
                       </h3>
                       <p className="text-gray-500 text-lg text-left">
                         {parseFloat(item.price).toLocaleString()} VND
@@ -421,6 +439,12 @@ const Order = () => {
                       Note
                     </button>
                   </div>
+                  {/* Display item notes when they exist */}
+                  {item.notes && item.notes.trim() !== "" && (
+                    <div className="mt-2 text-sm text-gray-600 bg-gray-100 p-2 rounded">
+                      <span className="font-medium">Notes:</span> {item.notes}
+                    </div>
+                  )}
                 </div>
               </div>
             ))

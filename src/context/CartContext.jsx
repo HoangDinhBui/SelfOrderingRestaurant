@@ -166,6 +166,48 @@ export const CartProvider = ({ children }) => {
     }
   };
 
+  // New function for updating notes
+  const updateItemNotes = async (dishId, notes) => {
+    try {
+      // Always store locally as a backup
+      localStorage.setItem(`note-${dishId}`, notes);
+
+      // Check if the item exists in the cart
+      const existingItem = cartItems.find((item) => item.dishId === dishId);
+      if (!existingItem) {
+        console.warn(`Item with ID ${dishId} not found in cart`);
+        throw new Error("Item not found in cart");
+      }
+
+      // Call API to update notes - USE THE API INSTANCE!
+      const response = await API.put(`/api/orders/cart/items/${dishId}/notes`, {
+        notes,
+      });
+
+      // Update local state
+      const updatedItems = cartItems.map((item) =>
+        item.dishId === dishId ? { ...item, notes } : item
+      );
+      setCartItems(updatedItems);
+
+      // Update localStorage backup
+      const cartData = {
+        items: updatedItems,
+        totalAmount: updatedItems.reduce(
+          (total, item) => total + parseFloat(item.price) * item.quantity,
+          0
+        ),
+      };
+      localStorage.setItem("cartData", JSON.stringify(cartData));
+
+      return response.data;
+    } catch (error) {
+      console.error("Error updating item notes:", error);
+      // Error was already thrown about missing item or API error
+      throw error;
+    }
+  };
+
   return (
     <CartContext.Provider
       value={{
@@ -179,6 +221,7 @@ export const CartProvider = ({ children }) => {
         addToCart,
         updateItemQuantity,
         removeItem,
+        updateItemNotes, // Add the new function
       }}
     >
       {children}
