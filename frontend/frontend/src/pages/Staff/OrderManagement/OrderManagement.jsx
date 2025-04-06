@@ -4,52 +4,75 @@ import { useNavigate } from 'react-router-dom';
 const OrderManagement = () => {
   const [activeTab, setActiveTab] = useState("Order Management");
   const [selectedTable, setSelectedTable] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDishModalOpen, setIsDishModalOpen] = useState(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
   const [isEmptyTableModalOpen, setIsEmptyTableModalOpen] = useState(false);
+  const [isBillModalOpen, setIsBillModalOpen] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
-  const tabs = ["Order Management", "Notification Management", "Dish Management"];
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
+  const tabs = ["Order Management", "Notification Management", "Dish Management"];
 
   const navigate = useNavigate();
 
-  
+  // Notification data
+  const [notifications] = useState([
+    { id: 1, type: "Call staff", time: "18:30:00", date: "10/10/2024", table: "01" },
+    { id: 2, type: "Request", time: "16:00:00", date: "10/10/2024", table: "01" },
+    { id: 3, type: "Payment request", time: "16:30:00", date: "10/10/2024", table: "02" },
+    { id: 4, type: "Request", time: "16:00:00", date: "10/10/2024", table: "03" },
+    { id: 5, type: "Request", time: "16:00:00", date: "10/10/2024", table: "04" },
+    { id: 6, type: "Request", time: "16:00:00", date: "10/10/2024", table: "05" },
+    // Add more notifications as needed
+  ]);
+
+  const toggleNotificationModal = (e, table) => {
+    e.stopPropagation();
+    setSelectedTable(table);
+    setIsNotificationModalOpen(!isNotificationModalOpen);
+  };
 
   const handleSelectTable = (table) => {
     setSelectedTable(table);
   };
 
-  const handleShowModal = (table) => {
+  const handleShowDishModal = (table) => {
     setSelectedTable(table);
-    setIsModalOpen(true);
+    setIsDishModalOpen(true);
   };
-  
+
+  const handleShowPaymentModal = () => {
+    setIsDishModalOpen(false);
+    setIsPaymentModalOpen(true);
+  };
+
+  const handlePaymentSuccess = () => {
+    setIsPaymentModalOpen(false);
+    setIsSuccessModalOpen(true);
+  };
+
   const handleShowEmptyTableModal = () => {
     setIsEmptyTableModalOpen(true);
   };
 
-  const [isBillModalOpen, setIsBillModalOpen] = useState(false);
-
-  const handleShowBillModal = (table) => {
-    setSelectedTable(table);
-    setIsBillModalOpen(true);
-  };
 
   const handlePrintReceipt = () => {
     setIsBillModalOpen(false);
-    setIsConfirmModalOpen(true); // DI CHUYỂN VÀO ĐÂY
+    setIsConfirmModalOpen(true);
   };
 
   const handleTabClick = (tab) => {
     if (tab === "Notification Management") {
       navigate('/notification-management');
     } else if (tab === "Dish Management") {
-      // Thêm route cho Dish Management nếu cần
       navigate('/dish-management');
     } else {
       setActiveTab(tab);
     }
   };
-  const totalAmount = selectedTable?.dishes.reduce((sum, dish) => sum + (dish.price * dish.quantity), 0);
+
+  const totalAmount = selectedTable?.dishes?.reduce((sum, dish) => sum + (dish.price * dish.quantity), 0) || 0;
+
   const tables = [
     {
       id: 1,
@@ -73,33 +96,40 @@ const OrderManagement = () => {
       id: 3,
       status: "occupied",
       dishes: [
-        { name: "Beef Wellington", quantity: 2, price: 350000, status: "Complete", image: "../../../assets/img/beef-wellington.jpg" },
-        { name: "Foie Gras", quantity: 1, price: 280000, status: "Complete", image: "../../../assets/img/foie-gras.jpg" },
-        { name: "Lobster Thermidor", quantity: 1, price: 420000, status: "Pending", image: "../../../assets/img/lobster.jpg" },
-        { name: "Truffle Pasta", quantity: 1, price: 220000, status: "Pending", image: "../../../assets/img/truffle-pasta.jpg" },
+        { name: "Foie Gras", quantity: 2, price: 350000, status: "Complete", image: "../../../assets/img/Mon2.jpg" },
+        { name: "Bouillabaisse", quantity: 1, price: 280000, status: "Complete", image: "../../../assets/img/Mon3.jpg" },
+        { name: "Ratatouille", quantity: 1, price: 120000, status: "Pending", image: "../../../assets/img/Mon4.jpg" },
+        { name: "Crème Brûlée", quantity: 2, price: 90000, status: "Pending", image: "../../../assets/img/Mon5.jpg" },
       ],
+      capacity: 6
     },
     {
-      id: 44,
+      id: 4,
       status: "occupied",
       dishes: [
-        { name: "Ratatouille", quantity: 1, price: 120000, status: "Complete", image: "../../../assets/img/ratatouille.jpg" },
-        { name: "Bouillabaisse", quantity: 2, price: 180000, status: "Complete", image: "../../../assets/img/bouillabaisse.jpg" },
-        { name: "Crème Brûlée", quantity: 2, price: 90000, status: "Complete", image: "../../../assets/img/creme-brulee.jpg" },
+        { name: "Steak Frites", quantity: 3, price: 220000, status: "Complete", image: "../../../assets/img/Mon6.jpg" },
+        { name: "Moules Marinières", quantity: 1, price: 180000, status: "Complete", image: "../../../assets/img/Mon7.jpg" },
+        { name: "Tarte Tatin", quantity: 1, price: 110000, status: "Pending", image: "../../../assets/img/Mon8.jpg" },
+        { name: "Escargots", quantity: 1, price: 150000, status: "Complete", image: "../../../assets/img/Mon9.jpg" },
+        { name: "French Onion Soup", quantity: 2, price: 80000, status: "Complete", image: "../../../assets/img/Mon10.jpg" },
       ],
+      capacity: 8
     }
   ];
 
-  // Get empty tables for the empty table list modal
   const emptyTables = tables.filter(table => table.status === "available");
 
   return (
     <div className="h-screen w-screen !bg-blue-50 flex flex-col">
-      {/* Background that will be blurred when modal is open */}
-      <div className={`h-full w-full ${isModalOpen || isEmptyTableModalOpen ? "blur-sm" : ""}`}>
+      {/* Background blur when any modal is open */}
+      <div className={`h-full w-full ${
+        isDishModalOpen || isPaymentModalOpen || 
+        isEmptyTableModalOpen || isBillModalOpen || 
+        isConfirmModalOpen || isSuccessModalOpen || 
+        isNotificationModalOpen ? "blur-sm" : ""
+      }`} onClick={() => setIsNotificationModalOpen(false)}>
         {/* Header */}
         <div className="w-full bg-blue-100 flex items-center justify-between px-6 py-2">
-          {/* Logo */}
           <div className="flex items-center">
             <img
               src="../../src/assets/img/logoremovebg.png"
@@ -108,7 +138,6 @@ const OrderManagement = () => {
             />
           </div>
 
-          {/* Navigation Tabs */}
           <div className="flex flex-grow justify-center gap-x-6">
             {tabs.map((tab) => (
               <button
@@ -125,8 +154,7 @@ const OrderManagement = () => {
             ))}
           </div>
 
-          {/* Avatar */}
-          <div className="flex items-center">
+          <div className="flex items-center gap-4">
             <img
               src="../../src/assets/img/MyDung.jpg"
               alt="User Avatar"
@@ -169,7 +197,10 @@ const OrderManagement = () => {
                   </div>
                   <div 
                     className="p-4 flex items-center justify-center cursor-pointer"
-                    onClick={() => handleShowBillModal(table)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleShowDishModal(table);
+                    }}
                   >
                     <span className="text-lg">
                       {table.dishes.length > 0 
@@ -197,12 +228,7 @@ const OrderManagement = () => {
                     </svg>
                     <div 
                       className="relative cursor-pointer" 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (table.status === "occupied") {
-                          handleShowModal(table);
-                        }
-                      }}
+                      onClick={(e) => toggleNotificationModal(e, table)}
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -218,9 +244,9 @@ const OrderManagement = () => {
                           d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
                         />
                       </svg>
-                      {table.status === "occupied" && table.dishes.filter(d => d.status === "Pending").length > 0 && (
+                      {table.status === "occupied" && notifications.filter(n => n.table === table.id.toString().padStart(2, '0')).length > 0 && (
                         <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
-                          {table.dishes.filter(d => d.status === "Pending").length}
+                          {notifications.filter(n => n.table === table.id.toString().padStart(2, '0')).length}
                         </span>
                       )}
                     </div>
@@ -230,7 +256,6 @@ const OrderManagement = () => {
                       className="!bg-red-500 text-white p-1 rounded-full"
                       onClick={(e) => {
                         e.stopPropagation();
-                        // Add functionality for the close button if needed
                       }}
                     >
                       <svg
@@ -256,27 +281,21 @@ const OrderManagement = () => {
 
           {/* Right Side Information Cards */}
           <div className="ml-4 w-64 flex flex-col gap-4">
-            {/* Available/Occupied Table */}
             <div className="bg-white rounded-lg shadow-md p-4">
               <div className="flex items-center gap-2 mb-2">
-                <div className="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-500" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-500" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                </svg>
                 <p>: Available Table</p>
               </div>
               <div className="flex items-center gap-2">
-                <div className="flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-500" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                  </svg>
-                </div>
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-500" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
                 <p>: Occupied Table</p>
               </div>
             </div>
 
-            {/* Paid/Unpaid */}
             <div className="bg-white rounded-lg shadow-md p-4">
               <div className="flex items-center gap-2 mb-2">
                 <div className="w-6 h-6 bg-green-500 rounded-full"></div>
@@ -288,7 +307,6 @@ const OrderManagement = () => {
               </div>
             </div>
 
-            {/* Empty Table Button */}
             <div className="mt-2">
               <button
                 className="w-full bg-gray-300 hover:bg-gray-400 text-gray-700 font-medium py-3 px-4 rounded-lg transition-colors duration-200"
@@ -301,26 +319,77 @@ const OrderManagement = () => {
         </div>
       </div>
 
-      {/* Table Details Modal - positioned fixed and not blurred */}
-      {isModalOpen && selectedTable && (
+     {/* Notification Modal */}
+    {isNotificationModalOpen && selectedTable && (
+      <div className="fixed inset-0 flex items-center justify-center z-50">
+        {/* Overlay */}
+        <div
+          className="absolute inset-0  bg-opacity-50"
+          onClick={() => setIsNotificationModalOpen(false)}
+        ></div>
+
+        {/* Modal Content */}
+        <div className="bg-[#F0F9FF] rounded-xl shadow-lg p-6 
+            w-[500px] max-w-full max-h-[80vh] 
+            overflow-y-auto z-50 relative">
+          {/* Header */}
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold text-gray-800">Notifications</h2>
+            <div className="text-sm text-gray-600">Table {selectedTable.id}</div>
+            <button
+              className="text-gray-500 hover:text-gray-700 text-xl"
+              onClick={() => setIsNotificationModalOpen(false)}
+            >
+              &times;
+            </button>
+          </div>
+
+          {/* Table */}
+          <table className="w-full text-sm border-separate border-spacing-y-1">
+            <thead className="bg-cyan-200 text-gray-800 rounded-md">
+              <tr>
+                <th className="py-1 text-left pl-2">ON</th>
+                <th className="py-1 text-left">Request</th>
+                <th className="py-1 text-left pr-2">Time</th>
+              </tr>
+            </thead>
+            <tbody>
+              {notifications
+                .filter(n => n.table === selectedTable.id.toString().padStart(2, '0'))
+                .map((notification) => (
+                  <tr key={notification.id} className="bg-white shadow-sm rounded-md">
+                    <td className="py-1 px-2">{notification.table}</td>
+                    <td className="py-1">{notification.type}</td>
+                    <td className="py-1 pr-2">
+                      <div>{notification.time}</div>
+                      <div>{notification.date}</div>
+                    </td>
+                  </tr>
+                ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    )}
+
+
+      {/* Dish Modal */}
+      {isDishModalOpen && selectedTable && (
         <div className="fixed inset-0 flex items-center justify-center z-50">
-          <div className="absolute inset-0  bg-opacity-50" onClick={() => setIsModalOpen(false)}></div>
+          <div className="absolute inset-0 bg-opacity-50" onClick={() => setIsDishModalOpen(false)}></div>
           <div className="bg-white rounded-lg shadow-lg p-6 w-1/2 relative z-50">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Table {selectedTable.id}</h2>
+              <h2 className="text-xl font-bold">Table {selectedTable.id} - Dishes</h2>
               <button
                 className="text-gray-500 hover:text-gray-700"
-                onClick={() => setIsModalOpen(false)}
+                onClick={() => setIsDishModalOpen(false)}
               >
                 ✕
               </button>
             </div>
             <div className="space-y-4">
               {selectedTable.dishes.map((dish, index) => (
-                <div
-                  key={index}
-                  className="flex justify-between items-center border-b pb-2"
-                >
+                <div key={index} className="flex justify-between items-center border-b pb-2">
                   <div className="flex items-center gap-4">
                     <img
                       src={dish.image}
@@ -334,13 +403,9 @@ const OrderManagement = () => {
                     <span>{dish.quantity}</span>
                     <button className="px-2 py-1 bg-gray-200 rounded">+</button>
                   </div>
-                  <span
-                    className={`px-3 py-1 rounded ${
-                      dish.status === "Complete"
-                        ? "bg-green-500 text-white"
-                        : "bg-yellow-500 text-white"
-                    }`}
-                  >
+                  <span className={`px-3 py-1 rounded ${
+                    dish.status === "Complete" ? "bg-green-500 text-white" : "bg-yellow-500 text-white"
+                  }`}>
                     {dish.status}
                   </span>
                 </div>
@@ -348,10 +413,78 @@ const OrderManagement = () => {
             </div>
             <div className="mt-4 flex justify-end">
               <button
-                className="bg-blue-500 text-white px-4 py-2 rounded-lg"
-                onClick={() => setIsModalOpen(false)}
+                className="!bg-blue-500 text-white px-4 py-2 rounded-lg"
+                onClick={handleShowPaymentModal}
               >
                 Payment
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Modal */}
+      {isPaymentModalOpen && selectedTable && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="absolute inset-0 bg-opacity-50" onClick={() => setIsPaymentModalOpen(false)}></div>
+          <div className="bg-white rounded-lg shadow-xl p-6 w-2/3 relative z-50">
+            <div className="text-center mb-4">
+              <p className="text-sm text-gray-600">450 Le Van Viel Street, Tang Nhon Phu A Word, District 9</p>
+              <p className="text-sm text-gray-600">Phone: 0987654321</p>
+              <h3 className="font-bold mt-2 text-xl text-blue-800">Payment Slip 001</h3>
+            </div>
+            
+            <div className="flex justify-between border-b pb-2 mb-4">
+              <span className="font-bold text-gray-700">Table {selectedTable.id}</span>
+              <span className="font-bold text-gray-700">Payment Slip 001</span>
+            </div>
+            
+            <div className="max-h-96 overflow-y-auto mb-4">
+              <table className="w-full">
+                <thead className="sticky top-0 bg-white">
+                  <tr className="border-b">
+                    <th className="text-left py-2 font-medium text-gray-700">Dish name</th>
+                    <th className="text-left py-2 font-medium text-gray-700">Qty</th>
+                    <th className="text-left py-2 font-medium text-gray-700">Unit price</th>
+                    <th className="text-left py-2 font-medium text-gray-700">Total amount</th>
+                    <th className="text-left py-2 font-medium text-gray-700">Note</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedTable.dishes.map((dish, index) => (
+                    <tr key={index} className="border-b hover:bg-gray-50">
+                      <td className="py-3 text-gray-800">{dish.name}</td>
+                      <td className="py-3">{dish.quantity}</td>
+                      <td className="py-3">{dish.price ? dish.price.toLocaleString() : '-'}</td>
+                      <td className="py-3 font-medium">
+                        {dish.price ? (dish.price * dish.quantity).toLocaleString() : '-'}
+                      </td>
+                      <td className="py-3 text-gray-500">-</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            
+            <div className="flex justify-between mt-4 border-t pt-4">
+              <span className="font-bold text-gray-700">Staff: 1</span>
+              <span className="font-bold text-lg text-blue-800">
+                Total Amount: {totalAmount.toLocaleString()} VND
+              </span>
+            </div>
+            
+            <div className="mt-6 flex justify-center space-x-4">
+              <button 
+                className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg"
+                onClick={() => setIsPaymentModalOpen(false)}
+              >
+                Cancel
+              </button>
+              <button 
+                className="!bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg"
+                onClick={handlePaymentSuccess}
+              >
+                Confirm Payment
               </button>
             </div>
           </div>
@@ -402,135 +535,97 @@ const OrderManagement = () => {
       )}
 
       {/* Bill Modal */}
-        {isBillModalOpen && selectedTable && (
-          <div className="fixed inset-0 flex items-center justify-center z-50">
-            {/* Background overlay - làm mờ và tối phần nền */}
-            <div 
-              className="absolute inset-0 bg-opacity-70 backdrop-blur-sm"
-              onClick={() => setIsBillModalOpen(false)}
-            ></div>
-            
-            {/* Modal content - hiển thị rõ ràng */}
-            <div className="bg-white rounded-lg shadow-xl p-6 w-2/3 relative z-50 transform transition-all">
-              {/* Header */}
-              <div className="text-center mb-4">
-                <p className="text-sm text-gray-600">450 Le Van Viel Street, Tang Nhon Phu A Word, District 9</p>
-                <p className="text-sm text-gray-600">SDT: 0987654321</p>
-                <h3 className="font-bold mt-2 text-xl text-blue-800">Payment Slip 001</h3>
-              </div>
-              
-              {/* Table info */}
-              <div className="flex justify-between border-b pb-2 mb-4">
-                <span className="font-bold text-gray-700">Table {selectedTable.id}</span>
-                <span className="font-bold text-gray-700">Payment Slip 001</span>
-              </div>
-              
-              {/* Dishes table */}
-              <div className="max-h-96 overflow-y-auto mb-4">
-                <table className="w-full">
-                  <thead className="sticky top-0 bg-white">
-                    <tr className="border-b">
-                      <th className="text-left py-2 font-medium text-gray-700">Dish name</th>
-                      <th className="text-left py-2 font-medium text-gray-700">Qty</th>
-                      <th className="text-left py-2 font-medium text-gray-700">Unit price</th>
-                      <th className="text-left py-2 font-medium text-gray-700">Total amount</th>
-                      <th className="text-left py-2 font-medium text-gray-700">Note</th>
+      {isBillModalOpen && selectedTable && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="absolute inset-0 bg-opacity-50" onClick={() => setIsBillModalOpen(false)}></div>
+          <div className="bg-white rounded-lg shadow-xl p-6 w-2/3 relative z-50">
+            <div className="text-center mb-4">
+              <h3 className="font-bold text-xl text-blue-800">Bill Details</h3>
+            </div>
+            <div className="max-h-96 overflow-y-auto mb-4">
+              <table className="w-full">
+                <thead className="sticky top-0 bg-white">
+                  <tr className="border-b">
+                    <th className="text-left py-2 font-medium text-gray-700">Dish name</th>
+                    <th className="text-left py-2 font-medium text-gray-700">Qty</th>
+                    <th className="text-left py-2 font-medium text-gray-700">Price</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedTable.dishes.map((dish, index) => (
+                    <tr key={index} className="border-b hover:bg-gray-50">
+                      <td className="py-3 text-gray-800">{dish.name}</td>
+                      <td className="py-3">{dish.quantity}</td>
+                      <td className="py-3">{dish.price.toLocaleString()} VND</td>
                     </tr>
-                  </thead>
-                  <tbody>
-                    {selectedTable.dishes.map((dish, index) => (
-                      <tr key={index} className="border-b hover:bg-gray-50">
-                        <td className="py-3 text-gray-800">{dish.name}</td>
-                        <td className="py-3">{dish.quantity}</td>
-                        <td className="py-3">{dish.price ? dish.price.toLocaleString() : '-'}</td>
-                        <td className="py-3 font-medium">
-                          {dish.price ? (dish.price * dish.quantity).toLocaleString() : '-'}
-                        </td>
-                        <td className="py-3 text-gray-500">-</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              
-              {/* Total amount */}
-              <div className="flex justify-between mt-4 border-t pt-4">
-                <span className="font-bold text-gray-700">Staff: 1</span>
-                <span className="font-bold text-lg text-blue-800">
-                  Total Amount: {totalAmount.toLocaleString()} VND
-                </span>
-              </div>
-              
-              {/* Actions */}
-              <div className="mt-6 flex justify-center space-x-4">
-                <button 
-                  className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg transition-colors"
-                  onClick={() => setIsBillModalOpen(false)}
-                >
-                  Close
-                </button>
-                <button 
-                  className="!bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
-                  onClick={handlePrintReceipt}
-                >
-                  Print
-                </button>
-              </div>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div className="flex justify-end mt-4 border-t pt-4">
+              <span className="font-bold text-lg text-blue-800">
+                Total: {totalAmount.toLocaleString()} VND
+              </span>
+            </div>
+            <div className="mt-6 flex justify-center space-x-4">
+              <button 
+                className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg"
+                onClick={() => setIsBillModalOpen(false)}
+              >
+                Close
+              </button>
+              <button 
+                className="!bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg"
+                onClick={handlePrintReceipt}
+              >
+                Print Receipt
+              </button>
             </div>
           </div>
-        )}
+        </div>
+      )}
 
-     {/* Confirmation Modal */}
-     {isConfirmModalOpen && (
-      <div className="fixed inset-0 flex items-center justify-center z-50">
-        <div className="absolute inset-0 bg-opacity-50 backdrop-blur-sm" onClick={() => setIsConfirmModalOpen(false)}></div>
-        <div className="bg-white rounded-lg p-6 w-80 relative z-50 text-center">
-          {/* Thay thế chữ bằng logo */}
-          <div className="flex justify-center mb-4">
-          <img alt="Logo" class="w-24 h-24" src="../../src/assets/img/logoremovebg.png"></img>
-          </div>
-          
-          <p className="text-lg mb-6">ARE YOU SURE?</p>
-          
-          <div className="flex justify-center space-x-4">
-            <button 
-              className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg"
-              onClick={() => setIsConfirmModalOpen(false)}
-            >
-              NO
-            </button>
-            <button 
-              className="!bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
-              onClick={() => {
-                setIsConfirmModalOpen(false);
-                setIsSuccessModalOpen(true);
-                // Xử lý khi bấm YES
-              }}
-            >
-              YES
-            </button>
+      {/* Confirmation Modal */}
+      {isConfirmModalOpen && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="absolute inset-0 bg-opacity-50" onClick={() => setIsConfirmModalOpen(false)}></div>
+          <div className="bg-white rounded-lg p-6 w-80 relative z-50 text-center">
+            <div className="flex justify-center mb-4">
+              <img alt="Logo" className="w-24 h-24" src="../../src/assets/img/logoremovebg.png" />
+            </div>
+            <p className="text-lg mb-6">ARE YOU SURE?</p>
+            <div className="flex justify-center space-x-4">
+              <button 
+                className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg"
+                onClick={() => setIsConfirmModalOpen(false)}
+              >
+                NO
+              </button>
+              <button 
+                className="!bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg"
+                onClick={() => {
+                  setIsConfirmModalOpen(false);
+                  setIsSuccessModalOpen(true);
+                }}
+              >
+                YES
+              </button>
+            </div>
           </div>
         </div>
-      </div>
       )}
 
       {/* Success Modal */}
       {isSuccessModalOpen && (
         <div className="fixed inset-0 flex items-center justify-center z-50">
-          <div className="absolute inset-0 bg-opacity-50 backdrop-blur-sm" 
-              onClick={() => setIsSuccessModalOpen(false)}></div>
+          <div className="absolute inset-0 bg-opacity-50" onClick={() => setIsSuccessModalOpen(false)}></div>
           <div className="bg-white rounded-lg p-6 w-80 relative z-50 text-center">
-            {/* Logo hoặc tên nhà hàng */}
             <div className="flex justify-center mb-4">
-            <img alt="Logo" class="w-24 h-24" src="../../src/assets/img/logoremovebg.png"></img>
+              <img alt="Logo" className="w-24 h-24" src="../../src/assets/img/logoremovebg.png" />
             </div>
-            
-            {/* Thông báo thành công */}
-            <p className="text-lg mb-6 text-green-600 font-medium">Successful</p>
-            
-            {/* Nút đóng */}
+            <p className="text-lg mb-6 text-green-600 font-medium">Payment Successful</p>
             <button 
-              className="!bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
+              className="!bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg"
               onClick={() => setIsSuccessModalOpen(false)}
             >
               OK
