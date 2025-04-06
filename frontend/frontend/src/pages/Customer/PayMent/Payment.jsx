@@ -34,7 +34,36 @@ const Payment = () => {
         const response = await axios.get(
           `${API_BASE_URL}/api/orders/${orderId}/payment`
         );
-        setOrderDetails(response.data);
+
+        const orderData = response.data;
+        console.log("Order details response:", orderData);
+
+        // Make sure total is a number and not null
+        if (
+          orderData &&
+          (orderData.total === null || orderData.total === undefined)
+        ) {
+          // If total is null or undefined, calculate it from items
+          if (orderData.items && orderData.items.length > 0) {
+            let calculatedTotal = 0;
+            orderData.items.forEach((item) => {
+              const itemPrice = parseFloat(item.price) || 0;
+              const quantity = parseInt(item.quantity) || 1;
+              calculatedTotal += itemPrice * quantity;
+            });
+
+            // Apply discount if available
+            if (orderData.discount) {
+              calculatedTotal -= parseFloat(orderData.discount) || 0;
+            }
+
+            // Update total in order details
+            orderData.total = calculatedTotal > 0 ? calculatedTotal : 0;
+            console.log("Calculated total:", orderData.total);
+          }
+        }
+
+        setOrderDetails(orderData);
         setLoading(false);
       } catch (err) {
         console.error("Error fetching order details:", err);
@@ -48,34 +77,138 @@ const Payment = () => {
 
   const handlePayment = async () => {
     if (!orderId) {
-      setError("No order ID provided");
+      setError("Order ID is not provided. Please check your order.");
+      return;
+    }
+
+    const orderTotal = parseFloat(getOrderTotal());
+    if (orderTotal <= 0) {
+      setError("Total amout is not valid. Please check your order.");
       return;
     }
 
     try {
       setProcessingPayment(true);
 
-      // Process the payment
-      await axios.post(`${API_BASE_URL}/api/payment/process`, {
-        orderId: parseInt(orderId),
-        paymentMethod: paymentMethod,
-      });
+      if (paymentMethod === "VNPAY") {
+        // Xử lý VNPay như trước
+        const response = await axios.post(`${API_BASE_URL}/api/payment/vnpay`, {
+          orderId: parseInt(orderId),
+          total: orderTotal,
+          orderInfo: `Thanh toán cho đơn hàng: ${orderId}`,
+          returnUrl: `${window.location.origin}/payment?orderId=${orderId}`,
+        });
 
-      // Show confirmation modal
-      setShowModal(true);
+        if (response.data && response.data.paymentUrl) {
+          window.location.href = response.data.paymentUrl;
+          return;
+        } else {
+          throw new Error("Không nhận được URL thanh toán từ server");
+        }
+      } else {
+        // Đối với CASH hoặc CREDIT, khởi tạo thanh toán nhưng chưa xác nhận
+        await axios.post(`${API_BASE_URL}/api/payment/process`, {
+          orderId: parseInt(orderId),
+          paymentMethod: paymentMethod,
+          confirmPayment: false, // Không xác nhận ngay
+        });
+
+        // Hiển thị modal xác nhận
+        setShowModal(true);
+      }
+
       setProcessingPayment(false);
-
-      // Refresh order details to update payment status
-      const response = await axios.get(
-        `${API_BASE_URL}/api/orders/${orderId}/payment`
-      );
-      setOrderDetails(response.data);
     } catch (err) {
       console.error("Error processing payment:", err);
-      setError("Payment processing failed. Please try again.");
+      setError("Xử lý thanh toán thất bại. Vui lòng thử lại.");
       setProcessingPayment(false);
     }
   };
+
+  const confirmPayment = async () => {
+    try {
+      setProcessingPayment(true);
+
+      // Xác nhận thanh toán với API /api/payment/confirm
+      const response = await axios.post(`${API_BASE_URL}/api/payment/confirm`, {
+        orderId: parseInt(orderId),
+      });
+
+      if (response.data && response.data.success) {
+        // Xóa thông tin đơn hàng khỏi localStorage và sessionStorage
+        localStorage.removeItem("latestOrderInfo");
+        sessionStorage.removeItem("latestOrderInfo");
+
+        // Đóng modal
+        setShowModal(false);
+
+        // Cập nhật thông tin đơn hàng
+        const refreshResponse = await axios.get(
+          `${API_BASE_URL}/api/orders/${orderId}/payment`
+        );
+        setOrderDetails(refreshResponse.data);
+
+        // Redirect to home page after a short delay
+        setTimeout(() => {
+          window.location.href = "/"; // Redirect to home page
+        });
+      } else {
+        setError("Failed to confirm the payment. Please try again!");
+      }
+
+      setProcessingPayment(false);
+    } catch (err) {
+      console.error("Error confirming payment:", err);
+      setError("Failed to confirm the payment. Please try again!");
+      setProcessingPayment(false);
+    }
+  };
+
+  // Handle VNPay return (check for VNPay params in URL)
+  useEffect(() => {
+    const checkVnPayReturn = async () => {
+      // Check if we have VNPay response parameters in URL
+      if (location.search && location.search.includes("vnp_ResponseCode")) {
+        try {
+          // Get the current query string with VNPay params
+          const vnpQueryString = location.search;
+
+          // Call backend to verify the payment (sending full query string)
+          const verifyResponse = await axios.get(
+            `${API_BASE_URL}/api/payment/vnpay_payment${vnpQueryString}`
+          );
+
+          // If payment verification is successful
+          if (
+            verifyResponse.data &&
+            verifyResponse.data.transactionStatus === "00"
+          ) {
+            // Refresh order details
+            const orderResponse = await axios.get(
+              `${API_BASE_URL}/api/orders/${orderId}/payment`
+            );
+            setOrderDetails(orderResponse.data);
+
+            // Show success modal
+            setShowModal(true);
+          } else {
+            // Show error message for failed payment
+            setError("VNPay payment failed. Please try again.");
+          }
+
+          // Clean up the URL by removing VNPay parameters
+          navigate(`/payment?orderId=${orderId}`, { replace: true });
+        } catch (err) {
+          console.error("Error verifying VNPay payment:", err);
+          setError("Failed to verify payment. Please contact support.");
+        }
+      }
+    };
+
+    if (!loading && orderId) {
+      checkVnPayReturn();
+    }
+  }, [location.search, loading, orderId, navigate]);
 
   // Format date for display
   const formatDate = (dateString) => {
@@ -86,6 +219,33 @@ const Payment = () => {
       month: "2-digit",
       day: "2-digit",
     });
+  };
+
+  // Calculate total from items if needed
+  const getOrderTotal = () => {
+    // If total is already defined and not zero, use it
+    if (orderDetails?.total) {
+      return parseFloat(orderDetails.total);
+    }
+
+    // Otherwise calculate from items
+    if (orderDetails?.items && orderDetails.items.length > 0) {
+      let total = 0;
+      orderDetails.items.forEach((item) => {
+        const price = parseFloat(item.price) || 0;
+        const quantity = parseInt(item.quantity) || 1;
+        total += price * quantity;
+      });
+
+      // Apply discount if available
+      if (orderDetails?.discount) {
+        total -= parseFloat(orderDetails.discount) || 0;
+      }
+
+      return total > 0 ? total : 0;
+    }
+
+    return 0;
   };
 
   if (loading) {
@@ -111,6 +271,9 @@ const Payment = () => {
       </div>
     );
   }
+
+  // Get the final total for display
+  const orderTotal = getOrderTotal();
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
@@ -239,20 +402,16 @@ const Payment = () => {
             </div>
             <div className="flex justify-between font-bold text-lg">
               <span>TOTAL</span>
-              <span>
-                {parseFloat(orderDetails?.total || 0).toLocaleString()} VND
-              </span>
+              <span>{orderTotal.toLocaleString()} VND</span>
             </div>
           </div>
 
           {/* Payment Button - only show if not paid yet */}
           {orderDetails?.paymentStatus !== "PAID" && (
             <button
-              className={`w-full !bg-black text-white py-3 rounded-lg hover:bg-gray-800 transition ${
-                processingPayment ? "opacity-50 cursor-not-allowed" : ""
-              }`}
+              className="w-full !bg-black text-white py-3 rounded-lg hover:bg-gray-800 transition"
               onClick={handlePayment}
-              disabled={processingPayment}
+              disabled={processingPayment || orderTotal <= 0}
             >
               {processingPayment ? "PROCESSING..." : "PAYMENT"}
             </button>
@@ -261,7 +420,7 @@ const Payment = () => {
           {/* If already paid, show complete button */}
           {orderDetails?.paymentStatus === "PAID" && (
             <button
-              className="w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition"
+              className="w-full !bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition"
               onClick={() => navigate("/evaluate")}
             >
               COMPLETE
@@ -272,14 +431,11 @@ const Payment = () => {
 
       {/* Payment Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-opacity-20 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-20 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="relative bg-white p-6 rounded-lg shadow-lg w-96 border border-gray-300">
             {/* Close button */}
             <button
-              onClick={() => {
-                setShowModal(false);
-                navigate("/evaluate");
-              }}
+              onClick={() => setShowModal(false)}
               className="absolute top-2 right-2 text-gray-500 hover:text-gray-800"
             >
               <svg
@@ -309,20 +465,27 @@ const Payment = () => {
               }}
             />
             <h3 className="text-xl font-bold text-center mb-2">
-              Payment Successful!
+              Payment Confirmation
             </h3>
             <p className="text-center text-gray-700 mb-6">
-              Your payment has been successfully processed.
+              Are you sure to proceed with the payment?{" "}
+              <strong>{orderTotal.toLocaleString()}đ</strong> cho đơn hàng #
+              {orderId}?
             </p>
-            <button
-              onClick={() => {
-                setShowModal(false);
-                navigate("/evaluate");
-              }}
-              className="w-full !bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition"
-            >
-              CONTINUE
-            </button>
+            <div className="flex justify-between gap-2">
+              <button
+                onClick={() => setShowModal(false)}
+                className="w-1/2 !bg-gray-300 text-black py-2 rounded-lg hover:bg-gray-400 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmPayment}
+                className="w-1/2 !bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition"
+              >
+                Confirm
+              </button>
+            </div>
           </div>
         </div>
       )}
