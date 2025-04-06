@@ -12,6 +12,9 @@ const Payment = () => {
   const [paymentMethod, setPaymentMethod] = useState("CASH");
   const [processingPayment, setProcessingPayment] = useState(false);
 
+  // Add Momo phone number for QR code URL
+  const momoPhoneNumber = "0329914143"; // Replace with your actual Momo phone number
+
   // Extract orderId from URL query parameters
   const queryParams = new URLSearchParams(location.search);
   const orderId = queryParams.get("orderId");
@@ -105,6 +108,9 @@ const Payment = () => {
         } else {
           throw new Error("Không nhận được URL thanh toán từ server");
         }
+      } else if (paymentMethod === "MOMO") {
+        // For Momo, just show the QR code modal
+        setShowModal(true);
       } else {
         // Đối với CASH hoặc CREDIT, khởi tạo thanh toán nhưng chưa xác nhận
         await axios.post(`${API_BASE_URL}/api/payment/process`, {
@@ -151,7 +157,7 @@ const Payment = () => {
         // Redirect to home page after a short delay
         setTimeout(() => {
           window.location.href = "/"; // Redirect to home page
-        });
+        }, 2000);
       } else {
         setError("Failed to confirm the payment. Please try again!");
       }
@@ -274,6 +280,9 @@ const Payment = () => {
 
   // Get the final total for display
   const orderTotal = getOrderTotal();
+
+  // Generate Momo QR code URL
+  const momoQrUrl = `https://nhantien.momo.vn/${momoPhoneNumber}`;
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
@@ -398,6 +407,7 @@ const Payment = () => {
                 <option value="CASH">Cash</option>
                 <option value="VNPAY">VNPay</option>
                 <option value="CREDIT">Credit Card</option>
+                <option value="MOMO">Momo</option>
               </select>
             </div>
             <div className="flex justify-between font-bold text-lg">
@@ -455,37 +465,70 @@ const Payment = () => {
             </button>
 
             {/* Modal content */}
-            <img
-              src={`${API_BASE_URL}/api/images/logo.jpg`}
-              alt="Restaurant Logo"
-              className="mx-auto mb-4 w-24 h-24 object-contain"
-              onError={(e) => {
-                e.target.onerror = null;
-                e.target.style.display = "none";
-              }}
-            />
-            <h3 className="text-xl font-bold text-center mb-2">
-              Payment Confirmation
-            </h3>
-            <p className="text-center text-gray-700 mb-6">
-              Are you sure to proceed with the payment?{" "}
-              <strong>{orderTotal.toLocaleString()}đ</strong> cho đơn hàng #
-              {orderId}?
-            </p>
-            <div className="flex justify-between gap-2">
-              <button
-                onClick={() => setShowModal(false)}
-                className="w-1/2 !bg-gray-300 text-black py-2 rounded-lg hover:bg-gray-400 transition"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmPayment}
-                className="w-1/2 !bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition"
-              >
-                Confirm
-              </button>
-            </div>
+            {paymentMethod === "MOMO" ? (
+              <>
+                <div className="flex items-center justify-center mb-4">
+                  <h3 className="text-xl justify-center font-bold text-pink-500">
+                    Momo Payment
+                  </h3>
+                </div>
+                <div className="flex justify-center mb-4">
+                  <img
+                    src={`${API_BASE_URL}/api/images/qrCode.png`}
+                    alt="Momo QR Code"
+                    className="w-48 h-48 border"
+                  />
+                </div>
+                <div className="flex justify-between gap-2">
+                  <button
+                    onClick={() => setShowModal(false)}
+                    className="w-1/2 !bg-gray-300 text-black py-2 rounded-lg hover:bg-gray-400 transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmPayment}
+                    className="w-1/2 !bg-pink-500 text-white py-2 rounded-lg hover:bg-pink-600 transition"
+                  >
+                    Paid
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <img
+                  src={`${API_BASE_URL}/api/images/qrCode.png`}
+                  alt="Restaurant Logo"
+                  className="mx-auto mb-4 w-24 h-24 object-contain"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.style.display = "none";
+                  }}
+                />
+                <h3 className="text-xl font-bold text-center mb-2">
+                  Payment Confirmation
+                </h3>
+                <p className="text-center text-gray-700 mb-6">
+                  Are you sure to proceed with the payment?{" "}
+                  <strong>{orderTotal.toLocaleString()}đ</strong> cho đơn hàng #
+                  {orderId}?
+                </p>
+                <div className="flex justify-between gap-2">
+                  <button
+                    onClick={() => setShowModal(false)}
+                    className="w-1/2 !bg-gray-300 text-black py-2 rounded-lg hover:bg-gray-400 transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmPayment}
+                    className="w-1/2 !bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition"
+                  >
+                    Confirm
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
