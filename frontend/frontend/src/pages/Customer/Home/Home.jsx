@@ -1,13 +1,21 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Header from "../../../components/layout/Header";
 import Banner from "../../../components/ui/Banner";
 import { useNavigate } from "react-router-dom";
 import { useContext } from "react";
 import { CartContext } from "../../../context/CartContext";
+import axios from "axios";
 
 const Home = () => {
   const { cartItemCount, loading, fetchCartData } = useContext(CartContext);
   const navigate = useNavigate();
+  const [processingPayment, setProcessingPayment] = useState(false);
+  const [paymentError, setPaymentError] = useState(null);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [lastOrderInfo, setLastOrderInfo] = useState(null);
+
+  // Base API URL to ensure consistency
+  const API_BASE_URL = "http://localhost:8080";
 
   const specialDishes = [
     {
@@ -24,7 +32,7 @@ const Home = () => {
     },
   ];
 
-  // Fetch cart data when component mounts
+  // Sửa trong useEffect của Home.js để phục hồi đơn hàng từ cả localStorage và sessionStorage
   useEffect(() => {
     // Try to load from localStorage first
     const cachedCartData = localStorage.getItem("cartData");
@@ -37,9 +45,30 @@ const Home = () => {
       }
     }
 
+    // Load last order info if available
+    let orderInfo = localStorage.getItem("latestOrderInfo");
+
+    // Nếu không tìm thấy trong localStorage, thử tìm trong sessionStorage
+    if (!orderInfo) {
+      orderInfo = sessionStorage.getItem("latestOrderInfo");
+      // Nếu tìm thấy trong sessionStorage, khôi phục vào localStorage
+      if (orderInfo) {
+        localStorage.setItem("latestOrderInfo", orderInfo);
+      }
+    }
+
+    if (orderInfo) {
+      try {
+        const parsedOrderInfo = JSON.parse(orderInfo);
+        setLastOrderInfo(parsedOrderInfo);
+      } catch (e) {
+        console.error("Error parsing order info:", e);
+      }
+    }
+
     // Then fetch fresh data from the server
     fetchCartData();
-  }, []);
+  }, [fetchCartData]);
 
   // Handler for Order Now button
   const handleOrderNow = async () => {
@@ -53,10 +82,149 @@ const Home = () => {
     }
   };
 
+  const handleCallPayment = async () => {
+    try {
+      setProcessingPayment(true);
+      setPaymentError(null);
+      setPaymentSuccess(false);
+
+      // Trước tiên, luôn kiểm tra trong localStorage và sessionStorage
+      let orderInfo = localStorage.getItem("latestOrderInfo");
+      if (!orderInfo) {
+        orderInfo = sessionStorage.getItem("latestOrderInfo");
+        if (orderInfo) {
+          // Khôi phục vào localStorage nếu tìm thấy trong sessionStorage
+          localStorage.setItem("latestOrderInfo", orderInfo);
+        }
+      }
+
+      let orderData;
+      if (orderInfo) {
+        try {
+          orderData = JSON.parse(orderInfo);
+        } catch (e) {
+          console.error("Error parsing order info:", e);
+        }
+      }
+
+      // Nếu đã có thông tin đơn hàng trong localStorage hoặc sessionStorage
+      if (orderData && orderData.orderId) {
+        // Kiểm tra xem đơn hàng có còn tồn tại trên server không
+        try {
+          const orderCheckResponse = await axios.get(
+            `${API_BASE_URL}/api/orders/${orderData.orderId}`
+          );
+
+          // Nếu đơn hàng tồn tại và chưa được thanh toán
+          if (
+            orderCheckResponse.data &&
+            orderCheckResponse.data.status !== "PAID"
+          ) {
+            await processPayment(
+              orderData.orderId,
+              orderData.amount,
+              orderData.customerId
+            );
+            return;
+          }
+        } catch (error) {
+          console.log(
+            "Order check failed, will try to get recent order:",
+            error
+          );
+          // Nếu không tìm thấy đơn hàng, tiếp tục với logic lấy đơn hàng gần nhất
+        }
+      }
+
+      // Nếu không có thông tin đơn hàng trong storage hoặc đơn hàng không còn hợp lệ
+      try {
+        // Thêm tham số để chỉ lấy đơn hàng chưa thanh toán
+        const ordersResponse = await axios.get(
+          `${API_BASE_URL}/api/orders/recent?status=PENDING`
+        );
+
+        if (!ordersResponse.data || !ordersResponse.data.orderId) {
+          setPaymentError("Không tìm thấy đơn hàng nào chưa thanh toán");
+          setProcessingPayment(false);
+          return;
+        }
+
+        // Sử dụng dữ liệu từ API response
+        const orderId = ordersResponse.data.orderId;
+        const amount = ordersResponse.data.amount || 0;
+        const customerId = ordersResponse.data.customerId || "Guest";
+
+        // Lưu thông tin đơn hàng mới tìm được vào localStorage và sessionStorage
+        const paymentInfo = {
+          orderId: orderId,
+          amount: amount,
+          customerId: customerId,
+          createdAt: new Date().toISOString(),
+          isPaid: false,
+        };
+        localStorage.setItem("latestOrderInfo", JSON.stringify(paymentInfo));
+        sessionStorage.setItem("latestOrderInfo", JSON.stringify(paymentInfo));
+        setLastOrderInfo(paymentInfo);
+
+        // Xử lý thanh toán
+        await processPayment(orderId, amount, customerId);
+      } catch (error) {
+        console.error("Error fetching recent order:", error);
+        setPaymentError("Unpaid order not found. Please try again.");
+        setProcessingPayment(false);
+      }
+    } catch (err) {
+      console.error("Error in payment flow:", err);
+      setPaymentError(
+        err.response?.data?.message ||
+          "Cannot process payment. Please try again."
+      );
+      setProcessingPayment(false);
+    }
+  };
+
+  const processPayment = async (orderId, amount, customerId) => {
+    try {
+      const paymentResponse = await axios.post(
+        `${API_BASE_URL}/api/payment/process`,
+        {
+          orderId: orderId,
+          paymentMethod: "CASH", // hoặc "MOMO_QR", "VNPAY", v.v.
+          amount: amount,
+          customerId: customerId,
+          updateStatus: false, // QUAN TRỌNG: Không cập nhật trạng thái thành PAID
+        }
+      );
+
+      if (paymentResponse.data && paymentResponse.data.success) {
+        setPaymentSuccess(true);
+
+        // KHÔNG xóa thông tin đơn hàng, chỉ chuyển đến trang thanh toán
+        navigate(`/payment?orderId=${orderId}`);
+      } else {
+        setPaymentError(
+          paymentResponse.data?.message || "Failed to process payment"
+        );
+      }
+    } catch (error) {
+      console.error("Error processing payment:", error);
+      setPaymentError("Failed to process payment. Please try again.");
+    } finally {
+      setProcessingPayment(false);
+    }
+  };
+
   return (
     <div className="px-2 py-4">
       <Header />
       <Banner />
+
+      {/* Payment error message if any */}
+      {paymentError && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          <p>{paymentError}</p>
+        </div>
+      )}
 
       {/* 2-column layout */}
       <section className="mt-4 grid grid-cols-2 gap-4">
@@ -108,7 +276,8 @@ const Home = () => {
           {/* Call Payment button */}
           <div className="relative">
             <button
-              onClick={() => navigate("/payment")}
+              onClick={handleCallPayment}
+              disabled={processingPayment}
               className="absolute inset-0 flex items-center justify-center text-black font-bold rounded-lg"
               style={{
                 backgroundImage: "url('/src/assets/img/callpayment.jpg')",
@@ -116,7 +285,7 @@ const Home = () => {
                 backgroundPosition: "center",
               }}
             >
-              Call Payment
+              {processingPayment ? "Processing..." : "Call Payment"}
             </button>
           </div>
 
@@ -141,7 +310,7 @@ const Home = () => {
       <section className="mt-6">
         <button
           onClick={handleOrderNow}
-          className="w-full bg-red-500 text-white py-3 rounded-lg font-bold flex items-center justify-center relative"
+          className="w-full !bg-red-500 text-white py-3 rounded-lg font-bold flex items-center justify-center relative"
           disabled={loading}
         >
           {loading ? (
@@ -159,6 +328,7 @@ const Home = () => {
         </button>
       </section>
 
+      {/* Rest of the component remains the same */}
       {/* Today's special dishes */}
       <section className="mt-6">
         {/* Title and arrow button */}
