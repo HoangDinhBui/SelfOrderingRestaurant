@@ -71,7 +71,7 @@ const NotificationManagement = () => {
       navigate('/order-management');
     } else if (tab === "Dish Management") {
       // Thêm route cho Dish Management nếu cần
-      // navigate('/dishes');
+      navigate('/dish-management');
     } else {
       setActiveTab(tab);
     }
