@@ -1,16 +1,18 @@
 import React, { useState } from "react";
+import { useNavigate } from 'react-router-dom';
 
 const OrderManagement = () => {
   const [activeTab, setActiveTab] = useState("Order Management");
   const [selectedTable, setSelectedTable] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEmptyTableModalOpen, setIsEmptyTableModalOpen] = useState(false);
-
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const tabs = ["Order Management", "Notification Management", "Dish Management"];
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
 
-  const handleTabClick = (tab) => {
-    setActiveTab(tab);
-  };
+  const navigate = useNavigate();
+
+  
 
   const handleSelectTable = (table) => {
     setSelectedTable(table);
@@ -25,17 +27,37 @@ const OrderManagement = () => {
     setIsEmptyTableModalOpen(true);
   };
 
+  const [isBillModalOpen, setIsBillModalOpen] = useState(false);
+
+  const handleShowBillModal = (table) => {
+    setSelectedTable(table);
+    setIsBillModalOpen(true);
+  };
+
+  const handlePrintReceipt = () => {
+    setIsBillModalOpen(false);
+    setIsConfirmModalOpen(true); // DI CHUYỂN VÀO ĐÂY
+  };
+
+  const handleTabClick = (tab) => {
+    if (tab === "Notification Management") {
+      navigate('/notification-management');
+    } else {
+      setActiveTab(tab);
+    }
+  };
+  const totalAmount = selectedTable?.dishes.reduce((sum, dish) => sum + (dish.price * dish.quantity), 0);
   const tables = [
     {
       id: 1,
       status: "occupied",
       dishes: [
-        { name: "Huitres Fraiches (6PCS)", quantity: 1, status: "Complete", image: "../../../../assets/img/Mon1.jpg" },
-        { name: "Huitres Gratinees (6PCS)", quantity: 1, status: "Complete", image: "../../../assets/img/Mon1.jpg" },
-        { name: "Tartare De Saumon", quantity: 1, status: "Complete", image: "../../../assets/img/Mon1.jpg" },
-        { name: "Salad Gourmande", quantity: 1, status: "Complete", image: "../../../assets/img/Mon1.jpg" },
-        { name: "Salad Landaise", quantity: 1, status: "Pending", image: "../../../assets/img/" },
-        { name: "Magret De Canard", quantity: 1, status: "Pending", image: "../../../assets/img/Mon1.jpg" },
+        { name: "Huitres Fraiches (6PCS)", quantity: 1, price: 200000, status: "Complete", image: "../../../../assets/img/Mon1.jpg" },
+        { name: "Huitres Gratinees (6PCS)", quantity: 1, price: 250000, status: "Complete", image: "../../../assets/img/Mon1.jpg" },
+        { name: "Tartare De Saumon", quantity: 1, price: 180000, status: "Complete", image: "../../../assets/img/Mon1.jpg" },
+        { name: "Salad Gourmande", quantity: 1, price: 120000, status: "Complete", image: "../../../assets/img/Mon1.jpg" },
+        { name: "Salad Landaise", quantity: 1, price: 150000, status: "Pending", image: "../../../assets/img/" },
+        { name: "Magret De Canard", quantity: 1, price: 300000, status: "Pending", image: "../../../assets/img/Mon1.jpg" },
       ],
     },
     {
@@ -48,16 +70,21 @@ const OrderManagement = () => {
       id: 3,
       status: "occupied",
       dishes: [
-        { name: "Dish 1", quantity: 2, status: "Pending", image: "path/to/image7.jpg" },
-        { name: "Dish 2", quantity: 1, status: "Complete", image: "path/to/image8.jpg" },
+        { name: "Beef Wellington", quantity: 2, price: 350000, status: "Complete", image: "../../../assets/img/beef-wellington.jpg" },
+        { name: "Foie Gras", quantity: 1, price: 280000, status: "Complete", image: "../../../assets/img/foie-gras.jpg" },
+        { name: "Lobster Thermidor", quantity: 1, price: 420000, status: "Pending", image: "../../../assets/img/lobster.jpg" },
+        { name: "Truffle Pasta", quantity: 1, price: 220000, status: "Pending", image: "../../../assets/img/truffle-pasta.jpg" },
       ],
     },
     {
-      id: 4,
-      status: "available",
-      dishes: [],
-      capacity: 2
-    },
+      id: 44,
+      status: "occupied",
+      dishes: [
+        { name: "Ratatouille", quantity: 1, price: 120000, status: "Complete", image: "../../../assets/img/ratatouille.jpg" },
+        { name: "Bouillabaisse", quantity: 2, price: 180000, status: "Complete", image: "../../../assets/img/bouillabaisse.jpg" },
+        { name: "Crème Brûlée", quantity: 2, price: 90000, status: "Complete", image: "../../../assets/img/creme-brulee.jpg" },
+      ],
+    }
   ];
 
   // Get empty tables for the empty table list modal
@@ -137,7 +164,10 @@ const OrderManagement = () => {
                       />
                     </svg>
                   </div>
-                  <div className="p-4 flex items-center justify-center">
+                  <div 
+                    className="p-4 flex items-center justify-center cursor-pointer"
+                    onClick={() => handleShowBillModal(table)}
+                  >
                     <span className="text-lg">
                       {table.dishes.length > 0 
                         ? `Dish ${table.dishes.filter(d => d.status === "Complete").length}/${table.dishes.length}` 
@@ -364,6 +394,144 @@ const OrderManagement = () => {
                 </tbody>
               </table>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bill Modal */}
+        {isBillModalOpen && selectedTable && (
+          <div className="fixed inset-0 flex items-center justify-center z-50">
+            {/* Background overlay - làm mờ và tối phần nền */}
+            <div 
+              className="absolute inset-0 bg-opacity-70 backdrop-blur-sm"
+              onClick={() => setIsBillModalOpen(false)}
+            ></div>
+            
+            {/* Modal content - hiển thị rõ ràng */}
+            <div className="bg-white rounded-lg shadow-xl p-6 w-2/3 relative z-50 transform transition-all">
+              {/* Header */}
+              <div className="text-center mb-4">
+                <p className="text-sm text-gray-600">450 Le Van Viel Street, Tang Nhon Phu A Word, District 9</p>
+                <p className="text-sm text-gray-600">SDT: 0987654321</p>
+                <h3 className="font-bold mt-2 text-xl text-blue-800">Payment Slip 001</h3>
+              </div>
+              
+              {/* Table info */}
+              <div className="flex justify-between border-b pb-2 mb-4">
+                <span className="font-bold text-gray-700">Table {selectedTable.id}</span>
+                <span className="font-bold text-gray-700">Payment Slip 001</span>
+              </div>
+              
+              {/* Dishes table */}
+              <div className="max-h-96 overflow-y-auto mb-4">
+                <table className="w-full">
+                  <thead className="sticky top-0 bg-white">
+                    <tr className="border-b">
+                      <th className="text-left py-2 font-medium text-gray-700">Dish name</th>
+                      <th className="text-left py-2 font-medium text-gray-700">Qty</th>
+                      <th className="text-left py-2 font-medium text-gray-700">Unit price</th>
+                      <th className="text-left py-2 font-medium text-gray-700">Total amount</th>
+                      <th className="text-left py-2 font-medium text-gray-700">Note</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedTable.dishes.map((dish, index) => (
+                      <tr key={index} className="border-b hover:bg-gray-50">
+                        <td className="py-3 text-gray-800">{dish.name}</td>
+                        <td className="py-3">{dish.quantity}</td>
+                        <td className="py-3">{dish.price ? dish.price.toLocaleString() : '-'}</td>
+                        <td className="py-3 font-medium">
+                          {dish.price ? (dish.price * dish.quantity).toLocaleString() : '-'}
+                        </td>
+                        <td className="py-3 text-gray-500">-</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              {/* Total amount */}
+              <div className="flex justify-between mt-4 border-t pt-4">
+                <span className="font-bold text-gray-700">Staff: 1</span>
+                <span className="font-bold text-lg text-blue-800">
+                  Total Amount: {totalAmount.toLocaleString()} VND
+                </span>
+              </div>
+              
+              {/* Actions */}
+              <div className="mt-6 flex justify-center space-x-4">
+                <button 
+                  className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg transition-colors"
+                  onClick={() => setIsBillModalOpen(false)}
+                >
+                  Close
+                </button>
+                <button 
+                  className="!bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
+                  onClick={handlePrintReceipt}
+                >
+                  Print
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+     {/* Confirmation Modal */}
+     {isConfirmModalOpen && (
+      <div className="fixed inset-0 flex items-center justify-center z-50">
+        <div className="absolute inset-0 bg-opacity-50 backdrop-blur-sm" onClick={() => setIsConfirmModalOpen(false)}></div>
+        <div className="bg-white rounded-lg p-6 w-80 relative z-50 text-center">
+          {/* Thay thế chữ bằng logo */}
+          <div className="flex justify-center mb-4">
+          <img alt="Logo" class="w-24 h-24" src="../../src/assets/img/logoremovebg.png"></img>
+          </div>
+          
+          <p className="text-lg mb-6">ARE YOU SURE?</p>
+          
+          <div className="flex justify-center space-x-4">
+            <button 
+              className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg"
+              onClick={() => setIsConfirmModalOpen(false)}
+            >
+              NO
+            </button>
+            <button 
+              className="!bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
+              onClick={() => {
+                setIsConfirmModalOpen(false);
+                setIsSuccessModalOpen(true);
+                // Xử lý khi bấm YES
+              }}
+            >
+              YES
+            </button>
+          </div>
+        </div>
+      </div>
+      )}
+
+      {/* Success Modal */}
+      {isSuccessModalOpen && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="absolute inset-0 bg-opacity-50 backdrop-blur-sm" 
+              onClick={() => setIsSuccessModalOpen(false)}></div>
+          <div className="bg-white rounded-lg p-6 w-80 relative z-50 text-center">
+            {/* Logo hoặc tên nhà hàng */}
+            <div className="flex justify-center mb-4">
+            <img alt="Logo" class="w-24 h-24" src="../../src/assets/img/logoremovebg.png"></img>
+            </div>
+            
+            {/* Thông báo thành công */}
+            <p className="text-lg mb-6 text-green-600 font-medium">Successful</p>
+            
+            {/* Nút đóng */}
+            <button 
+              className="!bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
+              onClick={() => setIsSuccessModalOpen(false)}
+            >
+              OK
+            </button>
           </div>
         </div>
       )}
