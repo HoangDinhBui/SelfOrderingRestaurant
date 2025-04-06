@@ -133,6 +133,12 @@ const Order = () => {
     }
   };
 
+  // Calculate total price
+  const totalPrice = cartItems.reduce(
+    (total, item) => total + parseFloat(item.price) * item.quantity,
+    0
+  );
+
   // Create order via API and process payment
   const createOrder = async () => {
     try {
@@ -159,16 +165,23 @@ const Order = () => {
       let orderId;
       if (orderResponse.data && orderResponse.data.orderId) {
         orderId = orderResponse.data.orderId;
+
+        // Store the order information in localStorage for payment processing
+        const paymentInfo = {
+          orderId: orderId,
+          amount: totalPrice,
+          customerId: orderResponse.data.customerId || "Guest",
+          createdAt: new Date().toISOString(),
+          isPaid: false, // Thêm trạng thái thanh toán rõ ràng
+        };
+        localStorage.setItem("latestOrderInfo", JSON.stringify(paymentInfo));
+
+        // Lưu thêm vào session storage để có backup
+        sessionStorage.setItem("latestOrderInfo", JSON.stringify(paymentInfo));
       } else {
         console.error("Order created but no orderId returned");
         throw new Error("Could not get orderId from response");
       }
-
-      // Process the payment with default "CASH" method
-      await axios.post(`${API_BASE_URL}/api/payment/process`, {
-        orderId: orderId,
-        paymentMethod: "CASH", // Default to cash payment
-      });
 
       setShowModal(false);
       setShowConfirmation(true);
@@ -177,10 +190,10 @@ const Order = () => {
       setCartItems([]);
       localStorage.removeItem("cartData");
 
-      // After a few seconds, navigate to payment page
+      // After a few seconds, navigate to home page instead of payment page
       setTimeout(() => {
         setShowConfirmation(false);
-        navigate(`/payment?orderId=${orderId}`);
+        navigate("/"); // Navigate to home page
       }, 3000);
     } catch (err) {
       console.error("Error in order/payment flow:", err);
@@ -190,12 +203,6 @@ const Order = () => {
       setProcessingOrder(false);
     }
   };
-
-  // Calculate total price
-  const totalPrice = cartItems.reduce(
-    (total, item) => total + parseFloat(item.price) * item.quantity,
-    0
-  );
 
   if (loading) {
     return (
@@ -529,7 +536,7 @@ const Order = () => {
             <h3 className="text-xl font-bold mb-2">Order Successful!</h3>
             <p className="text-gray-600 mb-4">
               Your order has been placed successfully. You will be redirected to
-              the payment page.
+              the home page.
             </p>
             <p className="text-sm text-gray-500">Redirecting...</p>
           </div>
