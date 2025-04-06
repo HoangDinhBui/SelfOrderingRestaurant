@@ -9,6 +9,7 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Login from "./pages/Staff/Login/Login";
 import StaffInformation from "./pages/Staff/StaffInformation/StaffInformation";
 import OrderManagement from "./pages/Staff/OrderManagement/OrderManagement";
+import NotificationManagement from "./pages/Staff/NotificationManagement/NotificationManagement";
 function App() {
   return (
     <Router>
@@ -23,7 +24,8 @@ function App() {
           <Route path="/login" element={<Login />} /> 
           <Route path="/staff-information" element={<StaffInformation />} />
           <Route path="/order-management" element={<OrderManagement />} />
-        
+          <Route path="/notification-management" element={<NotificationManagement />} />
+          {/* Add more routes as needed */}
         
 
           
