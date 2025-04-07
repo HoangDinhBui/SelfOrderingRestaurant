@@ -98,7 +98,7 @@ const Payment = () => {
         const response = await axios.post(`${API_BASE_URL}/api/payment/vnpay`, {
           orderId: parseInt(orderId),
           total: orderTotal,
-          orderInfo: `Thanh toán cho đơn hàng: ${orderId}`,
+          orderInfo: `Payment for Order Id: ${orderId}`,
           returnUrl: `${window.location.origin}/payment?orderId=${orderId}`,
         });
 
@@ -106,7 +106,7 @@ const Payment = () => {
           window.location.href = response.data.paymentUrl;
           return;
         } else {
-          throw new Error("Không nhận được URL thanh toán từ server");
+          throw new Error("Cannot get payment URL from VNPay.");
         }
       } else if (paymentMethod === "MOMO") {
         // For Momo, just show the QR code modal
@@ -126,7 +126,7 @@ const Payment = () => {
       setProcessingPayment(false);
     } catch (err) {
       console.error("Error processing payment:", err);
-      setError("Xử lý thanh toán thất bại. Vui lòng thử lại.");
+      setError("Failed to process payment. Please try again.");
       setProcessingPayment(false);
     }
   };
@@ -441,7 +441,7 @@ const Payment = () => {
 
       {/* Payment Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-20 backdrop-blur-sm flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-opacity-20 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="relative bg-white p-6 rounded-lg shadow-lg w-96 border border-gray-300">
             {/* Close button */}
             <button
@@ -497,7 +497,7 @@ const Payment = () => {
             ) : (
               <>
                 <img
-                  src={`${API_BASE_URL}/api/images/qrCode.png`}
+                  src={`${API_BASE_URL}/api/images/logo.png`}
                   alt="Restaurant Logo"
                   className="mx-auto mb-4 w-24 h-24 object-contain"
                   onError={(e) => {

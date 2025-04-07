@@ -12,13 +12,13 @@ import Note from "./pages/Customer/Note/Note";
 import Payment from "./pages/Customer/PayMent/Payment";
 import Evaluate from "./pages/Customer/Evaluate/Evaluate";
 
-// Staff/Admin Pages
-// import Login from "./pages/Staff/Login/Login";
-// import StaffInformation from "./pages/Staff/StaffInformation/StaffInformation";
-// import OrderManagement from "./pages/Staff/OrderManagement/OrderManagement";
-// import NotificationManagement from "./pages/Staff/NotificationManagement/NotificationManagement";
-// import DishManagement from "./pages/Staff/DishManagement/DishManagement";
-// import "./axiosConfig";
+//Staff/Admin Pages
+import Login from "./pages/Staff/Login/Login";
+import StaffInformation from "./pages/Staff/StaffInformation/StaffInformation";
+import OrderManagement from "./pages/Staff/OrderManagement/OrderManagement";
+import NotificationManagement from "./pages/Staff/NotificationManagement/NotificationManagement";
+import DishManagement from "./pages/Staff/DishManagement/DishManagement";
+import "./axiosConfig";
 
 function App() {
   return (
@@ -34,8 +34,7 @@ function App() {
             <Route path="/note/:id" element={<Note />} />
             <Route path="/payment" element={<Payment />} />
             <Route path="/evaluate" element={<Evaluate />} />
-
-            {/* Staff/Admin Routes
+            {/*Staff/Admin Routes*/}
             <Route path="/login" element={<Login />} />
             <Route path="/staff-information" element={<StaffInformation />} />
             <Route path="/order-management" element={<OrderManagement />} />
@@ -43,7 +42,7 @@ function App() {
               path="/notification-management"
               element={<NotificationManagement />}
             />
-            <Route path="/dish-management" element={<DishManagement />} /> */}
+            <Route path="/dish-management" element={<DishManagement />} />
           </Routes>
         </Router>
       </MenuProvider>
