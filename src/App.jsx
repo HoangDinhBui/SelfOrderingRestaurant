@@ -45,6 +45,7 @@ function App() {
               element={<NotificationManagement />}
             />
             <Route path="/dish-management" element={<DishManagement />} /> */}
+            <Route path="/staff-information" element={<StaffInformation />} />
             <Route path="/notification-management" element={<NotificationManagement/>} />
             <Route path="/dish-management" element={<DishManagement/>} />
             <Route path="/table-management" element={<TableManagement/>} />
