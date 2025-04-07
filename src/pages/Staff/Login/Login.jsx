@@ -60,7 +60,7 @@ const Login = () => {
       ] = `Bearer ${authData.accessToken}`;
 
       console.log("Login successful", authData);
-      navigate("/order-management");
+      navigate("/table-management");
 
       // Redirect to dashboard or home page after successful login
       // window.location.href = '/dashboard'; // Uncomment to redirect

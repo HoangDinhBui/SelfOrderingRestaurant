@@ -13,6 +13,10 @@ const Home = () => {
   const [paymentError, setPaymentError] = useState(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [lastOrderInfo, setLastOrderInfo] = useState(null);
+  const [sendingNotification, setSendingNotification] = useState(false);
+  const [notificationError, setNotificationError] = useState(null);
+  const [notificationSuccess, setNotificationSuccess] = useState(false);
+  const [tableNumber, setTableNumber] = useState("A6"); // Default table number
 
   // Base API URL to ensure consistency
   const API_BASE_URL = "http://localhost:8080";
@@ -32,7 +36,6 @@ const Home = () => {
     },
   ];
 
-  // Sửa trong useEffect của Home.js để phục hồi đơn hàng từ cả localStorage và sessionStorage
   useEffect(() => {
     // Try to load from localStorage first
     const cachedCartData = localStorage.getItem("cartData");
@@ -66,6 +69,12 @@ const Home = () => {
       }
     }
 
+    // Try to get table number from localStorage
+    const savedTableNumber = localStorage.getItem("tableNumber");
+    if (savedTableNumber) {
+      setTableNumber(savedTableNumber);
+    }
+
     // Then fetch fresh data from the server
     fetchCartData();
   }, [fetchCartData]);
@@ -82,19 +91,97 @@ const Home = () => {
     }
   };
 
+  const sendNotification = async (type, additionalMessage = "") => {
+    setSendingNotification(true);
+    setNotificationError(null);
+    setNotificationSuccess(false);
+
+    try {
+      // Get current customer info - fallback to a guest user if needed
+      const customerInfo = JSON.parse(localStorage.getItem("customerInfo")) || {
+        id: 1, // Guest customer ID
+        fullname: "Guest Customer",
+      };
+
+      // Get orderId if available
+      let orderId = null;
+      if (lastOrderInfo && lastOrderInfo.orderId) {
+        orderId = lastOrderInfo.orderId;
+      }
+
+      // Get table number - ensure we're using a valid table number from the system
+      // Using a fixed table number value for demonstration (this should match a valid table in your database)
+      const tableNumberNumeric = 1; // Use a known valid table ID from your database
+
+      // Prepare notification request
+      const notificationRequest = {
+        customerId: customerInfo.id,
+        tableNumber: tableNumberNumeric,
+        type: type, // "CALL_STAFF" or "PAYMENT_REQUEST"
+        orderId: orderId,
+        additionalMessage: additionalMessage,
+      };
+
+      // Log the request for debugging
+      console.log("Sending notification request:", notificationRequest);
+
+      // Send notification request to API
+      const response = await axios.post(
+        `${API_BASE_URL}/api/notifications`,
+        notificationRequest
+      );
+
+      if (response.status === 200) {
+        setNotificationSuccess(true);
+        return true;
+      } else {
+        throw new Error("Failed to send notification");
+      }
+    } catch (error) {
+      console.error("Error sending notification:", error);
+
+      // Handle specific error types
+      if (error.response?.data?.error === "Table not found") {
+        setNotificationError(
+          "The table number is not recognized. Please contact staff for assistance."
+        );
+      } else {
+        setNotificationError(
+          error.response?.data?.error ||
+            "Failed to notify staff. Please try again."
+        );
+      }
+      return false;
+    } finally {
+      setSendingNotification(false);
+    }
+  };
+
+  const handleCallStaff = async () => {
+    const success = await sendNotification(
+      "CALL_STAFF",
+      "Customer needs assistance"
+    );
+    if (success) {
+      // You can optionally show a success message or toast
+      alert("Staff has been notified and will assist you shortly.");
+    }
+  };
+
   const handleCallPayment = async () => {
     try {
       setProcessingPayment(true);
       setPaymentError(null);
       setPaymentSuccess(false);
 
-      // Trước tiên, luôn kiểm tra trong localStorage và sessionStorage
+      // No notification sent here - we'll only send it after confirmation in the Payment component
+
+      // Check for existing order information
       let orderInfo = localStorage.getItem("latestOrderInfo");
       if (!orderInfo) {
         orderInfo = sessionStorage.getItem("latestOrderInfo");
         if (orderInfo) {
-          // Khôi phục vào localStorage nếu tìm thấy trong sessionStorage
-          localStorage.setItem("latestOrderInfo", orderInfo);
+          localStorage.setItem("latestOrderInfo", JSON.stringify(orderInfo));
         }
       }
 
@@ -107,24 +194,20 @@ const Home = () => {
         }
       }
 
-      // Nếu đã có thông tin đơn hàng trong localStorage hoặc sessionStorage
+      // If we have valid order data in storage
       if (orderData && orderData.orderId) {
-        // Kiểm tra xem đơn hàng có còn tồn tại trên server không
         try {
           const orderCheckResponse = await axios.get(
             `${API_BASE_URL}/api/orders/${orderData.orderId}`
           );
 
-          // Nếu đơn hàng tồn tại và chưa được thanh toán
           if (
             orderCheckResponse.data &&
             orderCheckResponse.data.status !== "PAID"
           ) {
-            await processPayment(
-              orderData.orderId,
-              orderData.amount,
-              orderData.customerId
-            );
+            // Skip payment processing here and just navigate
+            navigate(`/payment?orderId=${orderData.orderId}`);
+            setProcessingPayment(false);
             return;
           }
         } catch (error) {
@@ -132,29 +215,26 @@ const Home = () => {
             "Order check failed, will try to get recent order:",
             error
           );
-          // Nếu không tìm thấy đơn hàng, tiếp tục với logic lấy đơn hàng gần nhất
         }
       }
 
-      // Nếu không có thông tin đơn hàng trong storage hoặc đơn hàng không còn hợp lệ
+      // If no valid order in storage, get recent unpaid order
       try {
-        // Thêm tham số để chỉ lấy đơn hàng chưa thanh toán
         const ordersResponse = await axios.get(
           `${API_BASE_URL}/api/orders/recent?status=PENDING`
         );
 
         if (!ordersResponse.data || !ordersResponse.data.orderId) {
-          setPaymentError("Không tìm thấy đơn hàng nào chưa thanh toán");
+          setPaymentError("No unpaid orders found");
           setProcessingPayment(false);
           return;
         }
 
-        // Sử dụng dữ liệu từ API response
         const orderId = ordersResponse.data.orderId;
         const amount = ordersResponse.data.amount || 0;
         const customerId = ordersResponse.data.customerId || "Guest";
 
-        // Lưu thông tin đơn hàng mới tìm được vào localStorage và sessionStorage
+        // Save order info to storage
         const paymentInfo = {
           orderId: orderId,
           amount: amount,
@@ -166,11 +246,12 @@ const Home = () => {
         sessionStorage.setItem("latestOrderInfo", JSON.stringify(paymentInfo));
         setLastOrderInfo(paymentInfo);
 
-        // Xử lý thanh toán
-        await processPayment(orderId, amount, customerId);
+        // Navigate to payment page without processing payment
+        navigate(`/payment?orderId=${orderId}`);
       } catch (error) {
         console.error("Error fetching recent order:", error);
         setPaymentError("Unpaid order not found. Please try again.");
+      } finally {
         setProcessingPayment(false);
       }
     } catch (err) {
@@ -226,6 +307,13 @@ const Home = () => {
         </div>
       )}
 
+      {/* Notification error message if any */}
+      {notificationError && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          <p>{notificationError}</p>
+        </div>
+      )}
+
       {/* 2-column layout */}
       <section className="mt-4 grid grid-cols-2 gap-4">
         {/* Left column */}
@@ -237,7 +325,8 @@ const Home = () => {
               <span className="text-blue-500 font-semibold">Customer!</span>
             </p>
             <p className="text-gray-600">
-              We will deliver your food to your table: <strong>A6</strong>
+              We will deliver your food to your table:{" "}
+              <strong>{tableNumber}</strong>
             </p>
           </div>
 
@@ -260,6 +349,8 @@ const Home = () => {
           {/* Call Staff button */}
           <div className="relative">
             <button
+              onClick={handleCallStaff}
+              disabled={sendingNotification}
               className="absolute inset-0 flex items-center justify-center text-black font-bold rounded-lg"
               style={{
                 backgroundImage: "url('/src/assets/img/callstaff.jpg')",
@@ -267,7 +358,7 @@ const Home = () => {
                 backgroundPosition: "center",
               }}
             >
-              Call Staff
+              {sendingNotification ? "Calling..." : "Call Staff"}
             </button>
           </div>
 
@@ -275,7 +366,7 @@ const Home = () => {
           <div className="relative">
             <button
               onClick={handleCallPayment}
-              disabled={processingPayment}
+              disabled={processingPayment || sendingNotification}
               className="absolute inset-0 flex items-center justify-center text-black font-bold rounded-lg"
               style={{
                 backgroundImage: "url('/src/assets/img/callpayment.jpg')",
@@ -283,7 +374,9 @@ const Home = () => {
                 backgroundPosition: "center",
               }}
             >
-              {processingPayment ? "Processing..." : "Call Payment"}
+              {processingPayment || sendingNotification
+                ? "Processing..."
+                : "Call Payment"}
             </button>
           </div>
 
@@ -326,7 +419,6 @@ const Home = () => {
         </button>
       </section>
 
-      {/* Rest of the component remains the same */}
       {/* Today's special dishes */}
       <section className="mt-6">
         {/* Title and arrow button */}

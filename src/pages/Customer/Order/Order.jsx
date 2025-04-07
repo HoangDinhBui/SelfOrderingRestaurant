@@ -149,7 +149,9 @@ const Order = () => {
     0
   );
 
-  // Create order via API and process payment
+  // Check if there's a notification controller method in your codebase
+  // If not, we might need to use a different endpoint that maps to the NotificationService
+
   const createOrder = async () => {
     try {
       setProcessingOrder(true);
@@ -182,12 +184,42 @@ const Order = () => {
           amount: totalPrice,
           customerId: orderResponse.data.customerId || "Guest",
           createdAt: new Date().toISOString(),
-          isPaid: false, // Thêm trạng thái thanh toán rõ ràng
+          isPaid: false,
         };
         localStorage.setItem("latestOrderInfo", JSON.stringify(paymentInfo));
-
-        // Lưu thêm vào session storage để có backup
         sessionStorage.setItem("latestOrderInfo", JSON.stringify(paymentInfo));
+
+        // Create notification for staff about the new order - REVISED TO MATCH BACKEND STRUCTURE
+        try {
+          // Make sure customerId is an integer, not a string
+          const customerId =
+            typeof orderResponse.data.customerId === "number"
+              ? orderResponse.data.customerId
+              : 1; // Default to 1 if not available
+
+          const notificationData = {
+            tableNumber: tableId,
+            customerId: customerId,
+            orderId: orderId,
+            type: "NEW_ORDER", // Enum value as string - backend will convert
+            additionalMessage: `New order placed for Table ${tableId}`,
+          };
+
+          console.log("Sending notification data:", notificationData);
+
+          // Try the base notifications endpoint
+          await axios.post(
+            `${API_BASE_URL}/api/notifications`,
+            notificationData
+          );
+          console.log("Order notification sent successfully");
+        } catch (notificationError) {
+          console.error(
+            "Failed to send order notification:",
+            notificationError
+          );
+          // We don't want to fail the entire order process if notification fails
+        }
       } else {
         console.error("Order created but no orderId returned");
         throw new Error("Could not get orderId from response");
