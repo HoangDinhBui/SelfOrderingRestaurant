@@ -1,24 +1,29 @@
 import React, { useState } from "react";
-import MiniList from "./MiniList"; // Import MiniList component
+import MiniList from "./MiniList";
 
-const MenuBar = ({ title = "Management" }) => { // Nhận title từ props, mặc định là "Management"
-  const [isMiniListVisible, setMiniListVisible] = useState(false); // Trạng thái hiển thị MiniList
+const MenuBar = ({
+  title = "Management",
+  icon = "./src/assets/img/mealicon.png",
+  iconStyle = {}, // Style tùy chỉnh cho icon
+  titleStyle = {}, // Style tùy chỉnh cho title
+}) => {
+  const [isMiniListVisible, setMiniListVisible] = useState(false);
 
   const styles = {
     menuBar: {
       display: "flex",
       alignItems: "center",
-      justifyContent: "space-between", // Căn giữa logo, tiêu đề và avatar
-      backgroundColor: "#8D9EC5", // Màu nền của thanh menu
+      justifyContent: "space-between",
+      backgroundColor: "#8D9EC5",
       color: "white",
-      padding: "10px", // Khoảng cách ngang
+      padding: "10px",
       width: "100%",
-      height: "60px", // Chiều cao cố định của thanh menu
-      zIndex: 2, // Đảm bảo thanh menu luôn ở trên cùng
+      height: "60px",
+      zIndex: 2,
       boxShadow: "0 4px 8px rgba(0, 0, 0, 0.33)",
     },
     menuLeft: {
-      display: "flex", // Đặt logo và tiêu đề cùng hàng
+      display: "flex",
       alignItems: "center",
     },
     menuTitleContainer: {
@@ -32,21 +37,25 @@ const MenuBar = ({ title = "Management" }) => { // Nhận title từ props, mặ
       marginLeft: "15px",
     },
     menuIcon: {
-      width: "40px", // Kích thước icon
+      width: "45px",
       height: "40px",
-      marginRight: "10px", // Khoảng cách giữa icon và chữ
-      cursor: "pointer", // Thêm con trỏ chuột
+      marginRight: "10px",
+      padding: "5px",
+      cursor: "pointer",
+      ...iconStyle, // Áp dụng style tùy chỉnh cho icon
     },
     menuTitle: {
       fontSize: "20px",
       fontWeight: "bold",
-      color: "white", // Màu chữ
+      color: "white",
+      ...titleStyle, // Áp dụng style tùy chỉnh cho title
     },
     menuAvatar: {
-      width: "50px",
-      height: "50px",
-      objectFit: "cover", // Cắt hình ảnh vừa khít trong khung
-      borderRadius: "50%", // Bo tròn hình ảnh
+      width: "40px",
+      height: "40px",
+      objectFit: "cover",
+      borderRadius: "50%",
+      border: "2px solid white",
     },
     overlay: {
       position: "fixed",
@@ -54,46 +63,23 @@ const MenuBar = ({ title = "Management" }) => { // Nhận title từ props, mặ
       left: 0,
       width: "100%",
       height: "100%",
-      backgroundColor: "rgba(0, 0, 0, 0.3)", // Màu đen với độ mờ 30%
-      zIndex: 1, // Đảm bảo overlay nằm dưới MiniList nhưng trên nội dung khác
+      backgroundColor: "rgba(0, 0, 0, 0.3)",
+      zIndex: 1,
     },
     miniListContainer: {
       position: "absolute",
-      top: "80px", // Hiển thị MiniList ngay dưới thanh menu
+      top: "80px",
       left: "20px",
-      zIndex: 2, // Đảm bảo MiniList nằm trên overlay
+      zIndex: 2,
     },
   };
 
-  const items = [
-    {
-      label: "Table Management",
-      icon: "https://img.icons8.com/ios-filled/50/1C2E4A/table.png",
-    },
-    {
-      label: "Menu Management",
-      icon: "https://img.icons8.com/ios-filled/50/1C2E4A/menu.png",
-    },
-    {
-      label: "Staff Management",
-      icon: "https://img.icons8.com/ios-filled/50/1C2E4A/user.png",
-    },
-    {
-      label: "Revenue Management",
-      icon: "https://img.icons8.com/ios-filled/50/1C2E4A/money.png",
-    },
-    {
-      label: "Evaluate",
-      icon: "https://img.icons8.com/ios-filled/50/1C2E4A/bookmark.png",
-    },
-  ];
-
   const handleToggleMiniList = () => {
-    setMiniListVisible(!isMiniListVisible); // Bật/tắt MiniList
+    setMiniListVisible(!isMiniListVisible);
   };
 
   const handleOverlayClick = () => {
-    setMiniListVisible(false); // Ẩn MiniList khi nhấn vào overlay
+    setMiniListVisible(false);
   };
 
   return (
@@ -105,16 +91,16 @@ const MenuBar = ({ title = "Management" }) => { // Nhận title từ props, mặ
             src="./src/assets/img/listicon.png"
             alt="Logo"
             style={styles.menuIcon}
-            onClick={handleToggleMiniList} // Hiển thị MiniList khi nhấn vào icon
+            onClick={handleToggleMiniList}
           />
           <div style={styles.menuTitleContainer}>
             <img
-              src="./src/assets/img/mealicon.png"
-              alt="Plate icon"
+              src={icon} // Sử dụng icon từ props
+              alt="Icon"
               style={styles.menuIcon}
             />
             <div style={styles.menuTitle}>
-              <i>{title}</i> {/* Hiển thị nội dung từ props */}
+              <i>{title}</i> {/* Sử dụng title từ props */}
             </div>
           </div>
         </div>
@@ -136,10 +122,16 @@ const MenuBar = ({ title = "Management" }) => { // Nhận title từ props, mặ
       {isMiniListVisible && (
         <div style={styles.miniListContainer}>
           <MiniList
-            items={items}
+            items={[
+              { label: "Table Management", icon: "https://img.icons8.com/ios-filled/50/1C2E4A/table.png" },
+              { label: "Menu Management", icon: "https://img.icons8.com/ios-filled/50/1C2E4A/menu.png" },
+              { label: "Staff Management", icon: "https://img.icons8.com/ios-filled/50/1C2E4A/user.png" },
+              { label: "Revenue Management", icon: "https://img.icons8.com/ios-filled/50/1C2E4A/money.png" },
+              { label: "Evaluate", icon: "https://img.icons8.com/ios-filled/50/1C2E4A/bookmark.png" },
+            ]}
             onSelect={(item) => {
               console.log("Selected item:", item);
-              setMiniListVisible(false); // Ẩn MiniList sau khi chọn
+              setMiniListVisible(false);
             }}
           />
         </div>
