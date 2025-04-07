@@ -251,9 +251,7 @@ const Home = () => {
             <a
               href="/login"
               className="absolute inset-0 flex items-center justify-center bg-black/20 font-bold rounded-lg"
-            >
-              Login
-            </a>
+            ></a>
           </div>
         </div>
 
