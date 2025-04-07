@@ -18,7 +18,8 @@ const StaffInformation = () => {
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [isShiftModalOpen, setIsShiftModalOpen] = useState(false);
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
-  
+  const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+
   const [staffData, setStaffData] = useState({
     fullName: "Tran Thi My Dung",
     startDate: "01/02/2024",
@@ -34,7 +35,9 @@ const StaffInformation = () => {
     newPassword: ""
   });
 
- 
+ const handleScheduleShiftClick = () => {
+  setIsScheduleModalOpen(true);
+};
 
   // Modified to match the screenshot - now opens the dropdown menu instead
   const handleAvatarClick = () => {
@@ -422,6 +425,63 @@ const StaffInformation = () => {
           </div>
         </div>
       )}
+      
+      {/* Schedule Shift Modal */}
+        {isScheduleModalOpen && (
+          <div className="fixed inset-0 bg-opacity-50 backdrop-blur-sm z-40">
+            <div className="fixed inset-0 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 z-50 overflow-hidden">
+                <div className="p-6">
+                  <div className="flex items-center mb-6">
+                    <button 
+                      onClick={() => setIsScheduleModalOpen(false)}
+                      className="text-gray-600 hover:text-gray-800"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                    <h2 className="text-2xl font-bold mx-auto">Schedule a shift</h2>
+                  </div>
+                  
+                  <div className="mb-4">
+                    <h3 className="font-bold text-lg mb-2">Staff: {staffData.workShift}</h3>
+                    <h4 className="font-medium mb-2">Shift:</h4>
+                    
+                    {staffData.workShift === "Full-time" ? (
+                      <ul className="space-y-2">
+                        <li>Monday: 1 (7h–12h)</li>
+                        <li>Tuesday: 1 (7h–12h)</li>
+                        <li>Wednesday: 2 (12h–17h)</li>
+                        <li>Thursday: 2 (12h–17h)</li>
+                        <li>Friday: 3 (17h–22h)</li>
+                        <li>Saturday: 3 (17h–22h)</li>
+                      </ul>
+                    ) : (
+                      <ul className="space-y-2">
+                        <li>Monday: 1 (7h–12h)</li>
+                        <li>Tuesday: 1 (7h–12h)</li>
+                        <li>Wednesday: 1 (7h–12h)</li>
+                        <li>Thursday: 1 (7h–12h)</li>
+                        <li>Friday: None</li>
+                        <li>Saturday: None</li>
+                      </ul>
+                    )}
+                  </div>
+                  
+                  <div className="flex justify-center mt-6">
+                    <button
+                      onClick={() => setIsScheduleModalOpen(false)}
+                      className="px-8 py-3 !bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors shadow-md"
+                    >
+                      Close
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
       {/* Main Content */}
       <div className="flex-1 bg-gray-100 p-8 relative z-20">
@@ -518,10 +578,30 @@ const StaffInformation = () => {
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth={2}
-                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                       />
                     </svg>
                     View shift
+                  </button>
+                  <button 
+                    className="w-full text-left flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
+                    onClick={handleScheduleShiftClick}
+                  >
+                    <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 mr-2"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                    />
+                  </svg>
+                    Schedule a shift
                   </button>
                   <button 
                     className="w-full text-left flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
