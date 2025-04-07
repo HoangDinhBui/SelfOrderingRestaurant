@@ -45,7 +45,9 @@ function App() {
               element={<NotificationManagement />}
             />
             <Route path="/dish-management" element={<DishManagement />} /> */}
-            <Route path="/" element={<TableManagement/>} />
+            <Route path="/notification-management" element={<NotificationManagement/>} />
+            <Route path="/dish-management" element={<DishManagement/>} />
+            <Route path="/table-management" element={<TableManagement/>} />
           </Routes>
         </Router>
       </MenuProvider>

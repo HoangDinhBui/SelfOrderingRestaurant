@@ -1,9 +1,8 @@
 import React, { useState } from "react";
-import { useNavigate } from 'react-router-dom';
 import { FaCheck, FaTrash, FaMoneyBillWave, FaBell, FaUtensils } from 'react-icons/fa';
+import MenuBarStaff from "../../../components/layout/MenuBar_Staff";
 
 const NotificationManagement = () => {
-  const [activeTab, setActiveTab] = useState("Notification Management");
   const [notifications, setNotifications] = useState([
     {
       id: 1,
@@ -54,9 +53,6 @@ const NotificationManagement = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [notificationToDelete, setNotificationToDelete] = useState(null);
   
-  const tabs = ["Order Management", "Notification Management", "Dish Management"];
-  const navigate = useNavigate();
-
   // Group notifications by date
   const groupedNotifications = notifications.reduce((acc, notification) => {
     if (!acc[notification.date]) {
@@ -66,16 +62,6 @@ const NotificationManagement = () => {
     return acc;
   }, {});
 
-  const handleTabClick = (tab) => {
-    if (tab === "Order Management") {
-      navigate('/order-management');
-    } else if (tab === "Dish Management") {
-      // Thêm route cho Dish Management nếu cần
-      navigate('/dish-management');
-    } else {
-      setActiveTab(tab);
-    }
-  };
 
   const handleCheckNotification = (id) => {
     setNotifications(notifications.map(noti => 
@@ -116,35 +102,8 @@ const NotificationManagement = () => {
 
   return (
     <div className="h-screen w-screen !bg-blue-50 flex flex-col">
-      {/* Header */}
-      <div className="w-full bg-blue-100 flex items-center justify-between px-6 py-2">
-        {/* Logo */}
-        <div className="flex items-center">
-          <img alt="Logo" class="w-12 h-12" src="../../src/assets/img/logoremovebg.png"></img>
-        </div>
-
-        {/* Navigation Tabs */}
-        <div className="flex flex-grow justify-center gap-x-6">
-          {tabs.map((tab) => (
-            <button
-              key={tab}
-              className={`px-6 py-3 text-gray-700 font-medium flex items-center ${
-                activeTab === tab
-                  ? "!bg-blue-900 text-white rounded-lg"
-                  : "bg-transparent hover:bg-blue-200 rounded-lg"
-              }`}
-              onClick={() => handleTabClick(tab)}
-            >
-              {tab}
-            </button>
-          ))}
-        </div>
-
-        {/* Avatar */}
-        <div className="flex items-center">
-          <img alt="User Avatar" class="w-12 h-12 rounded-full border-2 border-white shadow-md cursor-pointer" src="../../src/assets/img/MyDung.jpg"></img>
-        </div>
-      </div>
+      {/* Thay thế Header bằng MenuBar */}
+      <MenuBarStaff />
 
       {/* Main Content */}
       <div className="flex-1 p-6 bg-gray-100 overflow-y-auto">

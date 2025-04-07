@@ -64,7 +64,7 @@ const MenuBarStaff = () => {
         />
         <div
           style={styles.menuTitleContainer(activeContainer === "order")}
-          onClick={() => handleNavigation("order", "/")} // Điều hướng sang trang Order Management
+          onClick={() => handleNavigation("order", "/table-management")} // Điều hướng sang trang Table Management
         >
           <img
             src="./src/assets/img/mealicon.png"
@@ -72,14 +72,14 @@ const MenuBarStaff = () => {
             style={styles.menuIcon}
           />
           <div style={styles.menuTitle(activeContainer === "order")}>
-            <i>Order Management</i>
+            <i>Table Management</i>
           </div>
         </div>
 
         <div
           style={styles.menuTitleContainer(activeContainer === "notification")}
           onClick={() =>
-            handleNavigation("notification", "/")
+            handleNavigation("notification", "/notification-management")
           } // Điều hướng sang trang Notification Management
         >
           <img
@@ -94,7 +94,7 @@ const MenuBarStaff = () => {
 
         <div
           style={styles.menuTitleContainer(activeContainer === "dish")}
-          onClick={() => handleNavigation("dish", "/")} // Điều hướng sang trang Dish Management
+          onClick={() => handleNavigation("dish", "/dish-management")} // Điều hướng sang trang Dish Management
         >
           <img
             src="./src/assets/img/mealicon.png"

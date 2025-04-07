@@ -1,12 +1,10 @@
 import React, { useState } from "react";
-import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faCircleXmark } from '@fortawesome/free-solid-svg-icons'
+import MenuBarStaff from "../../../components/layout/MenuBar_Staff";
 
 const DishManagement = () => {
-  const [activeTab, setActiveTab] = useState("Dish Management");
-  const tabs = ["Order Management", "Notification Management", "Dish Management"];
-  const navigate = useNavigate();
+
   
   // Confirmation dialog state
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -20,15 +18,7 @@ const DishManagement = () => {
     { id: 4, table: 3, name: "Huitres Gratinées (6PCS)", quantity: 1, note: "" },
   ]);
   
-  const handleTabClick = (tab) => {
-    if (tab === "Order Management") {
-      navigate('/order-management');
-    } else if (tab === "Notification Management") {
-      navigate('/notification-management');
-    } else {
-      setActiveTab(tab);
-    }
-  };
+ 
   
   // Function to open confirmation dialog
   const handleDeleteClick = (id) => {
@@ -55,40 +45,8 @@ const DishManagement = () => {
     <div className="h-screen w-screen !bg-blue-50 flex flex-col">
       {/* Background blur khi modal mở */}
       <div className={`h-full w-full ${showConfirmation ? "blur-sm" : ""}`}>
-        {/* Header - Giống các trang khác */}
-        <div className="w-full bg-blue-100 flex items-center justify-between px-6 py-2">
-          <div className="flex items-center">
-            <img
-              src="../../src/assets/img/logoremovebg.png"
-              alt="Logo"
-              className="w-12 h-12"
-            />
-          </div>
-          
-          <div className="flex flex-grow justify-center gap-x-6">
-            {tabs.map((tab) => (
-              <button
-                key={tab}
-                className={`px-6 py-3 text-gray-700 font-medium flex items-center ${
-                  activeTab === tab
-                    ? "!bg-blue-900 text-white rounded-lg"
-                    : "bg-transparent hover:bg-blue-200 rounded-lg"
-                }`}
-                onClick={() => handleTabClick(tab)}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-          
-          <div className="flex items-center">
-            <img
-              src="../../src/assets/img/MyDung.jpg"
-              alt="User Avatar"
-              className="w-12 h-12 rounded-full border-2 border-white shadow-md cursor-pointer"
-            />
-          </div>
-        </div>
+        {/* Thay thế Header bằng MenuBar */}
+        <MenuBarStaff />
         
         {/* Main Content - Đơn giản hóa */}
         <div className="flex-1 p-6 bg-gray-100 overflow-y-auto">
