@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import MenuBar from "../../../components/layout/menuBar";
+import MenuBarStaff from "../../../components/layout/MenuBar_Staff";
 
 const TableManagement = () => {
   const [selectedTable, setSelectedTable] = useState(null);
@@ -252,10 +252,7 @@ const TableManagement = () => {
         }`}
         onClick={() => setIsNotificationModalOpen(false)}
       >
-        <MenuBar
-          title="Table Management"
-          icon="https://img.icons8.com/ios-filled/5050/FFFFFF/table.png"
-        />
+        <MenuBarStaff/>
         {/* Container chính nằm giữa */}
         <div
           style={{ marginTop: "30px" }}
