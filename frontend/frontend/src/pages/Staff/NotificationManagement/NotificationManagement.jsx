@@ -68,7 +68,7 @@ const NotificationManagement = () => {
 
   const handleTabClick = (tab) => {
     if (tab === "Order Management") {
-      navigate('/order-management');
+      navigate('/table-management');
     } else if (tab === "Dish Management") {
       // Thêm route cho Dish Management nếu cần
       navigate('/dish-management');
