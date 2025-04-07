@@ -108,9 +108,6 @@ const Payment = () => {
         } else {
           throw new Error("Cannot get payment URL from VNPay.");
         }
-      } else if (paymentMethod === "MOMO") {
-        // For Momo, just show the QR code modal
-        setShowModal(true);
       } else {
         // Đối với CASH hoặc CREDIT, khởi tạo thanh toán nhưng chưa xác nhận
         await axios.post(`${API_BASE_URL}/api/payment/process`, {
@@ -135,20 +132,57 @@ const Payment = () => {
     try {
       setProcessingPayment(true);
 
-      // Xác nhận thanh toán với API /api/payment/confirm
+      // First, confirm payment with API
       const response = await axios.post(`${API_BASE_URL}/api/payment/confirm`, {
         orderId: parseInt(orderId),
       });
 
       if (response.data && response.data.success) {
-        // Xóa thông tin đơn hàng khỏi localStorage và sessionStorage
+        // Now send notification after successful payment confirmation
+        try {
+          // Get current customer info
+          const customerInfo = JSON.parse(
+            localStorage.getItem("customerInfo")
+          ) || {
+            id: 1, // Guest customer ID
+            fullname: "Guest Customer",
+          };
+
+          // Get table number (use a valid table number from your system)
+          const tableNumberNumeric = orderDetails?.tableId || 1;
+
+          // Include payment method in notification message
+          const paymentMethodText = getPaymentMethodDisplayText(paymentMethod);
+          const notificationMessage = `Customer has completed payment using ${paymentMethodText}`;
+
+          // Send notification with payment method information
+          const notificationRequest = {
+            customerId: customerInfo.id,
+            tableNumber: tableNumberNumeric,
+            type: "PAYMENT_REQUEST",
+            orderId: parseInt(orderId),
+            additionalMessage: notificationMessage,
+            paymentMethod: paymentMethod, // Add payment method to the notification data
+          };
+
+          await axios.post(
+            `${API_BASE_URL}/api/notifications`,
+            notificationRequest
+          );
+        } catch (notifError) {
+          console.error(
+            "Error sending notification after payment:",
+            notifError
+          );
+          // Don't block the flow if notification fails
+        }
+
+        // Clean up storage and update UI
         localStorage.removeItem("latestOrderInfo");
         sessionStorage.removeItem("latestOrderInfo");
-
-        // Đóng modal
         setShowModal(false);
 
-        // Cập nhật thông tin đơn hàng
+        // Refresh order data
         const refreshResponse = await axios.get(
           `${API_BASE_URL}/api/orders/${orderId}/payment`
         );
@@ -156,7 +190,7 @@ const Payment = () => {
 
         // Redirect to home page after a short delay
         setTimeout(() => {
-          window.location.href = "/"; // Redirect to home page
+          window.location.href = "/";
         }, 2000);
       } else {
         setError("Failed to confirm the payment. Please try again!");
@@ -167,6 +201,22 @@ const Payment = () => {
       console.error("Error confirming payment:", err);
       setError("Failed to confirm the payment. Please try again!");
       setProcessingPayment(false);
+    }
+  };
+
+  // Helper function to get display text for payment method
+  const getPaymentMethodDisplayText = (method) => {
+    switch (method) {
+      case "CASH":
+        return "Cash";
+      case "VNPAY":
+        return "VNPay";
+      case "CREDIT":
+        return "Credit Card";
+      case "MOMO":
+        return "Momo";
+      default:
+        return method;
     }
   };
 
