@@ -15,9 +15,11 @@ import Evaluate from "./pages/Customer/Evaluate/Evaluate";
 //Staff/Admin Pages
 import Login from "./pages/Staff/Login/Login";
 import StaffInformation from "./pages/Staff/StaffInformation/StaffInformation";
-import OrderManagement from "./pages/Staff/OrderManagement/OrderManagement";
 import NotificationManagement from "./pages/Staff/NotificationManagement/NotificationManagement";
 import DishManagement from "./pages/Staff/DishManagement/DishManagement";
+
+
+import TableManagement from "./pages/Staff/TableManagement/TableManagement";
 import "./axiosConfig";
 
 function App() {
@@ -26,23 +28,24 @@ function App() {
       <MenuProvider>
         <Router>
           <Routes>
-            {/* Customer Routes */}
+            {/* Customer Routes
             <Route path="/" element={<Home />} />
             <Route path="/menu" element={<Menu />} />
             <Route path="/order" element={<Order />} />
             <Route path="/view/:id" element={<ViewItem />} />
             <Route path="/note/:id" element={<Note />} />
             <Route path="/payment" element={<Payment />} />
-            <Route path="/evaluate" element={<Evaluate />} />
+            <Route path="/evaluate" element={<Evaluate />} /> */}
             {/*Staff/Admin Routes*/}
-            <Route path="/login" element={<Login />} />
+            {/* <Route path="/login" element={<Login />} />
             <Route path="/staff-information" element={<StaffInformation />} />
             <Route path="/order-management" element={<OrderManagement />} />
             <Route
               path="/notification-management"
               element={<NotificationManagement />}
             />
-            <Route path="/dish-management" element={<DishManagement />} />
+            <Route path="/dish-management" element={<DishManagement />} /> */}
+            <Route path="/" element={<TableManagement/>} />
           </Routes>
         </Router>
       </MenuProvider>
