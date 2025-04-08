@@ -1,5 +1,44 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import MenuBarStaff from "../../../components/layout/MenuBar_Staff";
+
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+
+// Create a configured axios instance
+const api = axios.create({
+  baseURL: API_BASE_URL,
+});
+
+// Add request interceptor to attach authentication to all requests
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("accessToken");
+    if (token) {
+      config.headers["Authorization"] = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+api.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    if (error.response && error.response.status === 403) {
+      console.log("Authentication required - redirecting to login");
+      // Clear any invalid tokens
+      localStorage.removeItem("accessToken");
+      // Redirect to login page
+      window.location.href = "/login";
+    }
+    return Promise.reject(error);
+  }
+);
 
 const TableManagement = () => {
   const [selectedTable, setSelectedTable] = useState(null);
@@ -10,53 +49,134 @@ const TableManagement = () => {
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState(null);
+  const [tables, setTables] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Notification data
-  const [notifications] = useState([
-    {
-      id: 1,
-      type: "Call staff",
-      time: "18:30:00",
-      date: "10/10/2024",
-      table: "01",
-    },
-    {
-      id: 2,
-      type: "Request",
-      time: "16:00:00",
-      date: "10/10/2024",
-      table: "01",
-    },
-    {
-      id: 3,
-      type: "Payment request",
-      time: "16:30:00",
-      date: "10/10/2024",
-      table: "02",
-    },
-    {
-      id: 4,
-      type: "Request",
-      time: "16:00:00",
-      date: "10/10/2024",
-      table: "03",
-    },
-    {
-      id: 5,
-      type: "Request",
-      time: "16:00:00",
-      date: "10/10/2024",
-      table: "04",
-    },
-    {
-      id: 6,
-      type: "Request",
-      time: "16:00:00",
-      date: "10/10/2024",
-      table: "05",
-    },
-    // Add more notifications as needed
-  ]);
+  useEffect(() => {
+    const fetchTablesAndNotifications = async () => {
+      setLoading(true);
+      try {
+        // Get tables using the DinningTableController endpoint
+        const tablesResponse = await api.get("/api/tables");
+        const tablesData = tablesResponse.data;
+        console.log("Tables data received from API:", tablesData);
+
+        if (tablesData.length > 0) {
+          console.log("First table object keys:", Object.keys(tablesData[0]));
+        }
+
+        // Fetch active orders to get dishes for each table
+        const ordersResponse = await api.get("/api/orders");
+        const ordersData = ordersResponse.data;
+
+        // Match orders with tables
+        const updatedTables = tablesData.map((table) => {
+          // Extract the table ID from the proper field
+          const tableId = table.table_id;
+
+          const tableOrders = ordersData.filter(
+            (order) => order.tableId === tableId || order.table_id === tableId
+          );
+
+          // Extract all dishes from the orders for this table
+          const dishes = tableOrders.flatMap(
+            (order) =>
+              order.orderItems?.map((item) => ({
+                name: item.dishName,
+                quantity: item.quantity,
+                price: item.price,
+                status:
+                  item.status || (item.isComplete ? "Complete" : "Pending"),
+                image: item.dishImage || "../../../assets/img/Mon1.jpg",
+                orderId: order.id,
+              })) || []
+          );
+
+          return {
+            id: tableId, // Use the table_id as our internal id
+            table_id: tableId, // Keep the original field for reference
+            tableNumber: table.tableNumber || tableId,
+            capacity: table.capacity || 4,
+            status:
+              table.status || (dishes.length > 0 ? "OCCUPIED" : "AVAILABLE"),
+            dishes: dishes || [],
+          };
+        });
+
+        console.log("Processed tables:", updatedTables);
+        setTables(updatedTables);
+
+        // Fetch notifications
+        const notificationsResponse = await api.get(
+          "/api/notifications/shift/current"
+        );
+
+        // Format notifications to match UI requirements
+        const formattedNotifications = notificationsResponse.data.map(
+          (notification) => {
+            const date = new Date(notification.createdAt);
+            return {
+              id: notification.id,
+              type: notification.type,
+              time: date.toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+                second: "2-digit",
+              }),
+              date: date.toLocaleDateString(),
+              table: notification.tableNumber.toString().padStart(2, "0"),
+              message: notification.additionalMessage,
+            };
+          }
+        );
+
+        setNotifications(formattedNotifications);
+      } catch (err) {
+        console.error("Error fetching data:", err);
+        setError("Failed to load data. Please refresh the page.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTablesAndNotifications();
+
+    // Set up polling for real-time updates (every 30 seconds)
+    const interval = setInterval(() => {
+      fetchTablesAndNotifications();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const updateTableStatus = async (tableId, status) => {
+    console.log("Updating table with ID:", tableId);
+    console.log("New status:", status);
+    try {
+      // Use the DinningTableController PUT endpoint
+      await api.put(`/api/tables/${tableId}`, {
+        status: status,
+      });
+
+      // Update local state after successful API call
+      const updatedTables = tables.map((table) => {
+        if (table.id === tableId) {
+          return { ...table, status: status };
+        }
+        return table;
+      });
+
+      setTables(updatedTables);
+      return true;
+    } catch (err) {
+      console.error("Error updating table status:", err);
+      setError("Failed to update table status. Please try again.");
+      return false;
+    }
+  };
 
   const toggleNotificationModal = (e, table) => {
     e.stopPropagation();
@@ -65,6 +185,9 @@ const TableManagement = () => {
   };
 
   const handleSelectTable = (table) => {
+    console.log("Selected table:", table);
+    console.log("Table ID type:", typeof table.id);
+    console.log("Table ID value:", table.id);
     setSelectedTable(table);
   };
 
@@ -78,18 +201,173 @@ const TableManagement = () => {
     setIsPaymentModalOpen(true);
   };
 
-  const handlePaymentSuccess = () => {
-    setIsPaymentModalOpen(false);
-    setIsSuccessModalOpen(true);
+  const handlePaymentSuccess = async () => {
+    setIsProcessing(true);
+    setError(null);
+
+    try {
+      // Get all order IDs for this table
+      const orderIds = selectedTable.dishes
+        .map((dish) => dish.orderId)
+        .filter((value, index, self) => self.indexOf(value) === index);
+
+      // Mark all orders as paid
+      for (const orderId of orderIds) {
+        await api.put(`/api/orders/${orderId}/status`, {
+          status: "PAID",
+        });
+      }
+
+      // Update table status to AVAILABLE
+      const statusUpdated = await updateTableStatus(
+        selectedTable.id,
+        "AVAILABLE"
+      );
+      if (!statusUpdated) {
+        throw new Error("Failed to update table status");
+      }
+
+      // Create payment notification
+      const notificationData = {
+        tableNumber: selectedTable.id,
+        customerId: 1, // Default customer ID, adjust as needed
+        type: "PAYMENT_COMPLETE",
+        additionalMessage: `Payment completed for Table ${
+          selectedTable.tableNumber || selectedTable.id
+        }`,
+      };
+
+      await api.post(`/api/notifications`, notificationData);
+
+      // Update the UI
+      setIsPaymentModalOpen(false);
+      setIsSuccessModalOpen(true);
+
+      // Update the table in local state
+      const updatedTables = tables.map((table) => {
+        if (table.id === selectedTable.id) {
+          return {
+            ...table,
+            status: "AVAILABLE",
+            dishes: [],
+          };
+        }
+        return table;
+      });
+
+      setTables(updatedTables);
+    } catch (err) {
+      console.error("Payment processing error:", err);
+      setError("Failed to process payment. Please try again.");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const handleShowEmptyTableModal = () => {
     setIsEmptyTableModalOpen(true);
   };
 
+  const handleEmptyTable = async () => {
+    try {
+      // Update table status to AVAILABLE
+      const statusUpdated = await updateTableStatus(
+        selectedTable.id,
+        "AVAILABLE"
+      );
+      if (!statusUpdated) {
+        throw new Error("Failed to update table status");
+      }
+
+      // Update the table in local state
+      const updatedTables = tables.map((table) => {
+        if (table.id === selectedTable.id) {
+          return {
+            ...table,
+            status: "AVAILABLE",
+            dishes: [],
+          };
+        }
+        return table;
+      });
+
+      setTables(updatedTables);
+      setIsEmptyTableModalOpen(false);
+      setIsSuccessModalOpen(true);
+    } catch (err) {
+      console.error("Error emptying table:", err);
+      setError("Failed to empty table. Please try again.");
+    }
+  };
+
   const handlePrintReceipt = () => {
+    // Logic to generate PDF receipt
     setIsBillModalOpen(false);
     setIsConfirmModalOpen(true);
+  };
+
+  const markNotificationAsRead = async (notificationId) => {
+    try {
+      await api.put(`/api/notifications/${notificationId}/read`);
+
+      // Update notifications list in UI
+      setNotifications(
+        notifications.filter((notif) => notif.id !== notificationId)
+      );
+    } catch (err) {
+      console.error("Error marking notification as read:", err);
+    }
+  };
+
+  const handleGeneratePDF = async () => {
+    if (!selectedTable) return;
+
+    try {
+      // Create PDF content from table data
+      const orderIds = selectedTable.dishes
+        .map((dish) => dish.orderId)
+        .filter((value, index, self) => self.indexOf(value) === index);
+
+      // Get specific order details if needed
+      const orderDetails = await Promise.all(
+        orderIds.map((id) => api.get(`/api/orders/${id}`))
+      );
+
+      // Format data for PDF
+      const pdfData = {
+        tableNumber: selectedTable.tableNumber || selectedTable.id,
+        date: new Date().toLocaleDateString(),
+        time: new Date().toLocaleTimeString(),
+        dishes: selectedTable.dishes,
+        total: selectedTable.dishes.reduce(
+          (sum, dish) => sum + dish.price * dish.quantity,
+          0
+        ),
+      };
+
+      // Generate and download PDF
+      const response = await api.post(`/api/receipts/generate`, pdfData, {
+        responseType: "blob",
+      });
+
+      // Create a download link and trigger it
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute(
+        "download",
+        `table-${selectedTable.tableNumber || selectedTable.id}-receipt.pdf`
+      );
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      setIsConfirmModalOpen(false);
+      setIsSuccessModalOpen(true);
+    } catch (err) {
+      console.error("Error generating PDF:", err);
+      setError("Failed to generate receipt PDF");
+    }
   };
 
   const totalAmount =
@@ -98,142 +376,15 @@ const TableManagement = () => {
       0
     ) || 0;
 
-  const tables = [
-    {
-      id: 1,
-      status: "occupied",
-      dishes: [
-        {
-          name: "Huitres Fraiches (6PCS)",
-          quantity: 1,
-          price: 200000,
-          status: "Complete",
-          image: "../../../../assets/img/Mon1.jpg",
-        },
-        {
-          name: "Huitres Gratinees (6PCS)",
-          quantity: 1,
-          price: 250000,
-          status: "Complete",
-          image: "../../../assets/img/Mon1.jpg",
-        },
-        {
-          name: "Tartare De Saumon",
-          quantity: 1,
-          price: 180000,
-          status: "Complete",
-          image: "../../../assets/img/Mon1.jpg",
-        },
-        {
-          name: "Salad Gourmande",
-          quantity: 1,
-          price: 120000,
-          status: "Complete",
-          image: "../../../assets/img/Mon1.jpg",
-        },
-        {
-          name: "Salad Landaise",
-          quantity: 1,
-          price: 150000,
-          status: "Pending",
-          image: "../../../assets/img/",
-        },
-        {
-          name: "Magret De Canard",
-          quantity: 1,
-          price: 300000,
-          status: "Pending",
-          image: "../../../assets/img/Mon1.jpg",
-        },
-      ],
-      capacity: 8,
-    },
-    {
-      id: 2,
-      status: "available",
-      dishes: [],
-      capacity: 4,
-    },
-    {
-      id: 3,
-      status: "occupied",
-      dishes: [
-        {
-          name: "Foie Gras",
-          quantity: 2,
-          price: 350000,
-          status: "Complete",
-          image: "../../../assets/img/Mon2.jpg",
-        },
-        {
-          name: "Bouillabaisse",
-          quantity: 1,
-          price: 280000,
-          status: "Complete",
-          image: "../../../assets/img/Mon3.jpg",
-        },
-        {
-          name: "Ratatouille",
-          quantity: 1,
-          price: 120000,
-          status: "Pending",
-          image: "../../../assets/img/Mon4.jpg",
-        },
-        {
-          name: "Crème Brûlée",
-          quantity: 2,
-          price: 90000,
-          status: "Pending",
-          image: "../../../assets/img/Mon5.jpg",
-        },
-      ],
-      capacity: 6,
-    },
-    {
-      id: 4,
-      status: "occupied",
-      dishes: [
-        {
-          name: "Steak Frites",
-          quantity: 3,
-          price: 220000,
-          status: "Complete",
-          image: "../../../assets/img/Mon6.jpg",
-        },
-        {
-          name: "Moules Marinières",
-          quantity: 1,
-          price: 180000,
-          status: "Complete",
-          image: "../../../assets/img/Mon7.jpg",
-        },
-        {
-          name: "Tarte Tatin",
-          quantity: 1,
-          price: 110000,
-          status: "Pending",
-          image: "../../../assets/img/Mon8.jpg",
-        },
-        {
-          name: "Escargots",
-          quantity: 1,
-          price: 150000,
-          status: "Complete",
-          image: "../../../assets/img/Mon9.jpg",
-        },
-        {
-          name: "French Onion Soup",
-          quantity: 2,
-          price: 80000,
-          status: "Complete",
-          image: "../../../assets/img/Mon10.jpg",
-        },
-      ],
-      capacity: 8,
-    },
-  ];
+  const emptyTables = tables.filter((table) => table.status === "AVAILABLE");
 
-  const emptyTables = tables.filter((table) => table.status === "available");
+  if (loading) {
+    return (
+      <div className="h-screen w-screen bg-[#C2C7CA] flex justify-center items-center">
+        <div className="text-xl font-bold">Loading table information...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen w-screen bg-[#C2C7CA] flex justify-center items-center">
@@ -252,7 +403,7 @@ const TableManagement = () => {
         }`}
         onClick={() => setIsNotificationModalOpen(false)}
       >
-        <MenuBarStaff/>
+        <MenuBarStaff />
         {/* Container chính nằm giữa */}
         <div
           style={{ marginTop: "30px" }}
@@ -508,7 +659,8 @@ const TableManagement = () => {
                 Notifications
               </h2>
               <div className="text-sm text-gray-600">
-                Table {selectedTable.id}
+                Table {selectedTable.tableNumber || selectedTable.id} (ID:{" "}
+                {selectedTable.id})
               </div>
               <button
                 className="text-gray-500 hover:text-gray-700 text-xl"
@@ -604,7 +756,7 @@ const TableManagement = () => {
             </div>
             <div className="mt-4 flex justify-end">
               <button
-                className="!bg-blue-500 text-white px-4 py-2 rounded-lg"
+                className="bg-blue-500 text-white px-4 py-2 rounded-lg"
                 onClick={handleShowPaymentModal}
               >
                 Payment

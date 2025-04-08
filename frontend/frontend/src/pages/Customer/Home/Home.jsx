@@ -16,7 +16,7 @@ const Home = () => {
   const [sendingNotification, setSendingNotification] = useState(false);
   const [notificationError, setNotificationError] = useState(null);
   const [notificationSuccess, setNotificationSuccess] = useState(false);
-  const [tableNumber, setTableNumber] = useState("A6"); // Default table number
+  const [tableNumber, setTableNumber] = useState("1"); // Default table number
 
   // Base API URL to ensure consistency
   const API_BASE_URL = "http://localhost:8080";
@@ -97,32 +97,25 @@ const Home = () => {
     setNotificationSuccess(false);
 
     try {
-      // Get current customer info - fallback to a guest user if needed
+      // Get current customer info
       const customerInfo = JSON.parse(localStorage.getItem("customerInfo")) || {
         id: 1, // Guest customer ID
         fullname: "Guest Customer",
       };
 
       // Get orderId if available
-      let orderId = null;
-      if (lastOrderInfo && lastOrderInfo.orderId) {
-        orderId = lastOrderInfo.orderId;
-      }
+      const orderId = lastOrderInfo?.orderId || null;
 
-      // Get table number - ensure we're using a valid table number from the system
-      // Using a fixed table number value for demonstration (this should match a valid table in your database)
-      const tableNumberNumeric = 1; // Use a known valid table ID from your database
-
-      // Prepare notification request
+      // Prepare notification request - match exactly what your DTO expects
       const notificationRequest = {
         customerId: customerInfo.id,
-        tableNumber: tableNumberNumeric,
-        type: type, // "CALL_STAFF" or "PAYMENT_REQUEST"
+        tableNumber: parseInt(tableNumber.replace(/\D/g, "")) || 1,
+        type: type,
         orderId: orderId,
-        additionalMessage: additionalMessage,
+        content:
+          additionalMessage || `${type} request from table ${tableNumber}`,
       };
 
-      // Log the request for debugging
       console.log("Sending notification request:", notificationRequest);
 
       // Send notification request to API
@@ -131,7 +124,9 @@ const Home = () => {
         notificationRequest
       );
 
-      if (response.status === 200) {
+      console.log("Notification API response:", response);
+
+      if (response.status >= 200 && response.status < 300) {
         setNotificationSuccess(true);
         return true;
       } else {
@@ -139,18 +134,11 @@ const Home = () => {
       }
     } catch (error) {
       console.error("Error sending notification:", error);
-
-      // Handle specific error types
-      if (error.response?.data?.error === "Table not found") {
-        setNotificationError(
-          "The table number is not recognized. Please contact staff for assistance."
-        );
-      } else {
-        setNotificationError(
-          error.response?.data?.error ||
-            "Failed to notify staff. Please try again."
-        );
-      }
+      console.error("Error details:", error.response?.data);
+      setNotificationError(
+        error.response?.data?.error ||
+          "Failed to notify staff. Please try again."
+      );
       return false;
     } finally {
       setSendingNotification(false);
