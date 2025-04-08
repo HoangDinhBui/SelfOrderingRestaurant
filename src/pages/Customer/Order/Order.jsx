@@ -149,9 +149,7 @@ const Order = () => {
     0
   );
 
-  // Check if there's a notification controller method in your codebase
-  // If not, we might need to use a different endpoint that maps to the NotificationService
-
+  // Updated createOrder function with better notification handling
   const createOrder = async () => {
     try {
       setProcessingOrder(true);
@@ -189,30 +187,99 @@ const Order = () => {
         localStorage.setItem("latestOrderInfo", JSON.stringify(paymentInfo));
         sessionStorage.setItem("latestOrderInfo", JSON.stringify(paymentInfo));
 
-        // Create notification for staff about the new order - REVISED TO MATCH BACKEND STRUCTURE
+        // Create notification for staff about the new order - IMPROVED ERROR HANDLING
         try {
+          // Debug info to console
+          console.log("Backend NotificationRequestDTO expects:", {
+            tableNumber: "Integer",
+            customerId: "Integer",
+            orderId: "Integer",
+            type: "NotificationType enum",
+            additionalMessage: "String",
+          });
+
           // Make sure customerId is an integer, not a string
           const customerId =
             typeof orderResponse.data.customerId === "number"
               ? orderResponse.data.customerId
               : 1; // Default to 1 if not available
 
+          // Log data types for debugging
+          console.log("Sending data types:", {
+            tableNumber: typeof Number(tableId),
+            customerId: typeof Number(customerId),
+            orderId: typeof Number(orderId),
+            type: typeof "NEW_ORDER",
+            additionalMessage: typeof `New order placed for Table ${tableId}`,
+          });
+
+          // Try with primary notification data
           const notificationData = {
-            tableNumber: tableId,
-            customerId: customerId,
-            orderId: orderId,
-            type: "NEW_ORDER", // Enum value as string - backend will convert
+            tableNumber: Number(tableId),
+            customerId: Number(customerId),
+            orderId: Number(orderId),
+            type: "NEW_ORDER", // Backend will convert this string to enum
             additionalMessage: `New order placed for Table ${tableId}`,
           };
 
           console.log("Sending notification data:", notificationData);
 
-          // Try the base notifications endpoint
-          await axios.post(
-            `${API_BASE_URL}/api/notifications`,
-            notificationData
-          );
-          console.log("Order notification sent successfully");
+          try {
+            await axios.post(
+              `${API_BASE_URL}/api/notifications`,
+              notificationData
+            );
+            console.log("Order notification sent successfully");
+          } catch (primaryError) {
+            console.error("Primary notification format failed:", primaryError);
+
+            // Try alternative formats if the primary one fails
+            const alternativeFormats = [
+              { type: "new_order" }, // Try lowercase
+              { type: "CALL_STAFF" }, // Try a different enum value
+              { type: "NEW_ORDER", additionalMessage: "New order created" }, // Different message
+              { type: "ORDER_CREATED" }, // Try alternative name
+            ];
+
+            // Try each alternative format
+            let notificationSent = false;
+
+            for (const format of alternativeFormats) {
+              if (notificationSent) break;
+
+              try {
+                const alternativeData = {
+                  ...notificationData,
+                  ...format,
+                };
+
+                console.log("Trying alternative format:", alternativeData);
+
+                await axios.post(
+                  `${API_BASE_URL}/api/notifications`,
+                  alternativeData
+                );
+
+                console.log(
+                  "Alternative notification format succeeded:",
+                  format
+                );
+                notificationSent = true;
+              } catch (alternativeError) {
+                console.error(
+                  `Alternative format ${format.type} failed:`,
+                  alternativeError
+                );
+              }
+            }
+
+            // If all alternatives failed, just log the error
+            if (!notificationSent) {
+              console.error(
+                "All notification formats failed. Order created but staff not notified."
+              );
+            }
+          }
         } catch (notificationError) {
           console.error(
             "Failed to send order notification:",
@@ -556,6 +623,7 @@ const Order = () => {
               <button
                 onClick={createOrder}
                 className="!bg-green-400 text-white px-6 py-2 rounded-lg hover:bg-green-500 transition-colors duration-300"
+                disabled={processingOrder}
               >
                 {processingOrder ? "Processing..." : "Yes"}
               </button>
@@ -563,6 +631,7 @@ const Order = () => {
               <button
                 onClick={() => setShowModal(false)}
                 className="bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-6 rounded-lg transition"
+                disabled={processingOrder}
               >
                 No
               </button>
