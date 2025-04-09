@@ -167,11 +167,18 @@ const NotificationManagement = () => {
     try {
       await axios.put(`${API_BASE_URL}/api/notifications/${id}/read`);
 
+      // Update local state
       setNotifications(
         notifications.map((noti) =>
           noti.id === id ? { ...noti, isRead: true, checked: true } : noti
         )
       );
+
+      // You need a way to communicate this change to TableManagement
+      // One approach is to use localStorage to signal that notifications changed
+      localStorage.setItem("notificationsUpdated", Date.now().toString());
+
+      // Or if you're using a state management library like Redux, you would dispatch an action here
     } catch (err) {
       console.error("Error marking notification as read:", err);
       setError("Failed to mark notification as read.");
