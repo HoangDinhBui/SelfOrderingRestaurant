@@ -11,9 +11,12 @@ import com.example.SelfOrderingRestaurant.Enum.OrderStatus;
 import com.example.SelfOrderingRestaurant.Enum.PaymentStatus;
 import com.example.SelfOrderingRestaurant.Entity.Key.OrderItemKey;
 import com.example.SelfOrderingRestaurant.Repository.*;
+import jakarta.servlet.http.HttpSession;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.context.annotation.SessionScope;
 
 import java.math.BigDecimal;
@@ -35,6 +38,11 @@ public class OrderService {
     private CustomerRepository customerRepository;
     @Autowired
     private OrderCartService orderCartService;
+    @Autowired
+    private HttpServletRequest httpServletRequest;
+
+
+    private Logger log = org.slf4j.LoggerFactory.getLogger(OrderService.class);
 
     @Transactional
     public Integer createOrder(OrderRequestDTO request) {
@@ -200,5 +208,47 @@ public class OrderService {
 
     public OrderCartResponseDTO updateItemQuantity(Integer dishId, int quantity) {
         return orderCartService.updateItemQuantity(dishId, quantity);
+    }
+
+    public OrderCartResponseDTO updateItemNotes(Integer dishId, String notes) {
+        log.info("Updating notes for dish ID {}: {}", dishId, notes);
+
+        // Get current cart
+        OrderCartResponseDTO currentCart = getCurrentOrderCart();
+
+        if (currentCart == null || currentCart.getItems() == null) {
+            throw new IllegalStateException("Cart not found or empty");
+        }
+
+        // Find the item and update its notes
+        boolean itemFound = false;
+        for (OrderCartResponseDTO.CartItemDTO item : currentCart.getItems()) {
+            if (item.getDishId().equals(dishId)) {
+                item.setNotes(notes);
+                itemFound = true;
+                updateOrderItemInDatabase(dishId, notes);
+                break;
+            }
+        }
+
+        if (!itemFound) {
+            log.warn("Item with ID {} not found in cart", dishId);
+            throw new IllegalArgumentException("Item not found in cart");
+        }
+
+        return currentCart;
+    }
+
+    private void updateOrderItemInDatabase(Integer dishId, String notes) {
+        HttpSession session = httpServletRequest.getSession();
+        Integer orderId = (Integer) session.getAttribute("currentOrderId");
+
+        // Cập nhật trong database
+        if (orderId != null) {
+            // Sử dụng repository để cập nhật
+            orderItemRepository.updateNotes(orderId, dishId, notes);
+        } else {
+            log.warn("Cannot update notes in database: No current order ID found in session");
+        }
     }
 }

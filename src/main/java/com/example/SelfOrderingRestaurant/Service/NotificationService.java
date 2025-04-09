@@ -168,4 +168,17 @@ public class NotificationService {
         LocalDateTime cutoffDate = LocalDateTime.now().minusDays(7); // Keep for 7 days
         notificationRepository.deleteOldReadNotifications(cutoffDate);
     }
+
+    @Transactional
+    public void deleteNotification(Integer notificationId) {
+        Notification notification = notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new RuntimeException("Notification not found with id: " + notificationId));
+
+        notificationRepository.delete(notification);
+    }
+
+    @Transactional
+    public void deleteAllReadNotifications(Integer userId) {
+        notificationRepository.deleteAllReadByUserId(userId);
+    }
 }

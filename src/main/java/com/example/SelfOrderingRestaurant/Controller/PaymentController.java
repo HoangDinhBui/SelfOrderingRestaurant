@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
@@ -142,26 +143,30 @@ public class PaymentController {
             // Generate a transaction ID
             String txnRef = generateTransactionId();
 
+            boolean confirmPayment = request.isConfirmPayment();
+
             // Create payment record
             Payment payment = new Payment();
             payment.setOrder(order);
             payment.setCustomer(order.getCustomer());
             payment.setAmount(order.getTotalAmount());
             payment.setPaymentMethod(method);
-            payment.setStatus(PaymentStatus.PAID); // For cash and credit, mark as paid immediately
+            payment.setStatus(confirmPayment ? PaymentStatus.PAID : PaymentStatus.UNPAID);
             payment.setTransactionId(txnRef);
             payment.setPaymentDate(LocalDateTime.now());
 
             paymentRepository.save(payment);
 
-            // Update order payment status
-            order.setPaymentStatus(PaymentStatus.PAID);
-            orderRepository.save(order);
+            if (confirmPayment) {
+                order.setPaymentStatus(PaymentStatus.PAID);
+                orderRepository.save(order);
+            }
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
-            response.put("message", "Payment processed successfully");
+            response.put("message", confirmPayment ? "Payment processed successfully" : "Payment initiated, awaiting confirmation");
             response.put("transactionId", txnRef);
+            response.put("paymentStatus", payment.getStatus().toString());
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
@@ -172,6 +177,50 @@ public class PaymentController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
         }
     }
+
+    @PostMapping("/confirm")
+    public ResponseEntity<?> confirmPayment(@RequestBody Map<String, Object> request) {
+        try {
+            Integer orderId = (Integer) request.get("orderId");
+
+            if (orderId == null) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "success", false,
+                        "message", "Order ID cannot be null"
+                ));
+            }
+
+            // Find the order
+            Order order = orderRepository.findById(orderId)
+                    .orElseThrow(() -> new IllegalArgumentException("Order not found with ID: " + orderId));
+
+            // Use the new method to find the most recent unpaid payment
+            Payment payment = paymentRepository.findTopByOrderAndStatusOrderByPaymentDateDesc(order, PaymentStatus.UNPAID)
+                    .orElseThrow(() -> new IllegalArgumentException("No pending payment found for order ID: " + orderId));
+
+            // Update payment status
+            payment.setStatus(PaymentStatus.PAID);
+            paymentRepository.save(payment);
+
+            // Update order status
+            order.setPaymentStatus(PaymentStatus.PAID);
+            orderRepository.save(order);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Payment confirmed successfully");
+            response.put("transactionId", payment.getTransactionId());
+
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("Error confirming payment: {}", e.getMessage(), e);
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
     private String generateTransactionId() {
         Random rand = new Random();
         StringBuilder sb = new StringBuilder();

@@ -51,4 +51,26 @@ public class NotificationController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
+
+    // Delete a specific notification
+    @DeleteMapping("/{notificationId}")
+    public ResponseEntity<?> deleteNotification(@PathVariable Integer notificationId) {
+        try {
+            notificationService.deleteNotification(notificationId);
+            return ResponseEntity.ok(Map.of("message", "Notification deleted successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // Delete all read notifications for a user
+    @DeleteMapping("/read/{userId}")
+    public ResponseEntity<?> deleteAllReadNotifications(@PathVariable Integer userId) {
+        try {
+            notificationService.deleteAllReadNotifications(userId);
+            return ResponseEntity.ok(Map.of("message", "All read notifications deleted successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
 }

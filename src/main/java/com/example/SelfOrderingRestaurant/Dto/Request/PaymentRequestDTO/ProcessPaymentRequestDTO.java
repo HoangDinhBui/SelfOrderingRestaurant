@@ -13,4 +13,5 @@ public class ProcessPaymentRequestDTO {
     private Integer orderId;
     private String paymentMethod;
     private BigDecimal amount;
+    private boolean confirmPayment;
 }

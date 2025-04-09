@@ -4,6 +4,7 @@ import com.example.SelfOrderingRestaurant.Entity.Notification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -37,4 +38,9 @@ public interface NotificationRepository extends JpaRepository<Notification, Inte
     @Modifying
     @Query("DELETE FROM Notification n WHERE n.createAt < :cutoffDate AND n.isRead = true")
     void deleteOldReadNotifications(LocalDateTime cutoffDate);
+
+    // Add this query to NotificationRepository
+    @Modifying
+    @Query("DELETE FROM Notification n WHERE n.user.userId = :userId AND n.isRead = true")
+    void deleteAllReadByUserId(@Param("userId") Integer userId);
 }
