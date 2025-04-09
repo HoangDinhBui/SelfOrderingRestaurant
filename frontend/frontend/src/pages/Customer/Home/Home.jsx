@@ -284,172 +284,174 @@ const Home = () => {
   };
 
   return (
-    <div className="px-2 py-4">
-      <Header />
-      <Banner />
-
-      {/* Payment error message if any */}
-      {paymentError && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          <p>{paymentError}</p>
-        </div>
-      )}
-
-      {/* Notification error message if any */}
-      {notificationError && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          <p>{notificationError}</p>
-        </div>
-      )}
-
-      {/* 2-column layout */}
-      <section className="mt-4 grid grid-cols-2 gap-4">
-        {/* Left column */}
-        <div>
-          {/* Customer information */}
-          <div className="text-center mb-4">
-            <p className="text-lg">
-              Good Morning{" "}
-              <span className="text-blue-500 font-semibold">Customer!</span>
-            </p>
-            <p className="text-gray-600">
-              We will deliver your food to your table:{" "}
-              <strong>{tableNumber}</strong>
-            </p>
+    <div className="flex justify-center items-center min-h-screen">
+      <div className="w-full max-w-md px-4">
+        <Header />
+        <Banner />
+  
+        {/* Payment error message if any */}
+        {paymentError && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            <p>{paymentError}</p>
           </div>
-
-          {/* Login button */}
-          <div className="relative">
-            <img
-              src="/src/assets/img/homelogin.jpg"
-              alt="Login"
-              className="w-full h-[100px] object-cover rounded-lg"
-            />
-            <a
-              href="/login"
-              className="absolute inset-0 flex items-center justify-center bg-black/20 font-bold rounded-lg"
-            ></a>
+        )}
+  
+        {/* Notification error message if any */}
+        {notificationError && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            <p>{notificationError}</p>
           </div>
-        </div>
-
-        {/* Right column */}
-        <div className="grid grid-cols-2 gap-4">
-          {/* Call Staff button */}
-          <div className="relative">
-            <button
-              onClick={handleCallStaff}
-              disabled={sendingNotification}
-              className="absolute inset-0 flex items-center justify-center text-black font-bold rounded-lg"
-              style={{
-                backgroundImage: "url('/src/assets/img/callstaff.jpg')",
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-              }}
-            >
-              {sendingNotification ? "Calling..." : "Call Staff"}
-            </button>
-          </div>
-
-          {/* Call Payment button */}
-          <div className="relative">
-            <button
-              onClick={handleCallPayment}
-              disabled={processingPayment || sendingNotification}
-              className="absolute inset-0 flex items-center justify-center text-black font-bold rounded-lg"
-              style={{
-                backgroundImage: "url('/src/assets/img/callpayment.jpg')",
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-              }}
-            >
-              {processingPayment || sendingNotification
-                ? "Processing..."
-                : "Call Payment"}
-            </button>
-          </div>
-
-          {/* View Menu - Order button */}
-          <div className="relative col-span-2">
-            <button
-              onClick={() => navigate("/menu")}
-              className="absolute inset-0 flex items-center justify-center text-black font-bold rounded-lg"
-              style={{
-                backgroundImage: "url('/src/assets/img/viewmenu.jpg')",
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-              }}
-            >
-              View menu - Order
-            </button>
-          </div>
-        </div>
-      </section>
-
-      {/* Order Now button with cart info */}
-      <section className="mt-6">
-        <button
-          onClick={handleOrderNow}
-          className="w-full !bg-red-500 text-white py-3 rounded-lg font-bold flex items-center justify-center relative"
-          disabled={loading}
-        >
-          {loading ? (
-            <span>Loading...</span>
-          ) : (
-            <>
-              Order Now
-              {cartItemCount > 0 && (
-                <span className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white text-red-500 rounded-full h-6 w-6 flex items-center justify-center text-sm font-bold">
-                  {cartItemCount}
-                </span>
-              )}
-            </>
-          )}
-        </button>
-      </section>
-
-      {/* Today's special dishes */}
-      <section className="mt-6">
-        {/* Title and arrow button */}
-        <div className="flex items-center space-x-2 mb-3">
-          <h2 className="text-xl font-bold">Today's Special</h2>
-          <button className="text-black text-sm font-semibold flex items-center">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth="2"
-              stroke="currentColor"
-              className="w-4 h-4 ml-1"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-          </button>
-        </div>
-
-        {/* Dish list */}
-        <div className="grid grid-cols-2 gap-4">
-          {specialDishes.map((dish, index) => (
-            <div key={index} className="flex flex-col items-start">
-              {/* Dish image */}
-              <img
-                src={dish.image}
-                alt={dish.name}
-                className="w-full h-[150px] object-cover rounded-lg mb-2"
-              />
-              {/* Dish type */}
-              <p className="text-sm text-gray-500">{dish.type}</p>
-              {/* Dish name */}
-              <p className="text-lg font-semibold">{dish.name}</p>
-              {/* Dish price */}
-              <p className="text-sm font-bold text-gray-800">${dish.price}</p>
+        )}
+  
+        {/* 2-column layout */}
+        <section className="mt-4 grid grid-cols-2 gap-4">
+          {/* Left column */}
+          <div>
+            {/* Customer information */}
+            <div className="text-center mb-4">
+              <p className="text-lg">
+                Good Morning{" "}
+                <span className="text-blue-500 font-semibold">Customer!</span>
+              </p>
+              <p className="text-gray-600">
+                We will deliver your food to your table:{" "}
+                <strong>{tableNumber}</strong>
+              </p>
             </div>
-          ))}
-        </div>
-      </section>
+  
+            {/* Login button */}
+            <div className="relative">
+              <img
+                src="/src/assets/img/homelogin.jpg"
+                alt="Login"
+                className="w-full h-[100px] object-cover rounded-lg"
+              />
+              <a
+                href="/login"
+                className="absolute inset-0 flex items-center justify-center bg-black/20 font-bold rounded-lg"
+              ></a>
+            </div>
+          </div>
+  
+          {/* Right column */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* Call Staff button */}
+            <div className="relative">
+              <button
+                onClick={handleCallStaff}
+                disabled={sendingNotification}
+                className="absolute inset-0 flex items-center justify-center text-black font-bold rounded-lg"
+                style={{
+                  backgroundImage: "url('/src/assets/img/callstaff.jpg')",
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }}
+              >
+                {sendingNotification ? "Calling..." : "Call Staff"}
+              </button>
+            </div>
+  
+            {/* Call Payment button */}
+            <div className="relative">
+              <button
+                onClick={handleCallPayment}
+                disabled={processingPayment || sendingNotification}
+                className="absolute inset-0 flex items-center justify-center text-black font-bold rounded-lg"
+                style={{
+                  backgroundImage: "url('/src/assets/img/callpayment.jpg')",
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }}
+              >
+                {processingPayment || sendingNotification
+                  ? "Processing..."
+                  : "Call Payment"}
+              </button>
+            </div>
+  
+            {/* View Menu - Order button */}
+            <div className="relative col-span-2">
+              <button
+                onClick={() => navigate("/menu")}
+                className="absolute inset-0 flex items-center justify-center text-black font-bold rounded-lg"
+                style={{
+                  backgroundImage: "url('/src/assets/img/viewmenu.jpg')",
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }}
+              >
+                View menu - Order
+              </button>
+            </div>
+          </div>
+        </section>
+  
+        {/* Order Now button with cart info */}
+        <section className="mt-6">
+          <button
+            onClick={handleOrderNow}
+            className="w-full !bg-red-500 text-white py-3 rounded-lg font-bold flex items-center justify-center relative"
+            disabled={loading}
+          >
+            {loading ? (
+              <span>Loading...</span>
+            ) : (
+              <>
+                Order Now
+                {cartItemCount > 0 && (
+                  <span className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white text-red-500 rounded-full h-6 w-6 flex items-center justify-center text-sm font-bold">
+                    {cartItemCount}
+                  </span>
+                )}
+              </>
+            )}
+          </button>
+        </section>
+  
+        {/* Today's special dishes */}
+        <section className="mt-6">
+          {/* Title and arrow button */}
+          <div className="flex items-center space-x-2 mb-3">
+            <h2 className="text-xl font-bold">Today's Special</h2>
+            <button className="text-black text-sm font-semibold flex items-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth="2"
+                stroke="currentColor"
+                className="w-4 h-4 ml-1"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M9 5l7 7-7 7"
+                />
+              </svg>
+            </button>
+          </div>
+  
+          {/* Dish list */}
+          <div className="grid grid-cols-2 gap-4">
+            {specialDishes.map((dish, index) => (
+              <div key={index} className="flex flex-col items-start">
+                {/* Dish image */}
+                <img
+                  src={dish.image}
+                  alt={dish.name}
+                  className="w-full h-[150px] object-cover rounded-lg mb-2"
+                />
+                {/* Dish type */}
+                <p className="text-sm text-gray-500">{dish.type}</p>
+                {/* Dish name */}
+                <p className="text-lg font-semibold">{dish.name}</p>
+                {/* Dish price */}
+                <p className="text-sm font-bold text-gray-800">${dish.price}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
     </div>
   );
 };
