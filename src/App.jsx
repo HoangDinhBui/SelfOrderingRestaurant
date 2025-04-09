@@ -18,6 +18,7 @@ import StaffInformation from "./pages/Staff/StaffInformation/StaffInformation";
 import NotificationManagement from "./pages/Staff/NotificationManagement/NotificationManagement";
 import DishManagement from "./pages/Staff/DishManagement/DishManagement";
 import TableManagement from "./pages/Staff/TableManagement/TableManagement";
+import MenuManagement from "./pages/Admin/MenuManagement/MenuManagement";
 
 function App() {
   return (
@@ -40,6 +41,7 @@ function App() {
             <Route path="/notification-management" element={<NotificationManagement />} />
             <Route path="/dish-management" element={<DishManagement />} />
             <Route path="/table-management" element={<TableManagement />} />
+            <Route path="/menu-management" element={<MenuManagement />} />
           </Routes>
         </Router>
       </MenuProvider>
