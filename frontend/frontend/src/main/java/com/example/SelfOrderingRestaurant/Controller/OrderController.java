@@ -114,4 +114,23 @@ public class OrderController {
         OrderCartResponseDTO cart = orderService.updateItemQuantity(dishId, quantity);
         return ResponseEntity.ok(cart);
     }
+
+    @PutMapping("/orders/cart/items/{dishId}/notes")
+    public ResponseEntity<?> updateItemNotes(
+            @PathVariable Integer dishId,
+            @RequestBody Map<String, String> requestBody) {
+        String notes = requestBody.get("notes");
+        if (notes == null) {
+            return ResponseEntity.badRequest().body("Notes field is required");
+        }
+
+        try {
+            OrderCartResponseDTO cart = orderService.updateItemNotes(dishId, notes);
+            return ResponseEntity.ok(cart);
+        } catch (Exception e) {
+            log.error("Error updating item notes: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to update notes: " + e.getMessage());
+        }
+    }
 }

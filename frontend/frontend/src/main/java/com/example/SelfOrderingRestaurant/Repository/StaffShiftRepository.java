@@ -22,4 +22,10 @@ public interface StaffShiftRepository extends JpaRepository<StaffShift, Integer>
     List<Staff> findStaffOnCurrentShift(LocalDate date, LocalTime currentTime);
 
     List<StaffShift> findByStaffStaffId(Integer staffId);
+
+    StaffShift findByStaffAndShiftAndDate(Staff staff, Shift shift, LocalDate date);
+
+    List<StaffShift> findByStaffAndDate(Staff staff, LocalDate date);
+
+    List<StaffShift> findByStaffAndDateBetween(Staff staff, LocalDate startDate, LocalDate endDate);
 }
