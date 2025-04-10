@@ -57,6 +57,19 @@ const TableManagement = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [tableNotifications, setTableNotifications] = useState({});
 
+  function sortByNewestFirst(a, b) {
+    // Get timestamps, with fallbacks in case data is missing
+    const timeA =
+      a.createdAtTimestamp ||
+      (a.createdAt instanceof Date ? a.createdAt.getTime() : 0);
+
+    const timeB =
+      b.createdAtTimestamp ||
+      (b.createdAt instanceof Date ? b.createdAt.getTime() : 0);
+
+    return timeB - timeA; // Newest first
+  }
+
   // Format date for display - Added from first code snippet
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -87,42 +100,6 @@ const TableManagement = () => {
       second: "2-digit",
     });
   };
-
-  // Initial data fetch and polling setup
-  useEffect(() => {
-    fetchTablesAndNotifications();
-
-    // Set up polling for real-time updates (every 30 seconds)
-    const interval = setInterval(() => {
-      fetchTablesAndNotifications();
-    }, 30000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  useEffect(() => {
-    const handleStorageChange = () => {
-      // Check if our flag was updated
-      const lastUpdate = localStorage.getItem("notificationsUpdated");
-      if (lastUpdate) {
-        // Clear the flag
-        localStorage.removeItem("notificationsUpdated");
-
-        // Refresh notifications
-        fetchTablesAndNotifications();
-      }
-    };
-
-    window.addEventListener("storage", handleStorageChange);
-
-    // Check for changes when component mounts
-    handleStorageChange();
-
-    // Remove event listener on cleanup
-    return () => {
-      window.removeEventListener("storage", handleStorageChange);
-    };
-  }, []);
 
   // Initial data fetch and polling setup
   useEffect(() => {
@@ -224,6 +201,21 @@ const TableManagement = () => {
     }
   };
 
+  // Group notifications by date
+  const groupedNotifications = notifications.reduce((acc, notification) => {
+    const date = notification.date; // We already formatted the date
+    if (!acc[date]) {
+      acc[date] = [];
+    }
+    acc[date].push(notification);
+    return acc;
+  }, {});
+
+  // Sort notifications within each date group
+  Object.keys(groupedNotifications).forEach((date) => {
+    groupedNotifications[date].sort(sortByNewestFirst);
+  });
+
   const markNotificationAsRead = async (notificationId) => {
     try {
       // Call the API to mark notification as read
@@ -246,9 +238,13 @@ const TableManagement = () => {
               : notification
         );
 
+        const sortedUpdatedNotifications = [...updatedTableNotifications].sort(
+          sortByNewestFirst
+        );
+
         setSelectedTable({
           ...selectedTable,
-          notifications: updatedTableNotifications,
+          notifications: sortedUpdatedNotifications,
         });
 
         // Update the badges count - recalculate unread for this table
@@ -492,17 +488,36 @@ const TableManagement = () => {
           try {
             if (notification.createdAt || notification.createAt) {
               const rawDate = notification.createdAt || notification.createAt;
-              date = new Date(rawDate);
-              console.log("Parsed notification date:", date, "from:", rawDate);
 
-              // Additional validation - if still invalid after parsing, log the issue
+              // Log the raw date for debugging
+              console.log("Raw date from notification:", rawDate);
+
+              // Try various parsing approaches
+              if (typeof rawDate === "number") {
+                // Handle timestamp in milliseconds
+                date = new Date(rawDate);
+              } else if (typeof rawDate === "string") {
+                // Parse ISO string or other string formats
+                date = new Date(rawDate);
+              } else {
+                date = new Date(); // Fallback
+              }
+
+              console.log("Parsed date:", date);
+
+              // Validate the date is valid
               if (isNaN(date.getTime())) {
-                console.error("Invalid date format in notification:", rawDate);
+                console.error(
+                  "Invalid date generated:",
+                  date,
+                  "from:",
+                  rawDate
+                );
                 date = new Date(); // Fallback to current date
               }
             } else {
               console.warn(
-                "Missing createdAt timestamp for notification:",
+                "Missing timestamp for notification:",
                 notification.id || "unknown"
               );
               date = new Date(); // Fallback to current date
@@ -552,6 +567,7 @@ const TableManagement = () => {
           const formattedDate = formatDate(date);
           const formattedTime = formatTime(date);
 
+          // When you create the formatted notification object
           return {
             id:
               notification.id ||
@@ -568,10 +584,14 @@ const TableManagement = () => {
               notification.message ||
               "",
             isRead: notification.isRead || false,
-            createdAt: date, // Store the full date for potential future use
+            createdAt: date, // The Date object
+            createdAtTimestamp: date.getTime(), // Add this line - converts Date to number
+            rawTimestamp: notification.createdAt || notification.createAt,
           };
         });
-
+      const sortedFormattedNotifications =
+        formattedNotifications.sort(sortByNewestFirst);
+      setNotifications(sortedFormattedNotifications);
       // Now get tables using the DinningTableController endpoint
       const tablesResponse = await api.get("/api/tables");
       const tablesData = tablesResponse.data;
@@ -658,16 +678,6 @@ const TableManagement = () => {
     }
   };
 
-  // Group notifications by date as in the first code snippet
-  const groupedNotifications = notifications.reduce((acc, notification) => {
-    const date = notification.date; // We already formatted the date
-    if (!acc[date]) {
-      acc[date] = [];
-    }
-    acc[date].push(notification);
-    return acc;
-  }, {});
-
   // In your first useEffect
   useEffect(() => {
     fetchTablesAndNotifications();
@@ -743,6 +753,10 @@ const TableManagement = () => {
   const TableNotificationModal = () => {
     if (!isNotificationModalOpen || !selectedTable?.notifications) return null;
 
+    const sortedNotifications = [...selectedTable.notifications].sort(
+      sortByNewestFirst
+    );
+
     return (
       <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white p-6 rounded-lg shadow-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto">
@@ -772,13 +786,13 @@ const TableManagement = () => {
             </button>
           </div>
 
-          {selectedTable.notifications.length === 0 ? (
+          {sortedNotifications.length === 0 ? (
             <p className="text-center text-gray-500 py-4">
               No notifications for this table
             </p>
           ) : (
             <div className="space-y-3">
-              {selectedTable.notifications.map((notification) => (
+              {sortedNotifications.map((notification) => (
                 <div
                   key={notification.id}
                   className={`p-3 border rounded-lg ${

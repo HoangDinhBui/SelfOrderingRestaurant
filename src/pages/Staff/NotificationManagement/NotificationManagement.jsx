@@ -21,6 +21,28 @@ const NotificationManagement = () => {
   // Base API URL to ensure consistency
   const API_BASE_URL = "http://localhost:8080";
 
+  // Add consistent sorting function after state declarations
+  function sortByNewestFirst(a, b) {
+    // Get timestamps, with fallbacks in case data is missing
+    const timeA =
+      a.createdAtTimestamp ||
+      (a.createdAt instanceof Date
+        ? a.createdAt.getTime()
+        : typeof a.createdAt === "string"
+        ? new Date(a.createdAt).getTime()
+        : 0);
+
+    const timeB =
+      b.createdAtTimestamp ||
+      (b.createdAt instanceof Date
+        ? b.createdAt.getTime()
+        : typeof b.createdAt === "string"
+        ? new Date(b.createdAt).getTime()
+        : 0);
+
+    return timeB - timeA; // Newest first
+  }
+
   // Fetch notifications from API
   const fetchNotifications = async () => {
     try {
@@ -31,19 +53,28 @@ const NotificationManagement = () => {
 
       if (response.data && Array.isArray(response.data)) {
         // Map the backend fields to frontend fields for consistency
-        const mappedNotifications = response.data.map((notification) => ({
-          id: notification.notificationId,
-          tableId: notification.tableNumber,
-          message: notification.content,
-          type: notification.type,
-          checked: notification.isRead,
-          createdAt: notification.createAt,
-          // Keep any other fields you need
-          orderId: notification.orderId,
-          paymentMethod: notification.paymentMethod, // Include payment method
-        }));
+        const mappedNotifications = response.data.map((notification) => {
+          // Create a Date object from the timestamp
+          const createdAtDate = new Date(notification.createAt);
 
-        setNotifications(mappedNotifications);
+          return {
+            id: notification.notificationId,
+            tableId: notification.tableNumber,
+            message: notification.content,
+            type: notification.type,
+            checked: notification.isRead,
+            createdAt: createdAtDate, // Date object
+            createdAtTimestamp: createdAtDate.getTime(), // Add timestamp for sorting
+            orderId: notification.orderId,
+            paymentMethod: notification.paymentMethod,
+            // Include the raw timestamp for reference
+            rawTimestamp: notification.createAt,
+          };
+        });
+
+        // Sort notifications using the consistent sort function
+        const sortedNotifications = mappedNotifications.sort(sortByNewestFirst);
+        setNotifications(sortedNotifications);
       } else {
         console.error("Unexpected API response format:", response.data);
         setError("Failed to load notifications. Unexpected data format.");
@@ -113,6 +144,11 @@ const NotificationManagement = () => {
     return acc;
   }, {});
 
+  // Sort notifications within each date group using the consistent sort function
+  Object.keys(groupedNotifications).forEach((date) => {
+    groupedNotifications[date].sort(sortByNewestFirst);
+  });
+
   // Enhanced function to get friendly payment method display text
   const getPaymentMethodDisplayText = (method) => {
     switch (method) {
@@ -150,13 +186,13 @@ const NotificationManagement = () => {
   const getPaymentMethodIcon = (paymentMethod) => {
     switch (paymentMethod) {
       case "CASH":
-        return <FaMoneyBillWave className="text-green-500 ml-2" />;
+        return <FaMoneyBillWave />;
       case "VNPAY":
-        return <FaCreditCard className="text-blue-500 ml-2" />;
+        return <FaCreditCard />;
       case "CREDIT":
-        return <FaCreditCard className="text-purple-500 ml-2" />;
+        return <FaCreditCard />;
       case "MOMO":
-        return <FaMobileAlt className="text-pink-500 ml-2" />;
+        return <FaCreditCard />;
       default:
         return null;
     }
@@ -168,11 +204,14 @@ const NotificationManagement = () => {
       await axios.put(`${API_BASE_URL}/api/notifications/${id}/read`);
 
       // Update local state
-      setNotifications(
-        notifications.map((noti) =>
-          noti.id === id ? { ...noti, isRead: true, checked: true } : noti
-        )
+      const updatedNotifications = notifications.map((noti) =>
+        noti.id === id ? { ...noti, isRead: true, checked: true } : noti
       );
+
+      // Apply consistent sorting after updating
+      const sortedUpdatedNotifications =
+        updatedNotifications.sort(sortByNewestFirst);
+      setNotifications(sortedUpdatedNotifications);
 
       // You need a way to communicate this change to TableManagement
       // One approach is to use localStorage to signal that notifications changed
@@ -206,9 +245,15 @@ const NotificationManagement = () => {
 
         if (response.ok) {
           // If API call successful, update the UI
-          setNotifications(
-            notifications.filter((noti) => noti.id !== notificationToDelete)
+          const filteredNotifications = notifications.filter(
+            (noti) => noti.id !== notificationToDelete
           );
+
+          // Apply consistent sorting after deleting
+          const sortedFilteredNotifications =
+            filteredNotifications.sort(sortByNewestFirst);
+          setNotifications(sortedFilteredNotifications);
+
           // Optional: Show success toast/message
           // toast.success("Notification deleted successfully");
         } else {
@@ -239,24 +284,24 @@ const NotificationManagement = () => {
     switch (type) {
       case "PAYMENT_REQUEST":
       case "PAYMENT":
-        return <FaMoneyBillWave className="text-green-500 mr-2" />;
+        return <FaMoneyBillWave />;
       case "CALL_STAFF":
       case "CALL":
-        return <FaBell className="text-blue-500 mr-2" />;
+        return <FaBell />;
       case "NEW_ORDER":
       case "ORDER":
-        return <FaShoppingCart className="text-purple-500 mr-2" />;
+        return <FaUtensils />;
       default:
-        return <FaUtensils className="text-orange-500 mr-2" />;
+        return <FaShoppingCart />;
     }
   };
 
   if (loading) {
     return (
-      <div className="h-screen w-screen !bg-blue-50 flex flex-col">
-        <MenuBarStaff />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-xl">Loading notifications...</div>
+      <div className="flex h-screen w-full items-center justify-center">
+        <div className="text-center">
+          <div className="spinner mb-4"></div>
+          <p>Loading notifications...</p>
         </div>
       </div>
     );
@@ -264,18 +309,17 @@ const NotificationManagement = () => {
 
   if (error) {
     return (
-      <div className="h-screen w-screen !bg-blue-50 flex flex-col">
-        <MenuBarStaff />
-        <div className="flex-1 p-6">
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-            <p>{error}</p>
-            <button
-              className="mt-2 !bg-red-500 text-white px-4 py-2 rounded"
-              onClick={fetchNotifications}
-            >
-              Try Again
-            </button>
+      <div className="flex h-screen w-full items-center justify-center">
+        <div className="text-center">
+          <div className="bg-red-100 p-4 rounded-lg mb-4">
+            <p className="text-red-500">{error}</p>
           </div>
+          <button
+            className="bg-blue-500 text-white px-4 py-2 rounded"
+            onClick={fetchNotifications}
+          >
+            Try Again
+          </button>
         </div>
       </div>
     );
