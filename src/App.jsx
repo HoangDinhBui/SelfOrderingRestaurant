@@ -19,6 +19,7 @@ import NotificationManagement from "./pages/Staff/NotificationManagement/Notific
 import DishManagement from "./pages/Staff/DishManagement/DishManagement";
 import TableManagement from "./pages/Staff/TableManagement/TableManagement";
 import MenuManagement from "./pages/Admin/MenuManagement/MenuManagement";
+import RevenueManagement from "./pages/Admin/RevenueManagement/RevenueManagement";
 
 function App() {
   return (
@@ -42,6 +43,7 @@ function App() {
             <Route path="/dish-management" element={<DishManagement />} />
             <Route path="/table-management" element={<TableManagement />} />
             <Route path="/menu-management" element={<MenuManagement />} />
+            <Route path="/revenue-management" element={<RevenueManagement />} />
           </Routes>
         </Router>
       </MenuProvider>
