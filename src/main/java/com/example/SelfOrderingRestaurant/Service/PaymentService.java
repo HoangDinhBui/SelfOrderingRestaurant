@@ -1,15 +1,17 @@
 package com.example.SelfOrderingRestaurant.Service;
 
 import com.example.SelfOrderingRestaurant.Config.VNPayConfig;
-import com.example.SelfOrderingRestaurant.Dto.Request.OrderRequestDTO.OrderItemDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.PaymentResponseDTO.OrderPaymentDetailsDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.PaymentResponseDTO.PaymentItemDTO;
+import com.example.SelfOrderingRestaurant.Dto.Response.PaymentResponseDTO.PaymentNotificationStatusDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.PaymentResponseDTO.PaymentResponseDTO;
 import com.example.SelfOrderingRestaurant.Entity.Order;
 import com.example.SelfOrderingRestaurant.Entity.OrderItem;
 import com.example.SelfOrderingRestaurant.Entity.Payment;
+import com.example.SelfOrderingRestaurant.Enum.NotificationType;
 import com.example.SelfOrderingRestaurant.Enum.PaymentMethod;
 import com.example.SelfOrderingRestaurant.Enum.PaymentStatus;
+import com.example.SelfOrderingRestaurant.Repository.NotificationRepository;
 import com.example.SelfOrderingRestaurant.Repository.OrderItemRepository;
 import com.example.SelfOrderingRestaurant.Repository.OrderRepository;
 import com.example.SelfOrderingRestaurant.Repository.PaymentRepository;
@@ -37,6 +39,7 @@ public class PaymentService {
     final OrderRepository orderRepository;
     final OrderItemRepository orderItemRepository;
     final PaymentRepository paymentRepository;
+    final NotificationRepository notificationRepository;
 
     @Transactional
     public String createOrder(int total, String orderInfo, String urlReturn) throws Exception {
@@ -323,5 +326,20 @@ public class PaymentService {
         responseDTO.setTransactionId(payment.getTransactionId());
 
         return responseDTO;
+    }
+
+    public PaymentNotificationStatusDTO checkPaymentNotificationStatus(Integer orderId) {
+        // Check if there's a payment notification for this order
+        boolean hasPaymentNotification = notificationRepository
+                .existsByTypeAndContentContaining(
+                        NotificationType.PAYMENT_REQUEST,
+                        "order #" + orderId
+                );
+
+        PaymentNotificationStatusDTO statusDTO = new PaymentNotificationStatusDTO();
+        statusDTO.setOrderId(orderId);
+        statusDTO.setPaymentNotificationReceived(hasPaymentNotification);
+
+        return statusDTO;
     }
 }

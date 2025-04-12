@@ -74,10 +74,9 @@ public class DishController {
         }
 
         return ResponseEntity.ok()
-                .contentType(MediaType.IMAGE_JPEG)  // Hoặc IMAGE_PNG nếu là file PNG
+                .contentType(MediaType.IMAGE_JPEG)// IMAGE_PNG nếu là file png
                 .body(imageResource);
     }
-
 
     @PutMapping(value = "/dishes/{dishId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<String> updateDish(

@@ -8,23 +8,16 @@ import com.example.SelfOrderingRestaurant.Entity.Dish;
 import com.example.SelfOrderingRestaurant.Enum.DishStatus;
 import com.example.SelfOrderingRestaurant.Repository.CategoryRepository;
 import com.example.SelfOrderingRestaurant.Repository.DishRepository;
+import com.example.SelfOrderingRestaurant.Service.Imp.IDishService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
-public class DishService {
+public class DishService implements IDishService {
     @Autowired
     private DishRepository dishRepository;
     @Autowired
@@ -35,6 +28,7 @@ public class DishService {
     private static final String DISH_IMAGE_DIR = "dishes";
 
     @Transactional
+    @Override
     public void createDish(DishRequestDTO request) {
         if (request.getCategoryId() == null) {
             throw new IllegalArgumentException("Category ID must not be null");
@@ -59,6 +53,7 @@ public class DishService {
         dishRepository.save(dish);
     }
 
+    @Override
     public List<GetAllDishesResponseDTO> getAllDishes() {
         List<Dish> dishes = dishRepository.findAll();
         return dishes.stream()
@@ -98,6 +93,7 @@ public class DishService {
     }
 
     @Transactional
+    @Override
     public void updateDishStatus(Integer dishId, DishStatus status) {
         Dish dish = dishRepository.findById(Math.toIntExact(dishId))
                 .orElseThrow(() -> new IllegalArgumentException("Dish not found"));
@@ -107,6 +103,7 @@ public class DishService {
     }
 
     @Transactional
+    @Override
     public void deleteDish(Integer dishId) {
         Dish dish = dishRepository.findById(dishId)
                 .orElseThrow(() -> new IllegalArgumentException("Dish not found with id: " + dishId));

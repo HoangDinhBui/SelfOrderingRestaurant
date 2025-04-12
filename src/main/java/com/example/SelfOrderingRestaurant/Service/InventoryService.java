@@ -8,6 +8,7 @@ import com.example.SelfOrderingRestaurant.Entity.Inventory;
 import com.example.SelfOrderingRestaurant.Repository.IngredientRepository;
 import com.example.SelfOrderingRestaurant.Repository.InventoryRepository;
 import com.example.SelfOrderingRestaurant.Repository.SupplierRepository;
+import com.example.SelfOrderingRestaurant.Service.Imp.IInventoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,7 +19,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
-public class InventoryService {
+public class InventoryService implements IInventoryService {
     @Autowired
     InventoryRepository inventoryRepository;
 
@@ -29,6 +30,7 @@ public class InventoryService {
     SupplierRepository supplierRepository;
 
     @Transactional
+    @Override
     public List<GetInventoryResponseDTO> getAllInventories() {
         List<Inventory> inventories = inventoryRepository.findAll();
 
@@ -43,6 +45,7 @@ public class InventoryService {
     }
 
     @Transactional
+    @Override
     public GetInventoryResponseDTO getInventoryById(Integer id) {
         Inventory inventory = inventoryRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Inventory not found with ID: " + id));
@@ -57,6 +60,7 @@ public class InventoryService {
     }
 
     @Transactional
+    @Override
     public void createInventory(CreateInventoryRequestDTO request){
         Ingredient ingredient = ingredientRepository.findById(request.getIngredientId())
                 .orElseThrow(() -> new RuntimeException("Ingredient not found"));
@@ -70,6 +74,7 @@ public class InventoryService {
     }
 
     @Transactional
+    @Override
     public void updateInventory(Integer id, UpdateInventoryRequestDTO request) {
         Inventory inventory = inventoryRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Inventory not found with ID: " + id));
@@ -79,6 +84,7 @@ public class InventoryService {
     }
 
     @Transactional
+    @Override
     public boolean deleteInventory(Integer id) {
         Optional<Inventory> inventory = inventoryRepository.findById(id);
         if(inventory.isPresent()) {

@@ -4,6 +4,7 @@ import com.example.SelfOrderingRestaurant.Dto.Request.NotificationRequestDTO.Not
 import com.example.SelfOrderingRestaurant.Dto.Response.NotificationResponseDTO.NotificationResponseDTO;
 import com.example.SelfOrderingRestaurant.Entity.*;
 import com.example.SelfOrderingRestaurant.Repository.*;
+import com.example.SelfOrderingRestaurant.Service.Imp.INotificationService;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -16,7 +17,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-public class NotificationService {
+public class NotificationService implements INotificationService {
     @Autowired
     private NotificationRepository notificationRepository;
 
@@ -36,23 +37,27 @@ public class NotificationService {
     private CustomerRepository customerRepository;
 
      @Transactional
+     @Override
     public List<NotificationResponseDTO> getNotificationsByUserId(Integer userId){
          List<Notification> notifications = notificationRepository.findByUserUserId(userId);
          return mapToResponseDTOs(notifications);
     }
 
     @Transactional
+    @Override
     public List<NotificationResponseDTO> getCurrentShiftNotifications() {
         List<Notification> notifications = notificationRepository.findCurrentShiftNotifications();
         return mapToResponseDTOs(notifications);
     }
 
     @Transactional
+    @Override
     public void markNotificationAsRead(Integer notificationId) {
         notificationRepository.markAsRead(notificationId);
     }
 
     @Transactional
+    @Override
     public void createNotification(NotificationRequestDTO requestDTO) {
         // Get the customer who created the notification
         Customer customer = customerRepository.findById(requestDTO.getCustomerId())
@@ -164,12 +169,14 @@ public class NotificationService {
     // Scheduled task to clean up old read notifications (runs daily at 2 AM)
     @Scheduled(cron = "0 0 2 * * ?")
     @Transactional
+    @Override
     public void cleanupOldNotifications() {
         LocalDateTime cutoffDate = LocalDateTime.now().minusDays(7); // Keep for 7 days
         notificationRepository.deleteOldReadNotifications(cutoffDate);
     }
 
     @Transactional
+    @Override
     public void deleteNotification(Integer notificationId) {
         Notification notification = notificationRepository.findById(notificationId)
                 .orElseThrow(() -> new RuntimeException("Notification not found with id: " + notificationId));
@@ -178,6 +185,7 @@ public class NotificationService {
     }
 
     @Transactional
+    @Override
     public void deleteAllReadNotifications(Integer userId) {
         notificationRepository.deleteAllReadByUserId(userId);
     }

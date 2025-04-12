@@ -7,6 +7,7 @@ import com.example.SelfOrderingRestaurant.Entity.Ingredient;
 import com.example.SelfOrderingRestaurant.Entity.Supplier;
 import com.example.SelfOrderingRestaurant.Repository.IngredientRepository;
 import com.example.SelfOrderingRestaurant.Repository.SupplierRepository;
+import com.example.SelfOrderingRestaurant.Service.Imp.IIngredientService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,7 +16,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Service
-public class IngredientService {
+public class IngredientService implements IIngredientService {
     @Autowired
     private IngredientRepository ingredientRepository;
 
@@ -23,17 +24,20 @@ public class IngredientService {
     private SupplierRepository supplierRepository;
 
     @Transactional
+    @Override
     public List<Ingredient> getAllIngredients() {
         return ingredientRepository.findAll();
     }
 
     @Transactional
+    @Override
     public Ingredient getIngedientById(Integer id) {
         return ingredientRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Ingredient not found"));
     }
 
     @Transactional
+    @Override
     public void createIngedient(CreateIngredienRequestDTO request) {
         Supplier supplier = supplierRepository.findById(request.getSupplierId())
                 .orElseThrow(() -> new RuntimeException("Supplier not found"));
@@ -50,6 +54,7 @@ public class IngredientService {
     }
 
     @Transactional
+    @Override
     public void updateIngredient(Integer id, UpdateIngredientRequestDTO request) {
         Ingredient ingredient = ingredientRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Ingredient not found with ID: " + id));
@@ -61,6 +66,7 @@ public class IngredientService {
     }
 
     @Transactional
+    @Override
     public boolean deleteIngredient(Integer id) {
         Optional<Ingredient> ingredient = ingredientRepository.findById(id);
         if(ingredient.isPresent()) {

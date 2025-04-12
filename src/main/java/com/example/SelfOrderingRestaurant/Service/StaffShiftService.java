@@ -14,6 +14,7 @@ import com.example.SelfOrderingRestaurant.Repository.ShiftRepository;
 import com.example.SelfOrderingRestaurant.Repository.StaffRepository;
 import com.example.SelfOrderingRestaurant.Repository.StaffShiftRepository;
 import com.example.SelfOrderingRestaurant.Repository.UserRepository;
+import com.example.SelfOrderingRestaurant.Service.Imp.IStaffShiftService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -27,7 +28,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-public class StaffShiftService {
+public class StaffShiftService implements IStaffShiftService {
 
     @Autowired
     private ShiftRepository shiftRepository;
@@ -41,10 +42,14 @@ public class StaffShiftService {
     @Autowired
     private UserRepository userRepository;
 
+    @Transactional
+    @Override
     public List<Shift> getAvailableShifts() {
         return shiftRepository.findAll();
     }
 
+    @Transactional
+    @Override
     public Map<LocalDate, List<ShiftScheduleDTO>> getStaffSchedule(Staff staff) {
         if (staff == null) {
             throw new UnauthorizedException("Staff not found");
@@ -57,6 +62,8 @@ public class StaffShiftService {
         return getStaffScheduleForDateRange(staff, startOfWeek, endOfWeek);
     }
 
+    @Transactional
+    @Override
     public Map<LocalDate, List<ShiftScheduleDTO>> getStaffScheduleForDateRange(Staff staff, LocalDate startDate, LocalDate endDate) {
         List<StaffShift> staffShifts = staffShiftRepository.findByStaffAndDateBetween(
                 staff, startDate, endDate);
@@ -80,6 +87,7 @@ public class StaffShiftService {
     }
 
     @Transactional
+    @Override
     public Map<String, Object> registerShifts(Staff staff, List<ShiftRegistrationDTO> registrations) {
         if (staff == null) {
             throw new UnauthorizedException("Staff not found");
@@ -110,6 +118,7 @@ public class StaffShiftService {
         return response;
     }
 
+    @Transactional
     private StaffShift registerSingleShift(Staff staff, ShiftRegistrationDTO registration) {
         Shift shift = shiftRepository.findById(registration.getShiftId())
                 .orElseThrow(() -> new ResourceNotFoundException("Shift with ID " + registration.getShiftId() + " not found"));
@@ -145,6 +154,7 @@ public class StaffShiftService {
     }
 
     @Transactional
+    @Override
     public void cancelShift(Staff staff, Integer staffShiftId) {
         if (staff == null) {
             throw new UnauthorizedException("Staff not found");
@@ -170,6 +180,8 @@ public class StaffShiftService {
         staffShiftRepository.delete(staffShift);
     }
 
+    @Transactional
+    @Override
     public Map<LocalDate, List<ShiftScheduleDTO>> getAvailableShiftsForWeek(LocalDate weekStart) {
         // Adjust to make sure weekStart is a Monday
         LocalDate startOfWeek = weekStart.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
@@ -194,6 +206,8 @@ public class StaffShiftService {
         return availableShiftsByDay;
     }
 
+    @Transactional
+    @Override
     public Staff getCurrentStaff() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
