@@ -20,7 +20,7 @@ import DishManagement from "./pages/Staff/DishManagement/DishManagement";
 import TableManagement from "./pages/Staff/TableManagement/TableManagement";
 import MenuManagement from "./pages/Admin/MenuManagement/MenuManagement";
 import RevenueManagement from "./pages/Admin/RevenueManagement/RevenueManagement";
-
+import AdminInformation from "./pages/Admin/AdminInformation/AdminInformation";
 function App() {
   return (
     <CartProvider>
@@ -44,6 +44,7 @@ function App() {
             <Route path="/table-management" element={<TableManagement />} />
             <Route path="/menu-management" element={<MenuManagement />} />
             <Route path="/revenue-management" element={<RevenueManagement />} />
+            <Route path="/admin-information" element={<AdminInformation />} />
           </Routes>
         </Router>
       </MenuProvider>
