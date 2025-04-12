@@ -1,6 +1,7 @@
 package com.example.SelfOrderingRestaurant.Repository;
 
 import com.example.SelfOrderingRestaurant.Entity.Notification;
+import com.example.SelfOrderingRestaurant.Enum.NotificationType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -43,4 +44,6 @@ public interface NotificationRepository extends JpaRepository<Notification, Inte
     @Modifying
     @Query("DELETE FROM Notification n WHERE n.user.userId = :userId AND n.isRead = true")
     void deleteAllReadByUserId(@Param("userId") Integer userId);
+
+    boolean existsByTypeAndContentContaining(NotificationType type, String contentPattern);
 }

@@ -10,6 +10,7 @@ import com.example.SelfOrderingRestaurant.Enum.UserStatus;
 import com.example.SelfOrderingRestaurant.Repository.ShiftRepository;
 import com.example.SelfOrderingRestaurant.Repository.StaffShiftRepository;
 import com.example.SelfOrderingRestaurant.Repository.StaffRepository;
+import com.example.SelfOrderingRestaurant.Service.Imp.IStaffService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,7 +20,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-public class StaffService {
+public class StaffService implements IStaffService {
     @Autowired
     private StaffRepository staffRepository;
 
@@ -29,6 +30,8 @@ public class StaffService {
     @Autowired
     private ShiftRepository shiftRepository;
 
+    @Transactional
+    @Override
     public List<GetAllStaffResponseDTO> getAllStaff() {
         return staffRepository.findAll().stream()
                 .map(staff -> new GetAllStaffResponseDTO(
@@ -39,6 +42,8 @@ public class StaffService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
+    @Override
     public void assignStaffShift(Integer staffId, Integer shiftId, LocalDate date) {
         if (date.isBefore(LocalDate.now())) {
             throw new RuntimeException("Cannot assign a shift to a past date.");
@@ -64,6 +69,7 @@ public class StaffService {
     }
 
     @Transactional
+    @Override
     public GetAllStaffResponseDTO getStaffById(Integer id) {
         Staff staff = staffRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Staff not found with id: " + id));
@@ -75,6 +81,7 @@ public class StaffService {
     }
 
     @Transactional
+    @Override
     public void updateStaff(Integer id, UpdateStaffDTO staffUpdateDTO) {
         Staff staff = staffRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Staff not found with id: " + id));
@@ -96,6 +103,7 @@ public class StaffService {
     }
 
     @Transactional
+    @Override
     public void deleteStaff(Integer id) {
         Staff staff = staffRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Staff not found with id: " + id));

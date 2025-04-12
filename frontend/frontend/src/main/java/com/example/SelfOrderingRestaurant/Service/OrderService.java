@@ -11,21 +11,20 @@ import com.example.SelfOrderingRestaurant.Enum.OrderStatus;
 import com.example.SelfOrderingRestaurant.Enum.PaymentStatus;
 import com.example.SelfOrderingRestaurant.Entity.Key.OrderItemKey;
 import com.example.SelfOrderingRestaurant.Repository.*;
+import com.example.SelfOrderingRestaurant.Service.Imp.IOrderService;
 import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.web.context.annotation.SessionScope;
 
 import java.math.BigDecimal;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 @Service
-public class OrderService {
+public class OrderService implements IOrderService {
     @Autowired
     private OrderRepository orderRepository;
     @Autowired
@@ -45,6 +44,7 @@ public class OrderService {
     private Logger log = org.slf4j.LoggerFactory.getLogger(OrderService.class);
 
     @Transactional
+    @Override
     public Integer createOrder(OrderRequestDTO request) {
         DinningTable dinningTable = dinningTableRepository.findById(request.getTableId())
                 .orElseThrow(() -> new IllegalArgumentException("Table not found"));
@@ -122,6 +122,7 @@ public class OrderService {
         return orderId;
     }
 
+    @Override
     public List<GetAllOrdersResponseDTO> getAllOrders() {
         List<Order> orders = orderRepository.findAll();
 
@@ -151,6 +152,7 @@ public class OrderService {
         }).collect(Collectors.toList());
     }
 
+    @Override
     public OrderResponseDTO getOrderById(Integer orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found"));
@@ -180,6 +182,7 @@ public class OrderService {
     }
 
     @Transactional
+    @Override
     public void updateOrderStatus(Integer orderId, String status) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found"));
@@ -194,22 +197,27 @@ public class OrderService {
     }
 
     // Cart management methods
+    @Override
     public OrderCartResponseDTO addDishToOrderCart(OrderItemDTO orderItemDTO) {
         return orderCartService.addItem(orderItemDTO);
     }
 
+    @Override
     public OrderCartResponseDTO getCurrentOrderCart() {
         return orderCartService.getCart();
     }
 
+    @Override
     public OrderCartResponseDTO removeItemFromCart(Integer dishId) {
         return orderCartService.removeItem(dishId);
     }
 
+    @Override
     public OrderCartResponseDTO updateItemQuantity(Integer dishId, int quantity) {
         return orderCartService.updateItemQuantity(dishId, quantity);
     }
 
+    @Override
     public OrderCartResponseDTO updateItemNotes(Integer dishId, String notes) {
         log.info("Updating notes for dish ID {}: {}", dishId, notes);
 

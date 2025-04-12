@@ -4,6 +4,7 @@ import com.example.SelfOrderingRestaurant.Dto.Response.DinningTableResponseDTO.D
 import com.example.SelfOrderingRestaurant.Entity.DinningTable;
 import com.example.SelfOrderingRestaurant.Enum.TableStatus;
 import com.example.SelfOrderingRestaurant.Repository.DinningTableRepository;
+import com.example.SelfOrderingRestaurant.Service.Imp.IDinningTableService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,12 +13,13 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-public class DinningTableService {
+public class DinningTableService implements IDinningTableService {
 
     @Autowired
     private DinningTableRepository dinningTableRepository;
 
     @Transactional
+    @Override
     public List<DinningTableResponseDTO> getAllTables() {
         return dinningTableRepository.findAll().stream()
                 .map(this::convertToResponseDTO)
@@ -25,6 +27,7 @@ public class DinningTableService {
     }
 
     @Transactional
+    @Override
     public void updateTableStatus(Integer tableNumber, TableStatus status) {
         DinningTable table = dinningTableRepository.findById(tableNumber)
                 .orElseThrow(() -> new RuntimeException("Table not found"));
@@ -36,6 +39,7 @@ public class DinningTableService {
     }
 
     @Transactional
+    @Override
     public DinningTableResponseDTO convertToResponseDTO(DinningTable dinningTable) {
         return new DinningTableResponseDTO(
                 dinningTable.getTableNumber(),

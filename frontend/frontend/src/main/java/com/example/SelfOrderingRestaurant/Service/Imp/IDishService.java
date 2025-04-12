@@ -1,0 +1,20 @@
+package com.example.SelfOrderingRestaurant.Service.Imp;
+
+import com.example.SelfOrderingRestaurant.Dto.Request.DishRequestDTO.DishRequestDTO;
+import com.example.SelfOrderingRestaurant.Dto.Response.DishResponseDTO.DishResponseDTO;
+import com.example.SelfOrderingRestaurant.Dto.Response.DishResponseDTO.GetAllDishesResponseDTO;
+import com.example.SelfOrderingRestaurant.Enum.DishStatus;
+
+import java.util.List;
+
+public interface IDishService {
+    void createDish(DishRequestDTO request);
+
+    List<GetAllDishesResponseDTO> getAllDishes();
+
+    DishResponseDTO getDishById(Integer dishId);
+
+    void updateDishStatus(Integer dishId, DishStatus status);
+
+    void deleteDish(Integer dishId);
+}

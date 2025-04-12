@@ -4,6 +4,7 @@ import com.example.SelfOrderingRestaurant.Dto.Request.OrderRequestDTO.OrderItemD
 import com.example.SelfOrderingRestaurant.Dto.Response.OrderResponseDTO.OrderCartResponseDTO;
 import com.example.SelfOrderingRestaurant.Entity.Dish;
 import com.example.SelfOrderingRestaurant.Repository.DishRepository;
+import com.example.SelfOrderingRestaurant.Service.Imp.IOrderCartItemService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.context.annotation.SessionScope;
@@ -17,13 +18,14 @@ import java.util.stream.Collectors;
 
 @Service
 @SessionScope
-public class OrderCartService {
+public class OrderCartService implements IOrderCartItemService {
 
     @Autowired
     private DishRepository dishRepository;
 
     private final Map<Integer, OrderCartResponseDTO.CartItemDTO> cartItems = new HashMap<>();
 
+    @Override
     public OrderCartResponseDTO addItem(OrderItemDTO orderItemDTO) {
         Dish dish = dishRepository.findById(orderItemDTO.getDishId())
                 .orElseThrow(() -> new IllegalArgumentException("Dish not found"));
@@ -53,6 +55,7 @@ public class OrderCartService {
         return getCart();
     }
 
+    @Override
     public OrderCartResponseDTO getCart() {
         List<OrderCartResponseDTO.CartItemDTO> items = new ArrayList<>(cartItems.values());
 
@@ -64,11 +67,13 @@ public class OrderCartService {
         return new OrderCartResponseDTO(items, totalAmount);
     }
 
+    @Override
     public OrderCartResponseDTO removeItem(Integer dishId) {
         cartItems.remove(dishId);
         return getCart();
     }
 
+    @Override
     public OrderCartResponseDTO updateItemQuantity(Integer dishId, int quantity) {
         if (!cartItems.containsKey(dishId)) {
             throw new IllegalArgumentException("Item not found in cart");
@@ -84,10 +89,24 @@ public class OrderCartService {
         return getCart();
     }
 
+    @Override
+    public OrderCartResponseDTO updateItemNotes(Integer dishId, String notes) {
+        if (!cartItems.containsKey(dishId)) {
+            throw new IllegalArgumentException("Item not found in cart");
+        }
+
+        OrderCartResponseDTO.CartItemDTO item = cartItems.get(dishId);
+        item.setNotes(notes);
+
+        return getCart();
+    }
+
+    @Override
     public void clearCart() {
         cartItems.clear();
     }
 
+    @Override
     public List<OrderItemDTO> getCartItemsAsOrderItems() {
         return cartItems.values().stream()
                 .map(item -> {

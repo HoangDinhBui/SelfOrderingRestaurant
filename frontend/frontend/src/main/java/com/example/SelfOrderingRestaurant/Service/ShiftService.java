@@ -4,6 +4,7 @@ import com.example.SelfOrderingRestaurant.Dto.Request.ShiftRequestDTO.ShiftReque
 import com.example.SelfOrderingRestaurant.Dto.Response.ShiftResponseDTO.ShiftResponseDTO;
 import com.example.SelfOrderingRestaurant.Entity.Shift;
 import com.example.SelfOrderingRestaurant.Repository.ShiftRepository;
+import com.example.SelfOrderingRestaurant.Service.Imp.IShiftService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,11 +14,12 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
-public class ShiftService {
+public class ShiftService implements IShiftService {
     @Autowired
     private ShiftRepository shiftRepository;
 
     @Transactional
+    @Override
     public List<ShiftResponseDTO> getAllShifts() {
         return shiftRepository.findAll().stream()
                 .map(this::convertToResponseDTO)
@@ -25,6 +27,7 @@ public class ShiftService {
     }
 
     @Transactional
+    @Override
     public ShiftResponseDTO getShiftById(Integer id) {
         return shiftRepository.findById(id)
                 .map(this::convertToResponseDTO)
@@ -32,6 +35,7 @@ public class ShiftService {
     }
 
     @Transactional
+    @Override
     public ShiftResponseDTO createShift(ShiftRequestDTO shiftRequestDTO) {
         Shift shift = convertToEntity(shiftRequestDTO);
         Shift savedShift = shiftRepository.save(shift);
@@ -39,6 +43,7 @@ public class ShiftService {
     }
 
     @Transactional
+    @Override
     public ShiftResponseDTO updateShift(Integer id, ShiftRequestDTO shiftRequestDTO) {
         Optional<Shift> existingShift = shiftRepository.findById(id);
         if (existingShift.isPresent()) {
@@ -53,6 +58,7 @@ public class ShiftService {
     }
 
     @Transactional
+    @Override
     public void deleteShift(Integer id) {
         if(!shiftRepository.existsById(id)){
             throw new RuntimeException("Shift not found");

@@ -7,6 +7,7 @@ import com.example.SelfOrderingRestaurant.Dto.Response.OrderResponseDTO.OrderCar
 import com.example.SelfOrderingRestaurant.Dto.Response.OrderResponseDTO.OrderResponseDTO;
 import com.example.SelfOrderingRestaurant.Dto.Request.OrderRequestDTO.UpdateOrderStatusRequestDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.PaymentResponseDTO.OrderPaymentDetailsDTO;
+import com.example.SelfOrderingRestaurant.Dto.Response.PaymentResponseDTO.PaymentNotificationStatusDTO;
 import com.example.SelfOrderingRestaurant.Service.OrderService;
 import com.example.SelfOrderingRestaurant.Service.PaymentService;
 import jakarta.annotation.security.PermitAll;
@@ -131,6 +132,18 @@ public class OrderController {
             log.error("Error updating item notes: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Failed to update notes: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/orders/{orderId}/payment-notification-status")
+    public ResponseEntity<?> checkPaymentNotificationStatus(@PathVariable Integer orderId) {
+        try {
+            PaymentNotificationStatusDTO status = paymentService.checkPaymentNotificationStatus(orderId);
+            return ResponseEntity.ok(status);
+        } catch (Exception e) {
+            log.error("Error checking payment notification status for order {}: {}", orderId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to check payment notification status: " + e.getMessage());
         }
     }
 }
