@@ -2,6 +2,8 @@ import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import { MenuProvider } from "./context/MenuContext";
 import { CartProvider } from "./context/CartContext";
 import "./axiosConfig";
+import '@fortawesome/fontawesome-free/css/all.min.css';
+
 
 // Customer Pages
 import Home from "./pages/Customer/Home/Home";
@@ -21,6 +23,8 @@ import TableManagement from "./pages/Staff/TableManagement/TableManagement";
 import MenuManagement from "./pages/Admin/MenuManagement/MenuManagement";
 import RevenueManagement from "./pages/Admin/RevenueManagement/RevenueManagement";
 import AdminInformation from "./pages/Admin/AdminInformation/AdminInformation";
+import AdminOrder from "./pages/Admin/AdminOrder/AdminOrder";
+
 function App() {
   return (
     <CartProvider>
@@ -45,6 +49,7 @@ function App() {
             <Route path="/menu-management" element={<MenuManagement />} />
             <Route path="/revenue-management" element={<RevenueManagement />} />
             <Route path="/admin-information" element={<AdminInformation />} />
+            <Route path="/admin-order" element={<AdminOrder />} />
           </Routes>
         </Router>
       </MenuProvider>
