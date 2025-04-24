@@ -1,4 +1,4 @@
-package com.example.SelfOrderingRestaurant.Dto.Request;
+package com.example.SelfOrderingRestaurant.Dto.Request.UserRequestDTO;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
