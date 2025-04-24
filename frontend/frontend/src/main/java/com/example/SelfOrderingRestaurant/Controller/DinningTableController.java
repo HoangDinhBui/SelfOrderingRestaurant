@@ -1,6 +1,7 @@
 package com.example.SelfOrderingRestaurant.Controller;
 
 import com.example.SelfOrderingRestaurant.Dto.Request.DinningTableRequestDTO.DinningTableRequestDTO;
+import com.example.SelfOrderingRestaurant.Dto.Response.DinningTableResponseDTO.CompleteTableResponseDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.DinningTableResponseDTO.DinningTableResponseDTO;
 import com.example.SelfOrderingRestaurant.Service.DinningTableService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,6 +22,12 @@ public class DinningTableController {
         List<DinningTableResponseDTO> tables = dinningTableService.getAllTables();
         return ResponseEntity.ok(tables);
     }
+
+//    @GetMapping("/complete")
+//    public ResponseEntity<List<CompleteTableResponseDTO>> getTablesWithCompleteInfo() {
+//        List<CompleteTableResponseDTO> tables = dinningTableService.getTablesWithCompleteInfo();
+//        return ResponseEntity.ok(tables);
+//    }
 
     @PutMapping("/{table_id}")
     public ResponseEntity<String> updateTableStatus(

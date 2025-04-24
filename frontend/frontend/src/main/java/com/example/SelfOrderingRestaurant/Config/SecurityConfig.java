@@ -47,6 +47,8 @@ public class SecurityConfig {
                                 "/api/dishes/**",
                                 "/api/images/**",
                                 "/api/notifications/**",
+                                "/graphiql/**",
+                                "/graphql/**",
                                 "/error").permitAll()
 
                         // Yêu cầu vai trò STAFF hoặc ADMIN cho các endpoints của staff

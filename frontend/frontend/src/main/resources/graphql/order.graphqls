@@ -1,0 +1,89 @@
+# Types
+type OrderItem {
+  dishId: ID!
+  quantity: Int!
+  notes: String
+  dishName: String
+  price: Float
+}
+
+type CartItem {
+  dishId: ID!
+  dishName: String!
+  dishImage: String
+  price: Float!
+  quantity: Int!
+  notes: String
+}
+
+type Order {
+  orderId: ID!
+  customerName: String
+  tableNumber: Int!
+  status: String!
+  totalAmount: Float!
+  paymentStatus: String
+  items: [OrderItem!]!
+}
+
+type OrderCart {
+  items: [CartItem!]!
+  totalAmount: Float!
+}
+
+type OrderPaymentDetails {
+  orderId: ID!
+  totalAmount: Float!
+  items: [OrderItem!]!
+  paymentStatus: String!
+  paymentMethod: String
+  paymentDate: String
+}
+
+type PaymentNotificationStatus {
+  orderId: ID!
+  notified: Boolean!
+  notificationDate: String
+}
+
+# Input types
+input OrderItemInput {
+  dishId: ID!
+  quantity: Int!
+  notes: String
+}
+
+input OrderInput {
+  customerId: ID
+  customerName: String
+  tableId: ID!
+  items: [OrderItemInput!]!
+  notes: String
+}
+
+input UpdateOrderStatusInput {
+  status: String!
+}
+
+input UpdateItemNotesInput {
+  notes: String!
+}
+
+# Queries
+type Query {
+  orders: [Order!]!
+  order(orderId: ID!): Order
+  orderCart: OrderCart
+  orderPaymentDetails(orderId: ID!): OrderPaymentDetails
+  paymentNotificationStatus(orderId: ID!): PaymentNotificationStatus
+}
+
+# Mutations
+type Mutation {
+  createOrder(input: OrderInput!): ID!
+  updateOrderStatus(orderId: ID!, input: UpdateOrderStatusInput!): String!
+  addDishToOrderCart(input: OrderItemInput!): OrderCart!
+  removeItemFromCart(dishId: ID!): OrderCart!
+  updateItemQuantity(dishId: ID!, quantity: Int!): OrderCart!
+  updateItemNotes(dishId: ID!, input: UpdateItemNotesInput!): OrderCart!
+}

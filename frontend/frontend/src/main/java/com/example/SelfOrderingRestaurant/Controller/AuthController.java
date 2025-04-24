@@ -1,6 +1,6 @@
 package com.example.SelfOrderingRestaurant.Controller;
 
-import com.example.SelfOrderingRestaurant.Dto.Request.RegisterRequestDto;
+import com.example.SelfOrderingRestaurant.Dto.Request.UserRequestDTO.RegisterRequestDto;
 import com.example.SelfOrderingRestaurant.Dto.Request.UserRequestDTO.*;
 import com.example.SelfOrderingRestaurant.Dto.Response.UserResponseDTO.AuthResponseDto;
 import com.example.SelfOrderingRestaurant.Service.AuthService;

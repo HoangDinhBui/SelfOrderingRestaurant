@@ -1,6 +1,6 @@
 package com.example.SelfOrderingRestaurant.Controller;
 
-import com.example.SelfOrderingRestaurant.Dto.Request.RegisterRequestDto;
+import com.example.SelfOrderingRestaurant.Dto.Request.UserRequestDTO.RegisterRequestDto;
 import com.example.SelfOrderingRestaurant.Dto.Request.RevenueRequestDTO.RevenueExportDTO;
 import com.example.SelfOrderingRestaurant.Dto.Request.ShiftRequestDTO.ShiftRequestDTO;
 import com.example.SelfOrderingRestaurant.Dto.Request.StaffRequestDTO.AssignStaffRequestDTO;
@@ -11,6 +11,7 @@ import com.example.SelfOrderingRestaurant.Dto.Response.RevenueResponseDTO.Revenu
 import com.example.SelfOrderingRestaurant.Dto.Response.RevenueResponseDTO.YearlyRevenueDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.ShiftResponseDTO.ShiftResponseDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.StaffResponseDTO.GetAllStaffResponseDTO;
+
 import com.example.SelfOrderingRestaurant.Service.AuthService;
 import com.example.SelfOrderingRestaurant.Service.RevenueService;
 import com.example.SelfOrderingRestaurant.Service.ShiftService;
