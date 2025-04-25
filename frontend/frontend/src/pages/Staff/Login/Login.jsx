@@ -1,16 +1,5 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
-
-// Create an axios instance with default configuration
-const api = axios.create({
-  baseURL: "http://localhost:8080", // Change this to match your backend URL
-  headers: {
-    "Content-Type": "application/json",
-    Accept: "application/json",
-  },
-  withCredentials: true, // Important for CORS with credentials if your API requires it
-});
 
 const Login = () => {
   const navigate = useNavigate();
@@ -20,7 +9,7 @@ const Login = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async () => {
+  const handleLogin = () => {
     try {
       setError("");
       setLoading(true);
@@ -31,81 +20,25 @@ const Login = () => {
         setLoading(false);
         return;
       }
-
-      // Create request body according to LoginRequestDto expected by the API
-      const loginRequest = {
-        login: userId,
-        password: password,
-      };
-
-      console.log("Attempting login with:", { username: userId });
-
-      // Call the login API endpoint
-      const response = await api.post("/api/auth/login", loginRequest);
-
-      console.log("Login response:", response);
-
-      // Handle successful login
-      const authData = response.data;
-
-      // Store tokens in localStorage
-      localStorage.setItem("accessToken", authData.accessToken);
-      if (authData.refreshToken) {
-        localStorage.setItem("refreshToken", authData.refreshToken);
-      }
-
-      // Set authorization header for future requests
-      api.defaults.headers.common[
-        "Authorization"
-      ] = `Bearer ${authData.accessToken}`;
-
-      console.log("Login successful", authData);
+      
+      // Simulate successful login
+      console.log("Login successful");
+      
+      // Redirect to dashboard after successful login
       navigate("/table-management");
-
-      // Redirect to dashboard or home page after successful login
-      // window.location.href = '/dashboard'; // Uncomment to redirect
     } catch (error) {
       console.error("Login failed:", error);
-
-      // Handle different error scenarios
-      if (error.response) {
-        // The request was made and the server responded with a status code
-        // that falls out of the range of 2xx
-        if (error.response.status === 403) {
-          setError(
-            "Access forbidden. Please check your credentials or permissions."
-          );
-        } else if (error.response.status === 401) {
-          setError("Invalid username or password.");
-        } else {
-          setError(
-            error.response.data?.message || "Login failed. Please try again."
-          );
-        }
-        console.log("Error response data:", error.response.data);
-      } else if (error.request) {
-        // The request was made but no response was received
-        setError("No response from server. Please check your connection.");
-      } else {
-        // Something happened in setting up the request that triggered an Error
-        setError("An error occurred. Please try again.");
-      }
+      setError("An error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleLogin = () => {
     try {
       setError("");
       setLoading(true);
-
-      // In a real implementation, you would integrate with Google OAuth
-      // For now, we'll just show a placeholder
       alert("Google login integration will be implemented here");
-
-      // Actual Google login would get a token and then call:
-      // const response = await api.post('/api/auth/staff/google-login', { token: googleToken });
     } catch (error) {
       console.error("Google login failed:", error);
       setError("Google login failed. Please try again.");
@@ -114,7 +47,7 @@ const Login = () => {
     }
   };
 
-  const handleForgotPassword = async () => {
+  const handleForgotPassword = () => {
     if (!userId) {
       setError("Please enter your User ID to reset password");
       return;
@@ -122,17 +55,9 @@ const Login = () => {
 
     try {
       setLoading(true);
-
-      await api.post("/api/auth/forgot-password", {
-        email: userId, // Assuming userId is used as email for password reset
-      });
-
-      alert(
-        "If your account exists, password reset instructions have been sent to your email."
-      );
+      alert("If your account exists, password reset instructions have been sent to your email.");
     } catch (error) {
       console.error("Forgot password request failed:", error);
-      // Intentionally don't show specific errors for security reasons
     } finally {
       setLoading(false);
     }

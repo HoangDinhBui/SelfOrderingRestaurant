@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import MenuBar from "../../../components/layout/MenuBar.jsx";
 
-const TableManagement = () => {
+const TableManagementAdmin = () => {
   const [selectedTable, setSelectedTable] = useState(null);
   const [isDishModalOpen, setIsDishModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -9,14 +9,13 @@ const TableManagement = () => {
   const [isBillModalOpen, setIsBillModalOpen] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
+  const [isEditTableModalOpen, setIsEditTableModalOpen] = useState(false);
   const [isAddTableModalOpen, setIsAddTableModalOpen] = useState(false);
   const [newTableCapacity, setNewTableCapacity] = useState("");
   const [newTableNumber, setNewTableNumber] = useState("");
   const [errorMessage, setErrorMessage] = useState(""); // Lưu thông báo lỗi
-  const [isEditTableModalOpen, setIsEditTableModalOpen] = useState(false);
-  // Thêm state mới cho bảng đang chỉnh sửa
-  const [editingTables, setEditingTables] = useState([]);
-  const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
+  const [editTableData, setEditTableData] = useState(null); // Lưu thông tin bàn cần chỉnh sửa
 
   // Notification data
   const [notifications] = useState([
@@ -85,10 +84,10 @@ const TableManagement = () => {
     setIsPaymentModalOpen(true);
   };
 
-  // const handlePaymentSuccess = () => {
-  //   setIsPaymentModalOpen(false);
-  //   setIsSuccessModalOpen(true);
-  // };
+  const handlePaymentSuccess = () => {
+    setIsPaymentModalOpen(false);
+    setIsSuccessModalOpen(true);
+  };
 
   const handleShowEmptyTableModal = () => {
     setIsEmptyTableModalOpen(true);
@@ -132,7 +131,6 @@ const TableManagement = () => {
   };
 
   const handleEditTableModal = () => {
-    setEditingTables(JSON.parse(JSON.stringify(tables)));
     setIsEditTableModalOpen(true);
   };
 
@@ -140,26 +138,21 @@ const TableManagement = () => {
     setIsEditTableModalOpen(false);
   };
 
-  // Sửa đổi hàm này để chỉ cập nhật editingTables
   const handleEditTableField = (index, field, value) => {
-    setEditingTables((prevTables) =>
+    setTables((prevTables) =>
       prevTables.map((table, i) =>
         i === index ? { ...table, [field]: value } : table
       )
     );
   };
 
-  // Sửa đổi hàm này để chỉ xóa từ editingTables
   const handleDeleteTable = (id) => {
-    setEditingTables((prevTables) =>
-      prevTables.filter((table) => table.id !== id)
-    );
+    setTables((prevTables) => prevTables.filter((table) => table.id !== id));
   };
 
-  // Sửa đổi hàm lưu thay đổi
   const handleSaveTableChanges = () => {
     // Kiểm tra nếu có số bàn trùng lặp
-    const isDuplicateId = editingTables.some(
+    const isDuplicateId = tables.some(
       (table, index, self) => self.findIndex((t) => t.id === table.id) !== index
     );
 
@@ -171,7 +164,7 @@ const TableManagement = () => {
     }
 
     // Kiểm tra giá trị không hợp lệ
-    const hasInvalidValues = editingTables.some(
+    const hasInvalidValues = tables.some(
       (table) => table.id <= 0 || table.capacity <= 0
     );
 
@@ -180,19 +173,11 @@ const TableManagement = () => {
       return;
     }
 
-    // Nếu không có lỗi, cập nhật tables từ editingTables
-    setTables([...editingTables]);
-
-    // Đóng modal và xóa thông báo lỗi
+    // Nếu không có lỗi, đóng modal và xóa thông báo lỗi
     setIsEditTableModalOpen(false);
     setErrorMessage("");
   };
 
-  // Thêm hàm hủy thay đổi
-  const handleCancelTableChanges = () => {
-    setIsEditTableModalOpen(false);
-    setErrorMessage("");
-  };
   const totalAmount =
     selectedTable?.dishes?.reduce(
       (sum, dish) => sum + dish.price * dish.quantity,
@@ -336,137 +321,6 @@ const TableManagement = () => {
 
   const emptyTables = tables.filter((table) => table.status === "available");
 
-  // Add a function to handle notifications and update table status
-  const handleNotification = (notification) => {
-    // Convert table ID from notification (e.g., "01") to number (e.g., 1) for comparison
-    const tableId = parseInt(notification.table, 10);
-
-    // If it's a new notification, change table status to "occupied"
-    setTables((prevTables) =>
-      prevTables.map((table) => {
-        if (table.id === tableId && table.status === "available") {
-          return { ...table, status: "occupied" };
-        }
-        return table;
-      })
-    );
-  };
-
-  // Add this to handle payment completion and change table status to available
-  const handlePaymentComplete = (tableId) => {
-    setTables((prevTables) =>
-      prevTables.map((table) => {
-        if (table.id === tableId) {
-          return { ...table, status: "available", dishes: [] };
-        }
-        return table;
-      })
-    );
-
-    // Close any open modals
-    setIsPaymentModalOpen(false);
-    setIsBillModalOpen(false);
-    setIsConfirmModalOpen(false);
-    setIsSuccessModalOpen(true);
-  };
-
-  // Modify the existing handlePaymentSuccess function
-  const handlePaymentSuccess = () => {
-    if (selectedTable) {
-      handlePaymentComplete(selectedTable.id);
-    } else {
-      setIsPaymentModalOpen(false);
-      setIsSuccessModalOpen(true);
-    }
-  };
-
-  // Add a useEffect to process any new notifications when the component mounts
-  useEffect(() => {
-    // Process initial notifications
-    notifications.forEach(handleNotification);
-
-    // You could add a listener here for new notifications if you have a real-time system
-  }, []);
-
-  // Example of how to handle a new notification arriving (you'd connect this to your notification system)
-  const handleNewNotification = (newNotification) => {
-    // Process the new notification
-    handleNotification(newNotification);
-
-    // You might want to add the notification to your notifications state
-    // setNotifications(prev => [...prev, newNotification]);
-  };
-
-  // Modify the NotificationModal component to include a "Mark as Handled" button
-  const NotificationModal = ({ isOpen, onClose, table, notifications }) => {
-    if (!isOpen || !table) return null;
-
-    const tableNotifications = notifications.filter(
-      (n) => n.table === table.id.toString().padStart(2, "0")
-    );
-
-    const handleMarkAsHandled = (notificationId) => {
-      // Remove the notification from the list
-      // In a real app, you'd probably call an API here
-      // For now, we'll just simulate this
-      // This is where you might want to trigger other actions
-      // For payment requests, you'd open the payment modal
-    };
-
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white p-6 rounded-lg w-96">
-          <h2 className="text-xl font-bold mb-4">
-            Notifications for Table {table.id}
-          </h2>
-          {tableNotifications.length > 0 ? (
-            <div className="max-h-80 overflow-y-auto">
-              {tableNotifications.map((notification) => (
-                <div key={notification.id} className="border-b py-2">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <p className="font-semibold">{notification.type}</p>
-                      <p className="text-sm text-gray-500">
-                        {notification.date} - {notification.time}
-                      </p>
-                    </div>
-                    {notification.type === "Payment request" ? (
-                      <button
-                        onClick={() => {
-                          handleMarkAsHandled(notification.id);
-                          onClose();
-                          handleShowPaymentModal();
-                        }}
-                        className="bg-blue-500 text-white px-2 py-1 rounded text-sm"
-                      >
-                        Process
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => handleMarkAsHandled(notification.id)}
-                        className="bg-green-500 text-white px-2 py-1 rounded text-sm"
-                      >
-                        Handled
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p>No notifications for this table.</p>
-          )}
-          <button
-            onClick={onClose}
-            className="mt-4 bg-gray-500 text-white px-4 py-2 rounded w-full"
-          >
-            Close
-          </button>
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div className="h-screen w-screen bg-[#C2C7CA] flex justify-center items-center">
       {/* Background blur when any modal is open */}
@@ -480,7 +334,8 @@ const TableManagement = () => {
           isSuccessModalOpen ||
           isNotificationModalOpen ||
           isAddTableModalOpen ||
-          isEditTableModalOpen
+          isEditTableModalOpen 
+
             ? "blur-sm"
             : ""
         }`}
@@ -738,7 +593,11 @@ const TableManagement = () => {
                   <button
                     style={{ backgroundColor: "#FFFFFF" }}
                     className="flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg shadow-md"
-                    onClick={handleEditTableModal} // Gọi hàm mở modal
+                    onClick={(e) => {
+                      e.stopPropagation(); // Ngăn sự kiện click lan ra ngoài
+                      setEditTableData(tables); // Lưu thông tin bàn cần chỉnh sửa
+                      setIsEditTableModalOpen(true); // Mở modal
+                    }}
                   >
                     <img
                       width="19px"
@@ -759,8 +618,8 @@ const TableManagement = () => {
         <div className="fixed inset-0 flex items-center justify-center z-50">
           {/* Overlay */}
           <div
-            className="absolute inset-0"
-            onClick={handleCloseEditTableModal} // Đóng modal khi nhấn ra ngoài
+            className="absolute inset-0 bg-opacity-50"
+            onClick={handleCloseAddTableModal} // Đóng modal khi nhấn ra ngoài
           ></div>
 
           {/* Nội dung modal */}
@@ -837,7 +696,6 @@ const TableManagement = () => {
         <div className="fixed inset-0 flex items-center justify-center z-50">
           {/* Overlay */}
           <div
-            className="absolute inset-0 "
             onClick={handleCloseEditTableModal} // Đóng modal khi nhấn ra ngoài
           ></div>
 
@@ -861,36 +719,40 @@ const TableManagement = () => {
                 </tr>
               </thead>
               <tbody>
-                {editingTables.map((table, index) => (
-                  <tr key={index} className="border-b">
+                {tables.map((table, index) => (
+                  <tr key={table.id} className="border-b">
                     {/* Số bàn */}
                     <td className="p-2">
                       <input
                         type="number"
                         value={table.id}
-                        onChange={(e) => {
-                          const newValue = parseInt(e.target.value, 10);
-                          if (!isNaN(newValue) && newValue > 0) {
-                            handleEditTableField(index, "id", newValue);
-                          }
-                        }}
+                        onChange={(e) =>
+                          handleEditTableField(
+                            index,
+                            "id",
+                            parseInt(e.target.value)
+                          )
+                        }
                         className="w-full border border-gray-300 rounded-lg px-2 py-1"
                       />
                     </td>
+
                     {/* Sức chứa */}
                     <td className="p-2">
                       <input
                         type="number"
                         value={table.capacity}
-                        onChange={(e) => {
-                          const newValue = parseInt(e.target.value, 10);
-                          if (!isNaN(newValue) && newValue > 0) {
-                            handleEditTableField(index, "capacity", newValue);
-                          }
-                        }}
+                        onChange={(e) =>
+                          handleEditTableField(
+                            index,
+                            "capacity",
+                            parseInt(e.target.value)
+                          )
+                        }
                         className="w-full border border-gray-300 rounded-lg px-2 py-1"
                       />
                     </td>
+
                     {/* Hành động */}
                     <td className="p-2 text-center">
                       <button
@@ -925,21 +787,14 @@ const TableManagement = () => {
 
             {/* Nút lưu */}
             <button
-              style={{
-                backgroundColor: "black",
-                marginTop: "10px",
-                display: "flex",
-                justifyContent: "center",
-              }}
-              className=" hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+              className="mt-4 w-full bg-blue-500 text-black py-2 px-4 rounded-lg hover:bg-black-600"
               onClick={handleSaveTableChanges}
             >
-              Save
+              Save Changes
             </button>
           </div>
         </div>
       )}
-
       {/* Notification Modal */}
       {isNotificationModalOpen && selectedTable && (
         <div className="fixed inset-0 flex items-center justify-center z-50">
@@ -1314,39 +1169,29 @@ const TableManagement = () => {
         </div>
       )}
 
-      <NotificationModal
-        isOpen={isNotificationModalOpen}
-        onClose={() => setIsNotificationModalOpen(false)}
-        table={selectedTable}
-        notifications={notifications}
-      />
-
       {/* Success Modal */}
       {isSuccessModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg w-96 text-center">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-16 w-16 text-green-500 mx-auto mb-4"
-              viewBox="0 0 20 20"
-              fill="currentColor"
-            >
-              <path
-                fillRule="evenodd"
-                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                clipRule="evenodd"
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div
+            className="absolute inset-0 bg-opacity-50"
+            onClick={() => setIsSuccessModalOpen(false)}
+          ></div>
+          <div className="bg-white rounded-lg p-6 w-80 relative z-50 text-center">
+            <div className="flex justify-center mb-4">
+              <img
+                alt="Logo"
+                className="w-24 h-24"
+                src="../../src/assets/img/logoremovebg.png"
               />
-            </svg>
-            <h2 className="text-xl font-bold mb-2">Payment Successful!</h2>
-            <p className="mb-4">
-              Table status has been changed to Available. The bill has been
-              printed successfully.
+            </div>
+            <p className="text-lg mb-6 text-green-600 font-medium">
+              Payment Successful
             </p>
             <button
+              className="!bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg"
               onClick={() => setIsSuccessModalOpen(false)}
-              className="bg-blue-600 text-white px-4 py-2 rounded w-full"
             >
-              Close
+              OK
             </button>
           </div>
         </div>
@@ -1355,4 +1200,4 @@ const TableManagement = () => {
   );
 };
 
-export default TableManagement;
+export default TableManagementAdmin;

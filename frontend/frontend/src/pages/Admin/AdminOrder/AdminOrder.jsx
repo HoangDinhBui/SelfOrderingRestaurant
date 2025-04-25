@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import MenuBar from "../../../components/layout/MenuBar";
+import MenuBar from "../../../components/layout/menuBar";
 
 const AdminOrder = () => {
   const [selectedTable, setSelectedTable] = useState(null);

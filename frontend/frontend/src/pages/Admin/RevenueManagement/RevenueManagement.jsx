@@ -1,7 +1,7 @@
 // src/pages/Home/RevenueManagement.jsx
 import React, { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
-import MenuBar from "../../../components/layout/MenuBar";
+import MenuBar from "../../../components/layout/menuBar";
 
 const RevenueManagement = () => {
   const [viewMode, setViewMode] = useState("Day");

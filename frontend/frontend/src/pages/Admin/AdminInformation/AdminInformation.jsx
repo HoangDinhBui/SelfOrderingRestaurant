@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import MenuBar from "../../../components/layout/MenuBar.jsx";
+import MenuBar from "../../../components/layout/menuBar";
 
 // Shift models data
 const shiftModels = {
