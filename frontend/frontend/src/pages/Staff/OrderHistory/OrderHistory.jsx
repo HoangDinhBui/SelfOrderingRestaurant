@@ -10,7 +10,7 @@ import {
 import MenuBarStaff from "../../../components/layout/MenuBar_Staff.jsx";
 import MenuBar from "../../../components/layout/menuBar.jsx";
 
-const OrderHistory = () => {
+const OrderHistoryStaff = () => {
   const [isBillModalOpen, setIsBillModalOpen] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -167,10 +167,7 @@ const OrderHistory = () => {
   return (
     <div className="h-screen w-screen !bg-blue-50 flex flex-col">
       <div className={isModalOpen ? "blur-sm" : ""}>
-        <MenuBar
-          title="Order History"
-          icon="https://img.icons8.com/?size=100&id=24874&format=png&color=FFFFFF"
-        />
+        <MenuBarStaff />
       </div>
 
       {/* Main Content */}
@@ -361,4 +358,4 @@ const OrderHistory = () => {
   );
 };
 
-export default OrderHistory;
+export default OrderHistoryStaff;

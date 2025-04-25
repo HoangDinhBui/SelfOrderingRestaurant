@@ -255,6 +255,7 @@ const MenuBar = ({
               { label: "Staff Management", icon: "https://img.icons8.com/ios-filled/50/1C2E4A/user.png" },
               { label: "Revenue Management", icon: "https://img.icons8.com/ios-filled/50/1C2E4A/money.png" },
               { label: "Evaluate", icon: "https://img.icons8.com/ios-filled/50/1C2E4A/bookmark.png" },
+              { label: "Notification Management", icon: "https://img.icons8.com/?size=100&id=11668&format=png&color=000000" },
               { label: "Order History", icon: "https://img.icons8.com/?size=100&id=24874&format=png&color=1C2E4A" },
             ]}
             onSelect={(item) => {

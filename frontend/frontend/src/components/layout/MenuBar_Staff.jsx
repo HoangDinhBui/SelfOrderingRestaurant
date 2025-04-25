@@ -1,56 +1,56 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom"; // Import hook để điều hướng
+import { useNavigate } from "react-router-dom";
 
 const MenuBarStaff = () => {
-  const [activeContainer, setActiveContainer] = useState(null); // Trạng thái để theo dõi container được chọn
-  const navigate = useNavigate(); // Hook để điều hướng
+  const [activeContainer, setActiveContainer] = useState(null);
+  const navigate = useNavigate();
 
   const styles = {
     menuBar: {
       display: "flex",
       alignItems: "center",
-      justifyContent: "space-between", // Căn giữa logo, tiêu đề và avatar
-      backgroundColor: "#8D9EC5", // Màu nền của thanh menu
+      justifyContent: "space-between",
+      backgroundColor: "#8D9EC5",
       color: "white",
-      padding: "0 20px", // Khoảng cách ngang
+      padding: "0 20px",
       width: "100%",
-      height: "60px", // Chiều cao cố định của thanh menu
+      height: "60px",
     },
     menuLeft: {
-      display: "flex", // Đặt logo và tiêu đề cùng hàng
+      display: "flex",
       alignItems: "center",
     },
     menuTitleContainer: (isActive) => ({
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
-      backgroundColor: isActive ? "#1C2E4A" : "#8D9EC5", // Chuyển màu nền khi được chọn
-      padding: "10px", // Điều chỉnh padding
+      backgroundColor: isActive ? "#1C2E4A" : "#8D9EC5",
+      padding: "10px",
       height: "100%",
       marginLeft: "15px",
-      cursor: "pointer", // Thêm con trỏ chuột
+      cursor: "pointer",
     }),
     menuIcon: {
-      width: "40px", // Kích thước icon
+      width: "40px",
       height: "40px",
-      marginRight: "10px", // Khoảng cách giữa icon và chữ
+      marginRight: "10px",
     },
     menuTitle: (isActive) => ({
-      fontSize: "18px", // Điều chỉnh kích thước chữ
+      fontSize: "18px",
       fontWeight: "bold",
-      color: isActive ? "white" : "#1C2E4A", // Chuyển màu chữ khi được chọn
+      color: isActive ? "white" : "#1C2E4A",
     }),
     menuAvatar: {
       width: "50px",
       height: "50px",
-      objectFit: "cover", // Cắt hình ảnh vừa khít trong khung
-      borderRadius: "50%", // Bo tròn hình ảnh
+      objectFit: "cover",
+      borderRadius: "50%",
     },
   };
 
   const handleNavigation = (container, path) => {
-    setActiveContainer(container); // Cập nhật trạng thái container được chọn
-    navigate(path); // Điều hướng sang trang tương ứng
+    setActiveContainer(container);
+    navigate(path);
   };
 
   return (
@@ -64,11 +64,11 @@ const MenuBarStaff = () => {
         />
         <div
           style={styles.menuTitleContainer(activeContainer === "order")}
-          onClick={() => handleNavigation("order", "/table-management")} // Điều hướng sang trang Table Management
+          onClick={() => handleNavigation("order", "/table-management")}
         >
           <img
-            src="./src/assets/img/mealicon.png"
-            alt="Plate icon"
+            src="https://img.icons8.com/ios-filled/50/FFFFFF/table.png"
+            alt="Table icon"
             style={styles.menuIcon}
           />
           <div style={styles.menuTitle(activeContainer === "order")}>
@@ -80,11 +80,11 @@ const MenuBarStaff = () => {
           style={styles.menuTitleContainer(activeContainer === "notification")}
           onClick={() =>
             handleNavigation("notification", "/notification-management")
-          } // Điều hướng sang trang Notification Management
+          }
         >
           <img
             src="https://img.icons8.com/material-outlined/192/FFFFFF/alarm.png"
-            alt="Alarm"
+            alt="Alarm icon"
             style={styles.menuIcon}
           />
           <div style={styles.menuTitle(activeContainer === "notification")}>
@@ -94,15 +94,29 @@ const MenuBarStaff = () => {
 
         <div
           style={styles.menuTitleContainer(activeContainer === "dish")}
-          onClick={() => handleNavigation("dish", "/dish-management")} // Điều hướng sang trang Dish Management
+          onClick={() => handleNavigation("dish", "/dish-management")}
         >
           <img
             src="./src/assets/img/mealicon.png"
-            alt="Plate icon"
+            alt="Meal icon"
             style={styles.menuIcon}
           />
           <div style={styles.menuTitle(activeContainer === "dish")}>
             <i>Dish Management</i>
+          </div>
+        </div>
+
+        <div
+          style={styles.menuTitleContainer(activeContainer === "history")}
+          onClick={() => handleNavigation("history", "/order-history")}
+        >
+          <img
+            src="https://img.icons8.com/?size=100&id=24874&format=png&color=FFFFFF"
+            alt="History icon"
+            style={styles.menuIcon}
+          />
+          <div style={styles.menuTitle(activeContainer === "history")}>
+            <i>Order History</i>
           </div>
         </div>
       </div>
