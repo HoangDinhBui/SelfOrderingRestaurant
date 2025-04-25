@@ -133,7 +133,10 @@ const NotificationManagementAdmin = () => {
 
   return (
     <div className="h-screen w-screen !bg-blue-50 flex flex-col">
-      <MenuBar />
+      <MenuBar
+          title="Notification Management"
+          icon="https://img.icons8.com/?size=100&id=11668&format=png&color=000000"
+        />
 
       {/* Main Content */}
       <div className="flex-1 p-6 bg-gray-100 overflow-y-auto">

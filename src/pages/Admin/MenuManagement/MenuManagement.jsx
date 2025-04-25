@@ -505,7 +505,10 @@ const MenuManagement = () => {
   return (
     <>
       {/* Thanh menu */}
-      <MenuBar title="Menu Management" />
+      <MenuBar
+          title="Menu Management"
+          icon="https://img.icons8.com/ios-filled/50/1C2E4A/menu.png"
+        />
 
       {/* Container ngoài */}
       <div style={styles.outerContainer}>

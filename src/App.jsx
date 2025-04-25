@@ -27,6 +27,8 @@ import AdminOrder from "./pages/Admin/AdminOrder/AdminOrder";
 import TableManagement from "./pages/Staff/TableManagement/TableManagement";
 import TableManagementAdmin from "./pages/Admin/TableManagement/TableManagement";
 import NotificationManagementAdmin from "./pages/Admin/NotificationManagement/NotificationManagement";
+import OrderHistory from "./pages/Admin/OrderHistory/OrderHistory";
+import OrderHistoryStaff from "./pages/Staff/OrderHistory/OrderHistory";
 
 function App() {
   return (
@@ -54,7 +56,7 @@ function App() {
             <Route path="/admin-information" element={<AdminInformation />} />
             <Route path="/admin-order" element={<AdminOrder />} /> */}
         
-              <Route path="/" element={<NotificationManagementAdmin />} />
+              <Route path="/" element={<OrderHistoryStaff />} />
           </Routes>
         </Router>
       </MenuProvider>
