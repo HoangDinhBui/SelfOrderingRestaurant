@@ -8,8 +8,9 @@ import {
   FaUtensils,
 } from "react-icons/fa";
 import MenuBarStaff from "../../../components/layout/MenuBar_Staff.jsx";
+import MenuBar from "../../../components/layout/MenuBar.jsx";
 
-const NotificationManagement = () => {
+const NotificationManagementAdmin = () => {
   const [activeTab, setActiveTab] = useState("Notification Management");
   const [notifications, setNotifications] = useState([
     {
@@ -132,7 +133,7 @@ const NotificationManagement = () => {
 
   return (
     <div className="h-screen w-screen !bg-blue-50 flex flex-col">
-      <MenuBarStaff />
+      <MenuBar />
 
       {/* Main Content */}
       <div className="flex-1 p-6 bg-gray-100 overflow-y-auto">
@@ -231,4 +232,4 @@ const NotificationManagement = () => {
   );
 };
 
-export default NotificationManagement;
+export default NotificationManagementAdmin;
