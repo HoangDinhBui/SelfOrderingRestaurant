@@ -19,11 +19,13 @@ import Login from "./pages/Staff/Login/Login";
 import StaffInformation from "./pages/Staff/StaffInformation/StaffInformation";
 import NotificationManagement from "./pages/Staff/NotificationManagement/NotificationManagement";
 import DishManagement from "./pages/Staff/DishManagement/DishManagement";
-import TableManagement from "./pages/Staff/TableManagement/TableManagement";
+import TableManagementStaff from "./pages/Staff/TableManagement/TableManagement";
 import MenuManagement from "./pages/Admin/MenuManagement/MenuManagement";
 import RevenueManagement from "./pages/Admin/RevenueManagement/RevenueManagement";
 import AdminInformation from "./pages/Admin/AdminInformation/AdminInformation";
 import AdminOrder from "./pages/Admin/AdminOrder/AdminOrder";
+import TableManagement from "./pages/Staff/TableManagement/TableManagement";
+import TableManagementAdmin from "./pages/Admin/TableManagement/TableManagement";
 
 function App() {
   return (
@@ -32,16 +34,16 @@ function App() {
         <Router>
           <Routes>
             {/* Customer Routes */}
-            <Route path="/" element={<Home />} />
+            {/* <Route path="/" element={<Home />} />
             <Route path="/menu" element={<Menu />} />
             <Route path="/order" element={<Order />} />
             <Route path="/view/:id" element={<ViewItem />} />
             <Route path="/note/:id" element={<Note />} />
             <Route path="/payment" element={<Payment />} />
-            <Route path="/evaluate" element={<Evaluate />} />
+            <Route path="/evaluate" element={<Evaluate />} /> */}
             
             {/* Staff/Admin Routes */}
-            <Route path="/login" element={<Login />} />
+            {/* <Route path="/login" element={<Login />} />
             <Route path="/staff-information" element={<StaffInformation />} />
             <Route path="/notification-management" element={<NotificationManagement />} />
             <Route path="/dish-management" element={<DishManagement />} />
@@ -49,7 +51,9 @@ function App() {
             <Route path="/menu-management" element={<MenuManagement />} />
             <Route path="/revenue-management" element={<RevenueManagement />} />
             <Route path="/admin-information" element={<AdminInformation />} />
-            <Route path="/admin-order" element={<AdminOrder />} />
+            <Route path="/admin-order" element={<AdminOrder />} /> */}
+        
+              <Route path="/" element={<TableManagementAdmin />} />
           </Routes>
         </Router>
       </MenuProvider>

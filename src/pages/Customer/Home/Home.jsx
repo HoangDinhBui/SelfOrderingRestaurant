@@ -288,21 +288,21 @@ const Home = () => {
       <div className="w-full max-w-md px-4">
         <Header />
         <Banner />
-  
+
         {/* Payment error message if any */}
         {paymentError && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
             <p>{paymentError}</p>
           </div>
         )}
-  
+
         {/* Notification error message if any */}
         {notificationError && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
             <p>{notificationError}</p>
           </div>
         )}
-  
+
         {/* 2-column layout */}
         <section className="mt-4 grid grid-cols-2 gap-4">
           {/* Left column */}
@@ -318,7 +318,7 @@ const Home = () => {
                 <strong>{tableNumber}</strong>
               </p>
             </div>
-  
+
             {/* Login button */}
             <div className="relative">
               <img
@@ -332,7 +332,7 @@ const Home = () => {
               ></a>
             </div>
           </div>
-  
+
           {/* Right column */}
           <div className="grid grid-cols-2 gap-4">
             {/* Call Staff button */}
@@ -350,25 +350,36 @@ const Home = () => {
                 {sendingNotification ? "Calling..." : "Call Staff"}
               </button>
             </div>
-  
+
             {/* Call Payment button */}
             <div className="relative">
               <button
                 onClick={handleCallPayment}
                 disabled={processingPayment || sendingNotification}
-                className="absolute inset-0 flex items-center justify-center text-black font-bold rounded-lg"
+                className="absolute inset-0 flex flex-col items-center justify-center text-black font-bold rounded-lg"
                 style={{
-                  backgroundImage: "url('/src/assets/img/callpayment.jpg')",
-                  backgroundSize: "cover",
-                  backgroundPosition: "center",
+                  backgroundColor: "#f9f9f9", // Màu nền sáng
+                  border: "1px solid #ddd", // Viền nhẹ
+                  borderRadius: "10px", // Bo góc
+                  padding: "10px", // Khoảng cách bên trong
+                  boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)", // Đổ bóng
                 }}
               >
-                {processingPayment || sendingNotification
-                  ? "Processing..."
-                  : "Call Payment"}
+                {/* Icon */}
+                <img
+                  src="/src/assets/img/callpayment-icon.png" // Đường dẫn tới icon
+                  alt="Call Payment"
+                  className="w-12 h-12 mb-2" // Kích thước icon
+                />
+                {/* Text */}
+                <span className="text-sm font-semibold text-gray-700">
+                  {processingPayment || sendingNotification
+                    ? "Processing..."
+                    : "Call Payment"}
+                </span>
               </button>
             </div>
-  
+
             {/* View Menu - Order button */}
             <div className="relative col-span-2">
               <button
@@ -385,7 +396,7 @@ const Home = () => {
             </div>
           </div>
         </section>
-  
+
         {/* Order Now button with cart info */}
         <section className="mt-6">
           <button
@@ -407,7 +418,7 @@ const Home = () => {
             )}
           </button>
         </section>
-  
+
         {/* Today's special dishes */}
         <section className="mt-6">
           {/* Title and arrow button */}
@@ -430,7 +441,7 @@ const Home = () => {
               </svg>
             </button>
           </div>
-  
+
           {/* Dish list */}
           <div className="grid grid-cols-2 gap-4">
             {specialDishes.map((dish, index) => (

@@ -9,13 +9,18 @@ import {
   FaCreditCard,
 } from "react-icons/fa";
 import MenuBarStaff from "../../../components/layout/MenuBar_Staff";
+import axios from "axios";
+import Order from "../../Customer/Order/Order";
 
-const NotificationManagement = () => {
+const OrderHistory= () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [notificationToDelete, setNotificationToDelete] = useState(null);
+
+  // Base API URL to ensure consistency
+  const API_BASE_URL = "http://localhost:8080";
 
   // Add consistent sorting function after state declarations
   function sortByNewestFirst(a, b) {
@@ -39,59 +44,46 @@ const NotificationManagement = () => {
     return timeB - timeA; // Newest first
   }
 
-  // Mock notifications data
-  const mockNotifications = [
-    {
-      id: 1,
-      tableId: 5,
-      message: "Table 5 is requesting payment",
-      type: "PAYMENT_REQUEST",
-      checked: false,
-      createdAt: new Date(),
-      createdAtTimestamp: new Date().getTime(),
-      paymentMethod: "CASH",
-    },
-    {
-      id: 2,
-      tableId: 3,
-      message: "New order from Table 3",
-      type: "NEW_ORDER",
-      checked: true,
-      createdAt: new Date(Date.now() - 3600000), // 1 hour ago
-      createdAtTimestamp: new Date(Date.now() - 3600000).getTime(),
-    },
-    {
-      id: 3,
-      tableId: 8,
-      message: "Table 8 is calling for assistance",
-      type: "CALL_STAFF",
-      checked: false,
-      createdAt: new Date(Date.now() - 7200000), // 2 hours ago
-      createdAtTimestamp: new Date(Date.now() - 7200000).getTime(),
-    },
-    {
-      id: 4,
-      tableId: 2,
-      message: "Table 2 is requesting payment",
-      type: "PAYMENT_REQUEST",
-      checked: false,
-      createdAt: new Date(Date.now() - 86400000), // Yesterday
-      createdAtTimestamp: new Date(Date.now() - 86400000).getTime(),
-      paymentMethod: "VNPAY",
-    }
-  ];
-
-  // Fetch notifications - now using mock data
-  const fetchNotifications = () => {
+  // Fetch notifications from API
+  const fetchNotifications = async () => {
     try {
       setLoading(true);
-      // Use mock data instead of API call
-      const sortedNotifications = [...mockNotifications].sort(sortByNewestFirst);
-      setNotifications(sortedNotifications);
-      setLoading(false);
+      const response = await axios.get(
+        `${API_BASE_URL}/api/notifications/shift/current`
+      );
+
+      if (response.data && Array.isArray(response.data)) {
+        // Map the backend fields to frontend fields for consistency
+        const mappedNotifications = response.data.map((notification) => {
+          // Create a Date object from the timestamp
+          const createdAtDate = new Date(notification.createAt);
+
+          return {
+            id: notification.notificationId,
+            tableId: notification.tableNumber,
+            message: notification.content,
+            type: notification.type,
+            checked: notification.isRead,
+            createdAt: createdAtDate, // Date object
+            createdAtTimestamp: createdAtDate.getTime(), // Add timestamp for sorting
+            orderId: notification.orderId,
+            paymentMethod: notification.paymentMethod,
+            // Include the raw timestamp for reference
+            rawTimestamp: notification.createAt,
+          };
+        });
+
+        // Sort notifications using the consistent sort function
+        const sortedNotifications = mappedNotifications.sort(sortByNewestFirst);
+        setNotifications(sortedNotifications);
+      } else {
+        console.error("Unexpected API response format:", response.data);
+        setError("Failed to load notifications. Unexpected data format.");
+      }
     } catch (err) {
       console.error("Error fetching notifications:", err);
       setError("Failed to load notifications. Please try again.");
+    } finally {
       setLoading(false);
     }
   };
@@ -207,19 +199,30 @@ const NotificationManagement = () => {
     }
   };
 
-  // Updated function to mark notification as read - now without API
-  const handleCheckNotification = (id) => {
-    // Update local state only
-    const updatedNotifications = notifications.map((noti) =>
-      noti.id === id ? { ...noti, isRead: true, checked: true } : noti
-    );
+  // Updated function to mark notification as read
+  const handleCheckNotification = async (id) => {
+    try {
+      await axios.put(`${API_BASE_URL}/api/notifications/${id}/read`);
 
-    // Apply consistent sorting after updating
-    const sortedUpdatedNotifications = updatedNotifications.sort(sortByNewestFirst);
-    setNotifications(sortedUpdatedNotifications);
+      // Update local state
+      const updatedNotifications = notifications.map((noti) =>
+        noti.id === id ? { ...noti, isRead: true, checked: true } : noti
+      );
 
-    // Update localStorage to signal change
-    localStorage.setItem("notificationsUpdated", Date.now().toString());
+      // Apply consistent sorting after updating
+      const sortedUpdatedNotifications =
+        updatedNotifications.sort(sortByNewestFirst);
+      setNotifications(sortedUpdatedNotifications);
+
+      // You need a way to communicate this change to TableManagement
+      // One approach is to use localStorage to signal that notifications changed
+      localStorage.setItem("notificationsUpdated", Date.now().toString());
+
+      // Or if you're using a state management library like Redux, you would dispatch an action here
+    } catch (err) {
+      console.error("Error marking notification as read:", err);
+      setError("Failed to mark notification as read.");
+    }
   };
 
   const handleDeleteClick = (id) => {
@@ -227,16 +230,45 @@ const NotificationManagement = () => {
     setShowDeleteModal(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (notificationToDelete) {
-      // Update local state only - no API call
-      const filteredNotifications = notifications.filter(
-        (noti) => noti.id !== notificationToDelete
-      );
+      try {
+        // Call the API to delete the notification
+        const response = await fetch(
+          `/api/notifications/${notificationToDelete}`,
+          {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
 
-      // Apply consistent sorting after deleting
-      const sortedFilteredNotifications = filteredNotifications.sort(sortByNewestFirst);
-      setNotifications(sortedFilteredNotifications);
+        if (response.ok) {
+          // If API call successful, update the UI
+          const filteredNotifications = notifications.filter(
+            (noti) => noti.id !== notificationToDelete
+          );
+
+          // Apply consistent sorting after deleting
+          const sortedFilteredNotifications =
+            filteredNotifications.sort(sortByNewestFirst);
+          setNotifications(sortedFilteredNotifications);
+
+          // Optional: Show success toast/message
+          // toast.success("Notification deleted successfully");
+        } else {
+          // Handle error response
+          const errorData = await response.json();
+          console.error("Failed to delete notification:", errorData.error);
+          // Optional: Show error toast/message
+          // toast.error("Failed to delete notification");
+        }
+      } catch (error) {
+        console.error("Error deleting notification:", error);
+        // Optional: Show error toast/message
+        // toast.error("Error deleting notification");
+      }
 
       setShowDeleteModal(false);
       setNotificationToDelete(null);
@@ -414,4 +446,4 @@ const NotificationManagement = () => {
   );
 };
 
-export default NotificationManagement;
+export default OrderHistory;
