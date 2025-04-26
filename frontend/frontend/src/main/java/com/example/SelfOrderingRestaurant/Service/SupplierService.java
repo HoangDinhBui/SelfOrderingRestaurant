@@ -11,11 +11,13 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import lombok.AllArgsConstructor;
 
+@AllArgsConstructor
 @Service
 public class SupplierService implements ISupplierService {
-    @Autowired
-    private SupplierRepository supplierRepository;
+
+    private final SupplierRepository supplierRepository;
 
     @Transactional
     @Override

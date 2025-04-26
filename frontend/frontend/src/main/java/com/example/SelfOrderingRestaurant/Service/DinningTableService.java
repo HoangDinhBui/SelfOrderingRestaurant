@@ -11,12 +11,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.AllArgsConstructor;
 
+@AllArgsConstructor
 @Service
 public class DinningTableService implements IDinningTableService {
 
-    @Autowired
-    private DinningTableRepository dinningTableRepository;
+    private final DinningTableRepository dinningTableRepository;
 
     @Transactional
     @Override

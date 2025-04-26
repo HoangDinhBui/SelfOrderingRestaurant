@@ -6,12 +6,14 @@ import com.example.SelfOrderingRestaurant.Service.SupplierService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import lombok.AllArgsConstructor;
 
+@AllArgsConstructor
 @RestController
 @RequestMapping("api/admin/suppliers")
 public class SupplierController {
-    @Autowired
-    private SupplierService supplierService;
+
+    private final SupplierService supplierService;
 
     @GetMapping
     public ResponseEntity<?> getAllSuppliers() {

@@ -17,17 +17,19 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.AllArgsConstructor;
 
+@AllArgsConstructor
 @Service
 public class InventoryService implements IInventoryService {
-    @Autowired
-    InventoryRepository inventoryRepository;
 
-    @Autowired
-    IngredientRepository ingredientRepository;
+    private final InventoryRepository inventoryRepository;
 
-    @Autowired
-    SupplierRepository supplierRepository;
+
+    private final IngredientRepository ingredientRepository;
+
+
+    private final SupplierRepository supplierRepository;
 
     @Transactional
     @Override

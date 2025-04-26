@@ -26,21 +26,23 @@ import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 import java.util.stream.Collectors;
+import lombok.AllArgsConstructor;
 
+@AllArgsConstructor
 @Service
 public class StaffShiftService implements IStaffShiftService {
 
-    @Autowired
-    private ShiftRepository shiftRepository;
 
-    @Autowired
-    private StaffRepository staffRepository;
+    private final ShiftRepository shiftRepository;
 
-    @Autowired
-    private StaffShiftRepository staffShiftRepository;
 
-    @Autowired
-    private UserRepository userRepository;
+    private final StaffRepository staffRepository;
+
+
+    private final StaffShiftRepository staffShiftRepository;
+
+
+    private final UserRepository userRepository;
 
     @Transactional
     @Override

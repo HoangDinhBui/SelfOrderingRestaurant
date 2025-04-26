@@ -14,14 +14,16 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import lombok.AllArgsConstructor;
 
+@AllArgsConstructor
 @Service
 public class IngredientService implements IIngredientService {
-    @Autowired
-    private IngredientRepository ingredientRepository;
 
-    @Autowired
-    private SupplierRepository supplierRepository;
+    private final IngredientRepository ingredientRepository;
+
+
+    private final SupplierRepository supplierRepository;
 
     @Transactional
     @Override

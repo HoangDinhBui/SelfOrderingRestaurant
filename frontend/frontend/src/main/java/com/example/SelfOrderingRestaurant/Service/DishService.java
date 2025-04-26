@@ -15,15 +15,17 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.AllArgsConstructor;
 
+@AllArgsConstructor
 @Service
 public class DishService implements IDishService {
-    @Autowired
-    private DishRepository dishRepository;
-    @Autowired
-    private CategoryRepository categoryRepository;
-    @Autowired
-    private FileStorageService fileStorageService;
+
+    private final DishRepository dishRepository;
+
+    private final CategoryRepository categoryRepository;
+
+    private final FileStorageService fileStorageService;
 
     private static final String DISH_IMAGE_DIR = "dishes";
 

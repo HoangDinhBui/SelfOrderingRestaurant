@@ -16,16 +16,18 @@ import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import lombok.AllArgsConstructor;
 
+@AllArgsConstructor
 @Service
 public class ReceiptService {
     private final Logger log = LoggerFactory.getLogger(ReceiptService.class);
 
-    @Autowired
-    private OrderRepository orderRepository;
 
-    @Autowired
-    private OrderItemRepository orderItemRepository;
+    private final OrderRepository orderRepository;
+
+
+    private final OrderItemRepository orderItemRepository;
 
     /**
      * Generates a PDF receipt for the given order

@@ -15,26 +15,28 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.AllArgsConstructor;
 
+@AllArgsConstructor
 @Service
 public class NotificationService implements INotificationService {
-    @Autowired
-    private NotificationRepository notificationRepository;
 
-    @Autowired
-    private UserRepository userRepository;
+    private final NotificationRepository notificationRepository;
 
-    @Autowired
-    private StaffShiftRepository staffShiftRepository;
 
-    @Autowired
-    private OrderRepository orderRepository;
+    private final UserRepository userRepository;
 
-    @Autowired
-    private DinningTableRepository dinningTableRepository;
 
-    @Autowired
-    private CustomerRepository customerRepository;
+    private final StaffShiftRepository staffShiftRepository;
+
+
+    private final OrderRepository orderRepository;
+
+
+    private final DinningTableRepository dinningTableRepository;
+
+
+    private final CustomerRepository customerRepository;
 
      @Transactional
      @Override

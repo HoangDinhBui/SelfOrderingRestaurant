@@ -9,13 +9,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import lombok.AllArgsConstructor;
 
+@AllArgsConstructor
 @RestController
 @RequestMapping("/api/tables")
 public class DinningTableController {
 
-    @Autowired
-    private DinningTableService dinningTableService;
+
+    private final DinningTableService dinningTableService;
 
     @GetMapping
     public ResponseEntity<List<DinningTableResponseDTO>> getAllTables() {

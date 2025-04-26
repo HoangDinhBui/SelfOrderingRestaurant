@@ -7,12 +7,14 @@ import com.example.SelfOrderingRestaurant.Service.IngredientService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import lombok.AllArgsConstructor;
 
+@AllArgsConstructor
 @RestController
 @RequestMapping("/api/admin/ingredient")
 public class IngredientController {
-    @Autowired
-    private IngredientService ingredientService;
+
+    private final IngredientService ingredientService;
 
     @GetMapping
     public ResponseEntity<?> GetAllIngredientsDTO() {

@@ -22,26 +22,28 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
+import lombok.AllArgsConstructor;
 
+@AllArgsConstructor
 @Service
 public class OrderService implements IOrderService {
-    @Autowired
-    private OrderRepository orderRepository;
-    @Autowired
-    private OrderItemRepository orderItemRepository;
-    @Autowired
-    private DishRepository dishRepository;
-    @Autowired
-    private DinningTableRepository dinningTableRepository;
-    @Autowired
-    private CustomerRepository customerRepository;
-    @Autowired
-    private OrderCartService orderCartService;
-    @Autowired
-    private HttpServletRequest httpServletRequest;
+
+    private final OrderRepository orderRepository;
+
+    private final OrderItemRepository orderItemRepository;
+
+    private final DishRepository dishRepository;
+
+    private final DinningTableRepository dinningTableRepository;
+
+    private final CustomerRepository customerRepository;
+
+    private final OrderCartService orderCartService;
+
+    private final HttpServletRequest httpServletRequest;
 
 
-    private Logger log = org.slf4j.LoggerFactory.getLogger(OrderService.class);
+    private static Logger log = org.slf4j.LoggerFactory.getLogger(OrderService.class);
 
     @Transactional
     @Override

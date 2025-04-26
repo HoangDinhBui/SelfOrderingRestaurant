@@ -35,17 +35,11 @@ import java.util.Map;
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
 public class AdminController {
-    @Autowired
-    private StaffService staffService;
 
-    @Autowired
-    private AuthService authService;
-
-    @Autowired
-    private ShiftService shiftService;
-
-    @Autowired
-    private RevenueService revenueService;
+    private final StaffService staffService;
+    private final AuthService authService;
+    private final ShiftService shiftService;
+    private final RevenueService revenueService;
 
     // Staff Management Endpoints
     @PostMapping("/staff/register")

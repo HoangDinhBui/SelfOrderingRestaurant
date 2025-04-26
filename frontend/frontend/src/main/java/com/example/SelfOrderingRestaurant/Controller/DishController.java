@@ -29,8 +29,8 @@ import java.util.List;
 @RequiredArgsConstructor
 @PermitAll
 public class DishController {
-    @Autowired
-    DishService dishService;
+
+    private final DishService dishService;
 
     @PostMapping(path = "/admin/dishes", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> createDish(@Valid @ModelAttribute DishRequestDTO dishDTO) {
