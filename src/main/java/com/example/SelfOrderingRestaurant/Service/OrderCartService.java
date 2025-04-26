@@ -15,13 +15,14 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import lombok.AllArgsConstructor;
 
+@AllArgsConstructor
 @Service
 @SessionScope
 public class OrderCartService implements IOrderCartItemService {
 
-    @Autowired
-    private DishRepository dishRepository;
+    private final DishRepository dishRepository;
 
     private final Map<Integer, OrderCartResponseDTO.CartItemDTO> cartItems = new HashMap<>();
 

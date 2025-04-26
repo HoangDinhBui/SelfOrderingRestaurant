@@ -10,11 +10,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import lombok.AllArgsConstructor;
 
+@AllArgsConstructor
 @Service
 public class CategoryService implements ICategoryService {
-    @Autowired
-    private CategoryRepository categoryRepository;
+
+    private final CategoryRepository categoryRepository;
 
     @Transactional
     @Override

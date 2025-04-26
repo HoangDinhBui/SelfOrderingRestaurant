@@ -17,13 +17,14 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import lombok.AllArgsConstructor;
 
+@AllArgsConstructor
 @RestController
 @RequestMapping("/api/staff/shifts")
 public class StaffController {
 
-    @Autowired
-    private StaffShiftService staffShiftService;
+    private final StaffShiftService staffShiftService;
 
     // Get all available shifts
     @GetMapping("/available")

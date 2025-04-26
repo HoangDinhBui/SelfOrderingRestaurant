@@ -8,12 +8,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import lombok.AllArgsConstructor;
 
+@AllArgsConstructor
 @RestController
 @RequestMapping ("/api/shifts")
 public class ShiftController {
-    @Autowired
-    private ShiftService shiftService;
+
+    private final ShiftService shiftService;
 
     @GetMapping
     public List<ShiftResponseDTO> getAllShifts() {

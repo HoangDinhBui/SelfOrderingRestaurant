@@ -9,12 +9,14 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import lombok.AllArgsConstructor;
 
+@AllArgsConstructor
 @RestController
 @RequestMapping("/api/notifications")
 public class NotificationController {
-    @Autowired
-    private NotificationService notificationService;
+
+    private final NotificationService notificationService;
 
     // Get notifications for a specific user
     @GetMapping("/{userId}")

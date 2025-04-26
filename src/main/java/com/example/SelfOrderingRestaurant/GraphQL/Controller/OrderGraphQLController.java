@@ -31,11 +31,10 @@ import java.util.stream.Collectors;
 public class OrderGraphQLController {
     private static final Logger log = LoggerFactory.getLogger(OrderGraphQLController.class);
 
-    @Autowired
-    private OrderService orderService;
+    private final OrderService orderService;
 
-    @Autowired
-    private PaymentService paymentService;
+
+    private final PaymentService paymentService;
 
     // Query Resolvers
     @QueryMapping

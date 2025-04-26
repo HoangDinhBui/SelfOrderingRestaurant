@@ -7,13 +7,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
+import lombok.AllArgsConstructor;
+@AllArgsConstructor
 @RestController
 @RequestMapping("/api/receipts")
 public class ReceiptController {
 
-    @Autowired
-    private ReceiptService receiptService;
+
+    private final ReceiptService receiptService;
 
     @GetMapping("/generate/{orderId}")
     public ResponseEntity<byte[]> generateReceipt(@PathVariable Integer orderId) {

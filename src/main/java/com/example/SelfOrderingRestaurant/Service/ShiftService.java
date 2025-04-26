@@ -12,11 +12,13 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import lombok.AllArgsConstructor;
 
+@AllArgsConstructor
 @Service
 public class ShiftService implements IShiftService {
-    @Autowired
-    private ShiftRepository shiftRepository;
+
+    private final ShiftRepository shiftRepository;
 
     @Transactional
     @Override

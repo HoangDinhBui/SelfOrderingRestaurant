@@ -18,17 +18,19 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
+import lombok.AllArgsConstructor;
 
+@AllArgsConstructor
 @Service
 public class StaffService implements IStaffService {
-    @Autowired
-    private StaffRepository staffRepository;
 
-    @Autowired
-    private StaffShiftRepository staffShiftRepository;
+    private final StaffRepository staffRepository;
 
-    @Autowired
-    private ShiftRepository shiftRepository;
+
+    private final StaffShiftRepository staffShiftRepository;
+
+
+    private final ShiftRepository shiftRepository;
 
     @Transactional
     @Override
