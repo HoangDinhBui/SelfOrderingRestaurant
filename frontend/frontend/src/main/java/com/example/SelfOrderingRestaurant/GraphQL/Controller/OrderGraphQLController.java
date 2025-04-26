@@ -90,7 +90,7 @@ public class OrderGraphQLController {
     @MutationMapping
     public OrderCartResponseDTO addDishToOrderCart(@Argument OrderItemInput input) {
         OrderItemDTO itemDTO = new OrderItemDTO();
-        itemDTO.setDishId(Integer.valueOf(input.getDishId()));
+        itemDTO.setDishId(input.getDishId());
         itemDTO.setQuantity(input.getQuantity());
         itemDTO.setNotes(input.getNotes());
 
