@@ -7,9 +7,9 @@ import java.util.List;
 
 @Data
 public class OrderInput {
-    private String customerId;
+    private Integer customerId;
     private String customerName;
-    private String tableId;
+    private Integer tableId;
     private List<OrderItemInput> items;
     private String notes;
 }
