@@ -6,13 +6,19 @@ import com.example.SelfOrderingRestaurant.Dto.Response.DishResponseDTO.GetAllDis
 import com.example.SelfOrderingRestaurant.Entity.Category;
 import com.example.SelfOrderingRestaurant.Entity.Dish;
 import com.example.SelfOrderingRestaurant.Enum.DishStatus;
+import com.example.SelfOrderingRestaurant.Exception.ForbiddenException;
+import com.example.SelfOrderingRestaurant.Exception.ResourceNotFoundException;
+import com.example.SelfOrderingRestaurant.Exception.ValidationException;
 import com.example.SelfOrderingRestaurant.Repository.CategoryRepository;
 import com.example.SelfOrderingRestaurant.Repository.DishRepository;
 import com.example.SelfOrderingRestaurant.Service.Imp.IDishService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
@@ -31,14 +37,20 @@ public class DishService implements IDishService {
 
     @Transactional
     @Override
-    public void createDish(DishRequestDTO request) {
-        if (request.getCategoryId() == null) {
-            throw new IllegalArgumentException("Category ID must not be null");
+    public void createDish(DishRequestDTO request, Authentication authentication) {
+        // Check user authorization
+        if (!hasAdminRole(authentication)) {
+            throw new ForbiddenException("Only administrators can add dishes");
         }
 
-        Category category = categoryRepository.findById(request.getCategoryId())
-                .orElseThrow(() -> new IllegalArgumentException("Category not found!"));
+        // Validate input data
+        validateDishRequest(request);
 
+        // Check if category exists
+        Category category = categoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + request.getCategoryId()));
+
+        // Create and save the dish
         Dish dish = new Dish();
         dish.setName(request.getName());
         dish.setPrice(request.getPrice());
@@ -53,6 +65,44 @@ public class DishService implements IDishService {
         }
 
         dishRepository.save(dish);
+    }
+
+    private boolean hasAdminRole(Authentication authentication) {
+        return authentication.getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"));
+    }
+
+    private void validateDishRequest(DishRequestDTO request) {
+        List<String> errors = new ArrayList<>();
+
+        // Validate name
+        if (request.getName() == null || request.getName().isEmpty()) {
+            errors.add("Dish name cannot be empty");
+            System.out.println("Dish name cannot be empty");
+        } else if (request.getName().length() > 100) {
+            errors.add("Dish name must be between 1 and 100 characters");
+        } else if (dishRepository.existsByName(request.getName())) {
+            errors.add("Dish name already exists");
+        }
+
+        // Validate price
+        if (request.getPrice() == null || request.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
+            errors.add("Price must be a positive number");
+        }
+
+        // Validate category_id
+        if (request.getCategoryId() == null || request.getCategoryId() <= 0) {
+            errors.add("Category ID must be a positive integer");
+        }
+
+        // Validate status
+        if (!(request.getStatus() == DishStatus.AVAILABLE || request.getStatus() == DishStatus.UNAVAILABLE)) {
+            errors.add("Status must be either 'AVAILABLE' or 'UNAVAILABLE'");
+        }
+
+        if (!errors.isEmpty()) {
+            throw new ValidationException(String.join(", ", errors));
+        }
     }
 
     @Override
