@@ -104,7 +104,7 @@ const AdminOrder = () => {
   };
   
   const totalAmount =
-    selectedTable?.dishes?.reduce(
+    selectedTable?.Staff?.reduce(
       (sum, dish) => sum + dish.price * dish.quantity,
       0
     ) || 0;
@@ -113,7 +113,7 @@ const AdminOrder = () => {
     {
       id: 1,
       status: "occupied",
-      dishes: [
+      Staff: [
         {
           name: "Huitres Fraiches (6PCS)",
           quantity: 1,
@@ -162,13 +162,13 @@ const AdminOrder = () => {
     {
       id: 2,
       status: "available",
-      dishes: [],
+      Staff: [],
       capacity: 4,
     },
     {
       id: 3,
       status: "occupied",
-      dishes: [
+      Staff: [
         {
           name: "Foie Gras",
           quantity: 2,
@@ -203,7 +203,7 @@ const AdminOrder = () => {
     {
       id: 4,
       status: "occupied",
-      dishes: [
+      Staff: [
         {
           name: "Steak Frites",
           quantity: 3,
@@ -331,13 +331,13 @@ const AdminOrder = () => {
                         }}
                       >
                         <span className="text-lg">
-                          {table.dishes.length > 0
+                          {table.Staff.length > 0
                             ? `Dish ${
-                                table.dishes.filter(
+                                table.Staff.filter(
                                   (d) => d.status === "Complete"
                                 ).length
-                              }/${table.dishes.length}`
-                            : "No dishes"}
+                              }/${table.Staff.length}`
+                            : "No Staff"}
                         </span>
                       </div>
                     </div>
@@ -596,7 +596,7 @@ const AdminOrder = () => {
           <div className="bg-white rounded-lg shadow-lg p-6 w-1/2 relative z-50">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold">
-                Table {selectedTable.id} - Dishes
+                Table {selectedTable.id} - Staff
               </h2>
               <button
                 className="text-gray-500 hover:text-gray-700"
@@ -606,7 +606,7 @@ const AdminOrder = () => {
               </button>
             </div>
             <div className="space-y-4">
-              {selectedTable.dishes.map((dish, index) => (
+              {selectedTable.Staff.map((dish, index) => (
                 <div
                   key={index}
                   className="flex justify-between items-center border-b pb-2"
@@ -695,7 +695,7 @@ const AdminOrder = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {selectedTable.dishes.map((dish, index) => (
+                  {selectedTable.Staff.map((dish, index) => (
                     <tr key={index} className="border-b hover:bg-gray-50">
                       <td className="py-3 text-gray-800">{dish.name}</td>
                       <td className="py-3">{dish.quantity}</td>
@@ -823,7 +823,7 @@ const AdminOrder = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {selectedTable.dishes.map((dish, index) => (
+                  {selectedTable.Staff.map((dish, index) => (
                     <tr key={index} className="border-b hover:bg-gray-50">
                       <td className="py-3 text-gray-800">{dish.name}</td>
                       <td className="py-3">{dish.quantity}</td>

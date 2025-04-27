@@ -1,10 +1,10 @@
 import React from "react";
 
-const DishListModal = ({ isOpen, onClose, dishes, tableId }) => {
+const DishListModal = ({ isOpen, onClose, Staff, tableId }) => {
   if (!isOpen) return null;
 
-  // Group dishes by order id
-  const orderGroups = dishes.reduce((groups, dish) => {
+  // Group Staff by order id
+  const orderGroups = Staff.reduce((groups, dish) => {
     if (!groups[dish.orderId]) {
       groups[dish.orderId] = [];
     }
@@ -20,8 +20,8 @@ const DishListModal = ({ isOpen, onClose, dishes, tableId }) => {
     }).format(amount);
   };
 
-  // Calculate total for all dishes
-  const totalAmount = dishes.reduce(
+  // Calculate total for all Staff
+  const totalAmount = Staff.reduce(
     (sum, dish) => sum + dish.price * dish.quantity,
     0
   );
@@ -30,7 +30,7 @@ const DishListModal = ({ isOpen, onClose, dishes, tableId }) => {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded-lg shadow-lg max-w-4xl w-full max-h-[80vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold">Dishes for Table {tableId}</h2>
+          <h2 className="text-2xl font-bold">Staff for Table {tableId}</h2>
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700"
@@ -69,18 +69,18 @@ const DishListModal = ({ isOpen, onClose, dishes, tableId }) => {
               />
             </svg>
             <p className="text-xl text-gray-500">
-              No dishes available for this table
+              No Staff available for this table
             </p>
           </div>
         ) : (
           <div className="space-y-6">
-            {Object.entries(orderGroups).map(([orderId, orderDishes]) => (
+            {Object.entries(orderGroups).map(([orderId, orderStaff]) => (
               <div key={orderId} className="border rounded-lg overflow-hidden">
                 <div className="bg-gray-100 p-3 border-b">
                   <div className="flex justify-between items-center">
                     <span className="font-semibold">Order #{orderId}</span>
                     <span className="text-sm text-gray-600">
-                      {orderDishes[0].status === "Complete" ? (
+                      {orderStaff[0].status === "Complete" ? (
                         <span className="text-green-600 font-medium">
                           Completed
                         </span>
@@ -94,7 +94,7 @@ const DishListModal = ({ isOpen, onClose, dishes, tableId }) => {
                 </div>
 
                 <div className="divide-y">
-                  {orderDishes.map((dish, index) => (
+                  {orderStaff.map((dish, index) => (
                     <div
                       key={index}
                       className="flex items-center p-4 hover:bg-gray-50"

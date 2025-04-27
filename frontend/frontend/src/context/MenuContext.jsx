@@ -10,7 +10,7 @@ export const MenuProvider = ({ children }) => {
 
   useEffect(() => {
     axios
-      .get("http://localhost:8080/api/dishes")
+      .get("http://localhost:8080/api/Staff")
       .then((response) => {
         console.log("Menu context loaded:", response.data);
         setMenuItems(response.data);
@@ -29,7 +29,7 @@ export const MenuProvider = ({ children }) => {
       setLoading(true);
       console.log(`Calling API for dish ID: ${dishId}`);
       const response = await axios.get(
-        `http://localhost:8080/api/dishes/${dishId}`
+        `http://localhost:8080/api/Staff/${dishId}`
       );
       console.log("API Response:", response.data);
       setLoading(false);

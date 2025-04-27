@@ -21,7 +21,7 @@ const Home = () => {
   // Base API URL to ensure consistency
   const API_BASE_URL = "http://localhost:8080";
 
-  const specialDishes = [
+  const specialStaff = [
     {
       name: "Lemon Macarons",
       price: "10.99",
@@ -419,7 +419,7 @@ const Home = () => {
           </button>
         </section>
 
-        {/* Today's special dishes */}
+        {/* Today's special Staff */}
         <section className="mt-6">
           {/* Title and arrow button */}
           <div className="flex items-center space-x-2 mb-3">
@@ -444,7 +444,7 @@ const Home = () => {
 
           {/* Dish list */}
           <div className="grid grid-cols-2 gap-4">
-            {specialDishes.map((dish, index) => (
+            {specialStaff.map((dish, index) => (
               <div key={index} className="flex flex-col items-start">
                 {/* Dish image */}
                 <img

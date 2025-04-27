@@ -11,7 +11,7 @@ const DishManagement = () => {
   const [itemToDelete, setItemToDelete] = useState(null);
   
   // Dữ liệu mẫu đơn giản
-  const [dishes, setDishes] = useState([
+  const [Staff, setStaff] = useState([
     { id: 1, table: 1, name: "Salad Landaise", quantity: 1, note: "" },
     { id: 2, table: 1, name: "Magret De Canard", quantity: 1, note: "" },
     { id: 3, table: 3, name: "Tartare De Saumon", quantity: 2, note: "Add lemon" },
@@ -29,7 +29,7 @@ const DishManagement = () => {
   // Function to confirm deletion
   const confirmDelete = () => {
     if (itemToDelete) {
-      setDishes(dishes.filter(dish => dish.id !== itemToDelete));
+      setStaff(Staff.filter(dish => dish.id !== itemToDelete));
       setShowConfirmation(false);
       setItemToDelete(null);
     }
@@ -51,7 +51,7 @@ const DishManagement = () => {
         {/* Main Content - Đơn giản hóa */}
         <div className="flex-1 p-6 bg-gray-100 overflow-y-auto">
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold mb-4">Current Dishes</h2>
+            <h2 className="text-xl font-bold mb-4">Current Staff</h2>
                     
             <div className="overflow-x-auto">
               <table className="min-w-full bg-white border">
@@ -65,7 +65,7 @@ const DishManagement = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {dishes.map((dish) => (
+                  {Staff.map((dish) => (
                     <tr key={dish.id} className="border-b hover:bg-gray-50">
                       <td className="py-3 px-4">{dish.table}</td>
                       <td className="py-3 px-4">{dish.name}</td>
