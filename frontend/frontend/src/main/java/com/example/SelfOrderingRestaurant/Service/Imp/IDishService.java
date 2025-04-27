@@ -4,11 +4,12 @@ import com.example.SelfOrderingRestaurant.Dto.Request.DishRequestDTO.DishRequest
 import com.example.SelfOrderingRestaurant.Dto.Response.DishResponseDTO.DishResponseDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.DishResponseDTO.GetAllDishesResponseDTO;
 import com.example.SelfOrderingRestaurant.Enum.DishStatus;
+import org.springframework.security.core.Authentication;
 
 import java.util.List;
 
 public interface IDishService {
-    void createDish(DishRequestDTO request);
+    void createDish(DishRequestDTO request, Authentication authentication);
 
     List<GetAllDishesResponseDTO> getAllDishes();
 
