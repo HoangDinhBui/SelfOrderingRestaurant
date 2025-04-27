@@ -293,7 +293,7 @@ public class OrderService implements IOrderService {
             // If order is completed or canceled, update table status if needed
             if (newStatus == OrderStatus.COMPLETED || newStatus == OrderStatus.CANCELLED) {
                 DinningTable table = order.getTables();
-                if (TableStatus.OCCUPIED.name().equals(table.getTableStatus())) {
+                if (TableStatus.OCCUPIED.equals(table.getTableStatus())) {
                     // Check if there are other active orders for this table
                     long activeOrderCount = orderRepository.countActiveOrdersByTableId(table.getTableNumber());
 

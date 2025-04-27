@@ -10,6 +10,6 @@ import java.util.Optional;
 
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Integer> {
-    @Query("SELECT COUNT(o) FROM Order o WHERE o.tables.tableNumber = :tableINumber AND o.status NOT IN ('COMPLETED', 'CANCELED')")
-    long countActiveOrdersByTableId(@Param("tableNummber") Integer tableNumber);
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.tables.tableNumber = :tableNumber AND o.status NOT IN ('COMPLETED', 'CANCELED')")
+    long countActiveOrdersByTableId(@Param("tableNumber") Integer tableNumber);
 }
