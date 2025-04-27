@@ -3,161 +3,232 @@ import { useState } from "react";
 import MenuBar from "../../../components/layout/menuBar";
 import logoRemoveBg from "../../../assets/img/logoremovebg.png";
 
-const MenuManagement = () => {
-  const [Staff, setStaff] = useState([
+const StaffManagement = () => {
+  const [staff, setStaff] = useState([
     {
-      id: "A1",
-      name: "Huitres Fraiches (6PSC)",
-      price: "$25,35",
-      category: "Appetizers",
-      image: "huitres1.jpg",
+      id: 1,
+      fullName: "Tran Thi My Dung",
+      startDate: "01/02/2024",
+      workShift: "Full time",
+      employeePosition: "Service staff",
+      phoneNumber: "0987654321",
+      address: "448 Le Van Viet Street, District 9",
+      email: "MDX01234@gmail.com",
+      salary: 3900000,
+      username: "staff1234",
+      password: "123456",
     },
     {
-      id: "A2",
-      name: "Huitres Gratinees (6PCS)",
-      price: "$25,74",
-      category: "Appetizers",
-      image: "huitres2.jpg",
+      id: 2,
+      fullName: "Tran Thi My Dung",
+      startDate: "01/02/2024",
+      workShift: "Full time",
+      employeePosition: "Service staff",
+      phoneNumber: "0987654321",
+      address: "448 Le Van Viet Street, District 9",
+      email: "MDX01234@gmail.com",
+      salary: 3900000,
+      username: "staff1234",
+      password: "123456",
     },
     {
-      id: "A3",
-      name: "Tartare De Saumon",
-      price: "$14,04",
-      category: "Appetizers",
-      image: "tartare.jpg",
+      id: 3,
+      fullName: "Tran Thi My Dung",
+      startDate: "01/02/2024",
+      workShift: "Full time",
+      employeePosition: "Service staff",
+      phoneNumber: "0987654321",
+      address: "448 Le Van Viet Street, District 9",
+      email: "MDX01234@gmail.com",
+      salary: 3900000,
+      username: "staff1234",
+      password: "123456",
     },
     {
-      id: "A4",
-      name: "Salad Gourmande",
-      price: "$13,65",
-      category: "Appetizers",
-      image: "salad1.jpg",
+      id: 4,
+      fullName: "Tran Thi My Dung",
+      startDate: "01/02/2024",
+      workShift: "Full time",
+      employeePosition: "Service staff",
+      phoneNumber: "0987654321",
+      address: "448 Le Van Viet Street, District 9",
+      email: "MDX01234@gmail.com",
+      salary: 3900000,
+      username: "staff1234",
+      password: "123456",
     },
     {
-      id: "A5",
-      name: "Salad Landaise",
-      price: "$12,29",
-      category: "Appetizers",
-      image: "salad2.jpg",
+      id: 5,
+      fullName: "Tran Thi My Dung",
+      startDate: "01/02/2024",
+      workShift: "Full time",
+      employeePosition: "Service staff",
+      phoneNumber: "0987654321",
+      address: "448 Le Van Viet Street, District 9",
+      email: "MDX01234@gmail.com",
+      salary: 3900000,
+      username: "staff1234",
+      password: "123456",
     },
     {
-      id: "M1",
-      name: "Magret De Canard",
-      price: "$17,55",
-      category: "Main",
-      image: "magret.jpg",
+      id: 6,
+      fullName: "Tran Thi My Dung",
+      startDate: "01/02/2024",
+      workShift: "Full time",
+      employeePosition: "Service staff",
+      phoneNumber: "0987654321",
+      address: "448 Le Van Viet Street, District 9",
+      email: "MDX01234@gmail.com",
+      salary: 3900000,
+      username: "staff1234",
+      password: "123456",
     },
   ]);
 
   const [searchTerm, setSearchTerm] = useState(""); // Lưu giá trị tìm kiếm
-  const [filteredStaff, setFilteredStaff] = useState(Staff); // Lưu danh sách món ăn được lọc
+  const [filteredStaff, setFilteredStaff] = useState(staff); // Lưu danh sách món ăn được lọc
 
   const [showAddForm, setShowAddForm] = useState(false); // Hiển thị form thêm món ăn
-  const [newDish, setNewDish] = useState({
-    name: "",
-    price: "",
-    category: "",
-    description: "",
-    image: "",
+  const [newStaff, setNewStaff] = useState({
+    id: "",
+    fullName: "",
+    startDate: "",
+    workShift: "",
+    employeePosition: "",
+    phoneNumber: "",
+    address: "",
+    email: "",
+    salary: "",
+    username: "",
+    password: "",
   });
 
   const [errorMessage, setErrorMessage] = useState(""); // Lưu thông báo lỗi
   const [showSuccessPopup, setShowSuccessPopup] = useState(false); // Hiển thị popup thành công
 
   const [showDeletePopup, setShowDeletePopup] = useState(false); // Hiển thị popup xác nhận xóa
-  const [dishToDelete, setDishToDelete] = useState(null); // Món ăn cần xóa
+  const [staffToDelete, setStaffToDelete] = useState(null); // Món ăn cần xóa
 
   const [showEditForm, setShowEditForm] = useState(false); // Hiển thị form chỉnh sửa
-  const [dishToEdit, setDishToEdit] = useState(null); // Món ăn cần chỉnh sửa
+  const [staffToEdit, setStaffToEdit] = useState(null); // Món ăn cần chỉnh sửa
 
-  const handleDeleteDish = (dish) => {
-    setDishToDelete(dish); // Lưu món ăn cần xóa
+  const handleDeleteStaff = (Staff) => {
+    setStaffToDelete(Staff); // Lưu món ăn cần xóa
     setShowDeletePopup(true); // Hiển thị popup xác nhận
   };
 
-  const confirmDeleteDish = () => {
-    const updatedStaff = Staff.filter((dish) => dish.id !== dishToDelete.id); // Xóa món ăn
+  const confirmDeleteStaff = () => {
+    const updatedStaff = staff.filter((staff) => staff.id !== staffToDelete.id); // Xóa món ăn
     setStaff(updatedStaff); // Cập nhật danh sách món ăn
     setFilteredStaff(updatedStaff); // Cập nhật danh sách hiển thị
     setShowDeletePopup(false); // Ẩn popup
-    setDishToDelete(null); // Xóa món ăn khỏi state
+    setStaffToDelete(null); // Xóa món ăn khỏi state
   };
 
-  const handleEditDish = (dish) => {
-    setDishToEdit(dish); // Lưu món ăn cần chỉnh sửa
-    setNewDish(dish); // Điền thông tin cũ vào form
+  const handleEditStaff = (staff) => {
+    setStaffToEdit(staff); // Lưu món ăn cần chỉnh sửa
+    setNewStaff(staff); // Điền thông tin cũ vào form
     setShowEditForm(true); // Hiển thị form chỉnh sửa
   };
 
-  const confirmEditDish = () => {
+  const confirmEditStaff = () => {
     // Validate dữ liệu
-    if (!newDish.name || !newDish.price || !newDish.description) {
+    if (
+      !newStaff.id ||
+      !newStaff.fullName ||
+      !newStaff.employeePosition ||
+      !newStaff.phoneNumber ||
+      !newStaff.address ||
+      !newStaff.email ||
+      !newStaff.salary ||
+      !newStaff.username ||
+      !newStaff.password
+    ) {
       setErrorMessage("All fields are required!");
       return;
     }
-  
-    if (isNaN(parseFloat(newDish.price.replace("$", "")))) {
-      setErrorMessage("Price must be a valid number!");
-      return;
-    }
-  
+
     // Cập nhật món ăn
-    const updatedStaff = Staff.map((dish) =>
-      dish.id === dishToEdit.id ? { ...newDish, id: dishToEdit.id } : dish
+    const updatedStaff = staff.map((staff) =>
+      staff.id === staffToEdit.id ? { ...newStaff, id: staffToEdit.id } : staff
     );
     setStaff(updatedStaff); // Cập nhật danh sách món ăn
     setFilteredStaff(updatedStaff); // Cập nhật danh sách hiển thị
     setShowEditForm(false); // Ẩn form
-    setDishToEdit(null); // Xóa món ăn khỏi state
-    setNewDish({
-      name: "",
-      price: "",
-      category: "Appetizers",
-      description: "",
-      image: "",
+    setStaffToEdit(null); // Xóa món ăn khỏi state
+    setNewStaff({
+      id: "",
+      fullName: "",
+      startDate: "",
+      workShift: "",
+      employeePosition: "",
+      phoneNumber: "",
+      address: "",
+      email: "",
+      salary: "",
+      username: "",
+      password: "",
     }); // Reset form
     setErrorMessage(""); // Xóa thông báo lỗi
-  
+
     // Hiển thị popup thành công
     setShowSuccessPopup(true);
     setTimeout(() => setShowSuccessPopup(false), 2000); // Ẩn popup sau 2 giây
   };
 
-  const validateAndAddDish = () => {
+  const validateAndAddStaff = () => {
     // Kiểm tra dữ liệu nhập
-    if (!newDish.name || !newDish.price || !newDish.description) {
+    if (
+      !newStaff.fullName ||
+      !newStaff.email ||
+      !newStaff.workShift ||
+      !newStaff.position ||
+      !newStaff.phoneNumber ||
+      !newStaff.address ||
+      !newStaff.salary ||
+      !newStaff.username ||
+      !newStaff.password
+    ) {
       setErrorMessage("All fields are required!");
       return;
     }
 
-    if (isNaN(parseFloat(newDish.price))) {
-      setErrorMessage("Price must be a valid number!");
+    if (isNaN(parseFloat(newStaff.salary))) {
+      setErrorMessage("Salary must be a valid number!");
       return;
     }
 
-    // Kiểm tra tên món ăn đã tồn tại
-    const isDuplicate = Staff.some(
-      (dish) => dish.name.toLowerCase() === newDish.name.toLowerCase()
+    // Kiểm tra staff da ton tai
+    const isDuplicate = staff.some(
+      (staff) =>
+        staff.fullName.toLowerCase() === newStaff.fullName.toLowerCase() &&
+        staff.id === newStaff.id
     );
     if (isDuplicate) {
-      setErrorMessage("Dish name already exists!");
+      setErrorMessage("Staff already exists!");
       return;
     }
 
     // Thêm món ăn mới
     const updatedStaff = [
-      ...Staff,
-      { ...newDish, id: `A${Staff.length + 1}` }, // Tạo ID tự động
+      ...staff,
+      { ...newStaff, id: `A${staff.length + 1}` }, // Tạo ID tự động
     ];
     setStaff(updatedStaff); // Cập nhật danh sách món ăn
     setFilteredStaff(updatedStaff); // Cập nhật danh sách hiển thị
     setShowAddForm(false); // Ẩn form
-    setNewDish({
-      name: "",
-      price: "",
-      category: "Appetizers",
-      description: "",
-      image: "",
+    setNewStaff({
+      id: "",
+      fullName: "",
+      startDate: "",
+      workShift: "",
+      employeePosition: "",
+      phoneNumber: "",
+      address: "",
+      email: "",
+      salary: "",
+      username: "",
+      password: "",
     }); // Reset form
     setErrorMessage(""); // Xóa thông báo lỗi
 
@@ -166,32 +237,37 @@ const MenuManagement = () => {
     setTimeout(() => setShowSuccessPopup(false), 2000); // Ẩn popup sau 2 giây
   };
 
-  const handleAddDish = () => {
-    // Thêm món ăn mới vào danh sách
+  const handleAddStaff = () => {
+    // Thêm nhan vien mới vào danh sách
     const updatedStaff = [
-      ...Staff,
-      { ...newDish, id: `A${Staff.length + 1}` }, // Tạo ID tự động
+      ...staff,
+      { ...newStaff, id: `A${staff.length + 1}` }, // Tạo ID tự động
     ];
     setFilteredStaff(updatedStaff); // Cập nhật danh sách hiển thị
     setShowAddForm(false); // Ẩn form
-    setNewDish({
-      name: "",
-      price: "",
-      category: "Appetizers",
-      description: "",
-      image: "",
-    }); // Reset form
+    setNewStaff({
+      id: "",
+      fullName: "",
+      startDate: "",
+      workShift: "",
+      employeePosition: "",
+      phoneNumber: "",
+      address: "",
+      email: "",
+      salary: "",
+      username: "",
+      password: "",
+    });
   };
-  
 
-  //Xử lí tìm kiếmkiếm
+  //Xử lí tìm kiếm
   const handleSearch = (event) => {
     if (event.key === "Enter") {
       if (searchTerm.trim() === "") {
-        setFilteredStaff(Staff); // Hiển thị toàn bộ danh sách nếu ô tìm kiếm trống
+        setFilteredStaff(staff); // Hiển thị toàn bộ danh sách nếu ô tìm kiếm trống
       } else {
-        const filtered = Staff.filter((dish) =>
-          dish.name.toLowerCase().includes(searchTerm.toLowerCase())
+        const filtered = staff.filter((Staff) =>
+          Staff.fullName.toLowerCase().includes(searchTerm.toLowerCase())
         );
         setFilteredStaff(filtered); // Cập nhật danh sách món ăn được lọc
       }
@@ -320,7 +396,7 @@ const MenuManagement = () => {
       borderRadius: "10px",
       boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
       zIndex: 1000,
-      width: "650px",
+      width: "800px",
       maxWidth: "90%",
       height: "auto", // Chiều cao tự động
       maxHeight: "90vh", // Giới hạn chiều cao tối đa
@@ -361,7 +437,11 @@ const MenuManagement = () => {
       flex: "1",
       display: "flex",
       flexDirection: "column",
-      gap: "10px",
+      gap: "15px", // Tăng khoảng cách giữa các hàng để giao diện thoáng hơn
+    },
+    labelText: {
+      width: "150px", // Chiều rộng cố định cho nhãn để căn chỉnh thẳng hàng
+      display: "inline-block", // Đảm bảo nhãn có chiều rộng cố định
     },
     actionButtons: {
       display: "flex",
@@ -430,7 +510,9 @@ const MenuManagement = () => {
       fontSize: "14px",
       fontWeight: "bold",
       display: "flex",
-      gap: "5px", // Khoảng cách giữa nhãn và trường nhập liệu
+      alignItems: "center", // Căn giữa theo chiều dọc
+      gap: "10px", // Khoảng cách giữa nhãn và ô input/select
+      width: "100%", // Đảm bảo nhãn chiếm toàn bộ chiều rộng
     },
     requiredMark: {
       color: "#e74c3c", // Màu đỏ cho dấu (*)
@@ -441,16 +523,16 @@ const MenuManagement = () => {
       borderRadius: "5px",
       border: "1px solid #ddd",
       fontSize: "14px",
-      width: "100%",
-      maxWidth: "300px", // Giới hạn chiều rộng tối đa
+      width: "250px", // Chiều rộng cố định cho ô input
+      boxSizing: "border-box", // Đảm bảo padding và border không làm tăng kích thước
     },
     selectField: {
       padding: "10px",
       borderRadius: "5px",
       border: "1px solid #ddd",
       fontSize: "14px",
-      width: "100%",
-      maxWidth: "300px", // Giới hạn chiều rộng tối đa
+      width: "250px", // Chiều rộng cố định cho ô select
+      boxSizing: "border-box", // Đảm bảo padding và border không làm tăng kích thước
     },
     textareaField: {
       padding: "10px",
@@ -505,14 +587,17 @@ const MenuManagement = () => {
   return (
     <>
       {/* Thanh menu */}
-      <MenuBar title="Menu Management" />
+      <MenuBar
+        title="Staff Management"
+        icon="https://img.icons8.com/ios-filled/50/FFFFFF/user.png"
+      />
 
       {/* Container ngoài */}
       <div style={styles.outerContainer}>
         {/* Container bên trong */}
         <div style={styles.innerContainer}>
           {/* Tiêu đề */}
-          <h1 style={styles.title}>Menu</h1>
+          <h1 style={styles.title}>Staff</h1>
 
           {/* Bảng và ô tìm kiếm/nút */}
           <div style={styles.tableAndControls}>
@@ -521,54 +606,41 @@ const MenuManagement = () => {
               <table style={styles.table}>
                 <thead style={styles.thead}>
                   <tr>
-                    <th style={styles.th}>Name</th>
                     <th style={styles.th}>ID</th>
-                    <th style={styles.th}>Price</th>
-                    <th style={styles.th}>Category</th>
-                    <th style={styles.th}>Description</th>
-                    <th style={styles.th}>Actions</th>
+                    <th style={styles.th}>Name</th>
+                    <th style={styles.th}>Shift</th>
+                    <th style={styles.th}>Position</th>
+                    <th style={styles.th}></th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredStaff.map((dish, index) => (
+                  {filteredStaff.map((Staff, index) => (
                     <tr
-                      key={dish.id}
+                      key={Staff.id}
                       style={index % 2 === 0 ? styles.evenRow : styles.oddRow}
                     >
                       <td style={styles.td}>
                         <div style={{ display: "flex", alignItems: "center" }}>
-                          <img
-                            src={`./src/assets/img/${dish.image}`}
-                            alt={dish.name}
-                            style={{
-                              width: "50px",
-                              height: "50px",
-                              borderRadius: "5px",
-                              marginRight: "10px",
-                            }}
-                          />
-                          {dish.name}
+                          {Staff.id}
                         </div>
                       </td>
-                      <td style={styles.td}>{dish.id}</td>
+                      <td style={styles.td}>{Staff.fullName}</td>
                       <td style={{ ...styles.td, ...styles.price }}>
-                        {dish.price}
+                        {Staff.workShift}
                       </td>
-                      <td style={styles.td}>{dish.category}</td>
-                      <td style={styles.td}>
-                        {dish.description || "No description"}
-                      </td>{" "}
+                      <td style={styles.td}>{Staff.employeePosition}</td>
+
                       {/* Hiển thị Description */}
                       <td style={styles.td}>
                         <button
                           style={{ marginRight: "10px", cursor: "pointer" }}
-                          onClick={() => handleEditDish(dish)} // Chỉnh sửa món ăn
+                          onClick={() => handleEditStaff(Staff)} // Chỉnh sửa món ăn
                         >
                           ✏️
                         </button>
                         <button
                           style={{ cursor: "pointer" }}
-                          onClick={() => handleDeleteDish(dish)} // Xóa món ăn
+                          onClick={() => handleDeleteStaff(Staff)} // Xóa món ăn
                         >
                           🗑️
                         </button>
@@ -600,8 +672,8 @@ const MenuManagement = () => {
               </div>
               {/* Hình ảnh Chef Mouse */}
               <img
-                src="./src/assets/img/chefmouse.png"
-                alt="Chef Mouse"
+                src="./src/assets/img/chef.png"
+                alt="Chef"
                 style={styles.chefMouseImage}
               />
             </div>
@@ -612,22 +684,22 @@ const MenuManagement = () => {
               {/* Lớp phủ làm mờ màn hình */}
               <div
                 style={styles.overlay}
-                onClick={() => setShowAddForm(false)} // Đóng modal khi nhấn vào lớp phủ
+                onClick={() => setShowAddForm(false)}
               ></div>
 
-              {/* Modal thêm món ăn */}
+              {/* Modal thêm nhân viên */}
               <div style={styles.addFormContainer}>
-                <h2 style={styles.addFormTitle}>Add Dish</h2>
+                <h2 style={styles.addFormTitle}>Add staff</h2>
                 <div style={styles.addForm}>
                   <div style={styles.addFormContent}>
                     {/* Cột bên trái: Chọn ảnh */}
                     <div style={styles.imageUploadSection}>
                       <label style={styles.imageUploadContainer}>
                         <div style={styles.imagePreview}>
-                          {newDish.image ? (
+                          {newStaff.image ? (
                             <img
-                              src={newDish.image}
-                              alt="Dish Preview"
+                              src={newStaff.image}
+                              alt="Review staff"
                               style={styles.image}
                             />
                           ) : (
@@ -642,81 +714,198 @@ const MenuManagement = () => {
                           accept="image/*"
                           style={styles.fileInput}
                           onChange={(e) =>
-                            setNewDish({
-                              ...newDish,
+                            setNewStaff({
+                              ...newStaff,
                               image: URL.createObjectURL(e.target.files[0]),
                             })
                           }
                         />
                       </label>
                       <p style={styles.imageNote}>
-                        Select images in the formats (.jpg, .jpeg, .png, .gif)
+                        Select images in the formats (
+                        <b>.jpg, .jpeg, .png, .gif</b>)
                       </p>
                     </div>
 
                     {/* Cột bên phải: Các trường nhập liệu */}
                     <div style={styles.formFields}>
                       <label style={styles.formLabel}>
-                        Name <span style={styles.requiredMark}>(*)</span>:
+                        <span style={styles.labelText}>
+                          Full name <span style={styles.requiredMark}>(*)</span>
+                          :
+                        </span>
                         <input
                           type="text"
-                          value={newDish.name}
+                          value={newStaff.fullName}
                           onChange={(e) =>
-                            setNewDish({ ...newDish, name: e.target.value })
+                            setNewStaff({
+                              ...newStaff,
+                              fullName: e.target.value,
+                            })
                           }
                           style={styles.inputField}
                         />
                       </label>
                       <label style={styles.formLabel}>
-                        Price <span style={styles.requiredMark}>(*)</span>:
+                        <span style={styles.labelText}>
+                          Start date of work{" "}
+                          <span style={styles.requiredMark}>(*)</span>:
+                        </span>
                         <input
-                          type="text"
-                          value={newDish.price}
+                          type="date"
+                          value={newStaff.startDate}
                           onChange={(e) =>
-                            setNewDish({ ...newDish, price: e.target.value })
+                            setNewStaff({
+                              ...newStaff,
+                              startDate: e.target.value,
+                            })
                           }
                           style={styles.inputField}
                         />
                       </label>
                       <label style={styles.formLabel}>
-                        Category <span style={styles.requiredMark}>(*)</span>:
+                        <span style={styles.labelText}>
+                          Work shift{" "}
+                          <span style={styles.requiredMark}>(*)</span>:
+                        </span>
                         <select
-                          value={newDish.category}
+                          value={newStaff.workShift}
                           onChange={(e) =>
-                            setNewDish({ ...newDish, category: e.target.value })
+                            setNewStaff({
+                              ...newStaff,
+                              workShift: e.target.value,
+                            })
                           }
                           style={styles.selectField}
                         >
-                          <option value="Appetizers">Appetizers</option>
-                          <option value="Main">Main</option>
-                          <option value="Desserts">Desserts</option>
+                          <option value="Full-time">Full-time</option>
+                          <option value="Part-time">Part-time</option>
                         </select>
                       </label>
                       <label style={styles.formLabel}>
-                        Description <span style={styles.requiredMark}>(*)</span>
-                        :
-                        <textarea
-                          value={newDish.description}
+                        <span style={styles.labelText}>
+                          Position <span style={styles.requiredMark}>(*)</span>:
+                        </span>
+                        <input
+                          type="text"
+                          value={newStaff.employeePosition}
                           onChange={(e) =>
-                            setNewDish({
-                              ...newDish,
-                              description: e.target.value,
+                            setNewStaff({
+                              ...newStaff,
+                              employeePosition: e.target.value,
                             })
                           }
-                          style={styles.textareaField}
+                          style={styles.inputField}
+                        />
+                      </label>
+                      <label style={styles.formLabel}>
+                        <span style={styles.labelText}>
+                          Phone number{" "}
+                          <span style={styles.requiredMark}>(*)</span>:
+                        </span>
+                        <input
+                          type="text"
+                          value={newStaff.phoneNumber}
+                          onChange={(e) =>
+                            setNewStaff({
+                              ...newStaff,
+                              phoneNumber: e.target.value,
+                            })
+                          }
+                          style={styles.inputField}
+                        />
+                      </label>
+                      <label style={styles.formLabel}>
+                        <span style={styles.labelText}>
+                          Address <span style={styles.requiredMark}>(*)</span>:
+                        </span>
+                        <input
+                          type="text"
+                          value={newStaff.address}
+                          onChange={(e) =>
+                            setNewStaff({
+                              ...newStaff,
+                              address: e.target.value,
+                            })
+                          }
+                          style={styles.inputField}
+                        />
+                      </label>
+                      <label style={styles.formLabel}>
+                        <span style={styles.labelText}>
+                          Email <span style={styles.requiredMark}>(*)</span>:
+                        </span>
+                        <input
+                          type="text"
+                          value={newStaff.email}
+                          onChange={(e) =>
+                            setNewStaff({
+                              ...newStaff,
+                              email: e.target.value,
+                            })
+                          }
+                          style={styles.inputField}
+                        />
+                      </label>
+                      <label style={styles.formLabel}>
+                        <span style={styles.labelText}>
+                          Salary <span style={styles.requiredMark}>(*)</span>:
+                        </span>
+                        <input
+                          type="number"
+                          value={newStaff.salary}
+                          onChange={(e) =>
+                            setNewStaff({
+                              ...newStaff,
+                              salary: e.target.value,
+                            })
+                          }
+                          style={styles.inputField}
+                        />
+                      </label>
+                      <label style={styles.formLabel}>
+                        <span style={styles.labelText}>
+                          Username <span style={styles.requiredMark}>(*)</span>:
+                        </span>
+                        <input
+                          type="text"
+                          value={newStaff.username}
+                          onChange={(e) =>
+                            setNewStaff({
+                              ...newStaff,
+                              username: e.target.value,
+                            })
+                          }
+                          style={styles.inputField}
+                        />
+                      </label>
+                      <label style={styles.formLabel}>
+                        <span style={styles.labelText}>
+                          Password <span style={styles.requiredMark}>(*)</span>:
+                        </span>
+                        <input
+                          type="text"
+                          value={newStaff.password}
+                          onChange={(e) =>
+                            setNewStaff({
+                              ...newStaff,
+                              password: e.target.value,
+                            })
+                          }
+                          style={styles.inputField}
                         />
                       </label>
                     </div>
                   </div>
 
                   {errorMessage && (
-                    <p style={styles.errorText}>{errorMessage}</p> // Hiển thị lỗi nếu có
+                    <p style={styles.errorText}>{errorMessage}</p>
                   )}
 
                   {/* Nút hành động */}
                   <div style={styles.actionButtons}>
                     <button
-                      onClick={validateAndAddDish}
+                      onClick={validateAndAddStaff}
                       style={styles.addButton}
                     >
                       Add
@@ -756,9 +945,11 @@ const MenuManagement = () => {
                 alt="Bon Appétit"
                 style={styles.successImage} // Thêm style riêng cho hình ảnh
               />
-              <p><b>Are you sure?</b></p>
+              <p>
+                <b>Are you sure?</b>
+              </p>
               <div style={styles.actionButtons}>
-                <button onClick={confirmDeleteDish} style={styles.addButton}>
+                <button onClick={confirmDeleteStaff} style={styles.addButton}>
                   Yes
                 </button>
                 <button
@@ -773,28 +964,30 @@ const MenuManagement = () => {
 
           {showEditForm && (
             <>
+              {/* Lớp phủ làm mờ màn hình */}
               <div
                 style={styles.overlay}
                 onClick={() => setShowEditForm(false)} // Đóng modal khi nhấn vào lớp phủ
               ></div>
+
+              {/* Modal chỉnh sửa nhân viên */}
               <div style={styles.addFormContainer}>
-                <h2 style={styles.addFormTitle}>Edit Dish</h2>
+                <h2 style={styles.addFormTitle}>Sửa Nhân Viên</h2>
                 <div style={styles.addForm}>
                   <div style={styles.addFormContent}>
                     {/* Cột bên trái: Chọn ảnh */}
                     <div style={styles.imageUploadSection}>
                       <label style={styles.imageUploadContainer}>
                         <div style={styles.imagePreview}>
-                          {newDish.image ? (
+                          {newStaff.image ? (
                             <img
-                              src={newDish.image}
-                              alt="Dish Preview"
+                              src={newStaff.image}
+                              alt="Review staffstaff"
                               style={styles.image}
                             />
                           ) : (
                             <div style={styles.placeholderText}>
-                              Select images in the formats (.jpg, .jpeg, .png,
-                              .gif)
+                              Select images in the formats (.jpg, .jpeg, .png, .gif)
                             </div>
                           )}
                         </div>
@@ -803,71 +996,185 @@ const MenuManagement = () => {
                           accept="image/*"
                           style={styles.fileInput}
                           onChange={(e) =>
-                            setNewDish({
-                              ...newDish,
+                            setNewStaff({
+                              ...newStaff,
                               image: URL.createObjectURL(e.target.files[0]),
                             })
                           }
                         />
                       </label>
                       <p style={styles.imageNote}>
-                        Select images in the formats (.jpg, .jpeg, .png, .gif)
+                      Select images in the formats (<b>.jpg, .jpeg, .png, .gif</b>)
                       </p>
                     </div>
 
                     {/* Cột bên phải: Các trường nhập liệu */}
                     <div style={styles.formFields}>
                       <label style={styles.formLabel}>
-                        Name <span style={styles.requiredMark}>(*)</span>:
+                        <span style={styles.labelText}>
+                          Full name <span style={styles.requiredMark}>(*)</span>
+                          :
+                        </span>
                         <input
                           type="text"
-                          value={newDish.name}
+                          value={newStaff.fullName}
                           onChange={(e) =>
-                            setNewDish({ ...newDish, name: e.target.value })
+                            setNewStaff({
+                              ...newStaff,
+                              fullName: e.target.value,
+                            })
                           }
                           style={styles.inputField}
-                          placeholder={dishToEdit?.name} // Hiển thị thông tin cũ
                         />
                       </label>
                       <label style={styles.formLabel}>
-                        Price <span style={styles.requiredMark}>(*)</span>:
+                        <span style={styles.labelText}>
+                          Start date of work{" "}
+                          <span style={styles.requiredMark}>(*)</span>:
+                        </span>
                         <input
-                          type="text"
-                          value={newDish.price}
+                          type="date"
+                          value={newStaff.startDate}
                           onChange={(e) =>
-                            setNewDish({ ...newDish, price: e.target.value })
+                            setNewStaff({
+                              ...newStaff,
+                              startDate: e.target.value,
+                            })
                           }
                           style={styles.inputField}
-                          placeholder={dishToEdit?.price} // Hiển thị thông tin cũ
                         />
                       </label>
                       <label style={styles.formLabel}>
-                        Category <span style={styles.requiredMark}>(*)</span>:
+                        <span style={styles.labelText}>
+                          Work shift{" "}
+                          <span style={styles.requiredMark}>(*)</span>:
+                        </span>
                         <select
-                          value={newDish.category}
+                          value={newStaff.workShift}
                           onChange={(e) =>
-                            setNewDish({ ...newDish, category: e.target.value })
+                            setNewStaff({
+                              ...newStaff,
+                              workShift: e.target.value,
+                            })
                           }
                           style={styles.selectField}
                         >
-                          <option value="Appetizers">Appetizers</option>
-                          <option value="Main">Main</option>
-                          <option value="Desserts">Desserts</option>
+                          <option value="Full-time">Toàn thời gian</option>
+                          <option value="Part-time">Bán thời gian</option>
                         </select>
                       </label>
                       <label style={styles.formLabel}>
-                        Description <span style={styles.requiredMark}>(*)</span>
-                        :
-                        <textarea
-                          value={newDish.description}
+                        <span style={styles.labelText}>
+                          Position <span style={styles.requiredMark}>(*)</span>:
+                        </span>
+                        <input
+                          type="text"
+                          value={newStaff.employeePosition}
                           onChange={(e) =>
-                            setNewDish({
-                              ...newDish,
-                              description: e.target.value,
+                            setNewStaff({
+                              ...newStaff,
+                              employeePosition: e.target.value,
                             })
                           }
-                          style={styles.textareaField}
-                          placeholder={dishToEdit?.description} // Hiển thị thông tin cũ
+                          style={styles.inputField}
+                        />
+                      </label>
+                      <label style={styles.formLabel}>
+                        <span style={styles.labelText}>
+                          Phone number{" "}
+                          <span style={styles.requiredMark}>(*)</span>:
+                        </span>
+                        <input
+                          type="text"
+                          value={newStaff.phoneNumber}
+                          onChange={(e) =>
+                            setNewStaff({
+                              ...newStaff,
+                              phoneNumber: e.target.value,
+                            })
+                          }
+                          style={styles.inputField}
+                        />
+                      </label>
+                      <label style={styles.formLabel}>
+                        <span style={styles.labelText}>
+                          Address <span style={styles.requiredMark}>(*)</span>:
+                        </span>
+                        <input
+                          type="text"
+                          value={newStaff.address}
+                          onChange={(e) =>
+                            setNewStaff({
+                              ...newStaff,
+                              address: e.target.value,
+                            })
+                          }
+                          style={styles.inputField}
+                        />
+                      </label>
+                      <label style={styles.formLabel}>
+                        <span style={styles.labelText}>
+                          Email <span style={styles.requiredMark}>(*)</span>:
+                        </span>
+                        <input
+                          type="text"
+                          value={newStaff.email}
+                          onChange={(e) =>
+                            setNewStaff({
+                              ...newStaff,
+                              email: e.target.value,
+                            })
+                          }
+                          style={styles.inputField}
+                        />
+                      </label>
+                      <label style={styles.formLabel}>
+                        <span style={styles.labelText}>
+                          Salary <span style={styles.requiredMark}>(*)</span>:
+                        </span>
+                        <input
+                          type="number"
+                          value={newStaff.salary}
+                          onChange={(e) =>
+                            setNewStaff({
+                              ...newStaff,
+                              salary: e.target.value,
+                            })
+                          }
+                          style={styles.inputField}
+                        />
+                      </label>
+                      <label style={styles.formLabel}>
+                        <span style={styles.labelText}>
+                          Username{" "}
+                          <span style={styles.requiredMark}>(*)</span>:
+                        </span>
+                        <input
+                          type="text"
+                          value={newStaff.username}
+                          onChange={(e) =>
+                            setNewStaff({
+                              ...newStaff,
+                              username: e.target.value,
+                            })
+                          }
+                          style={styles.inputField}
+                        />
+                      </label>
+                      <label style={styles.formLabel}>
+                        <span style={styles.labelText}>
+                          Password <span style={styles.requiredMark}>(*)</span>:
+                        </span>
+                        <input
+                          type="text"
+                          value={newStaff.password}
+                          onChange={(e) =>
+                            setNewStaff({
+                              ...newStaff,
+                              password: e.target.value,
+                            })
+                          }
+                          style={styles.inputField}
                         />
                       </label>
                     </div>
@@ -879,7 +1186,7 @@ const MenuManagement = () => {
 
                   {/* Nút hành động */}
                   <div style={styles.actionButtons}>
-                    <button onClick={confirmEditDish} style={styles.addButton}>
+                    <button onClick={confirmEditStaff} style={styles.addButton}>
                       Save
                     </button>
                     <button
@@ -899,4 +1206,4 @@ const MenuManagement = () => {
   );
 };
 
-export default MenuManagement;
+export default StaffManagement;

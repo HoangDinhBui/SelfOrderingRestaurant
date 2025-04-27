@@ -9,29 +9,29 @@ const api = axios.create({
   },
 });
 
-// ===================== Dishes ===================== //
-export const getDishes = async () => {
-  const response = await api.get("/dishes");
+// ===================== Staff ===================== //
+export const getStaff = async () => {
+  const response = await api.get("/Staff");
   return response.data;
 };
 
 export const getDishById = async (id) => {
-  const response = await api.get(`/dishes/${id}`);
+  const response = await api.get(`/Staff/${id}`);
   return response.data;
 };
 
-export const createDish = async (dishesData) => {
-  const response = await api.post("/dishes", dishesData);
+export const createDish = async (StaffData) => {
+  const response = await api.post("/Staff", StaffData);
   return response.data;
 };
 
-export const updateDish = async (id, dishesData) => {
-  const response = await api.put(`/dishes/${id}`, dishesData);
+export const updateDish = async (id, StaffData) => {
+  const response = await api.put(`/Staff/${id}`, StaffData);
   return response.data;
 };
 
 export const deleteDish = async (id) => {
-  const response = await api.delete(`/dishes/${id}`);
+  const response = await api.delete(`/Staff/${id}`);
   return response.data;
 };
 

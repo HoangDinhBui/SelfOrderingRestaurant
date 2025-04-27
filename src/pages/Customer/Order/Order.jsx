@@ -386,7 +386,7 @@ const Order = () => {
         </div>
       </div>
 
-      {/* Selected dishes list - Only show if there are items */}
+      {/* Selected Staff list - Only show if there are items */}
       {cartItems && cartItems.length > 0 && (
         <div className="container mx-auto px-4 mb-4">
           <h3 className="text-lg font-bold mb-2">Your Selections</h3>
@@ -617,7 +617,7 @@ const Order = () => {
               }}
             />
             <p className="text-center text-gray-700 mb-6">
-              ARE YOU SURE YOU WANT TO ORDER THESE DISHES?
+              ARE YOU SURE YOU WANT TO ORDER THESE Staff?
             </p>
             <div className="flex justify-center space-x-4">
               <button

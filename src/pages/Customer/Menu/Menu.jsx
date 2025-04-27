@@ -23,7 +23,7 @@ const Menu = () => {
 
   useEffect(() => {
     axios
-      .get("http://localhost:8080/api/dishes")
+      .get("http://localhost:8080/api/Staff")
       .then((response) => {
         console.log(
           "API Categories:",
@@ -61,7 +61,7 @@ const Menu = () => {
     }
   };
 
-  // Filter dishes based on search term and selected category
+  // Filter Staff based on search term and selected category
   const filteredItems = menuItems.filter((item) => {
     // Handle potential null or undefined values for dishName
     const itemName = item.dishName || item.name || "";
@@ -233,7 +233,7 @@ const Menu = () => {
             ))
           ) : (
             <p className="text-center text-gray-500 py-8">
-              No dishes match your search or filter criteria.
+              No Staff match your search or filter criteria.
             </p>
           )}
         </div>
