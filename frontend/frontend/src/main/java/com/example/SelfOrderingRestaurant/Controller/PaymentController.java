@@ -5,10 +5,13 @@ import com.example.SelfOrderingRestaurant.Dto.Request.PaymentRequestDTO.ProcessP
 import com.example.SelfOrderingRestaurant.Dto.Response.PaymentResponseDTO.OrderPaymentDetailsDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.PaymentResponseDTO.PaymentResponseDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.PaymentResponseDTO.PaymentVNPayResponseDTO;
+import com.example.SelfOrderingRestaurant.Entity.DinningTable;
 import com.example.SelfOrderingRestaurant.Entity.Order;
 import com.example.SelfOrderingRestaurant.Entity.Payment;
 import com.example.SelfOrderingRestaurant.Enum.PaymentMethod;
 import com.example.SelfOrderingRestaurant.Enum.PaymentStatus;
+import com.example.SelfOrderingRestaurant.Enum.TableStatus;
+import com.example.SelfOrderingRestaurant.Repository.DinningTableRepository;
 import com.example.SelfOrderingRestaurant.Repository.OrderRepository;
 import com.example.SelfOrderingRestaurant.Repository.PaymentRepository;
 import com.example.SelfOrderingRestaurant.Service.PaymentService;
@@ -17,13 +20,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 @RestController
 @RequestMapping("api/payment")
@@ -34,6 +35,7 @@ public class PaymentController {
     private final PaymentService paymentService;
     private final PaymentRepository paymentRepository;
     private final OrderRepository orderRepository;
+    private final DinningTableRepository tableRepository;
 
     @PostMapping("/vnpay")
     public ResponseEntity<?> createPayment(@RequestBody PaymentVNPayRequestDTO request, HttpServletRequest httpRequest) {
@@ -45,7 +47,7 @@ public class PaymentController {
                 request.setOrderInfo("Payment for Order: " + request.getOrderId());
             }
 
-            String paymentUrl = paymentService.createOrder(request.getTotal(), request.getOrderInfo(), request.getReturnUrl());
+            String paymentUrl = paymentService.createVNPayOrder(request.getTotal(), request.getOrderInfo(), request.getReturnUrl());
 
             return ResponseEntity.ok(PaymentVNPayResponseDTO.builder()
                     .paymentUrl(paymentUrl)
@@ -178,6 +180,36 @@ public class PaymentController {
         }
     }
 
+    @Transactional
+    public void confirmPayment(Integer orderId) {
+        // Find the order
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new IllegalArgumentException("Order not found with ID: " + orderId));
+
+        // Find the most recent unpaid payment for this order
+        Payment payment = paymentRepository.findTopByOrderAndStatusOrderByPaymentDateDesc(order, PaymentStatus.UNPAID)
+                .orElseThrow(() -> new IllegalArgumentException("No pending payment found for order ID: " + orderId));
+
+        // Update payment status
+        payment.setStatus(PaymentStatus.PAID);
+        paymentRepository.save(payment);
+
+        // Update order status
+        order.setPaymentStatus(PaymentStatus.PAID);
+        orderRepository.save(order);
+
+        // Update table status to AVAILABLE
+        DinningTable table = order.getTables();
+        if (table != null) {
+            table.setTableStatus(TableStatus.AVAILABLE);
+            tableRepository.save(table);
+            log.info("Table {} status updated to AVAILABLE after payment for order {}",
+                    table.getTableNumber(), order.getOrderId());
+        }
+
+        log.info("Payment confirmed successfully for order ID: {}", orderId);
+    }
+
     @PostMapping("/confirm")
     public ResponseEntity<?> confirmPayment(@RequestBody Map<String, Object> request) {
         try {
@@ -190,26 +222,20 @@ public class PaymentController {
                 ));
             }
 
-            // Find the order
-            Order order = orderRepository.findById(orderId)
-                    .orElseThrow(() -> new IllegalArgumentException("Order not found with ID: " + orderId));
-
-            // Use the new method to find the most recent unpaid payment
-            Payment payment = paymentRepository.findTopByOrderAndStatusOrderByPaymentDateDesc(order, PaymentStatus.UNPAID)
-                    .orElseThrow(() -> new IllegalArgumentException("No pending payment found for order ID: " + orderId));
-
-            // Update payment status
-            payment.setStatus(PaymentStatus.PAID);
-            paymentRepository.save(payment);
-
-            // Update order status
-            order.setPaymentStatus(PaymentStatus.PAID);
-            orderRepository.save(order);
+            confirmPayment(orderId);
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", "Payment confirmed successfully");
-            response.put("transactionId", payment.getTransactionId());
+
+            // Find the payment to include the transaction ID in the response
+            Optional<Payment> paymentOptional = paymentRepository.findTopByOrder_OrderIdAndStatusOrderByPaymentDateDesc(orderId, PaymentStatus.PAID);
+
+            Payment payment = paymentOptional.orElse(null);
+
+            if (payment != null) {
+                response.put("transactionId", payment.getTransactionId());
+            }
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
