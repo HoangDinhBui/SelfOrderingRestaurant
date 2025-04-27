@@ -55,11 +55,6 @@ public class OrderService implements IOrderService {
     @Transactional
     @Override
     public Integer createOrder(OrderRequestDTO request) {
-        // Check authorization (if staff-only permission is required)
-        if (!securityUtils.isAuthenticated() && securityUtils.hasRole("STAFF")) {
-            throw new AuthorizationException("Only staff members can create orders");
-        }
-
         // Validate input data
         validateOrderRequest(request);
 
@@ -68,7 +63,7 @@ public class OrderService implements IOrderService {
                 .orElseThrow(() -> new ResourceNotFoundException("Table not found with ID: " + request.getTableId()));
 
         // Check table status
-        if (TableStatus.OCCUPIED.name().equals(dinningTable.getTableStatus())) {
+        if (TableStatus.OCCUPIED.equals(dinningTable.getTableStatus())) {
             throw new ValidationException("Table is already occupied");
         }
 
