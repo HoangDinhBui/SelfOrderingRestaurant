@@ -1,20 +1,21 @@
 package com.example.SelfOrderingRestaurant.Service;
 
 import com.example.SelfOrderingRestaurant.Config.VNPayConfig;
+import com.example.SelfOrderingRestaurant.Dto.Request.PaymentRequestDTO.ProcessPaymentRequestDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.PaymentResponseDTO.OrderPaymentDetailsDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.PaymentResponseDTO.PaymentItemDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.PaymentResponseDTO.PaymentNotificationStatusDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.PaymentResponseDTO.PaymentResponseDTO;
+import com.example.SelfOrderingRestaurant.Entity.DinningTable;
 import com.example.SelfOrderingRestaurant.Entity.Order;
 import com.example.SelfOrderingRestaurant.Entity.OrderItem;
 import com.example.SelfOrderingRestaurant.Entity.Payment;
 import com.example.SelfOrderingRestaurant.Enum.NotificationType;
 import com.example.SelfOrderingRestaurant.Enum.PaymentMethod;
 import com.example.SelfOrderingRestaurant.Enum.PaymentStatus;
-import com.example.SelfOrderingRestaurant.Repository.NotificationRepository;
-import com.example.SelfOrderingRestaurant.Repository.OrderItemRepository;
-import com.example.SelfOrderingRestaurant.Repository.OrderRepository;
-import com.example.SelfOrderingRestaurant.Repository.PaymentRepository;
+import com.example.SelfOrderingRestaurant.Enum.TableStatus;
+import com.example.SelfOrderingRestaurant.Repository.*;
+import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.slf4j.Logger;
@@ -22,7 +23,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -40,9 +40,190 @@ public class PaymentService {
     final OrderItemRepository orderItemRepository;
     final PaymentRepository paymentRepository;
     final NotificationRepository notificationRepository;
+    final DinningTableRepository tableRepository;
 
     @Transactional
-    public String createOrder(int total, String orderInfo, String urlReturn) throws Exception {
+    public PaymentResponseDTO processPayment(ProcessPaymentRequestDTO request) {
+        // Validate input data
+        if (request.getOrderId() == null || request.getOrderId() <= 0) {
+            throw new IllegalArgumentException("Order ID is required and must be a positive integer");
+        }
+
+        if (request.getAmount() == null || request.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Amount is required and must be a positive number");
+        }
+
+        if (request.getPaymentMethod() == null || request.getPaymentMethod().isEmpty()) {
+            throw new IllegalArgumentException("Payment method is required");
+        }
+
+        // Validate payment method
+        PaymentMethod paymentMethod;
+        try {
+            paymentMethod = PaymentMethod.valueOf(request.getPaymentMethod().toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("Invalid payment method. Valid options are: " +
+                    Arrays.toString(PaymentMethod.values()));
+        }
+
+        // Check if order exists
+        Order order = orderRepository.findById(request.getOrderId())
+                .orElseThrow(() -> new EntityNotFoundException("Order not found with ID: " + request.getOrderId()));
+
+        // Check order payment status
+        if (order.getPaymentStatus() != null && order.getPaymentStatus() != PaymentStatus.UNPAID) {
+            throw new IllegalStateException("Order has already been paid or cancelled");
+        }
+
+        // Process payment based on method
+        PaymentResponseDTO response = new PaymentResponseDTO();
+        response.setOrderId(order.getOrderId());
+        response.setAmount(request.getAmount());
+        response.setPaymentMethod(paymentMethod.name());
+
+        if (paymentMethod == PaymentMethod.CASH) {
+            return processCashPaymentInternal(order, request.getAmount());
+        } else if (paymentMethod == PaymentMethod.ONLINE) {
+            return processOnlinePaymentInternal(order, request.getAmount());
+        } else if (paymentMethod == PaymentMethod.CARD) {
+            return processCardPaymentInternal(order, request.getAmount());
+        } else {
+            throw new UnsupportedOperationException("Payment method not supported: " + paymentMethod);
+        }
+    }
+
+    private PaymentResponseDTO processCashPaymentInternal(Order order, BigDecimal amount) {
+        String transactionId = generateTransactionId();
+
+        Payment payment = new Payment();
+        payment.setOrder(order);
+        payment.setCustomer(order.getCustomer());
+        payment.setAmount(amount);
+        payment.setPaymentMethod(PaymentMethod.CASH);
+        payment.setStatus(PaymentStatus.PAID);
+        payment.setTransactionId(transactionId);
+        payment.setPaymentDate(LocalDateTime.now());
+
+        paymentRepository.save(payment);
+
+        // Update order status
+        order.setPaymentStatus(PaymentStatus.PAID);
+        orderRepository.save(order);
+
+        // Update table status to AVAILABLE
+        DinningTable table = order.getTables();
+        if (table != null) {
+            table.setTableStatus(TableStatus.AVAILABLE);
+            tableRepository.save(table);
+            log.info("Table {} status updated to AVAILABLE after cash payment for order {}",
+                    table.getTableNumber(), order.getOrderId());
+        }
+
+        PaymentResponseDTO response = new PaymentResponseDTO();
+        // [rest of the existing method]
+        return response;
+    }
+
+    private PaymentResponseDTO processCardPaymentInternal(Order order, BigDecimal amount) {
+        String transactionId = generateTransactionId();
+
+        // Here you would integrate with a card processing gateway
+        // For now, we'll simulate a successful transaction
+
+        try {
+            // Simulating card processing time
+            Thread.sleep(1000);
+
+            Payment payment = new Payment();
+            payment.setOrder(order);
+            payment.setCustomer(order.getCustomer());
+            payment.setAmount(amount);
+            payment.setPaymentMethod(PaymentMethod.CARD);
+            payment.setStatus(PaymentStatus.PAID);
+            payment.setTransactionId(transactionId);
+            payment.setPaymentDate(LocalDateTime.now());
+
+            paymentRepository.save(payment);
+
+            // Update order status
+            order.setPaymentStatus(PaymentStatus.PAID);
+            orderRepository.save(order);
+
+            // Update table status to AVAILABLE
+            DinningTable table = order.getTables();
+            if (table != null) {
+                table.setTableStatus(TableStatus.AVAILABLE);
+                tableRepository.save(table);
+                log.info("Table {} status updated to AVAILABLE after card payment for order {}",
+                        table.getTableNumber(), order.getOrderId());
+            }
+
+            PaymentResponseDTO response = new PaymentResponseDTO();
+            response.setPaymentId(payment.getPaymentId());
+            response.setOrderId(order.getOrderId());
+            response.setAmount(amount);
+            response.setPaymentMethod(PaymentMethod.CARD.name());
+            response.setPaymentDate(payment.getPaymentDate().toString());
+            response.setStatus(PaymentStatus.PAID.name());
+            response.setTransactionId(transactionId);
+            response.setMessage("Card payment processed successfully");
+
+            return response;
+        } catch (Exception e) {
+            log.error("Error processing card payment", e);
+            throw new PaymentProcessingException("Failed to process card payment: " + e.getMessage());
+        }
+    }
+
+    private PaymentResponseDTO processOnlinePaymentInternal(Order order, BigDecimal amount) {
+        // Create pending payment record
+        String transactionId = generateTransactionId();
+
+        Payment payment = new Payment();
+        payment.setOrder(order);
+        payment.setCustomer(order.getCustomer());
+        payment.setAmount(amount);
+        payment.setPaymentMethod(PaymentMethod.ONLINE);
+        payment.setStatus(PaymentStatus.PENDING);
+        payment.setTransactionId(transactionId);
+        payment.setPaymentDate(LocalDateTime.now());
+
+        paymentRepository.save(payment);
+
+        // Generate payment URL for redirection
+        String paymentUrl;
+        try {
+            paymentUrl = createVNPayOrder(amount.intValue(), "Payment for Order: " + order.getOrderId(), null);
+        } catch (Exception e) {
+            log.error("Error creating VNPay payment", e);
+            throw new PaymentProcessingException("Failed to create online payment: " + e.getMessage());
+        }
+
+        PaymentResponseDTO response = new PaymentResponseDTO();
+        response.setPaymentId(payment.getPaymentId());
+        response.setOrderId(order.getOrderId());
+        response.setAmount(amount);
+        response.setPaymentMethod(PaymentMethod.ONLINE.name());
+        response.setPaymentDate(payment.getPaymentDate().toString());
+        response.setStatus(PaymentStatus.PENDING.name());
+        response.setTransactionId(transactionId);
+        response.setPaymentUrl(paymentUrl);
+        response.setMessage("Online payment initiated");
+
+        return response;
+    }
+
+    private String generateTransactionId() {
+        Random rand = new Random();
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < 8; i++) {
+            sb.append(rand.nextInt(10));
+        }
+        return sb.toString();
+    }
+
+    @Transactional
+    public String createVNPayOrder(int total, String orderInfo, String urlReturn) throws Exception {
         // Parse the order ID from orderInfo
         Integer orderId = extractOrderIdFromOrderInfo(orderInfo);
 
@@ -58,18 +239,29 @@ public class PaymentService {
             Order order = orderRepository.findById(orderId)
                     .orElseThrow(() -> new IllegalArgumentException("Order not found with ID: " + orderId));
 
-            Payment payment = new Payment();
-            payment.setOrder(order);
-            payment.setCustomer(order.getCustomer());
-            payment.setAmount(order.getTotalAmount());
-            payment.setPaymentMethod(PaymentMethod.ONLINE);
-            payment.setStatus(PaymentStatus.UNPAID);
-            payment.setTransactionId(vnp_TxnRef);
-            payment.setPaymentDate(LocalDateTime.now());
+            // Check if the order is already paid
+            if (order.getPaymentStatus() == PaymentStatus.PAID) {
+                throw new IllegalStateException("Order is already paid");
+            }
 
-            paymentRepository.save(payment);
+            // Check if there's already a pending payment for this order
+            List<Payment> existingPayments = paymentRepository.findByOrderAndStatus(order, PaymentStatus.PENDING);
+            if (!existingPayments.isEmpty()) {
+                log.info("Found existing pending payment for order {}. Using the existing transaction ID.", orderId);
+                vnp_TxnRef = existingPayments.get(0).getTransactionId();
+            } else {
+                Payment payment = new Payment();
+                payment.setOrder(order);
+                payment.setCustomer(order.getCustomer());
+                payment.setAmount(order.getTotalAmount());
+                payment.setPaymentMethod(PaymentMethod.ONLINE);
+                payment.setStatus(PaymentStatus.PENDING);
+                payment.setTransactionId(vnp_TxnRef);
+                payment.setPaymentDate(LocalDateTime.now());
 
-            log.info("Created pending payment record with transaction ID: {}", vnp_TxnRef);
+                paymentRepository.save(payment);
+                log.info("Created pending payment record with transaction ID: {}", vnp_TxnRef);
+            }
         }
 
         Map<String, String> vnp_Params = new HashMap<>();
@@ -86,7 +278,7 @@ public class PaymentService {
         vnp_Params.put("vnp_OrderType", orderType);
         String locate = "vn";
         vnp_Params.put("vnp_Locale", locate);
-        vnp_Params.put("vnp_ReturnUrl", VNPayConfig.vnp_Returnurl);
+        vnp_Params.put("vnp_ReturnUrl", urlReturn != null ? urlReturn : VNPayConfig.vnp_Returnurl);
         vnp_Params.put("vnp_IpAddr", vnp_IpAddr);
 
         Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"));
@@ -196,6 +388,7 @@ public class PaymentService {
             if (calculatedHash.equalsIgnoreCase(vnp_SecureHash)) {
                 String txnRef = queryParams.get("vnp_TxnRef");
                 String amount = queryParams.get("vnp_Amount");
+                String responseCode = queryParams.get("vnp_ResponseCode");
 
                 // Find payment record
                 Payment payment = paymentRepository.findByTransactionId(txnRef);
@@ -205,10 +398,11 @@ public class PaymentService {
                     return result;
                 }
 
-                // More robust verification
+                // Verify transaction details
                 boolean isSuccessful =
-                        payment.getAmount().compareTo(new BigDecimal(amount).divide(BigDecimal.valueOf(100))) == 0 &&
-                                txnRef.equals(payment.getTransactionId());
+                        payment.getAmount().multiply(BigDecimal.valueOf(100)).compareTo(new BigDecimal(amount)) == 0 &&
+                                txnRef.equals(payment.getTransactionId()) &&
+                                "00".equals(responseCode);
 
                 // Update payment status
                 payment.setStatus(isSuccessful ? PaymentStatus.PAID : PaymentStatus.UNPAID);
@@ -219,13 +413,23 @@ public class PaymentService {
                     Order order = payment.getOrder();
                     order.setPaymentStatus(PaymentStatus.PAID);
                     orderRepository.save(order);
+
+                    // Update table status to AVAILABLE
+                    DinningTable table = order.getTables();
+                    if (table != null) {
+                        table.setTableStatus(TableStatus.AVAILABLE);
+                        tableRepository.save(table);
+                        log.info("Table {} status updated to AVAILABLE after online payment for order {}",
+                                table.getTableNumber(), order.getOrderId());
+                    }
+
                     log.info("Order {} payment status updated to PAID", order.getOrderId());
                 }
 
                 // Prepare result
                 result.put("status", isSuccessful ? 1 : 0);
                 result.put("transactionStatus", isSuccessful ? "SUCCESS" : "FAILED");
-                result.put("responseCode", "00");
+                result.put("responseCode", responseCode);
                 result.put("message", isSuccessful
                         ? "Thanh toán thành công!"
                         : "Giao dịch thất bại!");
@@ -269,9 +473,7 @@ public class PaymentService {
         paymentDetails.setOrderId(order.getOrderId());
         paymentDetails.setTableId(order.getTables().getTableNumber());
         paymentDetails.setOrderDate(order.getOrderDate());
-        paymentDetails.setPaymentStatus(
-                "PAID".equals(order.getPaymentStatus()) ? PaymentStatus.PAID : PaymentStatus.UNPAID
-        );
+        paymentDetails.setPaymentStatus(order.getPaymentStatus());
         paymentDetails.setItems(paymentItems);
         paymentDetails.setDiscount(order.getDiscount() != null ? order.getDiscount() : BigDecimal.ZERO);
         paymentDetails.setTotalAmount(order.getTotalAmount());
@@ -284,6 +486,11 @@ public class PaymentService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found with ID: " + orderId));
 
+        // Verify the order is in UNPAID status
+        if (order.getPaymentStatus() != PaymentStatus.UNPAID) {
+            throw new IllegalStateException("Cannot process payment for order that is not in UNPAID status");
+        }
+
         // Check if payment record already exists for the order
         Payment payment = paymentRepository.findByOrder_OrderId(orderId);
 
@@ -295,21 +502,22 @@ public class PaymentService {
             payment.setAmount(order.getTotalAmount());
             payment.setPaymentMethod(PaymentMethod.CASH);
             payment.setPaymentDate(LocalDateTime.now());
+            // Start with UNPAID status - this is the key change
+            payment.setStatus(PaymentStatus.UNPAID);
         } else {
-            // Update existing payment record
+            // Update existing payment record if needed
             payment.setPaymentMethod(PaymentMethod.CASH);
             payment.setPaymentDate(LocalDateTime.now());
+            // Ensure status is UNPAID
+            payment.setStatus(PaymentStatus.UNPAID);
         }
 
-        // Set status to PAID
-        payment.setStatus(PaymentStatus.PAID);
         paymentRepository.save(payment);
 
-        // Update order payment status
-        order.setPaymentStatus(PaymentStatus.PAID);
-        orderRepository.save(order);
+        // Keep order status as UNPAID at this stage
+        // The status will be updated to PAID when the payment is confirmed
 
-        log.info("Cash payment processed successfully for order ID: {}", orderId);
+        log.info("Cash payment request processed successfully for order ID: {}", orderId);
     }
 
     public PaymentResponseDTO getPaymentById(Integer paymentId) {
@@ -341,5 +549,12 @@ public class PaymentService {
         statusDTO.setPaymentNotificationReceived(hasPaymentNotification);
 
         return statusDTO;
+    }
+
+    // New exception class for payment processing errors
+    public static class PaymentProcessingException extends RuntimeException {
+        public PaymentProcessingException(String message) {
+            super(message);
+        }
     }
 }
