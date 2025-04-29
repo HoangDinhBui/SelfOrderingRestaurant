@@ -1,6 +1,6 @@
 import React from "react";
 import { useState } from "react";
-import MenuBar from "../../../components/layout/menuBar";
+import MenuBar from "../../../components/layout/MenuBar";
 import logoRemoveBg from "../../../assets/img/logoremovebg.png";
 
 const MenuManagement = () => {
