@@ -1,86 +1,92 @@
-import { useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { useContext } from "react";
-import { MenuContext } from "../../../context/MenuContext";
+import { useState } from "react";
 
-import axios from "axios";
+// Static mock data to match the image
+const mockMenuItems = [
+  {
+    dishId: 1,
+    dishName: "Huitres Fraiches (6PCS)",
+    categoryName: "Appetizers",
+    price: 25.34,
+    rating: 5.0,
+    imageUrl: "/huitres-fraiches.jpg",
+  },
+  {
+    dishId: 2,
+    dishName: "Huitres Gratinées (6PCS)",
+    categoryName: "Appetizers",
+    price: 25.34,
+    rating: 5.0,
+    imageUrl: "/huitres-gratinees.jpg",
+  },
+  {
+    dishId: 3,
+    dishName: "Tartare De Saumon",
+    categoryName: "Main Course",
+    price: 25.34,
+    rating: 5.0,
+    imageUrl: "/tartare-de-saumon.jpg",
+  },
+];
 
 const Menu = () => {
-  const { getDishById } = useContext(MenuContext);
-  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
-  const [menuItems, setMenuItems] = useState([]);
-  // eslint-disable-next-line no-unused-vars
-  const [categories, setCategories] = useState([
+  const categories = [
     { id: 0, name: "All", icon: "🍽️" },
-    { id: 1, name: "Appetizers", icon: "🍴" },
-    { id: 2, name: "Main Course", icon: "🍽️" },
-    { id: 3, name: "Vegetarian", icon: "🥗" },
-  ]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+    { id: 1, name: "Main Course", icon: "🍽️" },
+    { id: 2, name: "Appetizers", icon: "🍴" },
+    { id: 3, name: "Drink", icon: "🍹" },
+    { id: 4, name: "Dessert", icon: "🍰" },
+  ];
 
-  useEffect(() => {
-    axios
-      .get("http://localhost:8080/api/Staff")
-      .then((response) => {
-        console.log(
-          "API Categories:",
-          response.data.map((item) => item.categoryName)
-        );
-        setMenuItems(response.data);
-        setLoading(false);
-      })
-      .catch((error) => {
-        console.error("Error loading menu:", error);
-        setError("Failed to load menu. Please try again!");
-        setLoading(false);
-      });
-  }, []);
+  // State to manage quantity for each dish
+  const [quantities, setQuantities] = useState(
+    mockMenuItems.reduce((acc, item) => {
+      acc[item.dishId] = 1; // Default quantity is 1 for each dish
+      return acc;
+    }, {})
+  );
 
-  // Function to handle the View button click
-  const handleViewDish = async (dishId) => {
-    try {
-      // First, show loading state
-      setLoading(true);
-
-      // Make API call to get dish details
-      // Use context's getDishById instead of direct axios call
-      const dishData = await getDishById(dishId);
-
-      // Store dish details in localStorage
-      localStorage.setItem("currentDish", JSON.stringify(dishData));
-
-      // Navigate to dish details page
-      navigate(`/view/${dishId}`);
-    } catch (error) {
-      console.error(`Error fetching dish ${dishId}:`, error);
-      setError("Failed to load dish details. Please try again!");
-      setLoading(false);
-    }
-  };
-
-  // Filter Staff based on search term and selected category
-  const filteredItems = menuItems.filter((item) => {
-    // Handle potential null or undefined values for dishName
+  // Filter items based on search term and selected category
+  const filteredItems = mockMenuItems.filter((item) => {
     const itemName = item.dishName || item.name || "";
     const matchesSearch = itemName
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
-
-    // Use categoryName from the API response instead of the hardcoded categoryMap
     const matchesCategory =
       selectedCategory === "All" ||
       (item.categoryName &&
         item.categoryName.toLowerCase() === selectedCategory.toLowerCase());
-
     return matchesSearch && matchesCategory;
   });
 
-  if (loading)
-    return <p className="text-center text-gray-500">Loading menu...</p>;
-  if (error) return <p className="text-center text-red-500">{error}</p>;
+  // Handlers for quantity adjustments
+  const handleIncreaseQuantity = (dishId) => {
+    setQuantities((prev) => ({
+      ...prev,
+      [dishId]: prev[dishId] + 1,
+    }));
+  };
+
+  const handleDecreaseQuantity = (dishId) => {
+    setQuantities((prev) => ({
+      ...prev,
+      [dishId]: prev[dishId] > 1 ? prev[dishId] - 1 : 1, // Minimum quantity is 1
+    }));
+  };
+
+  // Static actions for buttons
+  const handleViewDish = (dishId) => {
+    console.log(`View dish with ID: ${dishId}`);
+  };
+
+  const handleOrderDish = (dishId) => {
+    console.log(`Order dish with ID: ${dishId}`);
+  };
+
+  const handleNote = (dishId) => {
+    console.log(`Add note for dish with ID: ${dishId}`);
+  };
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -88,7 +94,7 @@ const Menu = () => {
       <div className="bg-white py-3 shadow-md sticky top-0 z-10">
         <div className="container mx-auto flex items-center px-4">
           <button
-            onClick={() => navigate("/")}
+            onClick={() => console.log("Navigate back to home")}
             className="p-2 rounded-full bg-gray-200 hover:bg-gray-300"
           >
             <svg
@@ -132,9 +138,7 @@ const Menu = () => {
             <span className="text-yellow-500 text-xl mr-2">⭐</span>
             <h3 className="font-bold text-lg">Select Category</h3>
           </div>
-
-          {/* Category buttons */}
-          <div className="grid grid-cols-4 gap-2">
+          <div className="flex overflow-x-auto space-x-2 py-2 px-1 scrollbar-hide">
             {categories.map((category) => (
               <button
                 key={category.id}
@@ -148,10 +152,10 @@ const Menu = () => {
                   color:
                     selectedCategory === category.name ? "white" : "#1f2937",
                 }}
-                className="flex flex-col items-center justify-center p-4 rounded-lg transition-all duration-200"
+                className="min-w-[90px] flex flex-col items-center justify-center p-3 rounded-lg transition-all duration-200 flex-shrink-0"
               >
                 <span className="text-2xl mb-1">{category.icon}</span>
-                <span className="text-sm">{category.name}</span>
+                <span className="text-sm text-center">{category.name}</span>
               </button>
             ))}
           </div>
@@ -163,77 +167,104 @@ const Menu = () => {
             filteredItems.map((item) => (
               <div
                 key={item.dishId}
-                className="bg-white rounded-lg shadow-sm p-4"
+                className="bg-white rounded-lg shadow-sm p-4 flex items-center"
               >
-                <div className="flex items-center">
-                  <div className="w-24 h-24 flex-shrink-0">
-                    <img
-                      src={item.imageUrl || "/placeholder-dish.jpg"}
-                      alt={item.dishName || item.name || "Dish"}
-                      className="w-full h-full object-cover rounded-lg"
-                      onError={(e) => {
-                        e.target.onerror = null;
-                        e.target.src = "/placeholder-dish.jpg";
-                      }}
-                    />
+                {/* Dish Image */}
+                <div className="w-20 h-20 flex-shrink-0">
+                  <img
+                    src={item.imageUrl}
+                    alt={item.dishName}
+                    className="w-full h-full object-cover rounded-lg"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = "/placeholder-dish.jpg";
+                    }}
+                  />
+                </div>
+
+                {/* Dish Details */}
+                <div className="flex-1 ml-4">
+                  <h3 className="font-bold text-base">{item.dishName}</h3>
+                  <div className="flex items-center text-sm text-gray-500 mt-1">
+                    <span className="text-yellow-500 mr-1">★</span>
+                    <span>{item.rating}</span>
+                    <span className="mx-2">•</span>
+                    <span>{item.categoryName}</span>
                   </div>
-                  <div className="flex-1 ml-4">
-                    <h3 className="font-bold text-lg">
-                      {item.dishName || item.name}
-                    </h3>
-                    <div className="text-gray-500 text-sm mt-1">
-                      ⭐ {item.categoryName}
-                    </div>
-                    <div className="flex justify-between items-center mt-2">
-                      <div
-                        className="font-semibold text-lg p-2 px-4 rounded-lg bg-gray-100 text-gray-800"
-                        style={{
-                          border: "1px solid #e5e7eb",
-                        }}
-                      >
-                        {Number(item.price).toLocaleString()} VND
-                      </div>
+                  <div className="font-semibold text-base mt-1">
+                    ${Number(item.price).toFixed(2)}
+                  </div>
+                </div>
+
+                {/* Actions (Quantity, Note, View, Order) */}
+                <div className="flex flex-col items-end space-y-2">
+                  {/* Quantity Selector and Note */}
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => handleNote(item.dishId)}
+                      className=" text-[#1f2937] text-sm w-[70px] h-8 rounded-lg flex items-center justify-center"
+                      style={{ backgroundColor: "#D9D9D9", opacity: 0.5 }}
+                    >
+                      Note
+                    </button>
+                    <div className="flex items-center bg-white bg-opacity-50 rounded-lg">
                       <button
-                        onClick={() => handleViewDish(item.dishId)}
-                        style={{
-                          backgroundColor: "#f87171",
-                          color: "white",
-                          padding: "0.5rem 1.5rem",
-                          borderRadius: "0.5rem",
-                          transition: "background-color 200ms",
-                        }}
-                        onMouseOver={(e) =>
-                          (e.currentTarget.style.backgroundColor = "#ef4444")
-                        }
-                        onMouseOut={(e) =>
-                          (e.currentTarget.style.backgroundColor = "#f87171")
-                        }
-                        className="flex items-center"
+                        onClick={() => handleDecreaseQuantity(item.dishId)}
+                        className="w-8 h-8 flex items-center justify-center text-[#1f2937] rounded-l-lg"
+                        style={{ backgroundColor: "#D9D9D9", opacity: 0.5 }}
                       >
-                        View
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5 ml-2"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 5l7 7-7 7"
-                          />
-                        </svg>
+                        -
+                      </button>
+                      <span className="w-8 h-8 flex items-center justify-center text-[#1f2937] bg-transparent">
+                        {quantities[item.dishId]}
+                      </span>
+                      <button
+                        onClick={() => handleIncreaseQuantity(item.dishId)}
+                        className="w-8 h-8 flex items-center justify-center text-[#1f2937] rounded-r-lg"
+                        style={{ backgroundColor: "#D9D9D9", opacity: 0.5 }}
+                      >
+                        +
                       </button>
                     </div>
+                  </div>
+
+                  {/* View and Order Buttons */}
+                  <div className="flex space-x-2">
+                    <button
+                      onClick={() => handleViewDish(item.dishId)}
+                      className="text-white text-sm w-[83px] h-8 rounded-lg flex items-center justify-center"
+                      style={{ backgroundColor: "#EE6363" }}
+                    >
+                      View
+                    </button>
+                    <button
+                      onClick={() => handleOrderDish(item.dishId)}
+                      className="bg-[#EE6363] text-white text-sm w-[83px] h-8 rounded-lg flex items-center justify-center"
+                      style={{ backgroundColor: "#EE6363" }}
+                    >
+                      Order
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-4 w-4 ml-1"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    </button>
                   </div>
                 </div>
               </div>
             ))
           ) : (
             <p className="text-center text-gray-500 py-8">
-              No Staff match your search or filter criteria.
+              No dishes match your search or filter criteria.
             </p>
           )}
         </div>

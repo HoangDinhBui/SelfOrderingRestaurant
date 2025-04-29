@@ -54,7 +54,7 @@ function App() {
             <Route path="/admin-information" element={<AdminInformation />} />
             <Route path="/admin-order" element={<AdminOrder />} /> */}
         
-              <Route path="/" element={<Home />} />
+              <Route path="/" element={</>} />
           </Routes>
         </Router>
       </MenuProvider>
