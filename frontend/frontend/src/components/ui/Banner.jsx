@@ -6,8 +6,8 @@ const Banner = () => {
 
   const banners = [
     { image: "/src/assets/img/banner2.jpg", title: "Up to 40% OFF", subtitle: "ON YOUR FIRST ORDER" },
-    { image: "/src/assets/img/callstaff.jpg", title: "Free Delivery", subtitle: "FOR ORDERS OVER $50" },
-    { image: "/src/assets/img/callpayment.jpg", title: "New Arrivals", subtitle: "CHECK OUT OUR LATEST MENU" },
+    { image: "/src/assets/img/promofood.jpg", title: "Free Delivery", subtitle: "FOR ORDERS OVER $50" },
+    { image: "/src/assets/img/promo.jpg", title: "New Arrivals", subtitle: "CHECK OUT OUR LATEST MENU" },
   ];
 
   const [currentIndex, setCurrentIndex] = useState(0);

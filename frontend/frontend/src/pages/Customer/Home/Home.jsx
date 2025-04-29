@@ -318,109 +318,84 @@ const Home = () => {
                 <strong>{tableNumber}</strong>
               </p>
             </div>
-
-            {/* Login button */}
-            <div className="relative">
-              <img
-                src="/src/assets/img/homelogin.jpg"
-                alt="Login"
-                className="w-full h-[100px] object-cover rounded-lg"
-              />
-              <a
-                href="/login"
-                className="absolute inset-0 flex items-center justify-center bg-black/20 font-bold rounded-lg"
-              ></a>
-            </div>
           </div>
 
           {/* Right column */}
           <div className="grid grid-cols-2 gap-4">
-            {/* Call Staff button */}
-            <div className="relative">
+            <div className="flex flex-col items-center space-y-2">
               <button
                 onClick={handleCallStaff}
                 disabled={sendingNotification}
-                className="absolute inset-0 flex items-center justify-center text-black font-bold rounded-lg"
+                className="w-20 h-20 flex items-center justify-center text-black font-bold rounded-lg"
                 style={{
-                  backgroundImage: "url('/src/assets/img/callstaff.jpg')",
+                  backgroundImage: "url('/src/assets/img/callstaff.png')",
                   backgroundSize: "cover",
-                  backgroundPosition: "center",
+                  backgroundPosition: "center top",
                 }}
+              ></button>
+              <span
+                className="text-sm font-medium "
+                style={{ color: "#747474" }}
               >
                 {sendingNotification ? "Calling..." : "Call Staff"}
-              </button>
+              </span>
             </div>
 
             {/* Call Payment button */}
-            <div className="relative">
+            <div className="flex flex-col items-center space-y-2">
               <button
                 onClick={handleCallPayment}
                 disabled={processingPayment || sendingNotification}
-                className="absolute inset-0 flex flex-col items-center justify-center text-black font-bold rounded-lg"
+                className="w-20 h-20 flex items-center justify-center font-bold rounded-lg"
                 style={{
-                  backgroundColor: "#f9f9f9", // Màu nền sáng
-                  border: "1px solid #ddd", // Viền nhẹ
-                  borderRadius: "10px", // Bo góc
-                  padding: "10px", // Khoảng cách bên trong
-                  boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)", // Đổ bóng
-                }}
-              >
-                {/* Icon */}
-                <img
-                  src="/src/assets/img/callpayment-icon.png" // Đường dẫn tới icon
-                  alt="Call Payment"
-                  className="w-12 h-12 mb-2" // Kích thước icon
-                />
-                {/* Text */}
-                <span className="text-sm font-semibold text-gray-700">
-                  {processingPayment || sendingNotification
-                    ? "Processing..."
-                    : "Call Payment"}
-                </span>
-              </button>
-            </div>
-
-            {/* View Menu - Order button */}
-            <div className="relative col-span-2">
-              <button
-                onClick={() => navigate("/menu")}
-                className="absolute inset-0 flex items-center justify-center text-black font-bold rounded-lg"
-                style={{
-                  backgroundImage: "url('/src/assets/img/viewmenu.jpg')",
+                  backgroundImage: "url('/src/assets/img/callpayment.png')",
                   backgroundSize: "cover",
-                  backgroundPosition: "center",
+                  backgroundPosition: "center top",
                 }}
+              ></button>
+              <span
+                className="text-sm font-semibold "
+                style={{ color: "#747474" }}
               >
-                View menu - Order
-              </button>
+                {processingPayment || sendingNotification
+                  ? "Processing..."
+                  : "Call Payment"}
+              </span>
             </div>
           </div>
         </section>
 
-        {/* Order Now button with cart info */}
-        <section className="mt-6">
+        {/* View Menu - Order button */}
+        <div className="w-full h-20 mt-1 relative col-span-2">
           <button
-            onClick={handleOrderNow}
-            className="w-full !bg-red-500 text-white py-3 rounded-lg font-bold flex items-center justify-center relative"
-            disabled={loading}
+            onClick={() => navigate("/menu")}
+            className="absolute inset-0 flex items-center justify-center gap-2 text-black font-bold rounded-lg overflow-hidden"
+            style={{
+              backgroundImage: "url('/src/assets/img/viewmenu.jpg')",
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
           >
-            {loading ? (
-              <span>Loading...</span>
-            ) : (
-              <>
-                Order Now
-                {cartItemCount > 0 && (
-                  <span className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white text-red-500 rounded-full h-6 w-6 flex items-center justify-center text-sm font-bold">
-                    {cartItemCount}
-                  </span>
-                )}
-              </>
-            )}
+            {/* Overlay mờ 20% */}
+            <div className="absolute inset-0 bg-[#D9D9D9] opacity-20 z-0" />
+
+            {/* Nội dung chính: icon + text */}
+            <span
+              className="text-xl relative z-10 flex items-center gap-2"
+              style={{ color: "#747474" }}
+            >
+              View menu - Order
+              <img
+                src="/src/assets/img/viewmenu.png"
+                alt="Menu icon"
+                className="w-15 h-15"
+              />
+            </span>
           </button>
-        </section>
+        </div>
 
         {/* Today's special Staff */}
-        <section className="mt-6">
+        <section className="mt-4">
           {/* Title and arrow button */}
           <div className="flex items-center space-x-2 mb-3">
             <h2 className="text-xl font-bold">Today's Special</h2>
