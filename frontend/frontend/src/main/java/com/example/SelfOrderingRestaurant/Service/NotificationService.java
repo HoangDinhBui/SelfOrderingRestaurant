@@ -22,24 +22,15 @@ import lombok.AllArgsConstructor;
 public class NotificationService implements INotificationService {
 
     private final NotificationRepository notificationRepository;
-
-
     private final UserRepository userRepository;
-
-
     private final StaffShiftRepository staffShiftRepository;
-
-
     private final OrderRepository orderRepository;
-
-
     private final DinningTableRepository dinningTableRepository;
-
-
     private final CustomerRepository customerRepository;
+    private final WebSocketService webSocketService;
 
-     @Transactional
-     @Override
+    @Transactional
+    @Override
     public List<NotificationResponseDTO> getNotificationsByUserId(Integer userId){
          List<Notification> notifications = notificationRepository.findByUserUserId(userId);
          return mapToResponseDTOs(notifications);
@@ -127,7 +118,53 @@ public class NotificationService implements INotificationService {
             notification.setExpiryDate(LocalDateTime.now().plusDays(1)); // Expire after 1 day
 
             notificationRepository.save(notification);
+
+            // Convert to DTO for WebSocket transmission
+            NotificationResponseDTO notificationDTO = mapToResponseDTO(notification);
+
+            // Set additional fields for easier frontend processing
+            notificationDTO.setTableNumber(table.getTableNumber());
+            if (order != null) {
+                notificationDTO.setOrderId(order.getOrderId());
+            }
+
+            // Send via WebSocket to all active staff on current shift
+            webSocketService.sendNotificationToActiveStaff(notificationDTO);
         }
+    }
+
+    private NotificationResponseDTO mapToResponseDTO(Notification notification) {
+        NotificationResponseDTO dto = new NotificationResponseDTO();
+        dto.setNotificationId(notification.getNotificationId());
+        dto.setTitle(notification.getTitle());
+        dto.setContent(notification.getContent());
+        dto.setIsRead(notification.getIsRead());
+        dto.setType(notification.getType());
+        dto.setCreateAt(notification.getCreateAt());
+
+        // Extract table number from title if possible
+        String title = notification.getTitle();
+        if (title != null && title.contains("Table ")) {
+            try {
+                String tableStr = title.substring(title.indexOf("Table ") + 6).split(" ")[0];
+                dto.setTableNumber(Integer.parseInt(tableStr));
+            } catch (Exception e) {
+                // Unable to parse table number, leave as null
+            }
+        }
+
+        // Extract order ID from content if possible
+        String content = notification.getContent();
+        if (content != null && content.contains("order #")) {
+            try {
+                String orderStr = content.substring(content.indexOf("order #") + 7).split(" ")[0];
+                dto.setOrderId(Integer.parseInt(orderStr));
+            } catch (Exception e) {
+                // Unable to parse order ID, leave as null
+            }
+        }
+
+        return dto;
     }
 
     private List<NotificationResponseDTO> mapToResponseDTOs(List<Notification> notifications) {
