@@ -9,35 +9,35 @@ import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
 @RestController
-@RequestMapping("/api/admin/category")
+@RequestMapping("/api")
 public class CategoryController {
 
     private final CategoryService categoryService;
 
-    @GetMapping
+    @GetMapping("/category")
     public ResponseEntity<?> getAllCategories() {
         return ResponseEntity.ok(categoryService.getAllCategories());
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("category/{id}")
     public ResponseEntity<?> getCategoryById(@PathVariable Integer id) {
         return ResponseEntity.ok(categoryService.getCategoryById(id));
     }
 
-    @PostMapping
+    @PostMapping("/admin/category")
     public ResponseEntity<?> createCategory(@RequestBody CategoryDTO request) {
         categoryService.createCategory(request);
         return ResponseEntity.ok("Create category successfully");
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/admin/category/{id}")
     public ResponseEntity<?> updateCategory(@PathVariable Integer id,
                                             @RequestBody CategoryDTO request) {
         categoryService.updateCategory(id, request);
         return ResponseEntity.ok("Update category successfully");
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/admin/category/{id}")
     public ResponseEntity<?> deleteCategory(@PathVariable Integer id) {
         if (categoryService.deleteCategory(id)) {
             return ResponseEntity.ok("Category deleted successfully");

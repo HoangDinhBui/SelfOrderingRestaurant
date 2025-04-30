@@ -33,7 +33,6 @@ public class OrderGraphQLController {
 
     private final OrderService orderService;
 
-
     private final PaymentService paymentService;
 
     // Query Resolvers
