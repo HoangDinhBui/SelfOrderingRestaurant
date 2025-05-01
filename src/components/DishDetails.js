@@ -161,7 +161,7 @@ const DishDetails = () => {
 
             <button
               onClick={handleAddToCart}
-              className="w-full py-3 bg-red-400 text-white rounded-lg font-medium hover:bg-red-500"
+              className="w-full py-3 !bg-red-400 text-white rounded-lg font-medium hover:bg-red-500"
             >
               Add to Cart - {(Number(price) * quantity).toLocaleString()} VND
             </button>
