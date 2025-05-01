@@ -9,6 +9,103 @@ const api = axios.create({
   },
 });
 
+// Request interceptor to add auth token to requests
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("accessToken");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Response interceptor to handle token refresh
+api.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  async (error) => {
+    const originalRequest = error.config;
+
+    // If the error is 401 and we haven't already tried to refresh the token
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+
+      try {
+        // Try to refresh the token
+        const refreshToken = localStorage.getItem("refreshToken");
+
+        if (!refreshToken) {
+          // No refresh token available, redirect to login
+          window.location.href = "/login";
+          return Promise.reject(error);
+        }
+
+        const response = await axios.post(
+          `${API_BASE_URL}/auth/refresh-token`,
+          {
+            refreshToken: refreshToken,
+          }
+        );
+
+        // Update tokens in localStorage
+        localStorage.setItem("accessToken", response.data.accessToken);
+        localStorage.setItem("refreshToken", response.data.refreshToken);
+
+        // Retry the original request with new token
+        originalRequest.headers.Authorization = `Bearer ${response.data.accessToken}`;
+        return axios(originalRequest);
+      } catch (refreshError) {
+        // If refresh fails, clear tokens and redirect to login
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        localStorage.removeItem("username");
+        localStorage.removeItem("userType");
+
+        window.location.href = "/login";
+        return Promise.reject(refreshError);
+      }
+    }
+
+    return Promise.reject(error);
+  }
+);
+
+// ===================== Auth ===================== //
+export const login = async (login, password) => {
+  const response = await api.post("/auth/login", { login, password });
+  return response.data;
+};
+
+export const googleLogin = async (tokenId) => {
+  const response = await api.post("/auth/staff/google-login", { tokenId });
+  return response.data;
+};
+
+export const logout = async () => {
+  const response = await api.post("/auth/logout");
+  // Clear local storage
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("refreshToken");
+  localStorage.removeItem("username");
+  localStorage.removeItem("userType");
+  return response.data;
+};
+
+export const forgotPassword = async (login) => {
+  const response = await api.post("/auth/forgot-password", { login });
+  return response.data;
+};
+
+export const refreshToken = async (refreshToken) => {
+  const response = await api.post("/auth/refresh-token", { refreshToken });
+  return response.data;
+};
+
 // ===================== Staff ===================== //
 export const getStaff = async () => {
   const response = await api.get("/Staff");
@@ -91,6 +188,23 @@ export const createOrder = async (orderData) => {
 export const updateOrderStatus = async (orderId, status) => {
   const response = await api.put(`/staff/orders/${orderId}/status`, { status });
   return response.data;
+};
+
+// Auth helper functions
+export const getCurrentUser = () => {
+  return {
+    username: localStorage.getItem("username"),
+    userType: localStorage.getItem("userType"),
+  };
+};
+
+export const isAuthenticated = () => {
+  return !!localStorage.getItem("accessToken");
+};
+
+export const hasRole = (role) => {
+  const userType = localStorage.getItem("userType");
+  return userType === role;
 };
 
 export default api;
