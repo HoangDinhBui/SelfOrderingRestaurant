@@ -70,7 +70,7 @@ function App() {
                 element={<RevenueManagement />}
               />
               <Route path="/admin-information" element={<AdminInformation />} />
-              <Route path="/admin-order" element={<AdminOrder />} />
+
             </Routes>
           </Router>
         </MenuProvider>
