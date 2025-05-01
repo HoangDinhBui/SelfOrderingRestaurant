@@ -1,8 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import Header from "../../../components/layout/Header";
 import Banner from "../../../components/ui/Banner";
 import { useNavigate } from "react-router-dom";
-import { useContext } from "react";
 import { CartContext } from "../../../context/CartContext";
 import axios from "axios";
 
@@ -51,10 +50,10 @@ const Home = () => {
     // Load last order info if available
     let orderInfo = localStorage.getItem("latestOrderInfo");
 
-    // Nếu không tìm thấy trong localStorage, thử tìm trong sessionStorage
+    // If not found in localStorage, try sessionStorage
     if (!orderInfo) {
       orderInfo = sessionStorage.getItem("latestOrderInfo");
-      // Nếu tìm thấy trong sessionStorage, khôi phục vào localStorage
+      // If found in sessionStorage, restore to localStorage
       if (orderInfo) {
         localStorage.setItem("latestOrderInfo", orderInfo);
       }
@@ -75,15 +74,19 @@ const Home = () => {
       setTableNumber(savedTableNumber);
     }
 
-    // Then fetch fresh data from the server
-    fetchCartData();
+    // Then fetch fresh data from the server if fetchCartData is available
+    if (typeof fetchCartData === "function") {
+      fetchCartData();
+    }
   }, [fetchCartData]);
 
   // Handler for Order Now button
   const handleOrderNow = async () => {
     try {
-      // Refresh cart data before navigating
-      await fetchCartData();
+      // Refresh cart data before navigating if fetchCartData is available
+      if (typeof fetchCartData === "function") {
+        await fetchCartData();
+      }
       // Navigate to Order page
       navigate("/order");
     } catch (err) {
@@ -91,6 +94,7 @@ const Home = () => {
     }
   };
 
+  // The sendNotification function
   const sendNotification = async (type, additionalMessage = "") => {
     setSendingNotification(true);
     setNotificationError(null);
@@ -108,11 +112,11 @@ const Home = () => {
 
       // Prepare notification request - match exactly what your DTO expects
       const notificationRequest = {
+        tableNumber: parseInt(tableNumber) || 1,
         customerId: customerInfo.id,
-        tableNumber: parseInt(tableNumber.replace(/\D/g, "")) || 1,
-        type: type,
         orderId: orderId,
-        content:
+        type: type, // This needs to be one of the allowed enum values
+        additionalMessage:
           additionalMessage || `${type} request from table ${tableNumber}`,
       };
 
@@ -136,7 +140,8 @@ const Home = () => {
       console.error("Error sending notification:", error);
       console.error("Error details:", error.response?.data);
       setNotificationError(
-        error.response?.data?.error ||
+        error.response?.data?.message ||
+          error.response?.data?.error ||
           "Failed to notify staff. Please try again."
       );
       return false;
@@ -145,103 +150,52 @@ const Home = () => {
     }
   };
 
+  // Call staff handler
   const handleCallStaff = async () => {
     const success = await sendNotification(
       "CALL_STAFF",
       "Customer needs assistance"
     );
     if (success) {
-      // You can optionally show a success message or toast
+      // Show a success message
       alert("Staff has been notified and will assist you shortly.");
     }
   };
 
+  // Payment handler
   const handleCallPayment = async () => {
     try {
       setProcessingPayment(true);
       setPaymentError(null);
       setPaymentSuccess(false);
 
-      // No notification sent here - we'll only send it after confirmation in the Payment component
+      // Send notification for payment request - FIXED TYPE
+      const notificationSuccess = await sendNotification(
+        "PAYMENT_REQUEST", // Changed from "CALL_PAYMENT"
+        "Customer is requesting payment"
+      );
 
+      if (!notificationSuccess) {
+        setPaymentError(
+          "Failed to notify staff for payment. Please try again."
+        );
+        setProcessingPayment(false);
+        return;
+      }
+
+      // Rest of the function remains the same...
       // Check for existing order information
       let orderInfo = localStorage.getItem("latestOrderInfo");
       if (!orderInfo) {
         orderInfo = sessionStorage.getItem("latestOrderInfo");
         if (orderInfo) {
-          localStorage.setItem("latestOrderInfo", JSON.stringify(orderInfo));
+          localStorage.setItem("latestOrderInfo", orderInfo);
         }
       }
 
-      let orderData;
-      if (orderInfo) {
-        try {
-          orderData = JSON.parse(orderInfo);
-        } catch (e) {
-          console.error("Error parsing order info:", e);
-        }
-      }
-
-      // If we have valid order data in storage
-      if (orderData && orderData.orderId) {
-        try {
-          const orderCheckResponse = await axios.get(
-            `${API_BASE_URL}/api/orders/${orderData.orderId}`
-          );
-
-          if (
-            orderCheckResponse.data &&
-            orderCheckResponse.data.status !== "PAID"
-          ) {
-            // Skip payment processing here and just navigate
-            navigate(`/payment?orderId=${orderData.orderId}`);
-            setProcessingPayment(false);
-            return;
-          }
-        } catch (error) {
-          console.log(
-            "Order check failed, will try to get recent order:",
-            error
-          );
-        }
-      }
-
-      // If no valid order in storage, get recent unpaid order
-      try {
-        const ordersResponse = await axios.get(
-          `${API_BASE_URL}/api/orders/recent?status=PENDING`
-        );
-
-        if (!ordersResponse.data || !ordersResponse.data.orderId) {
-          setPaymentError("No unpaid orders found");
-          setProcessingPayment(false);
-          return;
-        }
-
-        const orderId = ordersResponse.data.orderId;
-        const amount = ordersResponse.data.amount || 0;
-        const customerId = ordersResponse.data.customerId || "Guest";
-
-        // Save order info to storage
-        const paymentInfo = {
-          orderId: orderId,
-          amount: amount,
-          customerId: customerId,
-          createdAt: new Date().toISOString(),
-          isPaid: false,
-        };
-        localStorage.setItem("latestOrderInfo", JSON.stringify(paymentInfo));
-        sessionStorage.setItem("latestOrderInfo", JSON.stringify(paymentInfo));
-        setLastOrderInfo(paymentInfo);
-
-        // Navigate to payment page without processing payment
-        navigate(`/payment?orderId=${orderId}`);
-      } catch (error) {
-        console.error("Error fetching recent order:", error);
-        setPaymentError("Unpaid order not found. Please try again.");
-      } finally {
-        setProcessingPayment(false);
-      }
+      // Set payment success state after notification is sent
+      setPaymentSuccess(true);
+      setProcessingPayment(false);
     } catch (err) {
       console.error("Error in payment flow:", err);
       setPaymentError(
@@ -252,35 +206,9 @@ const Home = () => {
     }
   };
 
-  const processPayment = async (orderId, amount, customerId) => {
-    try {
-      const paymentResponse = await axios.post(
-        `${API_BASE_URL}/api/payment/process`,
-        {
-          orderId: orderId,
-          paymentMethod: "CASH", // hoặc "MOMO_QR", "VNPAY", v.v.
-          amount: amount,
-          customerId: customerId,
-          updateStatus: false, // QUAN TRỌNG: Không cập nhật trạng thái thành PAID
-        }
-      );
-
-      if (paymentResponse.data && paymentResponse.data.success) {
-        setPaymentSuccess(true);
-
-        // KHÔNG xóa thông tin đơn hàng, chỉ chuyển đến trang thanh toán
-        navigate(`/payment?orderId=${orderId}`);
-      } else {
-        setPaymentError(
-          paymentResponse.data?.message || "Failed to process payment"
-        );
-      }
-    } catch (error) {
-      console.error("Error processing payment:", error);
-      setPaymentError("Failed to process payment. Please try again.");
-    } finally {
-      setProcessingPayment(false);
-    }
+  const handleViewMenu = () => {
+    // Navigate to menu page
+    navigate("/menu");
   };
 
   return (
@@ -300,6 +228,13 @@ const Home = () => {
         {notificationError && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
             <p>{notificationError}</p>
+          </div>
+        )}
+
+        {/* Notification success message */}
+        {notificationSuccess && (
+          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
+            <p>Notification sent successfully!</p>
           </div>
         )}
 
@@ -368,7 +303,7 @@ const Home = () => {
         {/* View Menu - Order button */}
         <div className="w-full h-20 mt-1 relative col-span-2">
           <button
-            onClick={() => navigate("/menu")}
+            onClick={handleViewMenu}
             className="absolute inset-0 flex items-center justify-center gap-2 text-black font-bold rounded-lg overflow-hidden"
             style={{
               backgroundImage: "url('/src/assets/img/viewmenu.jpg')",
@@ -376,10 +311,10 @@ const Home = () => {
               backgroundPosition: "center",
             }}
           >
-            {/* Overlay mờ 20% */}
+            {/* Overlay with 20% opacity */}
             <div className="absolute inset-0 bg-[#D9D9D9] opacity-20 z-0" />
 
-            {/* Nội dung chính: icon + text */}
+            {/* Main content: icon + text */}
             <span
               className="text-xl relative z-10 flex items-center gap-2"
               style={{ color: "#747474" }}
@@ -399,7 +334,10 @@ const Home = () => {
           {/* Title and arrow button */}
           <div className="flex items-center space-x-2 mb-3">
             <h2 className="text-xl font-bold">Today's Special</h2>
-            <button className="text-black text-sm font-semibold flex items-center">
+            <button
+              className="text-black text-sm font-semibold flex items-center"
+              onClick={() => navigate("/specials")}
+            >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
@@ -420,7 +358,20 @@ const Home = () => {
           {/* Dish list */}
           <div className="grid grid-cols-2 gap-4">
             {specialStaff.map((dish, index) => (
-              <div key={index} className="flex flex-col items-start">
+              <div
+                key={index}
+                className="flex flex-col items-start cursor-pointer"
+                onClick={() => {
+                  navigate(
+                    `/menu/item/${dish.name.toLowerCase().replace(/\s+/g, "-")}`
+                  );
+                  // Optionally send notification when a special item is viewed
+                  sendNotification(
+                    "VIEW_SPECIAL",
+                    `Customer at table ${tableNumber} is viewing ${dish.name}`
+                  );
+                }}
+              >
                 {/* Dish image */}
                 <img
                   src={dish.image}

@@ -1,6 +1,6 @@
 import { useState, useEffect, useContext, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
-import { CartContext } from "../../../context/CartContext";
+import { CartContext } from "../../../context/CartContext"; // Adjust path as needed
 import axios from "axios";
 
 const Order = () => {
@@ -12,12 +12,15 @@ const Order = () => {
   const [error, setError] = useState(null);
   const [tableId, setTableId] = useState(1); // Default table ID
   const [processingOrder, setProcessingOrder] = useState(false);
+
+  // Get cart context with all methods
   const {
     cartItems,
     setCartItems,
     fetchCartData,
     updateItemQuantity,
     removeItem,
+    updateItemNotes,
   } = useContext(CartContext);
 
   // Base API URL to ensure consistency
@@ -29,10 +32,11 @@ const Order = () => {
     return `${API_BASE_URL}/api/images/${imageName}`;
   };
 
-  // Fetch cart items with better error handling and localStorage fallback
+  // Enhanced fetch cart items with GraphQL approach
   const fetchCartItems = useCallback(async () => {
     try {
       setLoading(true);
+      console.log("Fetching cart items...");
 
       // Try to load from localStorage first as a fallback
       const cachedCartData = localStorage.getItem("cartData");
@@ -45,52 +49,83 @@ const Order = () => {
             localItems = parsedData.items;
             // Use cached data immediately to avoid empty state flash
             setCartItems(localItems);
+            console.log("Using cached cart data initially", localItems);
           }
         } catch (e) {
           console.error("Error parsing cached cart data", e);
         }
       }
 
-      // Then fetch fresh data from the server
-      const response = await axios.get(`${API_BASE_URL}/api/orders/cart`);
+      // Use GraphQL to fetch cart data
+      try {
+        const graphqlQuery = {
+          query: `
+            query GetOrderCart {
+              orderCart {
+                items {
+                  dishId
+                  dishName
+                  quantity
+                  price
+                  notes
+                  dishImage
+                }
+                totalAmount
+              }
+            }
+          `,
+        };
 
-      if (response.data && Array.isArray(response.data.items)) {
-        setCartItems(response.data.items);
-        // Update localStorage with fresh data
-        localStorage.setItem("cartData", JSON.stringify(response.data));
-      } else if (localItems.length > 0) {
-        // Keep using localStorage data if API returns empty
-        console.log("API returned no items, using cached data");
-      } else {
-        // Set empty cart items array
-        setCartItems([]);
+        const graphqlResponse = await fetch(`${API_BASE_URL}/graphql`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include", // Important for session-based carts
+          body: JSON.stringify(graphqlQuery),
+        });
+
+        const result = await graphqlResponse.json();
+
+        if (!result.errors && result.data && result.data.orderCart) {
+          console.log(
+            "Successfully fetched cart via GraphQL",
+            result.data.orderCart
+          );
+          setCartItems(result.data.orderCart.items);
+          localStorage.setItem(
+            "cartData",
+            JSON.stringify(result.data.orderCart)
+          );
+        } else if (localItems.length > 0) {
+          // Keep using localStorage data if API returns empty
+          console.log("API returned no items, using cached data");
+        } else {
+          // Set empty cart items array
+          setCartItems([]);
+        }
+      } catch (graphqlError) {
+        console.error("GraphQL cart fetch failed:", graphqlError);
+
+        // If we have localStorage data and API call failed, keep using that
+        if (localItems.length > 0) {
+          console.log("Using cached data as fallback after API failures");
+        } else {
+          setError("Failed to load cart items. Please try again.");
+        }
       }
 
       setLoading(false);
     } catch (err) {
-      console.error("Error fetching cart items:", err);
+      console.error("Error in fetchCartItems:", err);
       setError("Failed to load cart items. Please try again.");
-
-      // If API call fails but we have localStorage data, use that
-      const cachedCartData = localStorage.getItem("cartData");
-      if (cachedCartData) {
-        try {
-          const parsedData = JSON.parse(cachedCartData);
-          if (parsedData && Array.isArray(parsedData.items)) {
-            setCartItems(parsedData.items);
-            setError(null); // Clear error since we have fallback data
-          }
-        } catch (e) {
-          console.error("Error parsing cached cart data", e);
-        }
-      }
-
       setLoading(false);
     }
   }, [setCartItems]);
 
   // On component mount, fetch the cart items ONCE
   useEffect(() => {
+    console.log("Order component mounted, fetching cart items");
     fetchCartItems();
 
     // Set up an interval to refresh cart data every 30 seconds
@@ -103,27 +138,13 @@ const Order = () => {
     return () => clearInterval(intervalId);
   }, [fetchCartItems]); // Remove cartItems from dependency array
 
-  // Debug - Log cart items when they change, but don't trigger API calls
+  // Call proper fetchCartData from context when component mounts
   useEffect(() => {
-    console.log("Current cart items:", cartItems);
-  }, [cartItems]);
-
-  // Call fetchCartData when component mounts
-  useEffect(() => {
+    console.log("Calling fetchCartData from context");
     fetchCartData();
   }, [fetchCartData]);
 
-  // Debug - Log cart items with notes when they change
-  useEffect(() => {
-    const itemsWithNotes = cartItems.filter(
-      (item) => item.notes && item.notes.trim() !== ""
-    );
-    if (itemsWithNotes.length > 0) {
-      console.log("Items with notes:", itemsWithNotes);
-    }
-  }, [cartItems]);
-
-  // Update quantity via API with proper error handling
+  // Update quantity via GraphQL with proper error handling
   const updateQuantity = async (id, delta) => {
     const item = cartItems.find((item) => item.dishId === id);
     if (!item) return;
@@ -137,7 +158,6 @@ const Order = () => {
         await updateItemQuantity(id, newQuantity);
       }
       // The context functions already update the state and localStorage
-      // eslint-disable-next-line no-unused-vars
     } catch (err) {
       setError("Failed to update quantity. Please try again.");
     }
@@ -149,45 +169,70 @@ const Order = () => {
     0
   );
 
-  // Updated createOrder function with better notification handling
+  // Updated createOrder function using GraphQL
   const createOrder = async () => {
     try {
       setProcessingOrder(true);
 
-      const orderData = {
-        tableId: tableId,
-        customerName: "Guest",
-        items: cartItems.map((item) => ({
-          dishId: item.dishId,
-          quantity: item.quantity,
-          notes: item.notes || "",
-        })),
-        notes: "",
+      // Prepare items for GraphQL input
+      const items = cartItems.map((item) => ({
+        dishId: item.dishId.toString(), // GraphQL expects string
+        quantity: item.quantity,
+        notes: item.notes || "",
+      }));
+
+      // Create the GraphQL mutation
+      const orderMutation = {
+        query: `
+          mutation CreateOrder($input: OrderInput!) {
+            createOrder(input: $input)
+          }
+        `,
+        variables: {
+          input: {
+            tableId: tableId.toString(), // GraphQL expects string
+            customerName: "Guest",
+            items: items,
+            notes: "",
+          },
+        },
       };
 
-      // Create the order first
-      const orderResponse = await axios.post(
-        `${API_BASE_URL}/api/orders`,
-        orderData
-      );
+      console.log("Sending GraphQL mutation:", orderMutation);
 
-      // Get the orderId from the response
-      let orderId;
-      if (orderResponse.data && orderResponse.data.orderId) {
-        orderId = orderResponse.data.orderId;
+      // Execute the GraphQL mutation
+      const response = await fetch(`${API_BASE_URL}/graphql`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include", // Important for session cookies
+        body: JSON.stringify(orderMutation),
+      });
 
+      const result = await response.json();
+      console.log("GraphQL response:", result);
+
+      if (result.errors) {
+        throw new Error(result.errors[0].message || "Error creating order");
+      }
+
+      // Get the orderId from the response (result.data.createOrder returns the orderId as Integer)
+      const orderId = result.data.createOrder;
+
+      if (orderId) {
         // Store the order information in localStorage for payment processing
         const paymentInfo = {
           orderId: orderId,
           amount: totalPrice,
-          customerId: orderResponse.data.customerId || "Guest",
+          customerId: 1, // Default to Guest ID
           createdAt: new Date().toISOString(),
           isPaid: false,
         };
         localStorage.setItem("latestOrderInfo", JSON.stringify(paymentInfo));
         sessionStorage.setItem("latestOrderInfo", JSON.stringify(paymentInfo));
 
-        // Create notification for staff about the new order - IMPROVED ERROR HANDLING
+        // Create notification for staff about the new order
         try {
           // Debug info to console
           console.log("Backend NotificationRequestDTO expects:", {
@@ -199,21 +244,9 @@ const Order = () => {
           });
 
           // Make sure customerId is an integer, not a string
-          const customerId =
-            typeof orderResponse.data.customerId === "number"
-              ? orderResponse.data.customerId
-              : 1; // Default to 1 if not available
+          const customerId = 1; // Default to 1 for Guest
 
-          // Log data types for debugging
-          console.log("Sending data types:", {
-            tableNumber: typeof Number(tableId),
-            customerId: typeof Number(customerId),
-            orderId: typeof Number(orderId),
-            type: typeof "NEW_ORDER",
-            additionalMessage: typeof `New order placed for Table ${tableId}`,
-          });
-
-          // Try with primary notification data
+          // Create notification using REST API (keep this part if GraphQL doesn't support notifications yet)
           const notificationData = {
             tableNumber: Number(tableId),
             customerId: Number(customerId),
@@ -224,62 +257,11 @@ const Order = () => {
 
           console.log("Sending notification data:", notificationData);
 
-          try {
-            await axios.post(
-              `${API_BASE_URL}/api/notifications`,
-              notificationData
-            );
-            console.log("Order notification sent successfully");
-          } catch (primaryError) {
-            console.error("Primary notification format failed:", primaryError);
-
-            // Try alternative formats if the primary one fails
-            const alternativeFormats = [
-              { type: "new_order" }, // Try lowercase
-              { type: "CALL_STAFF" }, // Try a different enum value
-              { type: "NEW_ORDER", additionalMessage: "New order created" }, // Different message
-              { type: "ORDER_CREATED" }, // Try alternative name
-            ];
-
-            // Try each alternative format
-            let notificationSent = false;
-
-            for (const format of alternativeFormats) {
-              if (notificationSent) break;
-
-              try {
-                const alternativeData = {
-                  ...notificationData,
-                  ...format,
-                };
-
-                console.log("Trying alternative format:", alternativeData);
-
-                await axios.post(
-                  `${API_BASE_URL}/api/notifications`,
-                  alternativeData
-                );
-
-                console.log(
-                  "Alternative notification format succeeded:",
-                  format
-                );
-                notificationSent = true;
-              } catch (alternativeError) {
-                console.error(
-                  `Alternative format ${format.type} failed:`,
-                  alternativeError
-                );
-              }
-            }
-
-            // If all alternatives failed, just log the error
-            if (!notificationSent) {
-              console.error(
-                "All notification formats failed. Order created but staff not notified."
-              );
-            }
-          }
+          await axios.post(
+            `${API_BASE_URL}/api/notifications`,
+            notificationData
+          );
+          console.log("Order notification sent successfully");
         } catch (notificationError) {
           console.error(
             "Failed to send order notification:",
@@ -306,7 +288,7 @@ const Order = () => {
       }, 3000);
     } catch (err) {
       console.error("Error in order/payment flow:", err);
-      setError("Failed to process your order. Please try again.");
+      setError(`Failed to process your order: ${err.message}`);
       setShowModal(false);
     } finally {
       setProcessingOrder(false);
@@ -617,7 +599,7 @@ const Order = () => {
               }}
             />
             <p className="text-center text-gray-700 mb-6">
-              ARE YOU SURE YOU WANT TO ORDER THESE Staff?
+              ARE YOU SURE YOU WANT TO ORDER THESE ITEMS?
             </p>
             <div className="flex justify-center space-x-4">
               <button

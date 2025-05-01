@@ -1,9 +1,9 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { ApolloClient, InMemoryCache, ApolloProvider } from "@apollo/client";
 import { MenuProvider } from "./context/MenuContext";
 import { CartProvider } from "./context/CartContext";
 import "./axiosConfig";
-import '@fortawesome/fontawesome-free/css/all.min.css';
-
+import "@fortawesome/fontawesome-free/css/all.min.css";
 
 // Customer Pages
 import Home from "./pages/Customer/Home/Home";
@@ -28,37 +28,55 @@ import TableManagement from "./pages/Staff/TableManagement/TableManagement";
 import TableManagementAdmin from "./pages/Admin/TableManagement/TableManagement";
 import NotificationManagementAdmin from "./pages/Admin/NotificationManagement/NotificationManagement";
 import StaffManagement from "./pages/Admin/StaffManagement/StaffManagement";
+
+// Create Apollo Client
+const client = new ApolloClient({
+  uri: "http://localhost:8080/graphql", // Replace with your actual GraphQL endpoint
+  cache: new InMemoryCache(),
+  defaultOptions: {
+    watchQuery: {
+      fetchPolicy: "network-only",
+    },
+  },
+});
+
 function App() {
   return (
-    <CartProvider>
-      <MenuProvider>
-        <Router>
-          <Routes>
-            {/* Customer Routes */}
-            {/* <Route path="/" element={<Home />} />
-            <Route path="/menu" element={<Menu />} />
-            <Route path="/order" element={<Order />} />
-            <Route path="/view/:id" element={<ViewItem />} />
-            <Route path="/note/:id" element={<Note />} />
-            <Route path="/payment" element={<Payment />} />
-            <Route path="/evaluate" element={<Evaluate />} /> */}
-            
-            {/* Staff/Admin Routes */}
-            {/* <Route path="/login" element={<Login />} />
-            <Route path="/staff-information" element={<StaffInformation />} />
-            <Route path="/notification-management" element={<NotificationManagement />} />
-            <Route path="/dish-management" element={<DishManagement />} />
-            <Route path="/table-management" element={<TableManagement />} />
-            <Route path="/menu-management" element={<MenuManagement />} />
-            <Route path="/revenue-management" element={<RevenueManagement />} />
-            <Route path="/admin-information" element={<AdminInformation />} />
-            <Route path="/admin-order" element={<AdminOrder />} /> */}
-        
-              <Route path="/" element={<Menu/>} />
-          </Routes>
-        </Router>
-      </MenuProvider>
-    </CartProvider>
+    <ApolloProvider client={client}>
+      <CartProvider>
+        <MenuProvider>
+          <Router>
+            <Routes>
+              {/* Customer Routes */}
+              <Route path="/" element={<Home />} />
+              <Route path="/menu" element={<Menu />} />
+              <Route path="/order" element={<Order />} />
+              <Route path="/view-item/:id" element={<ViewItem />} />
+              <Route path="/note/:id" element={<Note />} />
+              <Route path="/payment" element={<Payment />} />
+              <Route path="/evaluate" element={<Evaluate />} />
+
+              {/* Staff/Admin Routes */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/staff-information" element={<StaffInformation />} />
+              <Route
+                path="/notification-management"
+                element={<NotificationManagement />}
+              />
+              <Route path="/dish-management" element={<DishManagement />} />
+              <Route path="/table-management" element={<TableManagement />} />
+              <Route path="/menu-management" element={<MenuManagement />} />
+              <Route
+                path="/revenue-management"
+                element={<RevenueManagement />}
+              />
+              <Route path="/admin-information" element={<AdminInformation />} />
+              <Route path="/admin-order" element={<AdminOrder />} />
+            </Routes>
+          </Router>
+        </MenuProvider>
+      </CartProvider>
+    </ApolloProvider>
   );
 }
 
