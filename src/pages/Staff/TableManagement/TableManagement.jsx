@@ -1,6 +1,7 @@
-import React, { useState } from "react";
-import MenuBar from "../../../components/layout/MenuBar.jsx";
+import React, { useState, useEffect, useCallback } from "react";
 import MenuBarStaff from "../../../components/layout/MenuBar_Staff.jsx";
+import axios from "axios";
+import { useMemo } from "react";
 
 const TableManagementStaff = () => {
   const [selectedTable, setSelectedTable] = useState(null);
@@ -11,62 +12,674 @@ const TableManagementStaff = () => {
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [isNotificationModalOpen, setIsNotificationModalOpen] = useState(false);
+  const [tables, setTables] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [authError, setAuthError] = useState(null);
+  const [tableNotifications, setTableNotifications] = useState([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [notificationsError, setNotificationsError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
-  // Notification data
-  const [notifications] = useState([
-    {
-      id: 1,
-      type: "Call staff",
-      time: "18:30:00",
-      date: "10/10/2024",
-      table: "01",
-    },
-    {
-      id: 2,
-      type: "Request",
-      time: "16:00:00",
-      date: "10/10/2024",
-      table: "01",
-    },
-    {
-      id: 3,
-      type: "Payment request",
-      time: "16:30:00",
-      date: "10/10/2024",
-      table: "02",
-    },
-    {
-      id: 4,
-      type: "Request",
-      time: "16:00:00",
-      date: "10/10/2024",
-      table: "03",
-    },
-    {
-      id: 5,
-      type: "Request",
-      time: "16:00:00",
-      date: "10/10/2024",
-      table: "04",
-    },
-    {
-      id: 6,
-      type: "Request",
-      time: "16:00:00",
-      date: "10/10/2024",
-      table: "05",
-    },
-    // Add more notifications as needed
-  ]);
+  // New states for order data
+  const [orders, setOrders] = useState([]);
+  const [currentOrder, setCurrentOrder] = useState(null);
+  const [orderLoading, setOrderLoading] = useState(false);
+  const [orderError, setOrderError] = useState(null);
 
-  const toggleNotificationModal = (e, table) => {
+  // Set up axios interceptor for authentication
+  useEffect(() => {
+    // Add request interceptor
+    const requestInterceptor = axios.interceptors.request.use(
+      (config) => {
+        // Get token from localStorage
+        const token = localStorage.getItem("accessToken");
+
+        // If token exists, add to headers
+        if (token) {
+          config.headers["Authorization"] = `Bearer ${token}`;
+        }
+        return config;
+      },
+      (error) => {
+        return Promise.reject(error);
+      }
+    );
+
+    // Add response interceptor to handle auth errors
+    const responseInterceptor = axios.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        const originalRequest = error.config;
+
+        // If error is 401 or 403 and we haven't retried yet
+        if (
+          (error.response?.status === 401 || error.response?.status === 403) &&
+          !originalRequest._retry
+        ) {
+          originalRequest._retry = true;
+
+          try {
+            // Try to get a new token if you have a refresh token mechanism
+            // const refreshToken = localStorage.getItem("refreshToken");
+            // const response = await axios.post("/api/auth/refresh", { refreshToken });
+            // localStorage.setItem("accessToken", response.data.accessToken);
+
+            // Redirect to login if needed
+            setAuthError("Your session has expired. Please log in again.");
+            // Optional: redirect to login
+            // window.location.href = "/login";
+
+            return Promise.reject(error);
+          } catch (refreshError) {
+            return Promise.reject(refreshError);
+          }
+        }
+        return Promise.reject(error);
+      }
+    );
+
+    // Clean up interceptors when component unmounts
+    return () => {
+      axios.interceptors.request.eject(requestInterceptor);
+      axios.interceptors.response.eject(responseInterceptor);
+    };
+  }, []);
+
+  // GraphQL request function
+  const executeGraphQL = async (query, variables = {}) => {
+    try {
+      const response = await axios.post(
+        "http://localhost:8080/graphql",
+        {
+          query,
+          variables,
+        },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (response.data.errors) {
+        throw new Error(response.data.errors[0].message);
+      }
+
+      return response.data.data;
+    } catch (error) {
+      console.error("GraphQL Error:", error);
+      throw error;
+    }
+  };
+
+  // API object for REST requests
+  const API = {
+    get: (url) => axios.get(`http://localhost:8080${url}`),
+    post: (url, data) => axios.post(`http://localhost:8080${url}`, data),
+    put: (url, data) => axios.put(`http://localhost:8080${url}`, data),
+    delete: (url) => axios.delete(`http://localhost:8080${url}`),
+  };
+
+  // Fetch all orders using GraphQL
+  const fetchOrdersGraphQL = useCallback(async () => {
+    try {
+      const query = `
+        query GetAllOrders {
+          orders {
+            orderId
+            customerName
+            tableNumber
+            status
+            totalAmount
+            paymentStatus
+            items {
+              dishId
+              dishName
+              quantity
+              price
+              notes
+            }
+          }
+        }
+      `;
+
+      const result = await executeGraphQL(query);
+
+      if (!result || !result.orders) {
+        throw new Error("Invalid GraphQL response structure");
+      }
+
+      return result.orders;
+    } catch (err) {
+      console.error("Error fetching orders via GraphQL:", err);
+      throw err;
+    }
+  }, []);
+
+  // Fetch all orders
+  const fetchOrders = useCallback(async () => {
+    setOrderLoading(true);
+    setOrderError(null);
+
+    try {
+      const ordersData = await fetchOrdersGraphQL();
+      console.log("Orders from GraphQL:", ordersData);
+      setOrders(ordersData);
+
+      setTables((prevTables) =>
+        prevTables.map((table) => {
+          const tableOrders = ordersData.filter(
+            (order) => order.tableNumber?.toString() === table.id.toString()
+          );
+          return { ...table, orders: tableOrders };
+        })
+      );
+
+      return ordersData;
+    } catch (err) {
+      console.error("GraphQL orders fetch failed:", err);
+      try {
+        const response = await API.get("/api/orders");
+        console.log("Orders from REST:", response.data);
+        setOrders(response.data);
+
+        setTables((prevTables) =>
+          prevTables.map((table) => {
+            const tableOrders = response.data.filter(
+              (order) => order.tableNumber?.toString() === table.id.toString()
+            );
+            return { ...table, orders: tableOrders };
+          })
+        );
+
+        return response.data;
+      } catch (restErr) {
+        console.error("REST orders fetch also failed:", restErr);
+        setOrderError("Failed to load orders data");
+        return [];
+      }
+    } finally {
+      setOrderLoading(false);
+    }
+  }, [fetchOrdersGraphQL]);
+
+  // Fetch order by ID using GraphQL
+  const fetchOrderByIdGraphQL = useCallback(async (orderId) => {
+    try {
+      const query = `
+        query GetOrder($orderId: ID!) {
+          order(orderId: $orderId) {
+            orderId
+            customerName
+            tableNumber
+            status
+            totalAmount
+            paymentStatus
+            items {
+              dishId
+              dishName
+              quantity
+              price
+              notes
+            }
+          }
+        }
+      `;
+
+      const variables = {
+        orderId: orderId.toString(),
+      };
+
+      const result = await executeGraphQL(query, variables);
+
+      if (!result || !result.order) {
+        throw new Error("Invalid GraphQL response structure");
+      }
+
+      return result.order;
+    } catch (err) {
+      console.error(`Error fetching order ${orderId} via GraphQL:`, err);
+      throw err;
+    }
+  }, []);
+
+  // Fetch order by ID
+  const fetchOrderById = useCallback(
+    async (orderId) => {
+      if (!orderId) {
+        console.error("Cannot fetch order without orderId");
+        setOrderError("Invalid order ID");
+        return null;
+      }
+
+      setOrderLoading(true);
+      setOrderError(null);
+
+      try {
+        // Try GraphQL first
+        const orderData = await fetchOrderByIdGraphQL(orderId);
+        setCurrentOrder(orderData);
+        return orderData;
+      } catch (err) {
+        console.error("GraphQL order fetch failed:", err);
+
+        try {
+          // Fall back to REST API
+          const response = await API.get(`/api/orders/${orderId}`);
+          setCurrentOrder(response.data);
+          return response.data;
+        } catch (restErr) {
+          console.error("REST order fetch also failed:", restErr);
+          setOrderError(`Failed to load order #${orderId}`);
+          return null;
+        }
+      } finally {
+        setOrderLoading(false);
+      }
+    },
+    [fetchOrderByIdGraphQL]
+  );
+
+  // Fetch orders by table ID
+  const fetchOrdersByTableId = useCallback(async (tableId) => {
+    if (!tableId) {
+      console.error("Cannot fetch orders without tableId");
+      setOrderError("Invalid table ID");
+      return [];
+    }
+
+    setOrderLoading(true);
+    setOrderError(null);
+
+    try {
+      // For now, there's no GraphQL endpoint for this specific operation,
+      // so we'll use REST directly
+      const response = await API.get(`/api/staff/tables/${tableId}/orders`);
+      return response.data || [];
+    } catch (err) {
+      console.error(`Error fetching orders for table ${tableId}:`, err);
+      setOrderError(`Failed to load orders for table #${tableId}`);
+      return [];
+    } finally {
+      setOrderLoading(false);
+    }
+  }, []);
+
+  // Update order status using GraphQL
+  const updateOrderStatusGraphQL = useCallback(async (orderId, status) => {
+    try {
+      const mutation = `
+        mutation UpdateOrderStatus($orderId: ID!, $input: UpdateOrderStatusInput!) {
+          updateOrderStatus(orderId: $orderId, input: $input)
+        }
+      `;
+
+      const variables = {
+        orderId: orderId.toString(),
+        input: {
+          status: status,
+        },
+      };
+
+      const result = await executeGraphQL(mutation, variables);
+      return result.updateOrderStatus;
+    } catch (err) {
+      console.error("Error updating order status with GraphQL:", err);
+      throw err;
+    }
+  }, []);
+
+  // Update order status
+  const updateOrderStatus = useCallback(
+    async (orderId, status) => {
+      if (!orderId) {
+        console.error("Cannot update order without orderId");
+        setOrderError("Invalid order ID");
+        return false;
+      }
+
+      setOrderLoading(true);
+      setOrderError(null);
+
+      try {
+        // Try GraphQL first
+        const result = await updateOrderStatusGraphQL(orderId, status);
+
+        // Update local state
+        setOrders((prevOrders) =>
+          prevOrders.map((order) =>
+            order.orderId === orderId ? { ...order, status } : order
+          )
+        );
+
+        return result;
+      } catch (err) {
+        console.error("GraphQL order status update failed:", err);
+
+        try {
+          // Fall back to REST API
+          const response = await API.put(`/api/orders/${orderId}/status`, {
+            status,
+          });
+
+          // Update local state
+          setOrders((prevOrders) =>
+            prevOrders.map((order) =>
+              order.orderId === orderId ? { ...order, status } : order
+            )
+          );
+
+          return true;
+        } catch (restErr) {
+          console.error("REST order status update also failed:", restErr);
+          setOrderError(`Failed to update status for order #${orderId}`);
+          return false;
+        }
+      } finally {
+        setOrderLoading(false);
+      }
+    },
+    [updateOrderStatusGraphQL]
+  );
+
+  // Delete order using GraphQL
+  const deleteOrderGraphQL = useCallback(async (orderId) => {
+    try {
+      const mutation = `
+      mutation DeleteOrder($orderId: String!) {
+        deleteOrder(orderId: $orderId)
+      }
+    `;
+
+      const variables = {
+        orderId: orderId.toString(),
+      };
+
+      const result = await executeGraphQL(mutation, variables);
+
+      if (!result || !result.deleteOrder) {
+        throw new Error("Invalid GraphQL response structure");
+      }
+
+      return result.deleteOrder;
+    } catch (err) {
+      console.error(`Error deleting order ${orderId} via GraphQL:`, err);
+      throw err;
+    }
+  }, []);
+
+  // Delete order
+  const deleteOrder = useCallback(
+    async (orderId) => {
+      if (!orderId) {
+        console.error("Cannot delete order without orderId");
+        setOrderError("Invalid order ID");
+        return false;
+      }
+
+      setOrderLoading(true);
+      setOrderError(null);
+
+      try {
+        // Gọi mutation deleteOrder qua GraphQL
+        await deleteOrderGraphQL(orderId);
+
+        // Làm mới danh sách orders
+        const updatedOrders = await fetchOrders();
+
+        // Cập nhật selectedTable.orders nếu đang mở modal
+        if (selectedTable) {
+          const tableOrders = updatedOrders.filter(
+            (order) =>
+              order.tableNumber.toString() === selectedTable.id.toString()
+          );
+          setSelectedTable((prev) => ({
+            ...prev,
+            orders: tableOrders,
+          }));
+        }
+
+        // Làm mới danh sách tables qua REST API
+        const response = await API.get("/api/staff/tables");
+        if (response.data) {
+          const mappedTables = response.data.map((table) => ({
+            id: table.table_id,
+            status: table.status?.toLowerCase() || "available",
+            capacity: table.capacity,
+            orders: [],
+          }));
+          setTables(mappedTables);
+        }
+
+        return true;
+      } catch (err) {
+        console.error(`Failed to delete order #${orderId}:`, err);
+        setOrderError(`Failed to delete order #${orderId}`);
+        return false;
+      } finally {
+        setOrderLoading(false);
+      }
+    },
+    [deleteOrderGraphQL, fetchOrders, selectedTable]
+  );
+
+  // Fetch tables when component mounts
+  useEffect(() => {
+    const fetchTables = async () => {
+      try {
+        setLoading(true);
+
+        // Use REST API for tables
+        const response = await API.get("/api/staff/tables");
+
+        if (!response.data) {
+          throw new Error("No tables data returned from API");
+        }
+
+        // Map the response to table structure
+        const mappedTables = response.data.map((table) => ({
+          id: table.table_id,
+          status: table.status?.toLowerCase() || "available",
+          capacity: table.capacity,
+          orders: [], // Initialize with empty orders array
+        }));
+
+        setTables(mappedTables);
+
+        // Now fetch all orders and associate them with tables
+        await fetchOrders();
+
+        setLoading(false);
+      } catch (err) {
+        console.error("Error fetching tables:", err);
+
+        if (err.response?.status === 403) {
+          setError(
+            "You don't have permission to access this resource. Please check your authentication."
+          );
+        } else {
+          setError("Failed to load tables. Please try again later.");
+        }
+
+        setLoading(false);
+      }
+    };
+
+    fetchTables();
+  }, [fetchOrders]);
+
+  const ordersByTable = useMemo(() => {
+    return orders.reduce((acc, order) => {
+      if (order.tableNumber) {
+        const tableId = order.tableNumber.toString();
+        if (!acc[tableId]) {
+          acc[tableId] = [];
+        }
+        acc[tableId].push(order);
+      }
+      return acc;
+    }, {});
+  }, [orders]);
+
+  useEffect(() => {
+    if (orders.length === 0 || tables.length === 0) return;
+
+    const updatedTables = tables.map((table) => {
+      const tableId = table.id.toString();
+      const tableOrders = ordersByTable[tableId] || [];
+      let updatedStatus = table.status;
+
+      console.log(`Table ${tableId}:`, {
+        orders: tableOrders,
+        currentStatus: table.status,
+      });
+
+      if (tableOrders.length === 0) {
+        updatedStatus = "available";
+      } else {
+        // Check if ANY orders for this table are unpaid
+        const hasUnpaidOrders = tableOrders.some(
+          (order) => order.paymentStatus?.toUpperCase() !== "PAID"
+        );
+
+        if (hasUnpaidOrders) {
+          updatedStatus = "occupied";
+        } else {
+          updatedStatus = "available";
+        }
+      }
+
+      if (
+        updatedStatus !== table.status ||
+        JSON.stringify(table.orders) !== JSON.stringify(tableOrders)
+      ) {
+        return {
+          ...table,
+          status: updatedStatus,
+          orders: tableOrders,
+        };
+      }
+      return table;
+    });
+
+    if (JSON.stringify(updatedTables) !== JSON.stringify(tables)) {
+      setTables(updatedTables);
+    }
+  }, [ordersByTable, tables]);
+
+  // Function to fetch notifications for a specific table
+  const fetchTableNotifications = async (tableId) => {
+    if (!tableId) {
+      console.error("Cannot fetch notifications for undefined table ID");
+      setNotificationsError("Invalid table selected");
+      return;
+    }
+
+    try {
+      setNotificationsLoading(true);
+      setNotificationsError(null);
+
+      // Attempt to get real notifications
+      try {
+        const response = await API.get(`/api/notifications/table/${tableId}`);
+        setTableNotifications(response.data);
+      } catch (err) {
+        console.error("Failed to fetch real notifications, using mock:", err);
+
+        // Fall back to mock notification data
+        const mockNotifications = [
+          {
+            notificationId: 1,
+            title: "Assistance Needed",
+            content: `Customer at Table ${tableId} requested assistance`,
+            isRead: false,
+            type: "ASSISTANCE",
+            createAt: new Date().toISOString(),
+            tableNumber: tableId,
+            orderId: 100 + parseInt(tableId),
+          },
+          {
+            notificationId: 2,
+            title: "Order Ready",
+            content: `Order for Table ${tableId} is ready to be served`,
+            isRead: true,
+            type: "ORDER_READY",
+            createAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
+            tableNumber: tableId,
+            orderId: 100 + parseInt(tableId),
+          },
+        ];
+
+        setTableNotifications(mockNotifications);
+      }
+
+      setNotificationsLoading(false);
+    } catch (err) {
+      console.error(`Error fetching notifications for table ${tableId}:`, err);
+      setNotificationsError("Failed to load notifications. Please try again.");
+      setTableNotifications([]);
+      setNotificationsLoading(false);
+    }
+  };
+
+  // Mark notification as read
+  const markNotificationAsRead = async (notificationId) => {
+    if (!notificationId) {
+      console.error("Cannot mark undefined notification as read");
+      return;
+    }
+
+    try {
+      await API.put(`/api/notifications/${notificationId}/read`);
+
+      // Update local state to mark notification as read
+      setTableNotifications(
+        tableNotifications.map((notification) =>
+          notification.notificationId === notificationId
+            ? { ...notification, isRead: true }
+            : notification
+        )
+      );
+    } catch (err) {
+      console.error(
+        `Error marking notification ${notificationId} as read:`,
+        err
+      );
+    }
+  };
+
+  // Open notification modal and fetch notifications for that table
+  const toggleNotificationModal = async (e, table) => {
     e.stopPropagation();
+    if (!table || !table.id) {
+      console.error("Cannot toggle notification modal for undefined table");
+      return;
+    }
+
     setSelectedTable(table);
+
+    // Only fetch notifications if we're opening the modal
+    if (!isNotificationModalOpen) {
+      await fetchTableNotifications(table.id);
+    }
+
     setIsNotificationModalOpen(!isNotificationModalOpen);
   };
 
-  const handleSelectTable = (table) => {
+  const handleSelectTable = async (table) => {
     setSelectedTable(table);
+
+    // If table is occupied, fetch orders for it
+    if (table.status === "occupied") {
+      const tableOrders = await fetchOrdersByTableId(table.id);
+
+      // Update the selected table with the orders
+      setSelectedTable((prev) => ({
+        ...prev,
+        orders: tableOrders,
+      }));
+    }
   };
 
   const handleShowDishModal = (table) => {
@@ -79,9 +692,51 @@ const TableManagementStaff = () => {
     setIsPaymentModalOpen(true);
   };
 
-  const handlePaymentSuccess = () => {
-    setIsPaymentModalOpen(false);
-    setIsSuccessModalOpen(true);
+  const handlePaymentSuccess = async () => {
+    if (!selectedTable || !selectedTable.id) {
+      console.error("Cannot update status for undefined table");
+      return;
+    }
+
+    try {
+      // Update table status
+      await API.put(`/api/staff/tables/${selectedTable.id}`, {
+        status: "AVAILABLE",
+      });
+
+      // Update orders payment status
+      if (selectedTable.orders && selectedTable.orders.length > 0) {
+        for (const order of selectedTable.orders) {
+          try {
+            await API.put(`/api/orders/${order.orderId}/payment`, {
+              paymentStatus: "PAID",
+            });
+          } catch (err) {
+            console.error(
+              `Error updating payment for order ${order.orderId}:`,
+              err
+            );
+          }
+        }
+      }
+
+      // Update local state
+      setTables((prevTables) =>
+        prevTables.map((table) =>
+          table.id === selectedTable.id
+            ? { ...table, status: "available", orders: [] }
+            : table
+        )
+      );
+
+      setIsPaymentModalOpen(false);
+      setIsSuccessModalOpen(true);
+    } catch (err) {
+      console.error("Error updating table status:", err);
+      // Show payment success anyway, but log the error
+      setIsPaymentModalOpen(false);
+      setIsSuccessModalOpen(true);
+    }
   };
 
   const handleShowEmptyTableModal = () => {
@@ -93,148 +748,496 @@ const TableManagementStaff = () => {
     setIsConfirmModalOpen(true);
   };
 
-  const totalAmount =
-    selectedTable?.Staff?.reduce(
-      (sum, dish) => sum + dish.price * dish.quantity,
-      0
-    ) || 0;
+  // Calculate total from order items
+  const calculateTotalFromOrders = (orders) => {
+    if (!orders || orders.length === 0) return 0;
 
-  const tables = [
-    {
-      id: 1,
-      status: "occupied",
-      Staff: [
-        {
-          name: "Huitres Fraiches (6PCS)",
-          quantity: 1,
-          price: 200000,
-          status: "Complete",
-          image: "../../../../assets/img/Mon1.jpg",
-        },
-        {
-          name: "Huitres Gratinees (6PCS)",
-          quantity: 1,
-          price: 250000,
-          status: "Complete",
-          image: "../../../assets/img/Mon1.jpg",
-        },
-        {
-          name: "Tartare De Saumon",
-          quantity: 1,
-          price: 180000,
-          status: "Complete",
-          image: "../../../assets/img/Mon1.jpg",
-        },
-        {
-          name: "Salad Gourmande",
-          quantity: 1,
-          price: 120000,
-          status: "Complete",
-          image: "../../../assets/img/Mon1.jpg",
-        },
-        {
-          name: "Salad Landaise",
-          quantity: 1,
-          price: 150000,
-          status: "Pending",
-          image: "../../../assets/img/",
-        },
-        {
-          name: "Magret De Canard",
-          quantity: 1,
-          price: 300000,
-          status: "Pending",
-          image: "../../../assets/img/Mon1.jpg",
-        },
-      ],
-      capacity: 8,
-    },
-    {
-      id: 2,
-      status: "available",
-      Staff: [],
-      capacity: 4,
-    },
-    {
-      id: 3,
-      status: "occupied",
-      Staff: [
-        {
-          name: "Foie Gras",
-          quantity: 2,
-          price: 350000,
-          status: "Complete",
-          image: "../../../assets/img/Mon2.jpg",
-        },
-        {
-          name: "Bouillabaisse",
-          quantity: 1,
-          price: 280000,
-          status: "Complete",
-          image: "../../../assets/img/Mon3.jpg",
-        },
-        {
-          name: "Ratatouille",
-          quantity: 1,
-          price: 120000,
-          status: "Pending",
-          image: "../../../assets/img/Mon4.jpg",
-        },
-        {
-          name: "Crème Brûlée",
-          quantity: 2,
-          price: 90000,
-          status: "Pending",
-          image: "../../../assets/img/Mon5.jpg",
-        },
-      ],
-      capacity: 6,
-    },
-    {
-      id: 4,
-      status: "occupied",
-      Staff: [
-        {
-          name: "Steak Frites",
-          quantity: 3,
-          price: 220000,
-          status: "Complete",
-          image: "../../../assets/img/Mon6.jpg",
-        },
-        {
-          name: "Moules Marinières",
-          quantity: 1,
-          price: 180000,
-          status: "Complete",
-          image: "../../../assets/img/Mon7.jpg",
-        },
-        {
-          name: "Tarte Tatin",
-          quantity: 1,
-          price: 110000,
-          status: "Pending",
-          image: "../../../assets/img/Mon8.jpg",
-        },
-        {
-          name: "Escargots",
-          quantity: 1,
-          price: 150000,
-          status: "Complete",
-          image: "../../../assets/img/Mon9.jpg",
-        },
-        {
-          name: "French Onion Soup",
-          quantity: 2,
-          price: 80000,
-          status: "Complete",
-          image: "../../../assets/img/Mon10.jpg",
-        },
-      ],
-      capacity: 8,
-    },
-  ];
+    return orders.reduce((sum, order) => {
+      return sum + (parseFloat(order.totalAmount) || 0);
+    }, 0);
+  };
+
+  // Calculate total from order items
+  const totalAmount = selectedTable?.orders
+    ? calculateTotalFromOrders(selectedTable.orders)
+    : 0;
 
   const emptyTables = tables.filter((table) => table.status === "available");
+
+  // Example of a properly rendering list that uses unique keys
+  const renderTableList = () => {
+    if (loading) return <div className="loading">Loading tables...</div>;
+    if (error) return <div className="error">{error}</div>;
+
+    return (
+      <div className="tables-grid">
+        {tables.map((table) => (
+          <div
+            key={`table-${table.id}`}
+            className={`table-item ${table.status}`}
+            onClick={() => handleSelectTable(table)}
+          >
+            <h3>Table {table.id}</h3>
+            <p>Status: {table.status}</p>
+            <p>Capacity: {table.capacity}</p>
+
+            {/* Show notification bell icon */}
+            <button
+              onClick={(e) => toggleNotificationModal(e, table)}
+              className="notification-button"
+            >
+              🔔
+            </button>
+
+            {table.orders && table.orders.length > 0 && (
+              <div className="table-orders">
+                <h4>Orders:</h4>
+                <ul>
+                  {table.orders.map((order) => (
+                    <li key={order.orderId}>
+                      Order #{order.orderId}: {order.status}
+                      {order.items && order.items.length > 0 && (
+                        <ul>
+                          {order.items.map((item, index) => (
+                            <li key={`${order.orderId}-item-${index}`}>
+                              {item.dishName} x {item.quantity}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  useEffect(() => {
+    const itemsPerPage = 5;
+    const totalPages = Math.ceil(tableNotifications.length / itemsPerPage);
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
+    } else if (totalPages === 0) {
+      setCurrentPage(1);
+    }
+  }, [tableNotifications, currentPage]);
+
+  const renderNotificationModal = () => {
+    if (!isNotificationModalOpen || !selectedTable) return null;
+
+    const itemsPerPage = 5;
+    const totalPages = Math.ceil(tableNotifications.length / itemsPerPage);
+
+    // Lấy thông báo cho trang hiện tại, sắp xếp mới nhất trước
+    const sortedNotifications = [...tableNotifications].sort(
+      (a, b) => new Date(b.createAt) - new Date(a.createAt)
+    );
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentNotifications = sortedNotifications.slice(
+      indexOfFirstItem,
+      indexOfLastItem
+    );
+
+    // Hàm định dạng ngày giờ
+    const formatDateTime = (isoString) => {
+      try {
+        const date = new Date(isoString);
+        return date.toLocaleString("vi-VN", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+      } catch {
+        return "Invalid date";
+      }
+    };
+
+    // Hàm tạo danh sách nút phân trang
+    const getPaginationButtons = () => {
+      const maxButtons = 5; // Giới hạn số nút hiển thị
+      const buttons = [];
+      let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
+      let endPage = Math.min(totalPages, startPage + maxButtons - 1);
+
+      // Điều chỉnh startPage nếu endPage gần totalPages
+      if (endPage - startPage + 1 < maxButtons) {
+        startPage = Math.max(1, endPage - maxButtons + 1);
+      }
+
+      for (let i = startPage; i <= endPage; i++) {
+        buttons.push(
+          <button
+            key={i}
+            onClick={() => setCurrentPage(i)}
+            className={`px-3 py-1 rounded ${
+              currentPage === i
+                ? "!bg-blue-400 text-white"
+                : "text-blue-600 hover:bg-blue-100"
+            }`}
+          >
+            {i}
+          </button>
+        );
+      }
+
+      return buttons;
+    };
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg shadow-lg w-full max-w-lg mx-auto p-6 flex flex-col max-h-[80vh]">
+          {/* Header */}
+          <div className="flex justify-between items-center mb-4 border-b pb-2">
+            <h2 className="text-xl font-semibold">
+              Notifications for Table {selectedTable.id}
+            </h2>
+            <button
+              onClick={() => setIsNotificationModalOpen(false)}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 overflow-y-auto">
+            {notificationsLoading && (
+              <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+                <span className="ml-2 text-gray-600">
+                  Loading notifications...
+                </span>
+              </div>
+            )}
+
+            {notificationsError && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+                {notificationsError}
+              </div>
+            )}
+
+            {!notificationsLoading && !notificationsError && (
+              <>
+                {currentNotifications.length === 0 ? (
+                  <div className="text-center py-10 text-gray-500">
+                    No notifications for this table
+                  </div>
+                ) : (
+                  <ul className="divide-y divide-gray-200">
+                    {currentNotifications.map((notification) => (
+                      <li
+                        key={notification.notificationId}
+                        className={`py-4 ${
+                          !notification.isRead ? "bg-blue-50" : ""
+                        }`}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <h3 className="font-medium text-gray-800">
+                              {notification.title}
+                            </h3>
+                            <p className="mt-1 text-gray-600">
+                              {notification.content}
+                            </p>
+                            <p className="mt-1 text-sm text-gray-500">
+                              Type: {notification.type} | Order #
+                              {notification.orderId}
+                            </p>
+                          </div>
+                          <span className="text-sm text-gray-500">
+                            {formatDateTime(notification.createAt)}
+                          </span>
+                        </div>
+                        {!notification.isRead && (
+                          <button
+                            onClick={() =>
+                              markNotificationAsRead(
+                                notification.notificationId
+                              )
+                            }
+                            className="!bg-blue-600 mt-2 text-sm text-white hover:text-blue-800 font-medium"
+                          >
+                            Mark as Read
+                          </button>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Pagination */}
+          {!notificationsLoading && !notificationsError && (
+            <div className="mt-4 pt-3 border-t">
+              {tableNotifications.length > 0 && (
+                <div className="text-center text-sm text-gray-600 mb-2">
+                  Trang {currentPage} / {totalPages} (
+                  {tableNotifications.length} thông báo)
+                </div>
+              )}
+              {tableNotifications.length > itemsPerPage && (
+                <div className="flex justify-center items-center space-x-1">
+                  {/* Nút "Đầu" */}
+                  <button
+                    onClick={() => setCurrentPage(1)}
+                    disabled={currentPage === 1}
+                    className={`px-3 py-1 rounded ${
+                      currentPage === 1
+                        ? "text-gray-400 cursor-not-allowed"
+                        : "text-blue-600 hover:bg-blue-100"
+                    }`}
+                  >
+                    First
+                  </button>
+
+                  {/* Nút "Trước" */}
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(prev - 1, 1))
+                    }
+                    disabled={currentPage === 1}
+                    className={`px-3 py-1 rounded ${
+                      currentPage === 1
+                        ? "text-gray-400 cursor-not-allowed"
+                        : "text-blue-600 hover:bg-blue-100"
+                    }`}
+                  >
+                    «
+                  </button>
+
+                  {/* Nút số trang */}
+                  {getPaginationButtons()}
+
+                  {/* Nút "Sau" */}
+                  <button
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                    }
+                    disabled={currentPage === totalPages}
+                    className={`px-3 py-1 rounded ${
+                      currentPage === totalPages
+                        ? "text-gray-400 cursor-not-allowed"
+                        : "text-blue-600 hover:bg-blue-100"
+                    }`}
+                  >
+                    »
+                  </button>
+
+                  {/* Nút "Cuối" */}
+                  <button
+                    onClick={() => setCurrentPage(totalPages)}
+                    disabled={currentPage === totalPages}
+                    className={`px-3 py-1 rounded ${
+                      currentPage === totalPages
+                        ? "text-gray-400 cursor-not-allowed"
+                        : "text-blue-600 hover:bg-blue-100"
+                    }`}
+                  >
+                    Last
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Footer */}
+          <div className="mt-4 flex justify-end">
+            <button
+              onClick={() => setIsNotificationModalOpen(false)}
+              className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Render dish details modal
+  const renderDishModal = () => {
+    if (!isDishModalOpen || !selectedTable) return null;
+
+    return (
+      <div className="dish-modal">
+        <div className="modal-content">
+          <h2>Table {selectedTable.id} Orders</h2>
+
+          {orderLoading && <p>Loading order details...</p>}
+          {orderError && <p className="error">{orderError}</p>}
+
+          {!orderLoading && !orderError && selectedTable.orders && (
+            <>
+              {selectedTable.orders.length === 0 ? (
+                <p>No orders for this table</p>
+              ) : (
+                <div>
+                  {selectedTable.orders.map((order) => (
+                    <div key={order.orderId} className="order-details">
+                      <h3>Order #{order.orderId}</h3>
+                      <p>Status: {order.status}</p>
+                      <p>Customer: {order.customerName}</p>
+
+                      <h4>Items:</h4>
+                      <table className="items-table">
+                        <thead>
+                          <tr>
+                            <th>Dish</th>
+                            <th>Quantity</th>
+                            <th>Price</th>
+                            <th>Notes</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {order.items &&
+                            order.items.map((item, index) => (
+                              <tr key={`${order.orderId}-item-${index}`}>
+                                <td>{item.dishName}</td>
+                                <td>{item.quantity}</td>
+                                <td>${parseFloat(item.price).toFixed(2)}</td>
+                                <td>{item.notes || "—"}</td>
+                              </tr>
+                            ))}
+                        </tbody>
+                      </table>
+
+                      <p className="order-total">
+                        Total: ${parseFloat(order.totalAmount).toFixed(2)}
+                      </p>
+
+                      {/* Nút xóa đơn hàng */}
+                      <button
+                        onClick={() => deleteOrder(order.orderId)}
+                        className="delete-order-btn"
+                      >
+                        Delete Order
+                      </button>
+                    </div>
+                  ))}
+
+                  <p className="table-total">
+                    Table Total: ${totalAmount.toFixed(2)}
+                  </p>
+                </div>
+              )}
+
+              <div className="modal-actions">
+                <button
+                  onClick={handleShowPaymentModal}
+                  className="payment-btn"
+                >
+                  Process Payment
+                </button>
+                <button
+                  onClick={() => setIsDishModalOpen(false)}
+                  className="close-modal-btn"
+                >
+                  Close
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // Render payment modal
+  const renderPaymentModal = () => {
+    if (!isPaymentModalOpen || !selectedTable) return null;
+
+    return (
+      <div className="payment-modal">
+        <div className="modal-content">
+          <h2>Process Payment for Table {selectedTable.id}</h2>
+
+          <div className="payment-details">
+            <p>Total Amount: ${totalAmount.toFixed(2)}</p>
+
+            <div className="payment-method">
+              <h3>Payment Method</h3>
+              <div className="payment-options">
+                <label>
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="cash"
+                    defaultChecked
+                  />
+                  Cash
+                </label>
+                <label>
+                  <input type="radio" name="paymentMethod" value="card" />
+                  Credit/Debit Card
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div className="modal-actions">
+            <button
+              onClick={handlePaymentSuccess}
+              className="confirm-payment-btn"
+            >
+              Confirm Payment
+            </button>
+            <button
+              onClick={() => setIsPaymentModalOpen(false)}
+              className="close-modal-btn"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Render success modal
+  const renderSuccessModal = () => {
+    if (!isSuccessModalOpen) return null;
+
+    return (
+      <div className="success-modal">
+        <div className="modal-content">
+          <h2>Payment Successful</h2>
+          <p>
+            Table {selectedTable?.id} has been cleared and is now available.
+          </p>
+
+          <button
+            onClick={() => setIsSuccessModalOpen(false)}
+            className="close-modal-btn"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    );
+  };
+  // This is the updated return part of the component, integrating the missing functions
 
   return (
     <div className="h-screen w-screen bg-[#C2C7CA] flex justify-center items-center">
@@ -253,8 +1256,7 @@ const TableManagementStaff = () => {
         }`}
         onClick={() => setIsNotificationModalOpen(false)}
       >
-        <MenuBarStaff
-        />
+        <MenuBarStaff />
         {/* Container chính nằm giữa */}
         <div
           style={{ marginTop: "30px" }}
@@ -322,13 +1324,15 @@ const TableManagementStaff = () => {
                         }}
                       >
                         <span className="text-lg">
-                          {table.Staff.length > 0
+                          {table.orders && table.orders.length > 0
                             ? `Dish ${
-                                table.Staff.filter(
-                                  (d) => d.status === "Complete"
+                                table.orders.filter(
+                                  (d) =>
+                                    d.status === "Complete" ||
+                                    d.status === "COMPLETE"
                                 ).length
-                              }/${table.Staff.length}`
-                            : "No Staff"}
+                              }/${table.orders.length}`
+                            : "No orders"}
                         </span>
                       </div>
                     </div>
@@ -373,54 +1377,50 @@ const TableManagementStaff = () => {
                               d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
                             />
                           </svg>
+                          {/* Fix: Define notifications array if it doesn't exist */}
                           {table.status === "occupied" &&
-                            notifications.filter(
-                              (n) =>
-                                n.table === table.id.toString().padStart(2, "0")
+                            tableNotifications.filter(
+                              (n) => n.tableId === table.id
                             ).length > 0 && (
                               <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
                                 {
-                                  notifications.filter(
-                                    (n) =>
-                                      n.table ===
-                                      table.id.toString().padStart(2, "0")
+                                  tableNotifications.filter(
+                                    (n) => n.tableId === table.id
                                   ).length
                                 }
                               </span>
                             )}
                         </div>
                       </div>
-                      <div className="px-4 py-2 flex justify-between items-center">
-                        <div className="flex items-center">
-                          {/* SVG icon */}
-                          {table.status === "occupied" ? (
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-6 w-6 text-red-500"
-                              viewBox="0 0 20 20"
-                              fill="currentColor"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                          ) : (
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-6 w-6 text-green-500"
-                              viewBox="0 0 20 20"
-                              fill="currentColor"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                          )}
-                        </div>
+                      <div className="flex items-center">
+                        {/* SVG icon */}
+                        {table.status === "occupied" ? (
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-6 w-6 text-red-500"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        ) : (
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-6 w-6 text-green-500"
+                            viewBox="0 0 20 20"
+                            fill="currentColor"
+                          >
+                            <path
+                              fillRule="evenodd"
+                              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                              clipRule="evenodd"
+                            />
+                          </svg>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -489,70 +1489,8 @@ const TableManagementStaff = () => {
         </div>
       </div>
 
-      {/* Notification Modal */}
-      {isNotificationModalOpen && selectedTable && (
-        <div className="fixed inset-0 flex items-center justify-center z-50">
-          {/* Overlay */}
-          <div
-            className="absolute inset-0  bg-opacity-50"
-            onClick={() => setIsNotificationModalOpen(false)}
-          ></div>
-
-          {/* Modal Content */}
-          <div
-            className="bg-[#F0F9FF] rounded-xl shadow-lg p-6 
-            w-[500px] max-w-full max-h-[80vh] 
-            overflow-y-auto z-50 relative"
-          >
-            {/* Header */}
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-semibold text-gray-800">
-                Notifications
-              </h2>
-              <div className="text-sm text-gray-600">
-                Table {selectedTable.id}
-              </div>
-              <button
-                className="text-gray-500 hover:text-gray-700 text-xl"
-                onClick={() => setIsNotificationModalOpen(false)}
-              >
-                &times;
-              </button>
-            </div>
-
-            {/* Table */}
-            <table className="w-full text-sm border-separate border-spacing-y-1">
-              <thead className="bg-cyan-200 text-gray-800 rounded-md">
-                <tr>
-                  <th className="py-1 text-left pl-2">ON</th>
-                  <th className="py-1 text-left">Request</th>
-                  <th className="py-1 text-left pr-2">Time</th>
-                </tr>
-              </thead>
-              <tbody>
-                {notifications
-                  .filter(
-                    (n) =>
-                      n.table === selectedTable.id.toString().padStart(2, "0")
-                  )
-                  .map((notification) => (
-                    <tr
-                      key={notification.id}
-                      className="bg-white shadow-sm rounded-md"
-                    >
-                      <td className="py-1 px-2">{notification.table}</td>
-                      <td className="py-1">{notification.type}</td>
-                      <td className="py-1 pr-2">
-                        <div>{notification.time}</div>
-                        <div>{notification.date}</div>
-                      </td>
-                    </tr>
-                  ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+      {/* Notification Modal - Updated to use tableNotifications */}
+      {isNotificationModalOpen && selectedTable && renderNotificationModal()}
 
       {/* Dish Modal */}
       {isDishModalOpen && selectedTable && (

@@ -334,8 +334,7 @@ const TableManagementAdmin = () => {
           isSuccessModalOpen ||
           isNotificationModalOpen ||
           isAddTableModalOpen ||
-          isEditTableModalOpen 
-
+          isEditTableModalOpen
             ? "blur-sm"
             : ""
         }`}
