@@ -2,12 +2,19 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useState, useEffect, useContext } from "react";
 import { MenuContext } from "../../../context/MenuContext";
 import { CartContext } from "../../../context/CartContext";
-import axios from "axios";
 
 const ViewItem = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { getDishById, error: contextError } = useContext(MenuContext);
+  const {
+    addToCart,
+    addToCartGraphQL,
+    updateCartWithGraphQLData,
+    loading: cartLoading,
+    error: cartError,
+  } = useContext(CartContext);
+
   const [item, setItem] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -15,28 +22,60 @@ const ViewItem = () => {
   const [orderLoading, setOrderLoading] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState(false);
 
+  // Clear cart error when component unmounts or when id changes
+  useEffect(() => {
+    return () => setError(null);
+  }, [id]);
+
+  useEffect(() => {
+    // If there's a cart error, show it in this component
+    if (cartError) {
+      setError(cartError);
+    }
+  }, [cartError]);
+
   useEffect(() => {
     const fetchDish = async () => {
       try {
-        const cachedDish = localStorage.getItem("currentDish");
-        if (cachedDish) {
-          const parsedDish = JSON.parse(cachedDish);
-          // Check if this is the dish we're looking for
-          if (
-            parsedDish.dishId === parseInt(id) ||
-            parsedDish.id === parseInt(id)
-          ) {
-            setItem(parsedDish);
-            setLoading(false);
-            return;
+        // Clear any previous errors
+        setError(null);
+        setLoading(true);
+
+        // Try to get the dish from localStorage first
+        const cachedDishStr = localStorage.getItem("currentDish");
+        if (cachedDishStr) {
+          try {
+            const parsedDish = JSON.parse(cachedDishStr);
+            // Check if the cached dish matches the requested ID
+            if (
+              parsedDish.dishId === parseInt(id) ||
+              parsedDish.id === parseInt(id)
+            ) {
+              setItem(parsedDish);
+              setLoading(false);
+              console.log("Using cached dish data:", parsedDish);
+              return;
+            }
+          } catch (parseErr) {
+            console.error("Error parsing cached dish:", parseErr);
+            // Continue to API call if parse fails
           }
         }
+
+        // If not in cache or not matching the current ID, fetch from API
+        console.log("Fetching dish data from API for dish ID:", id);
         const dishData = await getDishById(id);
+        console.log("API dish data received:", dishData);
+
         setItem(dishData);
-        setLoading(false);
+        // Save to localStorage for future use
+        localStorage.setItem("currentDish", JSON.stringify(dishData));
       } catch (err) {
         console.error("Error fetching dish details:", err);
-        setError("Failed to load dish details. Please try again!");
+        setError(
+          err.message || "Failed to load dish details. Please try again!"
+        );
+      } finally {
         setLoading(false);
       }
     };
@@ -44,45 +83,102 @@ const ViewItem = () => {
     fetchDish();
   }, [id, getDishById]);
 
-  // Add the missing handleQuantityChange function
+  // Handle quantity changes
   const handleQuantityChange = (change) => {
-    setQuantity((prev) => Math.max(1, prev + change));
+    setQuantity((prev) => {
+      const newQuantity = Math.max(1, prev + change);
+      // Optional: Check against available stock
+      if (item && item.stock && newQuantity > item.stock) {
+        setError(`Sorry, only ${item.stock} items available in stock.`);
+        return prev;
+      }
+      setError(null);
+      return newQuantity;
+    });
   };
 
-  const { addToCart } = useContext(CartContext);
-
+  // Handle adding to cart
   const handleAddToCart = async () => {
+    if (orderLoading) return; // Prevent multiple clicks
+
     try {
       setOrderLoading(true);
+      setError(null);
 
-      const orderItemData = {
+      console.log(`Adding dish ID: ${id} to cart with quantity: ${quantity}`);
+
+      const itemToAdd = {
         dishId: parseInt(id),
         quantity: quantity,
-        note: "",
+        notes: "",
       };
 
-      await addToCart(orderItemData);
+      let result;
 
+      // First try using the GraphQL method from CartContext
+      if (typeof addToCartGraphQL === "function") {
+        console.log("Using CartContext.addToCartGraphQL");
+        result = await addToCartGraphQL(itemToAdd);
+      }
+      // Fallback to standard addToCart method which may try REST first
+      else {
+        console.log("Using standard addToCart method");
+        result = await addToCart(itemToAdd);
+      }
+
+      console.log("Item added successfully:", result);
+
+      // Show success message
       setOrderSuccess(true);
       setTimeout(() => setOrderSuccess(false), 2000);
     } catch (err) {
       console.error("Error adding to cart:", err);
-      setError("Failed to add item to cart. Please try again.");
+      let errorMessage = "Failed to add item to cart. Please try again.";
+
+      // Extract more specific error message if available
+      if (err.response && err.response.data) {
+        if (typeof err.response.data === "string") {
+          errorMessage = err.response.data;
+        } else if (err.response.data.message) {
+          errorMessage = err.response.data.message;
+        } else if (err.response.data.error) {
+          errorMessage = err.response.data.error;
+        }
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+
+      setError(errorMessage);
     } finally {
       setOrderLoading(false);
     }
   };
 
   if (loading)
-    return <p className="text-center text-gray-500">Loading dish details...</p>;
-  if (error)
-    return <p className="text-center text-red-500">{error || contextError}</p>;
-  if (!item) return <p className="text-center text-red-500">Dish not found</p>;
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <p className="text-center text-gray-500">Loading dish details...</p>
+      </div>
+    );
 
+  if (error || contextError)
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <p className="text-center text-red-500 p-4">{error || contextError}</p>
+      </div>
+    );
+
+  if (!item)
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <p className="text-center text-red-500">Dish not found</p>
+      </div>
+    );
+
+  // Extract dish details with fallbacks
   const name = item.dishName || item.name || "Unnamed Dish";
   const price = item.price || 0;
   const category = item.categoryName || item.category || "Uncategorized";
-  // const description = item.description || "No description available.";
   const imageUrl = item.imageUrl || item.image || "/placeholder-dish.jpg";
   const rating = item.rating || 4.5;
   const sold = item.sold || 0;
@@ -114,9 +210,9 @@ const ViewItem = () => {
         <h2 className="text-lg font-bold flex-1 text-center">View</h2>
       </div>
 
-      {/* Nội dung chi tiết món ăn */}
+      {/* Dish details content */}
       <div className="bg-white rounded-lg shadow-sm p-4 mt-4">
-        {/* Ảnh món ăn */}
+        {/* Dish image */}
         <img
           src={imageUrl}
           alt={name}
@@ -127,7 +223,7 @@ const ViewItem = () => {
           }}
         />
 
-        {/* Tên và giá */}
+        {/* Name and price */}
         <div className="flex justify-between items-center mt-4">
           <h3 className="font-bold text-xl">{name}</h3>
           <p className="text-gray-500 text-lg">
@@ -135,46 +231,47 @@ const ViewItem = () => {
           </p>
         </div>
 
-        {/* Số lượng đã bán và tồn kho */}
+        {/* Sales count and inventory status */}
         <div className="flex justify-between items-center mt-2">
           <div className="mt-2">
-            {/* Số lượng đã bán và tồn kho */}
-            <div className="flex items-center space-x-2">
-              <span className="font-bold text-black">{sold}</span>
-              <span className="text-gray-400">{stock}</span>
-            </div>
+            {/* Items sold and in stock */}
+            <div className="flex items-center space-x-2"></div>
 
-            {/* Đánh giá và danh mục */}
+            {/* Rating and category */}
             <div className="flex items-center space-x-2 mt-1">
               <span className="text-yellow-500 text-lg">⭐</span>
               <span className="text-sm font-medium">{rating}</span>
-              <span className="text-sm text-gray-600">{category}</span>
+              <span className="text-sm text-gray-600">• {category}</span>
             </div>
           </div>
           <button
-            onClick={() => navigate(`/note/${id}`, { state: { name: name } })} // Truyền tên món ăn qua state
+            onClick={() => navigate(`/note/${id}`, { state: { name: name } })}
             className="!bg-gray-400 text-white px-4 py-2 rounded-lg hover:bg-gray-800"
           >
             Note
           </button>
         </div>
 
-        {/* Mô tả */}
-        <p className="text-sm text-gray-600 mt-4">{item.description}</p>
+        {/* Description */}
+        <p className="text-sm text-gray-600 mt-4">
+          {item.description || "No description available."}
+        </p>
 
-        {/* Số lượng, tổng giá và nút Order */}
+        {/* Quantity, total price and Order button */}
         <div className="flex items-center justify-between mt-6">
           <div className="flex items-center space-x-2">
             <button
               onClick={() => handleQuantityChange(-1)}
-              className="!bg-gray-400 px-2 py-1 rounded hover:bg-gray-300"
+              disabled={orderLoading}
+              className="bg-gray-400 px-2 py-1 rounded hover:bg-gray-300 disabled:opacity-50"
             >
               -
             </button>
             <span className="text-lg">{quantity}</span>
             <button
               onClick={() => handleQuantityChange(1)}
-              className="!bg-gray-400 px-2 py-1 rounded hover:bg-gray-300"
+              disabled={orderLoading}
+              className="bg-gray-400 px-2 py-1 rounded hover:bg-gray-300 disabled:opacity-50"
             >
               +
             </button>
@@ -191,7 +288,7 @@ const ViewItem = () => {
                 : orderSuccess
                 ? "!bg-green-500"
                 : "!bg-red-400"
-            } text-white py-2 px-6 rounded-lg flex items-center`}
+            } text-white py-2 px-6 rounded-lg flex items-center disabled:opacity-50`}
           >
             {orderLoading ? "Adding..." : orderSuccess ? "Added!" : "Order"}
             {!orderLoading && !orderSuccess && (
@@ -212,6 +309,13 @@ const ViewItem = () => {
             )}
           </button>
         </div>
+
+        {/* Display error message if any */}
+        {error && (
+          <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
+            <p className="text-sm">{error}</p>
+          </div>
+        )}
       </div>
     </div>
   );
