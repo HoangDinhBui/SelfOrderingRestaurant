@@ -38,11 +38,11 @@ const Evaluate = () => {
   };
 
   const handleDone = () => {
-    navigate("/home");
+    navigate("/");
   };
 
   const handleBack = () => {
-    setIsSubmitted(false); 
+    setIsSubmitted(false);
   };
 
   if (isSubmitted) {

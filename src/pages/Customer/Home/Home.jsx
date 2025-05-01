@@ -162,28 +162,12 @@ const Home = () => {
     }
   };
 
-  // Payment handler
+  // Payment handler - UPDATED to navigate to payment page
   const handleCallPayment = async () => {
     try {
       setProcessingPayment(true);
       setPaymentError(null);
-      setPaymentSuccess(false);
 
-      // Send notification for payment request - FIXED TYPE
-      const notificationSuccess = await sendNotification(
-        "PAYMENT_REQUEST", // Changed from "CALL_PAYMENT"
-        "Customer is requesting payment"
-      );
-
-      if (!notificationSuccess) {
-        setPaymentError(
-          "Failed to notify staff for payment. Please try again."
-        );
-        setProcessingPayment(false);
-        return;
-      }
-
-      // Rest of the function remains the same...
       // Check for existing order information
       let orderInfo = localStorage.getItem("latestOrderInfo");
       if (!orderInfo) {
@@ -193,15 +177,28 @@ const Home = () => {
         }
       }
 
-      // Set payment success state after notification is sent
-      setPaymentSuccess(true);
-      setProcessingPayment(false);
+      // Parse the order info to get orderId
+      let orderId = null;
+      if (orderInfo) {
+        const parsedOrderInfo = JSON.parse(orderInfo);
+        orderId = parsedOrderInfo.orderId;
+      }
+
+      if (!orderId) {
+        setPaymentError("No active order found. Please place an order first.");
+        setProcessingPayment(false);
+        return;
+      }
+
+      // Navigate to payment page with order ID
+      navigate(`/payment?orderId=${orderId}`);
     } catch (err) {
       console.error("Error in payment flow:", err);
       setPaymentError(
         err.response?.data?.message ||
           "Cannot process payment. Please try again."
       );
+    } finally {
       setProcessingPayment(false);
     }
   };
