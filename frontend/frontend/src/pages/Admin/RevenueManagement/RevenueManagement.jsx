@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import MenuBar from "../../../components/layout/menuBar";
 
-const RevenueManagement = () => {
+const RevenueManagementAdmin = () => {
   const [viewMode, setViewMode] = useState("Day");
   const [chartData, setChartData] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -175,4 +175,4 @@ const RevenueManagement = () => {
   );
 };
 
-export default RevenueManagement;
+export default RevenueManagementAdmin;

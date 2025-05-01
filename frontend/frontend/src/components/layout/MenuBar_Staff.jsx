@@ -63,15 +63,15 @@ const MenuBarStaff = () => {
           style={styles.menuIcon}
         />
         <div
-          style={styles.menuTitleContainer(activeContainer === "order")}
+          style={styles.menuTitleContainer(activeContainer === "table")}
           onClick={() => handleNavigation("order", "/table-management")} // Điều hướng sang trang Table Management
         >
           <img
-            src="./src/assets/img/mealicon.png"
+            src="https://img.icons8.com/ios-filled/50/FFFFFF/table.png"
             alt="Plate icon"
             style={styles.menuIcon}
           />
-          <div style={styles.menuTitle(activeContainer === "order")}>
+          <div style={styles.menuTitle(activeContainer === "table")}>
             <i>Table Management</i>
           </div>
         </div>
@@ -105,6 +105,21 @@ const MenuBarStaff = () => {
             <i>Dish Management</i>
           </div>
         </div>
+
+        <div
+          style={styles.menuTitleContainer(activeContainer === "history")}
+          onClick={() => handleNavigation("history", "/history-management")} // Điều hướng sang trang Dish Management
+        >
+          <img
+            src="https://img.icons8.com/?size=100&id=24874&format=png&color=FFFFFF"
+            alt="Plate icon"
+            style={styles.menuIcon}
+          />
+          <div style={styles.menuTitle(activeContainer === "history")}>
+            <i>Order History</i>
+          </div>
+        </div>
+
       </div>
 
       {/* Avatar */}
