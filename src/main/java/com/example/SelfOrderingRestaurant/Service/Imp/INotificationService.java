@@ -9,6 +9,7 @@ import java.util.List;
 
 public interface INotificationService {
     List<NotificationResponseDTO> getNotificationsByUserId(Integer userId);
+    List<NotificationResponseDTO> getNotificationsByTableId(Integer tableId);
     List<NotificationResponseDTO> getCurrentShiftNotifications();
     void markNotificationAsRead(Integer notificationId);
     void createNotification(NotificationRequestDTO requestDTO);

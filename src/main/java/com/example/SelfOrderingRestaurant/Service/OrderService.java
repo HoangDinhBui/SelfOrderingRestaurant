@@ -408,4 +408,55 @@ public class OrderService implements IOrderService {
             log.warn("Cannot update notes in database: No current order ID found in session");
         }
     }
+
+    @Transactional
+    public void deleteOrder(Integer orderId) {
+        // Kiểm tra xác thực
+        if (!securityUtils.isAuthenticated() || !securityUtils.hasRole("STAFF")) {
+            throw new AuthorizationException("Only staff members can delete orders");
+        }
+
+        // Tìm đơn hàng
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + orderId));
+
+        // Lấy bàn liên quan
+        DinningTable table = order.getTables();
+        Integer tableNumber = table.getTableNumber();
+
+        // Xóa các mục đơn hàng (order items)
+        orderItemRepository.deleteByOrder(order);
+
+        // Xóa đơn hàng
+        orderRepository.delete(order);
+        log.info("Deleted order with ID: {}", orderId);
+
+        // Cập nhật trạng thái bàn
+        updateTableStatusAfterOrderChange(tableNumber);
+    }
+
+    private void updateTableStatusAfterOrderChange(Integer tableNumber) {
+        DinningTable table = dinningTableRepository.findById(tableNumber)
+                .orElseThrow(() -> new ResourceNotFoundException("Table not found with ID: " + tableNumber));
+
+        // Lấy danh sách đơn hàng còn lại của bàn
+        List<Order> tableOrders = orderRepository.findByTableNumber(tableNumber);
+
+        // Tính trạng thái bàn
+        TableStatus status;
+        if (tableOrders.isEmpty()) {
+            status = TableStatus.AVAILABLE;
+        } else if (tableOrders.size() == 1 && PaymentStatus.PAID.name().equals(tableOrders.get(0).getPaymentStatus())) {
+            status = TableStatus.AVAILABLE;
+        } else {
+            status = TableStatus.OCCUPIED;
+        }
+
+        // Cập nhật trạng thái nếu khác
+        if (table.getTableStatus() != status) {
+            table.setTableStatus(status);
+            dinningTableRepository.save(table);
+            log.info("Updated table {} status to {}", tableNumber, status);
+        }
+    }
 }

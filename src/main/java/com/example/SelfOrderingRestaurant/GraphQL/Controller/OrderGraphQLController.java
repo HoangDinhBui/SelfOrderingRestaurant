@@ -32,7 +32,6 @@ public class OrderGraphQLController {
     private static final Logger log = LoggerFactory.getLogger(OrderGraphQLController.class);
 
     private final OrderService orderService;
-
     private final PaymentService paymentService;
 
     // Query Resolvers
@@ -92,7 +91,6 @@ public class OrderGraphQLController {
         itemDTO.setDishId(input.getDishId());
         itemDTO.setQuantity(input.getQuantity());
         itemDTO.setNotes(input.getNotes());
-
         return orderService.addDishToOrderCart(itemDTO);
     }
 
@@ -113,6 +111,17 @@ public class OrderGraphQLController {
         } catch (Exception e) {
             log.error("Error updating item notes: {}", e.getMessage());
             throw new RuntimeException("Failed to update notes: " + e.getMessage());
+        }
+    }
+
+    @MutationMapping
+    public String deleteOrder(@Argument String orderId) {
+        try {
+            orderService.deleteOrder(Integer.valueOf(orderId));
+            return "Order deleted successfully!";
+        } catch (Exception e) {
+            log.error("Error deleting order {}: {}", orderId, e.getMessage());
+            throw new RuntimeException("Failed to delete order: " + e.getMessage());
         }
     }
 

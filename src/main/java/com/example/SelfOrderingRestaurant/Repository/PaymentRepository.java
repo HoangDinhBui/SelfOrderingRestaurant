@@ -6,6 +6,7 @@ import com.example.SelfOrderingRestaurant.Enum.PaymentStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,4 +17,6 @@ public interface PaymentRepository extends JpaRepository<Payment, Integer> {
     List<Payment> findByOrderAndStatus(Order order, PaymentStatus status);
     Optional<Payment> findTopByOrderAndStatusOrderByPaymentDateDesc(Order order, PaymentStatus status);
     Optional<Payment> findTopByOrder_OrderIdAndStatusOrderByPaymentDateDesc(Integer orderId, PaymentStatus status);
+    List<Payment> findByStatusAndPaymentDateBefore(PaymentStatus status, LocalDateTime dateTime);
+    Optional<Payment> findTopByOrderAndStatusNotOrderByPaymentDateDesc(Order order, PaymentStatus status);
 }

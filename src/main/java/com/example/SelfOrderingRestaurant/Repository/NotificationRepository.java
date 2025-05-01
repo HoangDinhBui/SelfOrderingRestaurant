@@ -46,4 +46,13 @@ public interface NotificationRepository extends JpaRepository<Notification, Inte
     void deleteAllReadByUserId(@Param("userId") Integer userId);
 
     boolean existsByTypeAndContentContaining(NotificationType type, String contentPattern);
+
+    // Find notifications by table number
+    @Query("SELECT n FROM Notification n WHERE n.title LIKE %:tablePattern% ORDER BY n.createAt DESC")
+    List<Notification> findByTableNumberOrderByCreateAtDesc(@Param("tablePattern") String tablePattern);
+
+    // Alternative query using a custom implementation for table lookup
+    default List<Notification> findByTableNumberOrderByCreateAtDesc(Integer tableNumber) {
+        return findByTableNumberOrderByCreateAtDesc("Table " + tableNumber);
+    }
 }
