@@ -13,7 +13,7 @@ import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
 @RestController
-@RequestMapping("/api/tables")
+@RequestMapping("/api/staff/tables")
 public class DinningTableController {
 
 

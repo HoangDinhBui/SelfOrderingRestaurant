@@ -32,14 +32,22 @@ public class NotificationService implements INotificationService {
     @Transactional
     @Override
     public List<NotificationResponseDTO> getNotificationsByUserId(Integer userId){
-         List<Notification> notifications = notificationRepository.findByUserUserId(userId);
-         return mapToResponseDTOs(notifications);
+        List<Notification> notifications = notificationRepository.findByUserUserId(userId);
+        return mapToResponseDTOs(notifications);
     }
 
     @Transactional
     @Override
     public List<NotificationResponseDTO> getCurrentShiftNotifications() {
         List<Notification> notifications = notificationRepository.findCurrentShiftNotifications();
+        return mapToResponseDTOs(notifications);
+    }
+
+    @Transactional
+    @Override
+    public List<NotificationResponseDTO> getNotificationsByTableId(Integer tableId) {
+        // Fetch notifications from the repository
+        List<Notification> notifications = notificationRepository.findByTableNumberOrderByCreateAtDesc(tableId);
         return mapToResponseDTOs(notifications);
     }
 

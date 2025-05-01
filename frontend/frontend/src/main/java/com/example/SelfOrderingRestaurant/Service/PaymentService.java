@@ -244,24 +244,37 @@ public class PaymentService {
                 throw new IllegalStateException("Order is already paid");
             }
 
-            // Check if there's already a pending payment for this order
+            // Check for existing pending payments
             List<Payment> existingPayments = paymentRepository.findByOrderAndStatus(order, PaymentStatus.PENDING);
             if (!existingPayments.isEmpty()) {
-                log.info("Found existing pending payment for order {}. Using the existing transaction ID.", orderId);
-                vnp_TxnRef = existingPayments.get(0).getTransactionId();
-            } else {
-                Payment payment = new Payment();
-                payment.setOrder(order);
-                payment.setCustomer(order.getCustomer());
-                payment.setAmount(order.getTotalAmount());
-                payment.setPaymentMethod(PaymentMethod.ONLINE);
-                payment.setStatus(PaymentStatus.PENDING);
-                payment.setTransactionId(vnp_TxnRef);
-                payment.setPaymentDate(LocalDateTime.now());
+                Payment pendingPayment = existingPayments.get(0);
+                LocalDateTime paymentDate = pendingPayment.getPaymentDate();
+                LocalDateTime expiryTime = paymentDate.plusMinutes(15); // VNPay transactions expire after 15 minutes
 
-                paymentRepository.save(payment);
-                log.info("Created pending payment record with transaction ID: {}", vnp_TxnRef);
+                if (LocalDateTime.now().isBefore(expiryTime)) {
+                    // Pending payment is still valid
+                    log.info("Found valid pending payment for order {}. Using existing transaction ID: {}", orderId, pendingPayment.getTransactionId());
+                    throw new IllegalStateException("A pending payment transaction exists for order " + orderId + ". Please wait for it to complete or expire.");
+                } else {
+                    // Cancel expired pending payment
+                    pendingPayment.setStatus(PaymentStatus.CANCELLED);
+                    paymentRepository.save(pendingPayment);
+                    log.info("Cancelled expired pending payment for order {} with transaction ID: {}", orderId, pendingPayment.getTransactionId());
+                }
             }
+
+            // Create new pending payment
+            Payment payment = new Payment();
+            payment.setOrder(order);
+            payment.setCustomer(order.getCustomer());
+            payment.setAmount(BigDecimal.valueOf(total));
+            payment.setPaymentMethod(PaymentMethod.ONLINE);
+            payment.setStatus(PaymentStatus.PENDING);
+            payment.setTransactionId(vnp_TxnRef);
+            payment.setPaymentDate(LocalDateTime.now());
+
+            paymentRepository.save(payment);
+            log.info("Created new pending payment record with transaction ID: {} for order {}", vnp_TxnRef, orderId);
         }
 
         Map<String, String> vnp_Params = new HashMap<>();
@@ -284,7 +297,7 @@ public class PaymentService {
         Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Etc/GMT+7"));
         SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMddHHmmss");
         String vnp_CreateDate = formatter.format(cld.getTime());
-        vnp_Params.put("vnp_CreateDate", formatter.format(cld.getTime()));
+        vnp_Params.put("vnp_CreateDate", vnp_CreateDate);
 
         cld.add(Calendar.MINUTE, 15);
         String vnp_ExpireDate = formatter.format(cld.getTime());
@@ -295,7 +308,6 @@ public class PaymentService {
 
         StringBuilder hashData = new StringBuilder();
         StringBuilder query = new StringBuilder();
-        Iterator itr = fieldNames.iterator();
         for (String fieldName : fieldNames) {
             String fieldValue = vnp_Params.get(fieldName);
             if (fieldValue != null && !fieldValue.isEmpty()) {
@@ -448,14 +460,11 @@ public class PaymentService {
     }
 
     public OrderPaymentDetailsDTO getOrderPaymentDetails(Integer orderId) {
-        // Lấy order từ DB
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found with ID: " + orderId));
 
-        // Lấy các món trong đơn hàng
         List<OrderItem> orderItems = orderItemRepository.findByOrder(order);
 
-        // Chuyển sang DTO cho từng món thanh toán
         List<PaymentItemDTO> paymentItems = orderItems.stream()
                 .map(item -> {
                     PaymentItemDTO dto = new PaymentItemDTO();
@@ -468,7 +477,6 @@ public class PaymentService {
                 })
                 .collect(Collectors.toList());
 
-        // Tạo đối tượng trả về
         OrderPaymentDetailsDTO paymentDetails = new OrderPaymentDetailsDTO();
         paymentDetails.setOrderId(order.getOrderId());
         paymentDetails.setTableId(order.getTables().getTableNumber());
@@ -477,6 +485,12 @@ public class PaymentService {
         paymentDetails.setItems(paymentItems);
         paymentDetails.setDiscount(order.getDiscount() != null ? order.getDiscount() : BigDecimal.ZERO);
         paymentDetails.setTotalAmount(order.getTotalAmount());
+
+        // Add transaction status
+        Optional<Payment> latestPayment = paymentRepository.findTopByOrderAndStatusNotOrderByPaymentDateDesc(order, PaymentStatus.CANCELLED);
+        if (latestPayment.isPresent()) {
+            paymentDetails.setTransactionStatus(latestPayment.get().getStatus().toString());
+        }
 
         return paymentDetails;
     }

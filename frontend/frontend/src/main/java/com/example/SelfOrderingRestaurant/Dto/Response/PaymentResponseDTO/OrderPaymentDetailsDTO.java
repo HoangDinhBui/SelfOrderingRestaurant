@@ -22,6 +22,7 @@ public class OrderPaymentDetailsDTO {
     private Integer tableId;
     private Date orderDate;
     private PaymentStatus paymentStatus;
+    private String transactionStatus;
     private List<PaymentItemDTO> items;
     private BigDecimal discount;
     private BigDecimal totalAmount;

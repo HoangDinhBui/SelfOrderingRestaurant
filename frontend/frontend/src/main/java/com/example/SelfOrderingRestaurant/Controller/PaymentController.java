@@ -89,7 +89,7 @@ public class PaymentController {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseBody);
             } else {
                 responseBody.put("message", "Sai chữ ký hoặc giao dịch bị thay đổi!");
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(responseBody);
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseBody); // Thay 401 thành 400
             }
         } catch (Exception e) {
             log.error("Lỗi xử lý VNPay: {}", e.getMessage());
@@ -133,6 +133,26 @@ public class PaymentController {
             // Find the order
             Order order = orderRepository.findById(request.getOrderId())
                     .orElseThrow(() -> new IllegalArgumentException("Order not found with ID: " + request.getOrderId()));
+
+            // Check for existing pending payments
+            List<Payment> existingPayments = paymentRepository.findByOrderAndStatus(order, PaymentStatus.PENDING);
+            if (!existingPayments.isEmpty()) {
+                Payment pendingPayment = existingPayments.get(0);
+                LocalDateTime paymentDate = pendingPayment.getPaymentDate();
+                LocalDateTime expiryTime = paymentDate.plusMinutes(15);
+
+                if (LocalDateTime.now().isBefore(expiryTime)) {
+                    return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                            "success", false,
+                            "message", "A pending payment transaction exists for order " + request.getOrderId() + ". Please wait for it to complete or expire."
+                    ));
+                } else {
+                    pendingPayment.setStatus(PaymentStatus.CANCELLED);
+                    paymentRepository.save(pendingPayment);
+                    log.info("Cancelled expired pending payment for order {} with transaction ID: {}",
+                            request.getOrderId(), pendingPayment.getTransactionId());
+                }
+            }
 
             // Convert payment method string to enum
             PaymentMethod method;

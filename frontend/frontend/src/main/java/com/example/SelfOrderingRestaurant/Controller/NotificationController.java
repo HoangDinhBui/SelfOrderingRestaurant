@@ -75,4 +75,14 @@ public class NotificationController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
+
+    @GetMapping("/table/{tableId}")
+    public ResponseEntity<?> getNotificationsByTable(@PathVariable Integer tableId) {
+        try {
+            List<NotificationResponseDTO> notifications = notificationService.getNotificationsByTableId(tableId);
+            return ResponseEntity.ok(notifications);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
 }

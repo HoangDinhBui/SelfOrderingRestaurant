@@ -44,10 +44,21 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .headers(headers -> headers
+                        .contentSecurityPolicy(csp -> csp
+                                .policyDirectives(
+                                        "default-src 'self'; " +
+                                                "style-src 'self' 'unsafe-inline'; " +
+                                                "img-src 'self' data: http://localhost:8080 https://nhantien.momo.vn; " +
+                                                "script-src 'self'; " +
+                                                "connect-src 'self' ws://localhost:8080 http://localhost:8080"
+                                )
+                        )
+                )
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/api/auth/**",
                                 "/api/customer/**",
-                                "api/payment/**",
+                                "/api/payment/**",
                                 "/api/orders/**",
                                 "/api/dishes/**",
                                 "/api/images/**",
@@ -57,17 +68,10 @@ public class SecurityConfig {
                                 "/graphql/**",
                                 "/ws/**",
                                 "/error").permitAll()
-
-                        // Yêu cầu vai trò STAFF hoặc ADMIN cho các endpoints của staff
                         .requestMatchers("/api/staff/**").hasAnyRole("STAFF", "ADMIN")
-
-                        // Yêu cầu vai trò ADMIN cho các endpoints của admin
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-
-                        // Các endpoints khác yêu cầu xác thực
                         .anyRequest().authenticated()
                 )
-                // Thêm JWT Filter trước UsernamePasswordAuthenticationFilter
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .httpBasic(AbstractHttpConfigurer::disable);
 
@@ -76,7 +80,7 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(12); // 12 is the strength parameter
+        return new BCryptPasswordEncoder(12);
     }
 
     @Bean
@@ -91,7 +95,7 @@ public class SecurityConfig {
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
-        configuration.setExposedHeaders(Arrays.asList("Authorization")); // Cho phép truy cập header Authorization từ client
+        configuration.setExposedHeaders(Arrays.asList("Authorization"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
