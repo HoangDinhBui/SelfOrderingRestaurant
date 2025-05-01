@@ -1206,4 +1206,4 @@ const StaffManagementAdmin = () => {
   );
 };
 
-export default StaffManagementAdminAdmin;
+export default StaffManagementAdmin;
