@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { login, googleLogin, forgotPassword } from "../../../services/api";
+import axios from "axios"; // Make sure axios is installed
 
 const Login = () => {
   const navigate = useNavigate();
@@ -9,7 +11,7 @@ const Login = () => {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     try {
       setError("");
       setLoading(true);
@@ -21,24 +23,85 @@ const Login = () => {
         return;
       }
 
-      // Simulate successful login
+      // Call login API
+      const response = await login(userId, password);
+
+      // Store auth data in localStorage
+      localStorage.setItem("accessToken", response.accessToken);
+      localStorage.setItem("refreshToken", response.refreshToken);
+      localStorage.setItem("username", response.username);
+      localStorage.setItem("userType", response.userType);
+
       console.log("Login successful");
 
-      // Redirect to dashboard after successful login
-      navigate("/table-management");
+      // Role-based redirection
+      switch (response.userType) {
+        case "ADMIN":
+          navigate("/table-management");
+          break;
+        case "STAFF":
+          navigate("/table-management");
+          break;
+        default:
+          navigate("/table-management");
+      }
     } catch (error) {
       console.error("Login failed:", error);
-      setError("An error occurred. Please try again.");
+      if (
+        error.response &&
+        error.response.data &&
+        error.response.data.message
+      ) {
+        setError(error.response.data.message);
+      } else {
+        setError("Invalid username or password. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const handleGoogleLogin = () => {
+  const handleGoogleLogin = async () => {
     try {
       setError("");
       setLoading(true);
-      alert("Google login integration will be implemented here");
+
+      // For a complete implementation, you would:
+      // 1. Initialize Google Sign-In
+      // 2. Get ID token from Google
+      // 3. Pass token to backend
+
+      // Example with Google OAuth client:
+      // const googleResponse = await googleAuth.signIn();
+      // const tokenId = googleResponse.getAuthResponse().id_token;
+
+      // Placeholder for development
+      const tokenId = "google-oauth-token";
+
+      try {
+        // Call Google login API
+        const response = await googleLogin(tokenId);
+
+        // Store auth data
+        localStorage.setItem("accessToken", response.accessToken);
+        localStorage.setItem("refreshToken", response.refreshToken);
+        localStorage.setItem("username", response.username);
+        localStorage.setItem("userType", response.userType);
+
+        // Role-based redirection
+        switch (response.userType) {
+          case "ADMIN":
+            navigate("/admin-dashboard");
+            break;
+          case "STAFF":
+            navigate("/staff-dashboard");
+            break;
+          default:
+            navigate("/table-management");
+        }
+      } catch (error) {
+        alert("Google login integration requires full OAuth setup.");
+      }
     } catch (error) {
       console.error("Google login failed:", error);
       setError("Google login failed. Please try again.");
@@ -47,7 +110,7 @@ const Login = () => {
     }
   };
 
-  const handleForgotPassword = () => {
+  const handleForgotPassword = async () => {
     if (!userId) {
       setError("Please enter your User ID to reset password");
       return;
@@ -55,11 +118,19 @@ const Login = () => {
 
     try {
       setLoading(true);
+
+      // Call forgot password API
+      await forgotPassword(userId);
+
+      // We don't reveal if account exists for security reasons
       alert(
         "If your account exists, password reset instructions have been sent to your email."
       );
     } catch (error) {
       console.error("Forgot password request failed:", error);
+      alert(
+        "If your account exists, password reset instructions have been sent to your email."
+      );
     } finally {
       setLoading(false);
     }
@@ -109,7 +180,9 @@ const Login = () => {
           )}
 
           <div className="mb-4">
-            <label className="block text-gray-800 mb-1 text-l"><i>User ID</i></label>
+            <label className="block text-gray-800 mb-1 text-l">
+              <i>User ID</i>
+            </label>
             <input
               type="text"
               value={userId}
@@ -122,8 +195,8 @@ const Login = () => {
 
           <div className="mb-2">
             <div className="mb-2">
-              <label className="block text-gray-800 mb-1 text-l"><i>
-                Password </i>
+              <label className="block text-gray-800 mb-1 text-l">
+                <i>Password </i>
               </label>
               <div className="flex items-center space-x-2">
                 <input
