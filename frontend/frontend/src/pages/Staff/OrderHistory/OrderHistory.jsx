@@ -12,7 +12,7 @@ import MenuBarStaff from "../../../components/layout/MenuBar_Staff";
 import axios from "axios";
 import Order from "../../Customer/Order/Order";
 
-const OrderHistoryAdmin= () => {
+const OrderHistoryStaff= () => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -446,4 +446,4 @@ const OrderHistoryAdmin= () => {
   );
 };
 
-export default OrderHistoryAdmin;
+export default OrderHistoryStaff;

@@ -77,6 +77,7 @@ function App() {
         </MenuProvider>
       </CartProvider>
     </ApolloProvider>
+
   );
 }
 
