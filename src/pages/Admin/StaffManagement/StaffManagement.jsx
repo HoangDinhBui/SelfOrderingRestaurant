@@ -3,7 +3,7 @@ import { useState } from "react";
 import MenuBar from "../../../components/layout/menuBar";
 import logoRemoveBg from "../../../assets/img/logoremovebg.png";
 
-const StaffManagement = () => {
+const StaffManagementAdmin = () => {
   const [staff, setStaff] = useState([
     {
       id: 1,
@@ -1206,4 +1206,4 @@ const StaffManagement = () => {
   );
 };
 
-export default StaffManagement;
+export default StaffManagementAdminAdmin;

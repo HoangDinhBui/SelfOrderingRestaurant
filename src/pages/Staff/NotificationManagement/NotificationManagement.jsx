@@ -9,7 +9,7 @@ import {
 } from "react-icons/fa";
 import MenuBarStaff from "../../../components/layout/MenuBar_Staff.jsx";
 
-const NotificationManagement = () => {
+const NotificationManagementStaff = () => {
   const [activeTab, setActiveTab] = useState("Notification Management");
   const [notifications, setNotifications] = useState([
     {
@@ -231,4 +231,4 @@ const NotificationManagement = () => {
   );
 };
 
-export default NotificationManagement;
+export default NotificationManagementStaff;

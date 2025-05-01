@@ -28,6 +28,7 @@ import TableManagement from "./pages/Staff/TableManagement/TableManagement";
 import TableManagementAdmin from "./pages/Admin/TableManagement/TableManagement";
 import NotificationManagementAdmin from "./pages/Admin/NotificationManagement/NotificationManagement";
 import StaffManagement from "./pages/Admin/StaffManagement/StaffManagement";
+import DishManagementAdmin from "./pages/Admin/DishManagement/DishManagent";
 function App() {
   return (
     <CartProvider>
@@ -54,7 +55,7 @@ function App() {
             <Route path="/admin-information" element={<AdminInformation />} />
             <Route path="/admin-order" element={<AdminOrder />} /> */}
         
-              <Route path="/" element={<Menu/>} />
+              <Route path="/" element={<TableManagementAdmin/>} />
           </Routes>
         </Router>
       </MenuProvider>
