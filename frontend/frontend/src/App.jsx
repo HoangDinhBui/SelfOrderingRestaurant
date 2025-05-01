@@ -23,7 +23,6 @@ import TableManagementStaff from "./pages/Staff/TableManagement/TableManagement"
 import MenuManagement from "./pages/Admin/MenuManagement/MenuManagement";
 import RevenueManagement from "./pages/Admin/RevenueManagement/RevenueManagement";
 import AdminInformation from "./pages/Admin/AdminInformation/AdminInformation";
-import AdminOrder from "./pages/Admin/AdminOrder/AdminOrder";
 import TableManagement from "./pages/Staff/TableManagement/TableManagement";
 import TableManagementAdmin from "./pages/Admin/TableManagement/TableManagement";
 import NotificationManagementAdmin from "./pages/Admin/NotificationManagement/NotificationManagement";
