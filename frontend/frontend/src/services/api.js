@@ -1,12 +1,15 @@
 import axios from "axios";
 
+// Get the API base URL from environment variables
 const API_BASE_URL = import.meta.env.VITE_API_KEY; // URL backend
 
+// Create axios instance with default config
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     "Content-Type": "application/json",
   },
+  timeout: 15000, // 15 seconds timeout
 });
 
 // Request interceptor to add auth token to requests
@@ -23,7 +26,7 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor to handle token refresh
+// Response interceptor to handle token refresh and auth errors
 api.interceptors.response.use(
   (response) => {
     return response;
@@ -31,7 +34,12 @@ api.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // If the error is 401 and we haven't already tried to refresh the token
+    // Fix for axios versions where the request config doesn't have the custom properties after a redirect
+    if (!originalRequest._retry) {
+      originalRequest._retry = false;
+    }
+
+    // If the error is 401 (Unauthorized) and we haven't already tried to refresh the token
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
@@ -41,25 +49,40 @@ api.interceptors.response.use(
 
         if (!refreshToken) {
           // No refresh token available, redirect to login
+          localStorage.clear(); // Clear all auth data
           window.location.href = "/login";
           return Promise.reject(error);
         }
 
-        const response = await axios.post(
+        // Important: Use a new axios instance for refresh token to avoid infinite loop
+        const refreshResponse = await axios.post(
           `${API_BASE_URL}/auth/refresh-token`,
+          { refreshToken },
           {
-            refreshToken: refreshToken,
+            headers: { "Content-Type": "application/json" },
           }
         );
 
-        // Update tokens in localStorage
-        localStorage.setItem("accessToken", response.data.accessToken);
-        localStorage.setItem("refreshToken", response.data.refreshToken);
+        if (refreshResponse.data.accessToken) {
+          // Update tokens in localStorage
+          localStorage.setItem("accessToken", refreshResponse.data.accessToken);
 
-        // Retry the original request with new token
-        originalRequest.headers.Authorization = `Bearer ${response.data.accessToken}`;
-        return axios(originalRequest);
+          if (refreshResponse.data.refreshToken) {
+            localStorage.setItem(
+              "refreshToken",
+              refreshResponse.data.refreshToken
+            );
+          }
+
+          // Retry the original request with new token
+          originalRequest.headers.Authorization = `Bearer ${refreshResponse.data.accessToken}`;
+          return axios(originalRequest);
+        } else {
+          throw new Error("No access token received");
+        }
       } catch (refreshError) {
+        console.error("Token refresh failed:", refreshError);
+
         // If refresh fails, clear tokens and redirect to login
         localStorage.removeItem("accessToken");
         localStorage.removeItem("refreshToken");
@@ -71,123 +94,275 @@ api.interceptors.response.use(
       }
     }
 
+    // Handle 403 Forbidden errors
+    if (error.response?.status === 403) {
+      console.error(
+        "Permission denied. User doesn't have access to this resource."
+      );
+      // You could handle this differently, like showing a message or redirecting
+      // For now, we'll just pass through the error
+    }
+
     return Promise.reject(error);
   }
 );
 
 // ===================== Auth ===================== //
 export const login = async (login, password) => {
-  const response = await api.post("/auth/login", { login, password });
-  return response.data;
+  try {
+    const response = await api.post("/auth/login", { login, password });
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+    throw error;
+  }
 };
 
 export const googleLogin = async (tokenId) => {
-  const response = await api.post("/auth/staff/google-login", { tokenId });
-  return response.data;
+  try {
+    const response = await api.post("/auth/staff/google-login", { tokenId });
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+    throw error;
+  }
 };
 
 export const logout = async () => {
-  const response = await api.post("/auth/logout");
-  // Clear local storage
-  localStorage.removeItem("accessToken");
-  localStorage.removeItem("refreshToken");
-  localStorage.removeItem("username");
-  localStorage.removeItem("userType");
-  return response.data;
+  try {
+    const response = await api.post("/auth/logout");
+    // Clear local storage
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("username");
+    localStorage.removeItem("userType");
+    return response.data;
+  } catch (error) {
+    // Still clear storage even if API fails
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("refreshToken");
+    localStorage.removeItem("username");
+    localStorage.removeItem("userType");
+    handleApiError(error);
+    throw error;
+  }
 };
 
 export const forgotPassword = async (login) => {
-  const response = await api.post("/auth/forgot-password", { login });
-  return response.data;
+  try {
+    const response = await api.post("/auth/forgot-password", { login });
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+    throw error;
+  }
 };
 
 export const refreshToken = async (refreshToken) => {
-  const response = await api.post("/auth/refresh-token", { refreshToken });
-  return response.data;
+  try {
+    const response = await api.post("/auth/refresh-token", { refreshToken });
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+    throw error;
+  }
 };
 
 // ===================== Staff ===================== //
 export const getStaff = async () => {
-  const response = await api.get("/Staff");
-  return response.data;
+  try {
+    const response = await api.get("/Staff");
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+    throw error;
+  }
 };
 
 export const getDishById = async (id) => {
-  const response = await api.get(`/Staff/${id}`);
-  return response.data;
+  try {
+    const response = await api.get(`/Staff/${id}`);
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+    throw error;
+  }
 };
 
 export const createDish = async (StaffData) => {
-  const response = await api.post("/Staff", StaffData);
-  return response.data;
+  try {
+    const response = await api.post("/Staff", StaffData);
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+    throw error;
+  }
 };
 
 export const updateDish = async (id, StaffData) => {
-  const response = await api.put(`/Staff/${id}`, StaffData);
-  return response.data;
+  try {
+    const response = await api.put(`/Staff/${id}`, StaffData);
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+    throw error;
+  }
 };
 
 export const deleteDish = async (id) => {
-  const response = await api.delete(`/Staff/${id}`);
-  return response.data;
+  try {
+    const response = await api.delete(`/Staff/${id}`);
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+    throw error;
+  }
 };
 
 // ===================== Customers ===================== //
 export const getCustomers = async () => {
-  const response = await api.get("/customers");
-  return response.data;
+  try {
+    const response = await api.get("/customers");
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+    throw error;
+  }
 };
 
 export const getCustomerById = async (id) => {
-  const response = await api.get(`/customers/${id}`);
-  return response.data;
+  try {
+    const response = await api.get(`/customers/${id}`);
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+    throw error;
+  }
 };
 
 export const createCustomer = async (customerData) => {
-  const response = await api.post("/customers", customerData);
-  return response.data;
+  try {
+    const response = await api.post("/customers", customerData);
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+    throw error;
+  }
 };
 
 export const updateCustomer = async (id, customerData) => {
-  const response = await api.put(`/customers/${id}`, customerData);
-  return response.data;
+  try {
+    const response = await api.put(`/customers/${id}`, customerData);
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+    throw error;
+  }
 };
 
 export const deleteCustomer = async (id) => {
-  const response = await api.delete(`/customers/${id}`);
-  return response.data;
+  try {
+    const response = await api.delete(`/customers/${id}`);
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+    throw error;
+  }
 };
 
 // ===================== Tables ===================== //
 export const getTables = async () => {
-  const response = await api.get("/tables");
-  return response.data;
+  try {
+    const response = await api.get("/api/staff/tables");
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+    throw error;
+  }
+};
+
+export const getTableDishes = async (tableId) => {
+  try {
+    const response = await api.get(`/api/staff/tables/${tableId}/dishes`);
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+    throw error;
+  }
 };
 
 export const updateTableStatus = async (tableId, status) => {
-  const response = await api.put(`/tables/${tableId}`, { status });
-  return response.data;
+  try {
+    const response = await api.put(`/api/staff/tables/${tableId}`, { status });
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+    throw error;
+  }
 };
 
 // ===================== Orders ===================== //
 export const getOrders = async () => {
-  const response = await api.get("/orders");
-  return response.data;
+  try {
+    const response = await api.get("/orders");
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+    throw error;
+  }
 };
 
 export const getOrderById = async (orderId) => {
-  const response = await api.get(`/orders/${orderId}`);
-  return response.data;
+  try {
+    const response = await api.get(`/orders/${orderId}`);
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+    throw error;
+  }
 };
 
 export const createOrder = async (orderData) => {
-  const response = await api.post("/orders", orderData);
-  return response.data;
+  try {
+    const response = await api.post("/orders", orderData);
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+    throw error;
+  }
 };
 
 export const updateOrderStatus = async (orderId, status) => {
-  const response = await api.put(`/staff/orders/${orderId}/status`, { status });
-  return response.data;
+  try {
+    const response = await api.put(`/staff/orders/${orderId}/status`, {
+      status,
+    });
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+    throw error;
+  }
+};
+
+// ===================== Helper Functions ===================== //
+
+// Error handler to standardize error logging and handling
+const handleApiError = (error) => {
+  if (error.response) {
+    // The request was made and the server responded with a status code
+    // that falls out of the range of 2xx
+    console.error("API Error Response:", {
+      status: error.response.status,
+      data: error.response.data,
+      headers: error.response.headers,
+    });
+  } else if (error.request) {
+    // The request was made but no response was received
+    console.error("API Error Request:", error.request);
+  } else {
+    // Something happened in setting up the request that triggered an Error
+    console.error("API Error:", error.message);
+  }
 };
 
 // Auth helper functions

@@ -70,13 +70,11 @@ function App() {
                 element={<RevenueManagement />}
               />
               <Route path="/admin-information" element={<AdminInformation />} />
-
             </Routes>
           </Router>
         </MenuProvider>
       </CartProvider>
     </ApolloProvider>
-
   );
 }
 
