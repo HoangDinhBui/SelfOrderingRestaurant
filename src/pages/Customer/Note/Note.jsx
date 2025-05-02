@@ -203,7 +203,7 @@ const Note = () => {
           <button
             onClick={handleSave}
             disabled={saving}
-            className="bg-black text-white px-6 py-2 rounded-lg hover:bg-gray-800 disabled:bg-gray-400 transition-colors duration-300"
+            className="!bg-black text-white px-6 py-2 rounded-lg hover:bg-gray-800 disabled:bg-gray-400 transition-colors duration-300"
           >
             {saving ? "SAVING..." : "SAVE"}
           </button>
