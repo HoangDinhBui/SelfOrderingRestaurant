@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from "react";
 import {
   BarChart,
   Bar,
@@ -6,24 +6,24 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-} from 'recharts';
-import MenuBar from '../../../components/layout/menuBar';
-import axios from 'axios';
-import moment from 'moment';
+} from "recharts";
+import MenuBar from "../../../components/layout/menuBar";
+import axios from "axios";
+import moment from "moment";
 
 // Cấu hình Axios
-const API_BASE_URL = 'http://localhost:8080'; // Thay đổi nếu backend chạy trên cổng khác
+const API_BASE_URL = "http://localhost:8080"; // Thay đổi nếu backend chạy trên cổng khác
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
 });
 
 // Interceptor để thêm token từ localStorage
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('accessToken'); // Lấy accessToken từ localStorage
+    const token = localStorage.getItem("accessToken"); // Lấy accessToken từ localStorage
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -33,9 +33,9 @@ api.interceptors.request.use(
 );
 
 const RevenueManagementAdmin = () => {
-  const [viewMode, setViewMode] = useState('Day');
+  const [viewMode, setViewMode] = useState("Day");
   const [chartData, setChartData] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [animationComplete, setAnimationComplete] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -49,34 +49,34 @@ const RevenueManagementAdmin = () => {
       let response;
       const year = moment().year();
 
-      if (viewMode === 'Day') {
-        const endDate = moment().format('YYYY-MM-DD');
-        const startDate = moment().subtract(7, 'days').format('YYYY-MM-DD');
-        response = await api.get('/api/admin/revenue/daily', {
+      if (viewMode === "Day") {
+        const endDate = moment().format("YYYY-MM-DD");
+        const startDate = moment().subtract(7, "days").format("YYYY-MM-DD");
+        response = await api.get("/api/admin/revenue/daily", {
           params: { startDate, endDate },
         });
 
         setChartData(
           (response.data || []).map((item, index) => ({
             id: index + 1,
-            date: moment(item.date).format('DD/MM/YYYY'),
+            date: moment(item.date).format("DD/MM/YYYY"),
             revenue: Number(item.totalRevenue),
           }))
         );
-      } else if (viewMode === 'Month') {
-        response = await api.get('/api/admin/revenue/monthly', {
+      } else if (viewMode === "Month") {
+        response = await api.get("/api/admin/revenue/monthly", {
           params: { year, month: moment().month() + 1 }, // month từ 1-12
         });
 
         setChartData(
           (response.data?.dailyRevenues || []).map((item, index) => ({
             id: index + 1,
-            date: moment(item.date).format('MMM YYYY'),
+            date: moment(item.date).format("MMM YYYY"),
             revenue: Number(item.totalRevenue),
           }))
         );
-      } else if (viewMode === 'Year') {
-        response = await api.get('/api/admin/revenue/yearly', {
+      } else if (viewMode === "Year") {
+        response = await api.get("/api/admin/revenue/yearly", {
           params: { year },
         });
 
@@ -91,13 +91,15 @@ const RevenueManagementAdmin = () => {
         );
       }
     } catch (err) {
-      console.error('Lỗi khi gọi API:', err);
+      console.error("Lỗi khi gọi API:", err);
       if (err.response?.status === 401) {
-        setError('Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.');
+        setError("Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.");
       } else if (err.response?.status === 403) {
-        setError('Bạn không có quyền truy cập. Vui lòng đăng nhập với tài khoản ADMIN.');
+        setError(
+          "Bạn không có quyền truy cập. Vui lòng đăng nhập với tài khoản ADMIN."
+        );
       } else {
-        setError('Không thể tải dữ liệu doanh thu. Vui lòng thử lại.');
+        setError("Không thể tải dữ liệu doanh thu. Vui lòng thử lại.");
       }
     } finally {
       setLoading(false);
@@ -105,15 +107,15 @@ const RevenueManagementAdmin = () => {
     }
   };
 
-  // useEffect(() => {
-  //   // Kiểm tra xem người dùng đã đăng nhập và có quyền ADMIN không
-  //   const userType = localStorage.getItem('userType');
-  //   if (userType !== 'ADMIN') {
-  //     setError('Bạn cần quyền ADMIN để truy cập trang này.');
-  //     return;
-  //   }
-  //   fetchRevenueData();
-  // }, [viewMode]);
+  useEffect(() => {
+    // Kiểm tra xem người dùng đã đăng nhập và có quyền ADMIN không
+    const userType = localStorage.getItem("userType");
+    if (userType !== "ADMIN") {
+      setError("Bạn cần quyền ADMIN để truy cập trang này.");
+      return;
+    }
+    fetchRevenueData();
+  }, [viewMode]);
 
   const filteredData = chartData.filter(
     (item) =>
@@ -127,7 +129,9 @@ const RevenueManagementAdmin = () => {
       <div className="flex-1 p-5 overflow-auto">
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-200">
-            <h1 className="text-xl font-medium text-gray-800 text-center">Revenue</h1>
+            <h1 className="text-xl font-medium text-gray-800 text-center">
+              Revenue
+            </h1>
             <div className="flex items-center mt-3 pb-3 border-b justify-end gap-2">
               <select
                 className="w-32 px-3 py-2 rounded border border-gray-300 focus:ring-2 focus:ring-blue-400"
@@ -163,8 +167,12 @@ const RevenueManagementAdmin = () => {
                 <table className="w-full border-collapse">
                   <thead>
                     <tr className="border-b bg-gray-50">
-                      <th className="py-3 px-4 text-left text-gray-600">Date</th>
-                      <th className="py-3 px-4 text-left text-gray-600">Revenue</th>
+                      <th className="py-3 px-4 text-left text-gray-600">
+                        Date
+                      </th>
+                      <th className="py-3 px-4 text-left text-gray-600">
+                        Revenue
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -172,7 +180,7 @@ const RevenueManagementAdmin = () => {
                       <tr
                         key={item.id}
                         className={`border-b ${
-                          index % 2 === 0 ? 'bg-blue-100' : 'bg-gray-100'
+                          index % 2 === 0 ? "bg-blue-100" : "bg-gray-100"
                         } hover:bg-gray-50`}
                       >
                         <td className="py-3 px-4 text-gray-700">{item.date}</td>
@@ -195,14 +203,17 @@ const RevenueManagementAdmin = () => {
                     <XAxis
                       dataKey="date"
                       tickFormatter={(value) => {
-                        if (viewMode === 'Day') return value.split('/')[0];
-                        if (viewMode === 'Month') return value.split(' ')[0];
+                        if (viewMode === "Day") return value.split("/")[0];
+                        if (viewMode === "Month") return value.split(" ")[0];
                         return value;
                       }}
                     />
                     <YAxis />
                     <Tooltip
-                      formatter={(value) => [`$${value.toLocaleString()}`, 'Revenue']}
+                      formatter={(value) => [
+                        `$${value.toLocaleString()}`,
+                        "Revenue",
+                      ]}
                       labelFormatter={(label) => `Date: ${label}`}
                     />
                     <Bar
