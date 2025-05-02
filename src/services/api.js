@@ -458,4 +458,5 @@ export const hasRole = (role) => {
   return userType === role;
 };
 
-export default api;
+// Export authAPI và publicAPI
+export { authAPI, publicAPI };
