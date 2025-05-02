@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
-import axios from "axios";
+import { authAPI, publicAPI } from "../../../services/api";
 
 const Payment = () => {
   const navigate = useNavigate();
@@ -11,18 +11,17 @@ const Payment = () => {
   const [orderDetails, setOrderDetails] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState("CASH");
   const [processingPayment, setProcessingPayment] = useState(false);
+  const [existingPaymentDetected, setExistingPaymentDetected] = useState(false);
+  const [existingPaymentDetails, setExistingPaymentDetails] = useState(null);
+  const [transactionStatus, setTransactionStatus] = useState(null);
 
-  // Add Momo phone number for QR code URL
-  const momoPhoneNumber = "0329914143"; // Replace with your actual Momo phone number
-
-  // Extract orderId from URL query parameters
+  const momoPhoneNumber = "0329914143";
   const queryParams = new URLSearchParams(location.search);
   const orderId = queryParams.get("orderId");
-
-  // Base API URL to ensure consistency
   const API_BASE_URL = "http://localhost:8080";
 
-  // Fetch order details on component mount
+  const getAuthToken = () => localStorage.getItem("accessToken");
+
   useEffect(() => {
     const fetchOrderDetails = async () => {
       if (!orderId) {
@@ -33,36 +32,54 @@ const Payment = () => {
 
       try {
         setLoading(true);
-        // Fetch order payment details
-        const response = await axios.get(
-          `${API_BASE_URL}/api/orders/${orderId}/payment`
+        // Fix: Remove duplicate /api/ in the URL path
+        const response = await authAPI.get(
+          `/payment/payment/status/${orderId}`
         );
-
         const orderData = response.data;
         console.log("Order details response:", orderData);
 
-        // Make sure total is a number and not null
+        if (orderData?.paymentStatus === "PAID") {
+          setExistingPaymentDetected(true);
+          setExistingPaymentDetails({
+            method: orderData.paymentMethod || "Unknown",
+            date: orderData.paymentDate || new Date().toISOString(),
+            amount: orderData.totalAmount || 0,
+          });
+          setOrderDetails(orderData);
+          setLoading(false);
+          setShowModal(true);
+          return;
+        }
+
+        if (orderData?.transactionStatus === "PENDING") {
+          setTransactionStatus("PENDING");
+          setExistingPaymentDetails({
+            method: orderData.paymentMethod || "Unknown",
+            date: orderData.paymentDate || new Date().toISOString(),
+            amount: orderData.totalAmount || 0,
+          });
+        }
+
         if (
           orderData &&
-          (orderData.total === null || orderData.total === undefined)
+          (orderData.totalAmount === null ||
+            orderData.totalAmount === undefined)
         ) {
-          // If total is null or undefined, calculate it from items
           if (orderData.items && orderData.items.length > 0) {
             let calculatedTotal = 0;
             orderData.items.forEach((item) => {
               const itemPrice = parseFloat(item.price) || 0;
-              const quantity = parseInt(item.quantity) || 1;
+              const quantity = parseInt(item.quantity, 10) || 1;
               calculatedTotal += itemPrice * quantity;
             });
 
-            // Apply discount if available
             if (orderData.discount) {
               calculatedTotal -= parseFloat(orderData.discount) || 0;
             }
 
-            // Update total in order details
-            orderData.total = calculatedTotal > 0 ? calculatedTotal : 0;
-            console.log("Calculated total:", orderData.total);
+            orderData.totalAmount = calculatedTotal > 0 ? calculatedTotal : 0;
+            console.log("Calculated total:", orderData.totalAmount);
           }
         }
 
@@ -78,7 +95,48 @@ const Payment = () => {
     fetchOrderDetails();
   }, [orderId]);
 
+  const checkTransactionStatus = async () => {
+    try {
+      // Fix: Remove duplicate /api/ in the URL path
+      const response = await authAPI.get(`/payment/payment/status/${orderId}`);
+      const orderData = response.data;
+      setOrderDetails(orderData);
+
+      if (orderData.paymentStatus === "PAID") {
+        setExistingPaymentDetected(true);
+        setExistingPaymentDetails({
+          method: orderData.paymentMethod || "Unknown",
+          date: orderData.paymentDate || new Date().toISOString(),
+          amount: orderData.totalAmount || 0,
+        });
+        setTransactionStatus(null);
+        setShowModal(true);
+      } else if (orderData.transactionStatus !== "PENDING") {
+        setTransactionStatus(null);
+        setError("Transaction has been cancelled or failed. Please try again.");
+      } else {
+        setError("Transaction is still pending. Please try again later.");
+      }
+    } catch (err) {
+      console.error("Error checking transaction status:", err);
+      setError("Failed to check transaction status. Please try again.");
+    }
+  };
+
   const handlePayment = async () => {
+    if (existingPaymentDetected) {
+      setShowModal(true);
+      return;
+    }
+
+    if (transactionStatus === "PENDING") {
+      setError(
+        "A payment transaction is pending. Please wait for it to complete or check its status."
+      );
+      setShowModal(true);
+      return;
+    }
+
     if (!orderId) {
       setError("Order ID is not provided. Please check your order.");
       return;
@@ -86,125 +144,245 @@ const Payment = () => {
 
     const orderTotal = parseFloat(getOrderTotal());
     if (orderTotal <= 0) {
-      setError("Total amout is not valid. Please check your order.");
+      setError("Total amount is not valid. Please check your order.");
       return;
     }
 
     try {
       setProcessingPayment(true);
 
-      if (paymentMethod === "VNPAY") {
-        // Xử lý VNPay như trước
-        const response = await axios.post(`${API_BASE_URL}/api/payment/vnpay`, {
-          orderId: parseInt(orderId),
-          total: orderTotal,
-          orderInfo: `Payment for Order Id: ${orderId}`,
-          returnUrl: `${window.location.origin}/payment?orderId=${orderId}`,
+      // Fix: Remove duplicate /api/ in the URL path
+      const paymentStatusCheck = await authAPI.get(
+        `/payment/payment/status/${orderId}`
+      );
+      if (paymentStatusCheck.data?.paymentStatus === "PAID") {
+        setExistingPaymentDetected(true);
+        setExistingPaymentDetails({
+          method: paymentStatusCheck.data.paymentMethod || "Unknown",
+          date: paymentStatusCheck.data.paymentDate || new Date().toISOString(),
+          amount: paymentStatusCheck.data.totalAmount || 0,
         });
-
-        if (response.data && response.data.paymentUrl) {
-          window.location.href = response.data.paymentUrl;
-          return;
-        } else {
-          throw new Error("Cannot get payment URL from VNPay.");
-        }
-      } else {
-        // Đối với CASH hoặc CREDIT, khởi tạo thanh toán nhưng chưa xác nhận
-        await axios.post(`${API_BASE_URL}/api/payment/process`, {
-          orderId: parseInt(orderId),
-          paymentMethod: paymentMethod,
-          confirmPayment: false, // Không xác nhận ngay
-        });
-
-        // Hiển thị modal xác nhận
+        setOrderDetails(paymentStatusCheck.data);
         setShowModal(true);
+        setProcessingPayment(false);
+        return;
+      }
+
+      if (paymentStatusCheck.data?.transactionStatus === "PENDING") {
+        setTransactionStatus("PENDING");
+        setExistingPaymentDetails({
+          method: paymentStatusCheck.data.paymentMethod || "Unknown",
+          date: paymentStatusCheck.data.paymentDate || new Date().toISOString(),
+          amount: paymentStatusCheck.data.totalAmount || 0,
+        });
+        setOrderDetails(paymentStatusCheck.data);
+        setError(
+          "A payment transaction is pending. Please wait for it to complete or check its status."
+        );
+        setShowModal(true);
+        setProcessingPayment(false);
+        return;
+      }
+
+      switch (paymentMethod) {
+        case "VNPAY":
+          // Fix: Remove duplicate /api/ in the URL path
+          const vnpayResponse = await authAPI.post(`/payment/vnpay`, {
+            orderId: parseInt(orderId),
+            total: Math.round(orderTotal),
+            orderInfo: `Payment for Order: ${orderId}`,
+            returnUrl: `${window.location.origin}/payment?orderId=${orderId}`,
+          });
+
+          if (vnpayResponse.data?.paymentUrl) {
+            window.location.href = vnpayResponse.data.paymentUrl;
+            return;
+          } else {
+            throw new Error("Cannot get payment URL from VNPay.");
+          }
+
+        case "MOMO":
+          // Fix: Remove duplicate /api/ in the URL path
+          await authAPI.post(`/payment/process`, {
+            orderId: parseInt(orderId),
+            paymentMethod: "MOMO",
+            confirmPayment: false,
+          });
+          setShowModal(true);
+          break;
+
+        case "CASH":
+        case "CREDIT":
+          // Fix: Remove duplicate /api/ in the URL path
+          await authAPI.post(`/payment/process`, {
+            orderId: parseInt(orderId),
+            paymentMethod: paymentMethod,
+            confirmPayment: false,
+          });
+          setShowModal(true);
+          break;
+
+        default:
+          throw new Error("Unsupported payment method");
       }
 
       setProcessingPayment(false);
     } catch (err) {
       console.error("Error processing payment:", err);
-      setError("Failed to process payment. Please try again.");
+      if (err.response?.status === 409) {
+        setExistingPaymentDetected(true);
+        try {
+          // Fix: Remove duplicate /api/ in the URL path
+          const paymentStatusCheck = await authAPI.get(
+            `/payment/payment/status/${orderId}`
+          );
+          setOrderDetails(paymentStatusCheck.data);
+          setExistingPaymentDetails({
+            method: paymentStatusCheck.data.paymentMethod || "Unknown",
+            date:
+              paymentStatusCheck.data.paymentDate || new Date().toISOString(),
+            amount: paymentStatusCheck.data.totalAmount || 0,
+          });
+          if (paymentStatusCheck.data?.transactionStatus === "PENDING") {
+            setTransactionStatus("PENDING");
+            setError(
+              "A payment transaction is pending. Please wait for it to complete or check its status."
+            );
+          } else {
+            setError(
+              "This order has already been paid. Please see the payment details."
+            );
+          }
+          setShowModal(true);
+        } catch (detailsErr) {
+          console.error("Error fetching payment details:", detailsErr);
+          setError(
+            "Failed to verify existing payment. Please contact support."
+          );
+        }
+      } else {
+        setError(
+          err.response?.data?.message ||
+            "Failed to process payment. Please try again."
+        );
+      }
       setProcessingPayment(false);
     }
   };
 
   const confirmPayment = async () => {
+    if (existingPaymentDetected) {
+      localStorage.removeItem("latestOrderInfo");
+      sessionStorage.removeItem("latestOrderInfo");
+      setShowModal(false);
+      setTimeout(() => {
+        navigate("/evaluate");
+      }, 1000);
+      return;
+    }
+
+    if (transactionStatus === "PENDING") {
+      setError("Transaction is still pending. Please check its status.");
+      setShowModal(true);
+      return;
+    }
+
     try {
       setProcessingPayment(true);
-
-      // First, confirm payment with API
-      const response = await axios.post(`${API_BASE_URL}/api/payment/confirm`, {
+      // Fix: Remove duplicate /api/ in the URL path
+      const response = await authAPI.post(`/payment/confirm`, {
         orderId: parseInt(orderId),
       });
 
-      if (response.data && response.data.success) {
-        // Now send notification after successful payment confirmation
+      if (response.data?.success) {
         try {
-          // Get current customer info
           const customerInfo = JSON.parse(
             localStorage.getItem("customerInfo")
           ) || {
-            id: 1, // Guest customer ID
+            id: 1,
             fullname: "Guest Customer",
           };
-
-          // Get table number (use a valid table number from your system)
           const tableNumberNumeric = orderDetails?.tableId || 1;
-
-          // Include payment method in notification message
           const paymentMethodText = getPaymentMethodDisplayText(paymentMethod);
           const notificationMessage = `Customer has completed payment using ${paymentMethodText}`;
 
-          // Send notification with payment method information
-          const notificationRequest = {
+          // Fix: Remove duplicate /api/ in the URL path
+          await authAPI.post(`/notifications`, {
             customerId: customerInfo.id,
             tableNumber: tableNumberNumeric,
             type: "PAYMENT_REQUEST",
             orderId: parseInt(orderId),
             additionalMessage: notificationMessage,
-            paymentMethod: paymentMethod, // Add payment method to the notification data
-          };
-
-          await axios.post(
-            `${API_BASE_URL}/api/notifications`,
-            notificationRequest
-          );
+            paymentMethod: paymentMethod,
+          });
         } catch (notifError) {
           console.error(
             "Error sending notification after payment:",
             notifError
           );
-          // Don't block the flow if notification fails
         }
 
-        // Clean up storage and update UI
         localStorage.removeItem("latestOrderInfo");
         sessionStorage.removeItem("latestOrderInfo");
         setShowModal(false);
 
-        // Refresh order data
-        const refreshResponse = await axios.get(
-          `${API_BASE_URL}/api/orders/${orderId}/payment`
+        // Fix: Remove duplicate /api/ in the URL path
+        const refreshResponse = await authAPI.get(
+          `/payment/payment/status/${orderId}`
         );
         setOrderDetails(refreshResponse.data);
+        setExistingPaymentDetected(true);
+        setExistingPaymentDetails({
+          method: refreshResponse.data.paymentMethod || paymentMethod,
+          date: refreshResponse.data.paymentDate || new Date().toISOString(),
+          amount: refreshResponse.data.totalAmount || orderTotal,
+        });
 
-        // Redirect to home page after a short delay
         setTimeout(() => {
-          window.location.href = "/";
-        }, 2000);
+          navigate("/evaluate");
+        }, 1000);
       } else {
         setError("Failed to confirm the payment. Please try again!");
       }
-
-      setProcessingPayment(false);
     } catch (err) {
       console.error("Error confirming payment:", err);
-      setError("Failed to confirm the payment. Please try again!");
+      if (err.response?.status === 409) {
+        setExistingPaymentDetected(true);
+        try {
+          // Fix: Remove duplicate /api/ in the URL path
+          const refreshResponse = await authAPI.get(
+            `/payment/payment/status/${orderId}`
+          );
+          setOrderDetails(refreshResponse.data);
+          setExistingPaymentDetails({
+            method: refreshResponse.data.paymentMethod || paymentMethod,
+            date: refreshResponse.data.paymentDate || new Date().toISOString(),
+            amount: refreshResponse.data.totalAmount || orderTotal,
+          });
+          if (refreshResponse.data?.transactionStatus === "PENDING") {
+            setTransactionStatus("PENDING");
+            setError("Transaction is still pending. Please check its status.");
+          } else {
+            setError("This order has already been paid. No need to confirm.");
+          }
+          setShowModal(true);
+        } catch (refreshErr) {
+          console.error("Error refreshing order data:", refreshErr);
+          setError(
+            "Failed to verify existing payment. Please contact support."
+          );
+        }
+      } else {
+        setError(
+          err.response?.data?.message ||
+            "Failed to confirm the payment. Please try again!"
+        );
+      }
+    } finally {
       setProcessingPayment(false);
     }
   };
 
-  // Helper function to get display text for payment method
   const getPaymentMethodDisplayText = (method) => {
     switch (method) {
       case "CASH":
@@ -215,48 +393,81 @@ const Payment = () => {
         return "Credit Card";
       case "MOMO":
         return "Momo";
+      case "ONLINE":
+        return "Online Payment";
       default:
         return method;
     }
   };
 
-  // Handle VNPay return (check for VNPay params in URL)
   useEffect(() => {
     const checkVnPayReturn = async () => {
-      // Check if we have VNPay response parameters in URL
-      if (location.search && location.search.includes("vnp_ResponseCode")) {
+      if (location.search.includes("vnp_ResponseCode")) {
+        const params = new URLSearchParams(location.search);
+        const validParams = new URLSearchParams();
+        const validKeys = [
+          "vnp_Amount",
+          "vnp_BankCode",
+          "vnp_BankTranNo",
+          "vnp_CardType",
+          "vnp_OrderInfo",
+          "vnp_PayDate",
+          "vnp_ResponseCode",
+          "vnp_TmnCode",
+          "vnp_TransactionNo",
+          "vnp_TransactionStatus",
+          "vnp_TxnRef",
+          "vnp_SecureHash",
+        ];
+        for (const key of validKeys) {
+          if (params.has(key)) {
+            validParams.set(key, params.get(key));
+          }
+        }
+        const vnpQueryString = `?${validParams.toString()}`;
+        console.log("Filtered vnpQueryString:", vnpQueryString);
         try {
-          // Get the current query string with VNPay params
-          const vnpQueryString = location.search;
-
-          // Call backend to verify the payment (sending full query string)
-          const verifyResponse = await axios.get(
-            `${API_BASE_URL}/api/payment/vnpay_payment${vnpQueryString}`
+          const verifyResponse = await publicAPI.get(
+            `/payment/vnpay_payment${vnpQueryString}`
           );
-
-          // If payment verification is successful
-          if (
-            verifyResponse.data &&
-            verifyResponse.data.transactionStatus === "00"
-          ) {
-            // Refresh order details
-            const orderResponse = await axios.get(
-              `${API_BASE_URL}/api/orders/${orderId}/payment`
+          if (verifyResponse.data?.transactionStatus === "SUCCESS") {
+            const orderResponse = await publicAPI.get(
+              `/payment/payment/status/${orderId}`
             );
             setOrderDetails(orderResponse.data);
-
-            // Show success modal
+            if (orderResponse.data?.paymentStatus === "PAID") {
+              setExistingPaymentDetected(true);
+              setExistingPaymentDetails({
+                method: orderResponse.data.paymentMethod || "VNPAY",
+                date:
+                  orderResponse.data.paymentDate || new Date().toISOString(),
+                amount: orderResponse.data.totalAmount || 0,
+              });
+            }
             setShowModal(true);
           } else {
-            // Show error message for failed payment
-            setError("VNPay payment failed. Please try again.");
+            setError(
+              "Thanh toán VNPay thất bại: " + verifyResponse.data.message
+            );
           }
-
-          // Clean up the URL by removing VNPay parameters
           navigate(`/payment?orderId=${orderId}`, { replace: true });
         } catch (err) {
-          console.error("Error verifying VNPay payment:", err);
-          setError("Failed to verify payment. Please contact support.");
+          console.error("Lỗi khi xác minh thanh toán VNPay:", err);
+          if (err.response?.status === 401) {
+            setError(
+              "Truy cập không được phép. Kiểm tra token hoặc cấu hình API."
+            );
+          } else if (err.response?.status === 400) {
+            setError(
+              "Dữ liệu thanh toán không hợp lệ: " + err.response.data.message
+            );
+          } else {
+            setError(
+              "Không thể xác minh thanh toán: " + err.response?.data?.message ||
+                err.message
+            );
+          }
+          navigate(`/payment?orderId=${orderId}`, { replace: true });
         }
       }
     };
@@ -266,7 +477,6 @@ const Payment = () => {
     }
   }, [location.search, loading, orderId, navigate]);
 
-  // Format date for display
   const formatDate = (dateString) => {
     if (!dateString) return "N/A";
     const date = new Date(dateString);
@@ -274,26 +484,24 @@ const Payment = () => {
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
     });
   };
 
-  // Calculate total from items if needed
   const getOrderTotal = () => {
-    // If total is already defined and not zero, use it
-    if (orderDetails?.total) {
-      return parseFloat(orderDetails.total);
+    if (orderDetails?.totalAmount) {
+      return parseFloat(orderDetails.totalAmount);
     }
 
-    // Otherwise calculate from items
     if (orderDetails?.items && orderDetails.items.length > 0) {
       let total = 0;
       orderDetails.items.forEach((item) => {
         const price = parseFloat(item.price) || 0;
-        const quantity = parseInt(item.quantity) || 1;
+        const quantity = parseInt(item.quantity, 10) || 1;
         total += price * quantity;
       });
 
-      // Apply discount if available
       if (orderDetails?.discount) {
         total -= parseFloat(orderDetails.discount) || 0;
       }
@@ -319,7 +527,7 @@ const Payment = () => {
           <p className="text-red-700 mb-2">{error}</p>
           <button
             onClick={() => navigate("/menu")}
-            className="bg-red-500 text-white py-2 px-4 rounded-lg"
+            className="!bg-red-500 text-white py-2 px-4 rounded-lg"
           >
             Return to Menu
           </button>
@@ -328,15 +536,11 @@ const Payment = () => {
     );
   }
 
-  // Get the final total for display
   const orderTotal = getOrderTotal();
-
-  // Generate Momo QR code URL
   const momoQrUrl = `https://nhantien.momo.vn/${momoPhoneNumber}`;
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
-      {/* Header */}
       <div className="bg-white py-3 shadow-md fixed top-0 left-0 w-full z-10">
         <div className="flex items-center px-4 w-full">
           <button
@@ -365,9 +569,49 @@ const Payment = () => {
         </div>
       </div>
 
-      {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto mt-16 p-4">
-        {/* Order Bill */}
+        {(existingPaymentDetected || transactionStatus === "PENDING") && (
+          <div className="bg-green-100 border-l-4 border-green-500 p-4 mb-4 rounded-lg">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <svg
+                  className="h-5 w-5 text-green-500"
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div className="ml-3">
+                {existingPaymentDetected ? (
+                  <p className="text-sm text-green-700">
+                    This order has already been paid using{" "}
+                    {getPaymentMethodDisplayText(
+                      existingPaymentDetails?.method || "Unknown"
+                    )}
+                    .
+                  </p>
+                ) : (
+                  <p className="text-sm text-yellow-700">
+                    A payment transaction is pending. Please wait for it to
+                    complete or check its status.
+                  </p>
+                )}
+                {existingPaymentDetails && (
+                  <p className="text-xs text-green-600 mt-1">
+                    Transaction date: {formatDate(existingPaymentDetails.date)}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
           <h2 className="text-lg font-bold mb-4">ORDER BILL</h2>
           <div className="space-y-2">
@@ -381,10 +625,7 @@ const Payment = () => {
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">ORDER DATE</span>
-              <span>
-                {formatDate(orderDetails?.orderDate) ||
-                  new Date().toLocaleDateString()}
-              </span>
+              <span>{formatDate(orderDetails?.orderDate) || "N/A"}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-500">PAYMENT STATUS</span>
@@ -398,10 +639,39 @@ const Payment = () => {
                 {orderDetails?.paymentStatus || "UNPAID"}
               </span>
             </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">TRANSACTION STATUS</span>
+              <span
+                className={
+                  orderDetails?.transactionStatus === "PENDING"
+                    ? "text-yellow-500"
+                    : orderDetails?.transactionStatus === "PAID"
+                    ? "text-green-500"
+                    : "text-gray-500"
+                }
+              >
+                {orderDetails?.transactionStatus || "N/A"}
+              </span>
+            </div>
+            {orderDetails?.paymentStatus === "PAID" &&
+              orderDetails?.paymentMethod && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">PAYMENT METHOD</span>
+                  <span className="text-green-500">
+                    {getPaymentMethodDisplayText(orderDetails.paymentMethod)}
+                  </span>
+                </div>
+              )}
+            {orderDetails?.paymentStatus === "PAID" &&
+              orderDetails?.paymentDate && (
+                <div className="flex justify-between">
+                  <span className="text-gray-500">PAYMENT DATE</span>
+                  <span>{formatDate(orderDetails.paymentDate)}</span>
+                </div>
+              )}
           </div>
         </div>
 
-        {/* Items List */}
         <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
           <h2 className="text-lg font-bold mb-4">ITEMS LIST</h2>
           <div className="grid grid-cols-3 gap-4 text-gray-500 text-sm font-medium border-b pb-2">
@@ -416,14 +686,16 @@ const Payment = () => {
                   key={index}
                   className="grid grid-cols-3 gap-4 items-center"
                 >
-                  <span className="font-bold">{item.dishName}</span>
+                  <span className="font-bold">
+                    {item.dishName || "Unknown Dish"}
+                  </span>
                   <span className="text-center">
-                    {item.description || "No description"}
+                    {item.notes || "No description"}
                     <br />
-                    Quantity: {item.quantity}
+                    Quantity: {parseInt(item.quantity, 10) || 1}
                   </span>
                   <span className="text-right text-red-500">
-                    {parseFloat(item.price).toLocaleString()} VND
+                    {(parseFloat(item.price) || 0).toLocaleString()} VND
                   </span>
                 </div>
               ))
@@ -435,30 +707,42 @@ const Payment = () => {
           </div>
         </div>
 
-        {/* Payment Details */}
         <div className="bg-white p-4 rounded-lg shadow-sm mt-4">
           <div className="space-y-4 mb-4">
             {orderDetails?.discount && orderDetails.discount > 0 && (
               <div className="flex justify-between">
                 <span className="text-gray-500">DISCOUNT</span>
                 <span className="text-red-500">
-                  -{parseFloat(orderDetails.discount).toLocaleString()} VND
+                  -{(parseFloat(orderDetails.discount) || 0).toLocaleString()}{" "}
+                  VND
                 </span>
               </div>
             )}
             <div className="flex justify-between">
               <span className="text-gray-500">PAYMENT METHOD</span>
-              <select
-                className="border border-gray-300 rounded-lg px-2 py-1"
-                value={paymentMethod}
-                onChange={(e) => setPaymentMethod(e.target.value)}
-                disabled={orderDetails?.paymentStatus === "PAID"}
-              >
-                <option value="CASH">Cash</option>
-                <option value="VNPAY">VNPay</option>
-                <option value="CREDIT">Credit Card</option>
-                <option value="MOMO">Momo</option>
-              </select>
+              {orderDetails?.paymentStatus === "PAID" ? (
+                <span className="font-medium">
+                  {getPaymentMethodDisplayText(
+                    orderDetails?.paymentMethod || "Unknown"
+                  )}
+                </span>
+              ) : (
+                <select
+                  className="border border-gray-300 rounded-lg px-2 py-1"
+                  value={paymentMethod}
+                  onChange={(e) => setPaymentMethod(e.target.value)}
+                  disabled={
+                    orderDetails?.paymentStatus === "PAID" ||
+                    existingPaymentDetected ||
+                    transactionStatus === "PENDING"
+                  }
+                >
+                  <option value="CASH">Cash</option>
+                  <option value="VNPAY">VNPay</option>
+                  <option value="CREDIT">Credit Card</option>
+                  <option value="MOMO">Momo</option>
+                </select>
+              )}
             </div>
             <div className="flex justify-between font-bold text-lg">
               <span>TOTAL</span>
@@ -466,34 +750,42 @@ const Payment = () => {
             </div>
           </div>
 
-          {/* Payment Button - only show if not paid yet */}
-          {orderDetails?.paymentStatus !== "PAID" && (
-            <button
-              className="w-full !bg-black text-white py-3 rounded-lg hover:bg-gray-800 transition"
-              onClick={handlePayment}
-              disabled={processingPayment || orderTotal <= 0}
-            >
-              {processingPayment ? "PROCESSING..." : "PAYMENT"}
-            </button>
-          )}
+          {orderDetails?.paymentStatus !== "PAID" &&
+            !existingPaymentDetected &&
+            transactionStatus !== "PENDING" && (
+              <button
+                className="w-full bg-black text-white py-3 rounded-lg hover:bg-gray-800 transition"
+                onClick={handlePayment}
+                disabled={processingPayment || orderTotal <= 0}
+              >
+                {processingPayment ? "PROCESSING..." : "PAYMENT"}
+              </button>
+            )}
 
-          {/* If already paid, show complete button */}
-          {orderDetails?.paymentStatus === "PAID" && (
+          {(orderDetails?.paymentStatus === "PAID" ||
+            existingPaymentDetected) && (
             <button
-              className="w-full !bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition"
+              className="w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition"
               onClick={() => navigate("/evaluate")}
             >
               COMPLETE
             </button>
           )}
+
+          {transactionStatus === "PENDING" && (
+            <button
+              className="w-full !bg-yellow-500 text-white py-3 rounded-lg hover:bg-yellow-600 transition"
+              onClick={checkTransactionStatus}
+            >
+              CHECK TRANSACTION STATUS
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Payment Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-opacity-20 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="relative bg-white p-6 rounded-lg shadow-lg w-96 border border-gray-300">
-            {/* Close button */}
             <button
               onClick={() => setShowModal(false)}
               className="absolute top-2 right-2 text-gray-500 hover:text-gray-800"
@@ -514,11 +806,94 @@ const Payment = () => {
               </svg>
             </button>
 
-            {/* Modal content */}
-            {paymentMethod === "MOMO" ? (
+            {existingPaymentDetected ? (
               <>
                 <div className="flex items-center justify-center mb-4">
-                  <h3 className="text-xl justify-center font-bold text-pink-500">
+                  <svg
+                    className="h-12 w-12 text-green-500"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold text-center mb-2">
+                  Payment Already Completed
+                </h3>
+                <p className="text-center text-gray-700 mb-6">
+                  This order has already been paid using{" "}
+                  {getPaymentMethodDisplayText(
+                    existingPaymentDetails?.method || "Unknown"
+                  )}
+                  .
+                  <br />
+                  <span className="text-sm text-gray-500">
+                    {formatDate(existingPaymentDetails?.date)}
+                  </span>
+                </p>
+                <div className="flex justify-center">
+                  <button
+                    onClick={() => {
+                      setShowModal(false);
+                      navigate("/evaluate");
+                    }}
+                    className="w-1/2 bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition"
+                  >
+                    Continue to Evaluation
+                  </button>
+                </div>
+              </>
+            ) : transactionStatus === "PENDING" ? (
+              <>
+                <div className="flex items-center justify-center mb-4">
+                  <svg
+                    className="h-12 w-12 text-yellow-500"
+                    xmlns="http://www.w3.org/2000/svg"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 001.415-1.415L11 9.586V6z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold text-center mb-2">
+                  Transaction Pending
+                </h3>
+                <p className="text-center text-gray-700 mb-6">
+                  A payment transaction is pending for order #{orderId}. Please
+                  wait for it to complete or check the status.
+                  <br />
+                  <span className="text-sm text-gray-500">
+                    {formatDate(existingPaymentDetails?.date)}
+                  </span>
+                </p>
+                <div className="flex justify-between gap-2">
+                  <button
+                    onClick={() => setShowModal(false)}
+                    className="w-1/2 bg-gray-300 text-black py-2 rounded-lg hover:bg-gray-400 transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={checkTransactionStatus}
+                    className="w-1/2 bg-yellow-500 text-white py-2 rounded-lg hover:bg-yellow-600 transition"
+                  >
+                    Check Status
+                  </button>
+                </div>
+              </>
+            ) : paymentMethod === "MOMO" ? (
+              <>
+                <div className="flex items-center justify-center mb-4">
+                  <h3 className="text-xl font-bold text-pink-500">
                     Momo Payment
                   </h3>
                 </div>
@@ -527,18 +902,19 @@ const Payment = () => {
                     src={`${API_BASE_URL}/api/images/qrCode.png`}
                     alt="Momo QR Code"
                     className="w-48 h-48 border"
+                    onError={() => console.error("Failed to load Momo QR code")}
                   />
                 </div>
                 <div className="flex justify-between gap-2">
                   <button
                     onClick={() => setShowModal(false)}
-                    className="w-1/2 !bg-gray-300 text-black py-2 rounded-lg hover:bg-gray-400 transition"
+                    className="w-1/2 bg-gray-300 text-black py-2 rounded-lg hover:bg-gray-400 transition"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={confirmPayment}
-                    className="w-1/2 !bg-pink-500 text-white py-2 rounded-lg hover:bg-pink-600 transition"
+                    className="w-1/2 bg-pink-500 text-white py-2 rounded-lg hover:bg-pink-600 transition"
                   >
                     Paid
                   </button>
@@ -551,7 +927,6 @@ const Payment = () => {
                   alt="Restaurant Logo"
                   className="mx-auto mb-4 w-24 h-24 object-contain"
                   onError={(e) => {
-                    e.target.onerror = null;
                     e.target.style.display = "none";
                   }}
                 />
@@ -560,19 +935,19 @@ const Payment = () => {
                 </h3>
                 <p className="text-center text-gray-700 mb-6">
                   Are you sure to proceed with the payment?{" "}
-                  <strong>{orderTotal.toLocaleString()}đ</strong> cho đơn hàng #
+                  <strong>{orderTotal.toLocaleString()}đ</strong> for order #
                   {orderId}?
                 </p>
                 <div className="flex justify-between gap-2">
                   <button
                     onClick={() => setShowModal(false)}
-                    className="w-1/2 !bg-gray-300 text-black py-2 rounded-lg hover:bg-gray-400 transition"
+                    className="w-1/2 bg-gray-300 text-black py-2 rounded-lg hover:bg-gray-400 transition"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={confirmPayment}
-                    className="w-1/2 !bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition"
+                    className="w-1/2 bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition"
                   >
                     Confirm
                   </button>
