@@ -147,7 +147,7 @@ authAPI.interceptors.response.use(
 // ===================== Xác Thực ===================== //
 export const login = async (login, password) => {
   try {
-    const response = await publicAPI.post("/api/auth/login", {
+    const response = await publicAPI.post("/auth/login", {
       login,
       password,
     });
@@ -160,7 +160,7 @@ export const login = async (login, password) => {
 
 export const googleLogin = async (tokenId) => {
   try {
-    const response = await publicAPI.post("/api/auth/staff/google-login", {
+    const response = await publicAPI.post("auth/staff/google-login", {
       tokenId,
     });
     return response.data;
@@ -172,7 +172,7 @@ export const googleLogin = async (tokenId) => {
 
 export const logout = async () => {
   try {
-    const response = await authAPI.post("/api/auth/logout");
+    const response = await authAPI.post("/auth/logout");
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("username");
@@ -190,7 +190,7 @@ export const logout = async () => {
 
 export const forgotPassword = async (login) => {
   try {
-    const response = await publicAPI.post("/api/auth/forgot-password", {
+    const response = await publicAPI.post("/auth/forgot-password", {
       login,
     });
     return response.data;
@@ -202,7 +202,7 @@ export const forgotPassword = async (login) => {
 
 export const refreshToken = async (refreshToken) => {
   try {
-    const response = await publicAPI.post("/api/auth/refresh-token", {
+    const response = await publicAPI.post("/auth/refresh-token", {
       refreshToken,
     });
     return response.data;

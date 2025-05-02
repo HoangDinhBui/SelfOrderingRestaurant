@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FaCheck,
@@ -7,60 +7,24 @@ import {
   FaBell,
   FaUtensils,
 } from "react-icons/fa";
+import { toast } from "react-toastify";
 import MenuBarStaff from "../../../components/layout/MenuBar_Staff.jsx";
+import {
+  getCurrentShiftNotifications,
+  markNotificationAsRead,
+  deleteNotification,
+} from "../../../services/notificationService";
+import { confirmPayment, getPaymentStatus } from "../../../services/paymentAPI";
+import { format, parseISO, isToday } from "date-fns";
 
 const NotificationManagementStaff = () => {
   const [activeTab, setActiveTab] = useState("Notification Management");
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      table: "Table 1",
-      type: "Payment request",
-      message: "I need to pay.",
-      time: "18:30:00",
-      date: "Today",
-      checked: false,
-    },
-    {
-      id: 2,
-      table: "Table 1",
-      type: "Call staff",
-      message:
-        "I need more sauce for my dish, please bring me another chili, thank you.",
-      time: "18:10:00",
-      date: "Today",
-      checked: false,
-    },
-    {
-      id: 3,
-      table: "Table 2",
-      type: "Payment request",
-      message: "I need to pay!",
-      time: "17:30:00",
-      date: "Today",
-      checked: false,
-    },
-    {
-      id: 4,
-      table: "Table 2",
-      type: "Other",
-      message: "Please bring me a spoon, thank you.",
-      time: "17:30:00",
-      date: "Today",
-      checked: false,
-    },
-    {
-      id: 5,
-      table: "Table 1",
-      type: "Payment request",
-      message: "I need to pay",
-      time: "21:14:00",
-      date: "12/04/2025",
-      checked: false,
-    },
-  ]);
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [notificationToDelete, setNotificationToDelete] = useState(null);
+  const [processing, setProcessing] = useState(false); // For payment confirmation spinner
 
   const tabs = [
     "Order Management",
@@ -69,32 +33,355 @@ const NotificationManagementStaff = () => {
   ];
   const navigate = useNavigate();
 
-  // Group notifications by date
-  const groupedNotifications = notifications.reduce((acc, notification) => {
-    if (!acc[notification.date]) {
-      acc[notification.date] = [];
+  useEffect(() => {
+    fetchNotifications();
+
+    let socket;
+    let reconnectAttempts = 0;
+    const maxReconnectAttempts = 5;
+    const reconnectDelay = 2000;
+
+    const setupWebSocket = () => {
+      try {
+        const userId = localStorage.getItem("userId") || "123";
+        const userType = "STAFF";
+        const wsUrl = `ws://localhost:8080/ws/notifications?userId=${userId}&userType=${userType}`;
+        socket = new WebSocket(wsUrl);
+
+        socket.onopen = () => {
+          console.log("WebSocket connection established");
+          reconnectAttempts = 0;
+          const pingInterval = setInterval(() => {
+            if (socket.readyState === WebSocket.OPEN) {
+              socket.send(JSON.stringify({ type: "PING" }));
+            }
+          }, 10000);
+          socket.pingInterval = pingInterval;
+        };
+
+        socket.onmessage = (event) => {
+          console.log("Raw WebSocket message received:", event.data);
+          try {
+            if (event.data === "PONG") return;
+            const data = JSON.parse(event.data);
+            console.log("Parsed WebSocket message:", data);
+
+            let newNotification;
+            if (data.type === "NOTIFICATION") {
+              newNotification = data.notification || data;
+            } else {
+              newNotification = data; // Xử lý định dạng phẳng
+            }
+
+            if (!newNotification.notificationId) {
+              console.warn(
+                "Received notification without ID:",
+                newNotification
+              );
+              return;
+            }
+
+            setNotifications((prevNotifications) => {
+              const exists = prevNotifications.some(
+                (n) => n.notificationId === newNotification.notificationId
+              );
+              if (exists) return prevNotifications;
+
+              const date = new Date(newNotification.createAt || new Date());
+              const processedNotification = {
+                ...newNotification,
+                tableNumber: newNotification.tableNumber || "Unknown",
+                content: newNotification.content || "New notification",
+                dateObj: date,
+                dateString: isToday(date)
+                  ? "Today"
+                  : format(date, "dd/MM/yyyy"),
+                timeString: format(date, "HH:mm:ss"),
+                dateTimestamp: date.getTime(),
+              };
+
+              toast.info(
+                `New notification from Table ${processedNotification.tableNumber}: ${processedNotification.content}`,
+                { autoClose: 5000 }
+              );
+
+              return [processedNotification, ...prevNotifications].sort(
+                (a, b) => b.dateTimestamp - a.dateTimestamp
+              );
+            });
+          } catch (err) {
+            console.error("Error processing WebSocket message:", err);
+            toast.error("Error processing real-time notification");
+          }
+        };
+
+        socket.onerror = (error) => {
+          console.error("WebSocket error:", error);
+        };
+
+        socket.onclose = (event) => {
+          console.log(
+            `WebSocket connection closed: ${event.code} ${event.reason}`
+          );
+          if (socket.pingInterval) {
+            clearInterval(socket.pingInterval);
+          }
+
+          if (reconnectAttempts < maxReconnectAttempts) {
+            console.log(
+              `Attempting to reconnect (${
+                reconnectAttempts + 1
+              }/${maxReconnectAttempts})...`
+            );
+            reconnectAttempts++;
+            setTimeout(setupWebSocket, reconnectDelay);
+          } else {
+            console.log(
+              "Max reconnect attempts reached. Falling back to polling only."
+            );
+            toast.warn("Real-time notifications unavailable. Using polling.", {
+              autoClose: 5000,
+            });
+          }
+        };
+      } catch (err) {
+        console.error("Failed to create WebSocket connection:", err);
+        toast.error("Failed to connect to real-time notifications");
+      }
+    };
+
+    setupWebSocket();
+
+    const pollingInterval = setInterval(() => {
+      if (!socket || socket.readyState !== WebSocket.OPEN) {
+        console.log("WebSocket not connected, using polling fallback");
+        fetchNotifications();
+      }
+    }, 10000);
+
+    return () => {
+      if (socket) {
+        reconnectAttempts = maxReconnectAttempts;
+        if (socket.readyState === WebSocket.OPEN) {
+          socket.close(1000, "Component unmounting");
+        }
+        if (socket.pingInterval) {
+          clearInterval(socket.pingInterval);
+        }
+      }
+      clearInterval(pollingInterval);
+    };
+  }, []);
+
+  const fetchNotifications = async () => {
+    try {
+      setLoading(notifications.length === 0);
+      const data = await getCurrentShiftNotifications();
+      if (Array.isArray(data)) {
+        setNotifications((prevNotifications) => {
+          const newNotifications = data.map((notification) => {
+            const date = new Date(notification.createAt || new Date());
+            return {
+              ...notification,
+              dateObj: date,
+              dateString: isToday(date) ? "Today" : format(date, "dd/MM/yyyy"),
+              timeString: format(date, "HH:mm:ss"),
+              dateTimestamp: date.getTime(),
+            };
+          });
+
+          // Hợp nhất và loại bỏ trùng lặp
+          const mergedNotifications = [
+            ...prevNotifications,
+            ...newNotifications.filter(
+              (n) =>
+                !prevNotifications.some(
+                  (p) => p.notificationId === n.notificationId
+                )
+            ),
+          ];
+          return mergedNotifications.sort(
+            (a, b) => b.dateTimestamp - a.dateTimestamp
+          );
+        });
+        setError(null);
+      } else {
+        console.error("Invalid notification data format received");
+        setError("Failed to fetch notifications");
+      }
+    } catch (err) {
+      console.error("Error fetching notifications:", err);
+      setError("Error connecting to server");
+      toast.error("Failed to refresh notifications");
+    } finally {
+      setLoading(false);
     }
-    acc[notification.date].push(notification);
-    return acc;
-  }, {});
+  };
+
+  const groupedNotifications = () => {
+    const notificationsWithDates = notifications.map((notification) => {
+      const date = new Date(notification.createAt || new Date());
+      return {
+        ...notification,
+        dateObj: date,
+        dateString: isToday(date) ? "Today" : format(date, "dd/MM/yyyy"),
+        timeString: format(date, "HH:mm:ss"),
+        dateTimestamp: date.getTime(),
+      };
+    });
+
+    const groups = notificationsWithDates.reduce((acc, notification) => {
+      if (!acc[notification.dateString]) {
+        acc[notification.dateString] = {
+          dateString: notification.dateString,
+          timestamp: notification.dateTimestamp,
+          items: [],
+        };
+      }
+      acc[notification.dateString].items.push({
+        ...notification,
+        table: `Table ${notification.tableNumber || "Unknown"}`,
+        time: notification.timeString,
+        content: notification.content || "No content", // Sử dụng content
+      });
+      return acc;
+    }, {});
+
+    Object.keys(groups).forEach((key) => {
+      groups[key].items.sort((a, b) => b.dateTimestamp - a.dateTimestamp);
+    });
+
+    return Object.values(groups).sort((a, b) => {
+      if (a.dateString === "Today") return -1;
+      if (b.dateString === "Today") return 1;
+      return b.timestamp - a.timestamp;
+    });
+  };
 
   const handleTabClick = (tab) => {
     if (tab === "Order Management") {
       navigate("/order-management");
     } else if (tab === "Dish Management") {
-      // Thêm route cho Dish Management nếu cần
       navigate("/dish-management");
     } else {
       setActiveTab(tab);
     }
   };
 
-  const handleCheckNotification = (id) => {
-    setNotifications(
-      notifications.map((noti) =>
-        noti.id === id ? { ...noti, checked: true } : noti
-      )
-    );
+  const handleCheckNotification = async (notification) => {
+    try {
+      setProcessing(true);
+      const id = notification.notificationId;
+      if (!id) {
+        toast.error("Invalid notification ID");
+        return;
+      }
+
+      if (notification.type === "PAYMENT_REQUEST") {
+        if (!notification.orderId) {
+          toast.error("Invalid order ID for payment confirmation");
+          return;
+        }
+
+        const loadingToastId = toast.loading("Checking payment status...");
+
+        // Check payment status
+        const statusResponse = await getPaymentStatus(notification.orderId);
+        if (statusResponse.error) {
+          toast.update(loadingToastId, {
+            render: `Failed to check payment status: ${statusResponse.message}`,
+            type: "error",
+            isLoading: false,
+            autoClose: 5000,
+          });
+          return;
+        }
+
+        if (statusResponse.paymentStatus === "PAID") {
+          toast.update(loadingToastId, {
+            render: `Payment already confirmed for order ${notification.orderId}`,
+            type: "info",
+            isLoading: false,
+            autoClose: 3000,
+          });
+          // Mark as read since payment is already confirmed
+          const readResponse = await markNotificationAsRead(id);
+          if (readResponse.error) {
+            toast.error("Failed to mark notification as read");
+            return;
+          }
+          setNotifications((prev) =>
+            prev.map((noti) =>
+              noti.notificationId === id ? { ...noti, isRead: true } : noti
+            )
+          );
+          return;
+        }
+
+        if (statusResponse.paymentStatus !== "PENDING") {
+          toast.update(loadingToastId, {
+            render: `No pending payment found for order ${notification.orderId}`,
+            type: "error",
+            isLoading: false,
+            autoClose: 5000,
+          });
+          // Mark as read to clear invalid notification
+          const readResponse = await markNotificationAsRead(id);
+          if (readResponse.error) {
+            toast.error("Failed to mark notification as read");
+            return;
+          }
+          setNotifications((prev) =>
+            prev.map((noti) =>
+              noti.notificationId === id ? { ...noti, isRead: true } : noti
+            )
+          );
+          return;
+        }
+
+        // Confirm payment
+        toast.update(loadingToastId, { render: "Confirming payment..." });
+        const paymentResponse = await confirmPayment(notification.orderId);
+        if (paymentResponse.success) {
+          toast.update(loadingToastId, {
+            render: "Payment confirmed successfully!",
+            type: "success",
+            isLoading: false,
+            autoClose: 3000,
+          });
+        } else {
+          toast.update(loadingToastId, {
+            render: paymentResponse.message || "Failed to confirm payment",
+            type: "error",
+            isLoading: false,
+            autoClose: 5000,
+          });
+          return;
+        }
+      }
+
+      // Mark notification as read (for all types)
+      const readResponse = await markNotificationAsRead(id);
+      if (readResponse.error) {
+        toast.error("Failed to mark notification as read");
+        return;
+      }
+
+      setNotifications((prev) =>
+        prev.map((noti) =>
+          noti.notificationId === id ? { ...noti, isRead: true } : noti
+        )
+      );
+
+      if (notification.type !== "PAYMENT_REQUEST") {
+        toast.success("Notification marked as read");
+      }
+    } catch (err) {
+      console.error("Error processing notification:", err);
+      toast.error(`Error processing notification: ${err.message}`);
+    } finally {
+      setProcessing(false);
+    }
   };
 
   const handleDeleteClick = (id) => {
@@ -102,33 +389,78 @@ const NotificationManagementStaff = () => {
     setShowDeleteModal(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (notificationToDelete) {
-      setNotifications(
-        notifications.filter((noti) => noti.id !== notificationToDelete)
-      );
+      setProcessing(true);
+      try {
+        const response = await deleteNotification(notificationToDelete);
+        if (response.error) {
+          toast.error("Failed to delete notification");
+        } else {
+          setNotifications((prev) =>
+            prev.filter((noti) => noti.notificationId !== notificationToDelete)
+          );
+          toast.success("Notification deleted successfully");
+        }
+      } catch (err) {
+        console.error("Error deleting notification:", err);
+        toast.error("Error deleting notification");
+      } finally {
+        setProcessing(false);
+        setShowDeleteModal(false);
+        setNotificationToDelete(null);
+      }
     }
-    setShowDeleteModal(false);
-    setNotificationToDelete(null);
   };
 
   const handleCancelDelete = () => {
     setShowDeleteModal(false);
     setNotificationToDelete(null);
   };
-  // Function to get icon based on notification type
+
   const getNotificationIcon = (type) => {
+    if (!type) return <FaBell className="text-gray-500 mr-2 h-5 w-5" />;
     switch (type) {
-      case "Payment request":
-        return <FaMoneyBillWave className="text-green-500 mr-2" />;
-      case "Call staff":
-        return <FaBell className="text-blue-500 mr-2" />;
-      case "Other":
-        return <FaUtensils className="text-orange-500 mr-2" />;
+      case "PAYMENT_REQUEST":
+        return <FaMoneyBillWave className="text-green-500 mr-2 h-5 w-5" />;
+      case "CALL_STAFF":
+        return <FaBell className="text-blue-500 mr-2 h-5 w-5" />;
+      case "ORDER_READY":
+        return <FaUtensils className="text-orange-500 mr-2 h-5 w-5" />;
       default:
-        return <FaBell className="text-gray-500 mr-2" />;
+        return <FaBell className="text-gray-500 mr-2 h-5 w-5" />;
     }
   };
+
+  const getButtonLabel = (notification) => {
+    if (notification.isRead) return "Checked";
+    if (notification.type === "PAYMENT_REQUEST") return "Confirm";
+    return "Check";
+  };
+
+  if (loading) {
+    return (
+      <div className="h-screen w-screen bg-blue-50 flex flex-col">
+        <MenuBarStaff />
+        <div className="flex-1 p-6 bg-gray-100 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="h-screen w-screen bg-blue-50 flex flex-col">
+        <MenuBarStaff />
+        <div className="flex-1 p-6 bg-gray-100 flex items-center justify-center">
+          <div className="text-xl font-bold text-red-500">{error}</div>
+        </div>
+      </div>
+    );
+  }
+
+  const sortedNotificationGroups = groupedNotifications();
 
   return (
     <div className="h-screen w-screen !bg-blue-50 flex flex-col">
@@ -138,23 +470,29 @@ const NotificationManagementStaff = () => {
       <div className="flex-1 p-6 bg-gray-100 overflow-y-auto">
         {/* Notification List */}
         <div className="bg-white rounded-lg shadow-md p-6">
-          {Object.entries(groupedNotifications).map(
-            ([date, dateNotifications]) => (
-              <div key={date} className="mb-8">
-                <h2 className="text-xl font-bold mb-4 border-b pb-2">{date}</h2>
-                {dateNotifications.map((notification) => (
+          {sortedNotificationGroups.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              No notifications available
+            </div>
+          ) : (
+            sortedNotificationGroups.map((dateGroup) => (
+              <div key={dateGroup.dateString} className="mb-8">
+                <h2 className="text-xl font-bold mb-4 border-b pb-2">
+                  {dateGroup.dateString}
+                </h2>
+                {dateGroup.items.map((notification) => (
                   <div
-                    key={notification.id}
+                    key={notification.notificationId}
                     className="relative flex justify-between items-center bg-white rounded-lg shadow-md p-4 mb-4"
                   >
-                    {/* Phần bên trái: Icon và thông tin */}
+                    {/* Left side: Icon and info */}
                     <div className="flex items-center">
                       {/* Icon */}
                       <div className="flex items-center justify-center w-12 h-12 bg-gray-200 rounded-full mr-4">
                         {getNotificationIcon(notification.type)}
                       </div>
 
-                      {/* Thông tin bàn và nội dung */}
+                      {/* Table and content info */}
                       <div>
                         <h3 className="font-bold text-lg">
                           {notification.table}
@@ -163,47 +501,70 @@ const NotificationManagementStaff = () => {
                           - {notification.type}
                         </p>
                         <p className="text-gray-500 text-sm">
-                          {notification.message}
+                          {notification.content}
                         </p>
                       </div>
                     </div>
 
-                    {/* Thời gian */}
-                    <span className="absolute top-2 right-4 text-gray-500 text-sm">
-                      {notification.time}
-                    </span>
+                    {/* Right side: Time and Buttons */}
+                    <div className="flex flex-col items-end space-y-2">
+                      {/* Time */}
+                      <span className="text-gray-500 text-sm">
+                        {notification.time}
+                      </span>
 
-                    <div className="flex justify-end space-x-4">
-                      <button
-                        className="flex items-center px-3 py-1 !bg-yellow-500 text-white rounded hover:bg-green-600"
-                        onClick={() => handleCheckNotification(notification.id)}
-                      >
-                        <FaCheck className="mr-1" /> Check
-                      </button>
-                      <button
-                        className="flex items-center px-3 py-1 !bg-red-500 text-white rounded hover:bg-red-600"
-                        onClick={() => handleDeleteClick(notification.id)}
-                      >
-                        <FaTrash className="mr-1" /> Delete
-                      </button>
+                      {/* Buttons */}
+                      <div className="flex justify-end space-x-4">
+                        <button
+                          aria-label={
+                            notification.isRead
+                              ? "Notification checked"
+                              : "Mark notification as checked"
+                          }
+                          className={`flex items-center justify-center px-3 py-1 w-28 text-white rounded text-sm font-medium ${
+                            notification.isRead
+                              ? "!bg-green-500 cursor-not-allowed opacity-70"
+                              : "!bg-yellow-500 hover:bg-green-600"
+                          }`}
+                          onClick={() =>
+                            !notification.isRead &&
+                            handleCheckNotification(notification)
+                          }
+                          disabled={notification.isRead}
+                        >
+                          <FaCheck className="mr-1 w-5 h-5" />
+                          {notification.isRead ? "Checked" : "Check"}
+                        </button>
+                        <button
+                          aria-label="Delete notification"
+                          className="flex items-center justify-center px-3 py-1 w-28 !bg-red-500 hover:bg-red-600 text-white rounded text-sm font-medium"
+                          onClick={() =>
+                            handleDeleteClick(notification.notificationId)
+                          }
+                        >
+                          <FaTrash className="mr-1 w-6 h-6" />{" "}
+                          {/* Increased to w-6 h-6 */}
+                          Delete
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
-            )
+            ))
           )}
         </div>
       </div>
 
       {showDeleteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div class="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
           <div className="relative bg-white rounded-xl shadow-2xl w-96 p-8 mx-4">
             {/* Thêm logo nhà hàng */}
             <div className="flex justify-center mb-4">
               <img
                 alt="Logo"
-                class="w-24 h-24"
+                className="w-24 h-24"
                 src="../../src/assets/img/logoremovebg.png"
               ></img>
             </div>

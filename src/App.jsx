@@ -4,6 +4,8 @@ import { MenuProvider } from "./context/MenuContext";
 import { CartProvider } from "./context/CartContext";
 import "./axiosConfig";
 import "@fortawesome/fontawesome-free/css/all.min.css";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 // Customer Pages
 import Home from "./pages/Customer/Home/Home";
@@ -72,6 +74,18 @@ function App() {
               <Route path="/admin-information" element={<AdminInformation />} />
             </Routes>
           </Router>
+          {/* Toast Container for notifications */}
+          <ToastContainer
+            position="top-right"
+            autoClose={3000}
+            hideProgressBar={false}
+            newestOnTop
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+          />
         </MenuProvider>
       </CartProvider>
     </ApolloProvider>
