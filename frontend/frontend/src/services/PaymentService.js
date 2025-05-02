@@ -78,4 +78,104 @@ class PaymentService {
   }
 }
 
+// src/services/paymentService.js
+
+/**
+ * Confirms a payment for an order
+ * @param {number} orderId - The ID of the order to confirm payment for
+ * @returns {Promise<Object>} - Response with success status and message
+ */
+export const confirmPayment = async (orderId) => {
+  try {
+    const response = await fetch("/api/payment/confirm", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ orderId }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to confirm payment");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error confirming payment:", error);
+    throw error;
+  }
+};
+
+/**
+ * Processes a new payment for an order
+ * @param {Object} paymentData - Payment data including orderId and payment method
+ * @returns {Promise<Object>} - Response with transaction details
+ */
+export const processPayment = async (paymentData) => {
+  try {
+    const response = await fetch("/api/payment/process", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(paymentData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || "Failed to process payment");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error processing payment:", error);
+    throw error;
+  }
+};
+
+/**
+ * Gets details of a payment by order ID
+ * @param {number} orderId - The order ID to get payment details for
+ * @returns {Promise<Object>} - Payment details
+ */
+export const getPaymentStatus = async (orderId) => {
+  try {
+    const response = await fetch(`/api/payment/payment/status/${orderId}`);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || "Failed to get payment status");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error("Error getting payment status:", error);
+    throw error;
+  }
+};
+
+/**
+ * Process cash payment for an order
+ * @param {number} orderId - The order ID to process cash payment for
+ * @returns {Promise<string>} - Success message
+ */
+export const processCashPayment = async (orderId) => {
+  try {
+    const response = await fetch(`/api/payment/payment/cash/${orderId}`, {
+      method: "POST",
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(errorText || "Failed to process cash payment");
+    }
+
+    return await response.text();
+  } catch (error) {
+    console.error("Error processing cash payment:", error);
+    throw error;
+  }
+};
+
 export default new PaymentService();

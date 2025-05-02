@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { authAPI, publicAPI } from "../../../services/api";
+import { authAPI, publicAPI } from "../../../services/api"; // Existing API services
+import { confirmPayment, getPaymentStatus } from "../../../services/paymentAPI"; // New payment service
 
 const Payment = () => {
   const navigate = useNavigate();
@@ -18,9 +19,6 @@ const Payment = () => {
   const momoPhoneNumber = "0329914143";
   const queryParams = new URLSearchParams(location.search);
   const orderId = queryParams.get("orderId");
-  const API_BASE_URL = "http://localhost:8080";
-
-  const getAuthToken = () => localStorage.getItem("accessToken");
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
@@ -32,14 +30,14 @@ const Payment = () => {
 
       try {
         setLoading(true);
-        // Fix: Remove duplicate /api/ in the URL path
-        const response = await authAPI.get(
-          `/payment/payment/status/${orderId}`
-        );
-        const orderData = response.data;
+        const response = await getPaymentStatus(orderId);
+        if (response.error) {
+          throw new Error(response.message || "Failed to load order details");
+        }
+        const orderData = response;
         console.log("Order details response:", orderData);
 
-        if (orderData?.paymentStatus === "PAID") {
+        if (orderData.paymentStatus === "PAID") {
           setExistingPaymentDetected(true);
           setExistingPaymentDetails({
             method: orderData.paymentMethod || "Unknown",
@@ -52,7 +50,7 @@ const Payment = () => {
           return;
         }
 
-        if (orderData?.transactionStatus === "PENDING") {
+        if (orderData.transactionStatus === "PENDING") {
           setTransactionStatus("PENDING");
           setExistingPaymentDetails({
             method: orderData.paymentMethod || "Unknown",
@@ -97,9 +95,13 @@ const Payment = () => {
 
   const checkTransactionStatus = async () => {
     try {
-      // Fix: Remove duplicate /api/ in the URL path
-      const response = await authAPI.get(`/payment/payment/status/${orderId}`);
-      const orderData = response.data;
+      const response = await getPaymentStatus(orderId);
+      if (response.error) {
+        throw new Error(
+          response.message || "Failed to check transaction status"
+        );
+      }
+      const orderData = response;
       setOrderDetails(orderData);
 
       if (orderData.paymentStatus === "PAID") {
@@ -151,31 +153,33 @@ const Payment = () => {
     try {
       setProcessingPayment(true);
 
-      // Fix: Remove duplicate /api/ in the URL path
-      const paymentStatusCheck = await authAPI.get(
-        `/payment/payment/status/${orderId}`
-      );
-      if (paymentStatusCheck.data?.paymentStatus === "PAID") {
+      const paymentStatusCheck = await getPaymentStatus(orderId);
+      if (paymentStatusCheck.error) {
+        throw new Error(
+          paymentStatusCheck.message || "Failed to check payment status"
+        );
+      }
+      if (paymentStatusCheck.paymentStatus === "PAID") {
         setExistingPaymentDetected(true);
         setExistingPaymentDetails({
-          method: paymentStatusCheck.data.paymentMethod || "Unknown",
-          date: paymentStatusCheck.data.paymentDate || new Date().toISOString(),
-          amount: paymentStatusCheck.data.totalAmount || 0,
+          method: paymentStatusCheck.paymentMethod || "Unknown",
+          date: paymentStatusCheck.paymentDate || new Date().toISOString(),
+          amount: paymentStatusCheck.totalAmount || 0,
         });
-        setOrderDetails(paymentStatusCheck.data);
+        setOrderDetails(paymentStatusCheck);
         setShowModal(true);
         setProcessingPayment(false);
         return;
       }
 
-      if (paymentStatusCheck.data?.transactionStatus === "PENDING") {
+      if (paymentStatusCheck.transactionStatus === "PENDING") {
         setTransactionStatus("PENDING");
         setExistingPaymentDetails({
-          method: paymentStatusCheck.data.paymentMethod || "Unknown",
-          date: paymentStatusCheck.data.paymentDate || new Date().toISOString(),
-          amount: paymentStatusCheck.data.totalAmount || 0,
+          method: paymentStatusCheck.paymentMethod || "Unknown",
+          date: paymentStatusCheck.paymentDate || new Date().toISOString(),
+          amount: paymentStatusCheck.totalAmount || 0,
         });
-        setOrderDetails(paymentStatusCheck.data);
+        setOrderDetails(paymentStatusCheck);
         setError(
           "A payment transaction is pending. Please wait for it to complete or check its status."
         );
@@ -186,7 +190,6 @@ const Payment = () => {
 
       switch (paymentMethod) {
         case "VNPAY":
-          // Fix: Remove duplicate /api/ in the URL path
           const vnpayResponse = await authAPI.post(`/payment/vnpay`, {
             orderId: parseInt(orderId),
             total: Math.round(orderTotal),
@@ -202,7 +205,6 @@ const Payment = () => {
           }
 
         case "MOMO":
-          // Fix: Remove duplicate /api/ in the URL path
           await authAPI.post(`/payment/process`, {
             orderId: parseInt(orderId),
             paymentMethod: "MOMO",
@@ -213,7 +215,6 @@ const Payment = () => {
 
         case "CASH":
         case "CREDIT":
-          // Fix: Remove duplicate /api/ in the URL path
           await authAPI.post(`/payment/process`, {
             orderId: parseInt(orderId),
             paymentMethod: paymentMethod,
@@ -232,18 +233,14 @@ const Payment = () => {
       if (err.response?.status === 409) {
         setExistingPaymentDetected(true);
         try {
-          // Fix: Remove duplicate /api/ in the URL path
-          const paymentStatusCheck = await authAPI.get(
-            `/payment/payment/status/${orderId}`
-          );
-          setOrderDetails(paymentStatusCheck.data);
+          const paymentStatusCheck = await getPaymentStatus(orderId);
+          setOrderDetails(paymentStatusCheck);
           setExistingPaymentDetails({
-            method: paymentStatusCheck.data.paymentMethod || "Unknown",
-            date:
-              paymentStatusCheck.data.paymentDate || new Date().toISOString(),
-            amount: paymentStatusCheck.data.totalAmount || 0,
+            method: paymentStatusCheck.paymentMethod || "Unknown",
+            date: paymentStatusCheck.paymentDate || new Date().toISOString(),
+            amount: paymentStatusCheck.totalAmount || 0,
           });
-          if (paymentStatusCheck.data?.transactionStatus === "PENDING") {
+          if (paymentStatusCheck.transactionStatus === "PENDING") {
             setTransactionStatus("PENDING");
             setError(
               "A payment transaction is pending. Please wait for it to complete or check its status."
@@ -289,12 +286,34 @@ const Payment = () => {
 
     try {
       setProcessingPayment(true);
-      // Fix: Remove duplicate /api/ in the URL path
-      const response = await authAPI.post(`/payment/confirm`, {
-        orderId: parseInt(orderId),
-      });
 
-      if (response.data?.success) {
+      // Check payment status before confirming
+      const statusResponse = await getPaymentStatus(orderId);
+      if (statusResponse.error) {
+        throw new Error(
+          statusResponse.message || "Failed to check payment status"
+        );
+      }
+      if (statusResponse.paymentStatus === "PAID") {
+        setExistingPaymentDetected(true);
+        setExistingPaymentDetails({
+          method: statusResponse.paymentMethod || paymentMethod,
+          date: statusResponse.paymentDate || new Date().toISOString(),
+          amount: statusResponse.totalAmount || orderTotal,
+        });
+        setOrderDetails(statusResponse);
+        setShowModal(true);
+        return;
+      }
+      if (statusResponse.paymentStatus !== "PENDING") {
+        setError(`No pending payment found for order ${orderId}`);
+        setShowModal(true);
+        return;
+      }
+
+      // Confirm payment
+      const response = await confirmPayment(orderId);
+      if (response.success) {
         try {
           const customerInfo = JSON.parse(
             localStorage.getItem("customerInfo")
@@ -306,19 +325,29 @@ const Payment = () => {
           const paymentMethodText = getPaymentMethodDisplayText(paymentMethod);
           const notificationMessage = `Customer has completed payment using ${paymentMethodText}`;
 
-          // Fix: Remove duplicate /api/ in the URL path
+          if (!customerInfo.id || !tableNumberNumeric || !orderId) {
+            console.error("Invalid notification data:", {
+              customerId: customerInfo.id,
+              tableNumber: tableNumberNumeric,
+              orderId,
+            });
+            throw new Error("Invalid notification data");
+          }
+
           await authAPI.post(`/notifications`, {
             customerId: customerInfo.id,
             tableNumber: tableNumberNumeric,
             type: "PAYMENT_REQUEST",
             orderId: parseInt(orderId),
             additionalMessage: notificationMessage,
-            paymentMethod: paymentMethod,
           });
         } catch (notifError) {
           console.error(
             "Error sending notification after payment:",
             notifError
+          );
+          setError(
+            "Payment confirmed, but failed to send notification. Please contact support."
           );
         }
 
@@ -326,40 +355,50 @@ const Payment = () => {
         sessionStorage.removeItem("latestOrderInfo");
         setShowModal(false);
 
-        // Fix: Remove duplicate /api/ in the URL path
-        const refreshResponse = await authAPI.get(
-          `/payment/payment/status/${orderId}`
-        );
-        setOrderDetails(refreshResponse.data);
+        const refreshResponse = await getPaymentStatus(orderId);
+        if (refreshResponse.error) {
+          throw new Error(
+            refreshResponse.message || "Failed to refresh payment status"
+          );
+        }
+        setOrderDetails(refreshResponse);
         setExistingPaymentDetected(true);
         setExistingPaymentDetails({
-          method: refreshResponse.data.paymentMethod || paymentMethod,
-          date: refreshResponse.data.paymentDate || new Date().toISOString(),
-          amount: refreshResponse.data.totalAmount || orderTotal,
+          method: refreshResponse.paymentMethod || paymentMethod,
+          date: refreshResponse.paymentDate || new Date().toISOString(),
+          amount: refreshResponse.totalAmount || orderTotal,
         });
 
         setTimeout(() => {
           navigate("/evaluate");
         }, 1000);
       } else {
-        setError("Failed to confirm the payment. Please try again!");
+        setError("Failed to confirm payment: " + response.message);
       }
     } catch (err) {
       console.error("Error confirming payment:", err);
-      if (err.response?.status === 409) {
+      if (
+        err.message.includes("No pending payment found") ||
+        err.response?.status === 404
+      ) {
+        setError(`No pending payment found for order ${orderId}`);
+        setShowModal(true);
+      } else if (err.response?.status === 409) {
         setExistingPaymentDetected(true);
         try {
-          // Fix: Remove duplicate /api/ in the URL path
-          const refreshResponse = await authAPI.get(
-            `/payment/payment/status/${orderId}`
-          );
-          setOrderDetails(refreshResponse.data);
+          const refreshResponse = await getPaymentStatus(orderId);
+          if (refreshResponse.error) {
+            throw new Error(
+              refreshResponse.message || "Failed to refresh payment status"
+            );
+          }
+          setOrderDetails(refreshResponse);
           setExistingPaymentDetails({
-            method: refreshResponse.data.paymentMethod || paymentMethod,
-            date: refreshResponse.data.paymentDate || new Date().toISOString(),
-            amount: refreshResponse.data.totalAmount || orderTotal,
+            method: refreshResponse.paymentMethod || paymentMethod,
+            date: refreshResponse.paymentDate || new Date().toISOString(),
+            amount: refreshResponse.totalAmount || orderTotal,
           });
-          if (refreshResponse.data?.transactionStatus === "PENDING") {
+          if (refreshResponse.transactionStatus === "PENDING") {
             setTransactionStatus("PENDING");
             setError("Transaction is still pending. Please check its status.");
           } else {
@@ -375,7 +414,7 @@ const Payment = () => {
       } else {
         setError(
           err.response?.data?.message ||
-            "Failed to confirm the payment. Please try again!"
+            "Failed to confirm payment. Please try again!"
         );
       }
     } finally {
@@ -431,17 +470,19 @@ const Payment = () => {
             `/payment/vnpay_payment${vnpQueryString}`
           );
           if (verifyResponse.data?.transactionStatus === "SUCCESS") {
-            const orderResponse = await publicAPI.get(
-              `/payment/payment/status/${orderId}`
-            );
-            setOrderDetails(orderResponse.data);
-            if (orderResponse.data?.paymentStatus === "PAID") {
+            const orderResponse = await getPaymentStatus(orderId);
+            if (orderResponse.error) {
+              throw new Error(
+                orderResponse.message || "Failed to fetch payment status"
+              );
+            }
+            setOrderDetails(orderResponse);
+            if (orderResponse.paymentStatus === "PAID") {
               setExistingPaymentDetected(true);
               setExistingPaymentDetails({
-                method: orderResponse.data.paymentMethod || "VNPAY",
-                date:
-                  orderResponse.data.paymentDate || new Date().toISOString(),
-                amount: orderResponse.data.totalAmount || 0,
+                method: orderResponse.paymentMethod || "VNPAY",
+                date: orderResponse.paymentDate || new Date().toISOString(),
+                amount: orderResponse.totalAmount || 0,
               });
             }
             setShowModal(true);
@@ -463,8 +504,8 @@ const Payment = () => {
             );
           } else {
             setError(
-              "Không thể xác minh thanh toán: " + err.response?.data?.message ||
-                err.message
+              "Không thể xác minh thanh toán: " +
+                (err.response?.data?.message || err.message)
             );
           }
           navigate(`/payment?orderId=${orderId}`, { replace: true });
@@ -754,7 +795,7 @@ const Payment = () => {
             !existingPaymentDetected &&
             transactionStatus !== "PENDING" && (
               <button
-                className="w-full bg-black text-white py-3 rounded-lg hover:bg-gray-800 transition"
+                className="w-full !bg-black text-white py-3 rounded-lg hover:bg-gray-800 transition"
                 onClick={handlePayment}
                 disabled={processingPayment || orderTotal <= 0}
               >
@@ -842,7 +883,7 @@ const Payment = () => {
                       setShowModal(false);
                       navigate("/evaluate");
                     }}
-                    className="w-1/2 bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition"
+                    className="w-1/2 !bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition"
                   >
                     Continue to Evaluation
                   </button>
@@ -908,13 +949,13 @@ const Payment = () => {
                 <div className="flex justify-between gap-2">
                   <button
                     onClick={() => setShowModal(false)}
-                    className="w-1/2 bg-gray-300 text-black py-2 rounded-lg hover:bg-gray-400 transition"
+                    className="w-1/2 !bg-gray-300 text-black py-2 rounded-lg hover:bg-gray-400 transition"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={confirmPayment}
-                    className="w-1/2 bg-pink-500 text-white py-2 rounded-lg hover:bg-pink-600 transition"
+                    className="w-1/2 !bg-pink-500 text-white py-2 rounded-lg hover:bg-pink-600 transition"
                   >
                     Paid
                   </button>
@@ -941,13 +982,13 @@ const Payment = () => {
                 <div className="flex justify-between gap-2">
                   <button
                     onClick={() => setShowModal(false)}
-                    className="w-1/2 bg-gray-300 text-black py-2 rounded-lg hover:bg-gray-400 transition"
+                    className="w-1/2 !bg-gray-300 text-black py-2 rounded-lg hover:bg-gray-400 transition"
                   >
                     Cancel
                   </button>
                   <button
                     onClick={confirmPayment}
-                    className="w-1/2 bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition"
+                    className="w-1/2 !bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition"
                   >
                     Confirm
                   </button>
