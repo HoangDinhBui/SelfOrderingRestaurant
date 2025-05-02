@@ -576,12 +576,12 @@ const StaffManagementAdmin = () => {
   return (
     <>
       <MenuBar
-        title="Quản lý Nhân viên"
+        title="Staff Management"
         icon="https://img.icons8.com/ios-filled/50/FFFFFF/user.png"
       />
       <div style={styles.outerContainer}>
         <div style={styles.innerContainer}>
-          <h1 style={styles.title}>Nhân viên</h1>
+          <h1 style={styles.title}>Staff</h1>
           <div style={styles.tableAndControls}>
             <div style={styles.tableContainer}>
               <table style={styles.table}>
