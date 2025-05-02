@@ -67,6 +67,7 @@ function App() {
               <Route path="/dish-management" element={<DishManagement />} />
               <Route path="/table-management" element={<TableManagement />} />
               <Route path="/menu-management" element={<MenuManagement />} />
+              <Route path="/staff-management" element={<StaffManagement />} />
               <Route
                 path="/revenue-management"
                 element={<RevenueManagement />}
