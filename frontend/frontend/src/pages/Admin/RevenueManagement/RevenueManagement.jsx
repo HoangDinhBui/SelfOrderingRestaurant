@@ -185,7 +185,7 @@ const RevenueManagementAdmin = () => {
                       >
                         <td className="py-3 px-4 text-gray-700">{item.date}</td>
                         <td className="py-3 px-4 font-medium text-gray-800">
-                          ${item.revenue.toLocaleString()}
+                          {item.revenue.toLocaleString()} VND
                         </td>
                       </tr>
                     ))}
