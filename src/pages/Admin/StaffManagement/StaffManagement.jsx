@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import MenuBar from "../../../components/layout/menuBar";
 import logoRemoveBg from "../../../assets/img/logoremovebg.png";
+import { authAPI, publicAPI } from "../../../services/api"; // Adjust path to your API file
 
 const StaffManagementAdmin = () => {
   const [staff, setStaff] = useState([]);
@@ -33,7 +34,7 @@ const StaffManagementAdmin = () => {
   // Lấy token từ localStorage
   const getAuthHeaders = () => ({
     "Content-Type": "application/json",
-    Authorization: `Bearer ${localStorage.getItem("token")}`,
+    Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
   });
 
   // Lấy danh sách nhân viên khi component mount
@@ -43,25 +44,75 @@ const StaffManagementAdmin = () => {
 
   const fetchStaff = async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/staff`, {
-        headers: getAuthHeaders(),
-      });
-      if (!response.ok) {
-        throw new Error("Lỗi khi lấy danh sách nhân viên");
-      }
-      const data = await response.json();
-      // Ánh xạ dữ liệu từ backend sang định dạng frontend
-      const mappedData = data.map((item) => ({
-        id: item.staff_id,
-        fullName: item.fullname,
-        role: item.role,
-        workShift: item.role.includes("Full") ? "Full-time" : "Part-time", // Giả định
-        position: item.role, // Giả định
-      }));
+      console.log("Fetching staff");
+      const response = await authAPI.get("/admin/staff");
+      const data = response.data || []; // Fallback to empty array
+      const mappedData = data
+        .filter((item) => item.status === "ACTIVE")
+        .map((item) => ({
+          id: item.staff_id,
+          fullName: item.fullname,
+          role: item.position || "Unknown", // Fallback for position
+          workShift:
+            item.position &&
+            typeof item.position === "string" &&
+            item.position.includes("Full")
+              ? "Full-time"
+              : "Part-time",
+          position: item.position || "Unknown",
+        }));
       setStaff(mappedData);
       setFilteredStaff(mappedData);
     } catch (error) {
-      setErrorMessage(error.message);
+      console.error("Error fetching staff:", error, {
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+      const status = error.response?.status;
+      let message =
+        error.response?.data?.message || "Lỗi khi lấy danh sách nhân viên";
+      if (status === 403 || status === 401) {
+        message = "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.";
+        localStorage.clear();
+        window.location.href = "/login";
+      } else if (status === 404) {
+        message = "Không tìm thấy endpoint /api/admin/staff.";
+      }
+      setErrorMessage(message);
+    }
+  };
+
+  const confirmDeleteStaff = async () => {
+    console.log("Deleting staff:", staffToDelete.id);
+    try {
+      const updatedStaff = staff.filter((item) => item.id !== staffToDelete.id);
+      const updatedFilteredStaff = filteredStaff.filter(
+        (item) => item.id !== staffToDelete.id
+      );
+      setStaff(updatedStaff);
+      setFilteredStaff(updatedFilteredStaff);
+
+      await authAPI.delete(`/api/admin/staff/${staffToDelete.id}`);
+      setShowDeletePopup(false);
+      setStaffToDelete(null);
+      setShowSuccessPopup(true);
+      setTimeout(() => setShowSuccessPopup(false), 2000);
+    } catch (error) {
+      console.error("Error deleting staff:", error, {
+        status: error.response?.status,
+        data: error.response?.data,
+      });
+      await fetchStaff();
+      const status = error.response?.status;
+      let message = error.response?.data?.message || "Lỗi khi xóa nhân viên";
+      if (status === 403 || status === 401) {
+        message = "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.";
+        localStorage.clear();
+        window.location.href = "/login";
+      } else if (status === 404) {
+        message = "Không tìm thấy endpoint /api/admin/staff.";
+      }
+      setErrorMessage(message);
     }
   };
 
@@ -85,98 +136,19 @@ const StaffManagementAdmin = () => {
     setShowDeletePopup(true);
   };
 
-  const confirmDeleteStaff = async () => {
-    try {
-      // Optimistically update the UI by removing the staff from local state
-      const updatedStaff = staff.filter((item) => item.id !== staffToDelete.id);
-      const updatedFilteredStaff = filteredStaff.filter((item) => item.id !== staffToDelete.id);
-      setStaff(updatedStaff);
-      setFilteredStaff(updatedFilteredStaff);
-
-      const response = await fetch(`${API_BASE_URL}/staff/${staffToDelete.id}`, {
-        method: "DELETE",
-        headers: getAuthHeaders(),
-      });
-      if (!response.ok) {
-        // If the backend fails, revert the optimistic update
-        await fetchStaff();
-        throw new Error("Lỗi khi xóa nhân viên");
-      }
-      setShowDeletePopup(false);
-      setStaffToDelete(null);
-      setShowSuccessPopup(true);
-      setTimeout(() => setShowSuccessPopup(false), 2000);
-    } catch (error) {
-      setErrorMessage(error.message);
-    }
-  };
-
   // Xử lý sửa nhân viên
   const handleEditStaff = (staff) => {
     setStaffToEdit(staff);
     setNewStaff({
-      fullName: staff.fullName,
-      startDate: "",
-      workShift: staff.workShift,
       position: staff.position || staff.role,
-      phoneNumber: "",
-      address: "",
-      email: "",
       salary: "",
-      username: "",
-      password: "",
       status: "ACTIVE",
     });
     setShowEditForm(true);
   };
 
-  const confirmEditStaff = async () => {
-    if (!newStaff.position || !newStaff.salary) {
-      setErrorMessage("Vui lòng điền vị trí và lương!");
-      return;
-    }
-    try {
-      const updateStaffDTO = {
-        position: newStaff.position,
-        salary: parseFloat(newStaff.salary),
-        status: newStaff.status,
-      };
-      const response = await fetch(`${API_BASE_URL}/staff/${staffToEdit.id}`, {
-        method: "PUT",
-        headers: getAuthHeaders(),
-        body: JSON.stringify(updateStaffDTO),
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Lỗi khi cập nhật nhân viên");
-      }
-      await fetchStaff();
-      setShowEditForm(false);
-      setStaffToEdit(null);
-      setNewStaff({
-        fullName: "",
-        startDate: "",
-        workShift: "",
-        position: "",
-        phoneNumber: "",
-        address: "",
-        email: "",
-        salary: "",
-        username: "",
-        password: "",
-        status: "ACTIVE",
-      });
-      setErrorMessage("");
-      setShowSuccessPopup(true);
-      setTimeout(() => setShowSuccessPopup(false), 2000);
-    } catch (error) {
-      setErrorMessage(error.message);
-    }
-  };
-
-  // Xử lý thêm nhân viên
   const validateAndAddStaff = async () => {
-    // Kiểm tra các trường bắt buộc
+    console.log("Adding staff:", newStaff);
     if (
       !newStaff.fullName ||
       !newStaff.email ||
@@ -188,57 +160,37 @@ const StaffManagementAdmin = () => {
       return;
     }
 
-    // Kiểm tra định dạng email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(newStaff.email)) {
       setErrorMessage("Email không đúng định dạng!");
       return;
     }
 
-    // Kiểm tra độ dài username
     if (newStaff.username.length < 3 || newStaff.username.length > 50) {
       setErrorMessage("Tên đăng nhập phải từ 3 đến 50 ký tự!");
       return;
     }
 
-    // Kiểm tra độ dài password
     if (newStaff.password.length < 8) {
       setErrorMessage("Mật khẩu phải có ít nhất 8 ký tự!");
       return;
     }
 
-    // Kiểm tra lương (nếu có)
     if (newStaff.salary && isNaN(parseFloat(newStaff.salary))) {
       setErrorMessage("Lương phải là số hợp lệ!");
       return;
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/staff/register`, {
-        method: "POST",
-        headers: getAuthHeaders(),
-        body: JSON.stringify({
-          username: newStaff.username,
-          email: newStaff.email,
-          password: newStaff.password,
-          phone: newStaff.phoneNumber,
-          fullname: newStaff.fullName,
-          position: newStaff.position,
-          salary: newStaff.salary ? parseFloat(newStaff.salary) : null,
-        }),
+      await authAPI.post("/admin/staff/register", {
+        username: newStaff.username,
+        email: newStaff.email,
+        password: newStaff.password,
+        phone: newStaff.phoneNumber,
+        fullname: newStaff.fullName,
+        position: newStaff.position,
+        salary: newStaff.salary ? parseFloat(newStaff.salary) : null,
       });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        if (response.status === 400) {
-          setErrorMessage(errorData.message || "Dữ liệu không hợp lệ!");
-        } else if (response.status === 409) {
-          setErrorMessage("Tên đăng nhập hoặc email đã tồn tại!");
-        } else {
-          setErrorMessage(errorData.message || "Lỗi khi thêm nhân viên!");
-        }
-        throw new Error(errorData.message);
-      }
 
       await fetchStaff();
       setShowAddForm(false);
@@ -259,7 +211,70 @@ const StaffManagementAdmin = () => {
       setShowSuccessPopup(true);
       setTimeout(() => setShowSuccessPopup(false), 2000);
     } catch (error) {
-      setErrorMessage(error.message);
+      console.error("Error adding staff:", error);
+      const status = error.response?.status;
+      let message = error.response?.data?.message || "Lỗi khi thêm nhân viên!";
+      if (status === 403 || status === 401) {
+        message = "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.";
+        localStorage.clear();
+        window.location.href = "/login";
+      }
+      setErrorMessage(message);
+    }
+  };
+
+  const confirmEditStaff = async () => {
+    console.log("Editing staff:", staffToEdit.id, newStaff);
+    if (!newStaff.position || !newStaff.salary) {
+      setErrorMessage("Vui lòng điền vị trí và lương!");
+      return;
+    }
+    const salaryValue = parseFloat(newStaff.salary);
+    if (isNaN(salaryValue) || salaryValue <= 0) {
+      setErrorMessage("Lương phải là số dương!");
+      return;
+    }
+    if (!["ACTIVE", "INACTIVE"].includes(newStaff.status)) {
+      setErrorMessage("Trạng thái không hợp lệ!");
+      return;
+    }
+    try {
+      await authAPI.put(`/admin/staff/${staffToEdit.id}`, {
+        position: newStaff.position,
+        salary: newStaff.salary,
+        status: newStaff.status,
+      });
+
+      await fetchStaff();
+      setShowEditForm(false);
+      setStaffToEdit(null);
+      setNewStaff({
+        fullName: "",
+        startDate: "",
+        workShift: "",
+        position: "",
+        phoneNumber: "",
+        address: "",
+        email: "",
+        salary: "",
+        username: "",
+        password: "",
+        status: "ACTIVE",
+      });
+      setErrorMessage("");
+      setShowSuccessPopup(true);
+      setTimeout(() => setShowSuccessPopup(false), 2000);
+    } catch (error) {
+      console.error("Error editing staff:", error);
+      const status = error.response?.status;
+      let message =
+        error.response?.data?.message || "Lỗi khi cập nhật nhân viên";
+      if (status === 403 || status === 401) {
+        message = "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.";
+        localStorage.clear();
+        window.location.href = "/login";
+      }
+      setErrorMessage(message);
     }
   };
 
@@ -678,9 +693,7 @@ const StaffManagementAdmin = () => {
                         />
                       </label>
                       <label style={styles.formLabel}>
-                        <span style={styles.labelText}>
-                          Ngày bắt đầu:
-                        </span>
+                        <span style={styles.labelText}>Ngày bắt đầu:</span>
                         <input
                           type="date"
                           value={newStaff.startDate}
@@ -694,9 +707,7 @@ const StaffManagementAdmin = () => {
                         />
                       </label>
                       <label style={styles.formLabel}>
-                        <span style={styles.labelText}>
-                          Ca làm:
-                        </span>
+                        <span style={styles.labelText}>Ca làm:</span>
                         <select
                           value={newStaff.workShift}
                           onChange={(e) =>
@@ -729,9 +740,7 @@ const StaffManagementAdmin = () => {
                         />
                       </label>
                       <label style={styles.formLabel}>
-                        <span style={styles.labelText}>
-                          Số điện thoại:
-                        </span>
+                        <span style={styles.labelText}>Số điện thoại:</span>
                         <input
                           type="text"
                           value={newStaff.phoneNumber}
@@ -745,9 +754,7 @@ const StaffManagementAdmin = () => {
                         />
                       </label>
                       <label style={styles.formLabel}>
-                        <span style={styles.labelText}>
-                          Địa chỉ:
-                        </span>
+                        <span style={styles.labelText}>Địa chỉ:</span>
                         <input
                           type="text"
                           value={newStaff.address}
@@ -777,9 +784,7 @@ const StaffManagementAdmin = () => {
                         />
                       </label>
                       <label style={styles.formLabel}>
-                        <span style={styles.labelText}>
-                          Lương:
-                        </span>
+                        <span style={styles.labelText}>Lương:</span>
                         <input
                           type="number"
                           value={newStaff.salary}
@@ -814,7 +819,7 @@ const StaffManagementAdmin = () => {
                           Mật khẩu <span style={styles.requiredMark}>(*)</span>:
                         </span>
                         <input
-                          type="text"
+                          type="password"
                           value={newStaff.password}
                           onChange={(e) =>
                             setNewStaff({
@@ -932,7 +937,8 @@ const StaffManagementAdmin = () => {
                       </label>
                       <label style={styles.formLabel}>
                         <span style={styles.labelText}>
-                          Trạng thái <span style={styles.requiredMark}>(*)</span>:
+                          Trạng thái{" "}
+                          <span style={styles.requiredMark}>(*)</span>:
                         </span>
                         <select
                           value={newStaff.status}
