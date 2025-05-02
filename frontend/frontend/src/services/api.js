@@ -213,15 +213,15 @@ export const refreshToken = async (refreshToken) => {
 };
 
 // ===================== Nhân Viên ===================== //
-export const getStaff = async () => {
-  try {
-    const response = await authAPI.get("/api/staff");
-    return response.data;
-  } catch (error) {
-    handleApiError(error);
-    throw error;
-  }
-};
+// export const getStaff = async () => {
+//   try {
+//     const response = await authAPI.get("/api/admin/staff");
+//     return response.data;
+//   } catch (error) {
+//     handleApiError(error);
+//     throw error;
+//   }
+// };
 
 export const getDishById = async (id) => {
   try {

@@ -16,8 +16,13 @@ class AuthService {
       if (userType) localStorage.setItem("userType", userType);
       return response.data;
     } catch (error) {
-      const message =
-        error.response?.data?.message || "Failed to login. Please try again.";
+      const status = error.response?.status;
+      let message = "Failed to login. Please try again.";
+      if (status === 401) {
+        message = "Invalid username or password.";
+      } else if (status === 400) {
+        message = error.response?.data?.message || "Invalid login request.";
+      }
       throw new Error(message);
     }
   }
