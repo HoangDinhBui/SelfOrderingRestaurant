@@ -11,35 +11,40 @@ import com.example.SelfOrderingRestaurant.Repository.ShiftRepository;
 import com.example.SelfOrderingRestaurant.Repository.StaffShiftRepository;
 import com.example.SelfOrderingRestaurant.Repository.StaffRepository;
 import com.example.SelfOrderingRestaurant.Service.Imp.IStaffService;
+import jakarta.persistence.EntityNotFoundException;
+import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
 @Service
+@Slf4j
 public class StaffService implements IStaffService {
 
     private final StaffRepository staffRepository;
 
-
     private final StaffShiftRepository staffShiftRepository;
-
 
     private final ShiftRepository shiftRepository;
 
     @Transactional
     @Override
     public List<GetAllStaffResponseDTO> getAllStaff() {
-        return staffRepository.findAll().stream()
+        return staffRepository.findAllByStatus(UserStatus.ACTIVE).stream()
                 .map(staff -> new GetAllStaffResponseDTO(
                         staff.getStaffId(),
                         staff.getFullname(),
-                        staff.getPosition()
+                        staff.getPosition(),
+                        staff.getStatus()
                 ))
                 .collect(Collectors.toList());
     }
@@ -78,7 +83,8 @@ public class StaffService implements IStaffService {
         return new GetAllStaffResponseDTO(
                 staff.getStaffId(),
                 staff.getFullname(),
-                staff.getPosition()
+                staff.getPosition(),
+                staff.getStatus()
         );
     }
 
@@ -86,31 +92,46 @@ public class StaffService implements IStaffService {
     @Override
     public void updateStaff(Integer id, UpdateStaffDTO staffUpdateDTO) {
         Staff staff = staffRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Staff not found with id: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Staff not found with id: " + id));
 
-        // Update staff information
-        if (staffUpdateDTO.getPosition() != null) {
-            staff.setPosition(staffUpdateDTO.getPosition());
+        // Validate DTO
+        if (staffUpdateDTO.getPosition() == null || staffUpdateDTO.getPosition().trim().isEmpty()) {
+            throw new IllegalArgumentException("Position cannot be empty");
+        }
+        if (staffUpdateDTO.getSalary() == null || staffUpdateDTO.getSalary().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Salary must be positive");
+        }
+        if (staffUpdateDTO.getStatus() == null) {
+            throw new IllegalArgumentException("Status cannot be null");
         }
 
-        if (staffUpdateDTO.getSalary() != null) {
-            staff.setSalary(staffUpdateDTO.getSalary());
+        // Update fields
+        staff.setPosition(staffUpdateDTO.getPosition());
+        staff.setSalary(staffUpdateDTO.getSalary());
+        staff.setStatus(staffUpdateDTO.getStatus());
+
+        // Ensure hireDate is not null
+        if (staff.getHireDate() == null) {
+            log.warn("hireDate is null for staff ID {}. Setting to current time.", id);
+            staff.setHireDate(LocalDateTime.now());
         }
 
-        if (staffUpdateDTO.getStatus() != null) {
-            staff.setStatus(staffUpdateDTO.getStatus());
-        }
-
-        Staff updatedStaff = staffRepository.save(staff);
+        staffRepository.save(staff);
     }
 
     @Transactional
     @Override
     public void deleteStaff(Integer id) {
         Staff staff = staffRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Staff not found with id: " + id));
+                .orElseThrow(() -> new EntityNotFoundException("Staff not found with id: " + id));
 
-        // Instead of completely deleting, we can set the status to INACTIVE
+        // Ensure hireDate is not null before saving
+        if (staff.getHireDate() == null) {
+            log.warn("hireDate is null for staff ID {}. Setting to current time.", id);
+            staff.setHireDate(LocalDateTime.now());
+        }
+
+        // Soft delete by setting status to INACTIVE
         staff.setStatus(UserStatus.INACTIVE);
         staffRepository.save(staff);
     }

@@ -12,10 +12,15 @@ import com.example.SelfOrderingRestaurant.Dto.Response.RevenueResponseDTO.Yearly
 import com.example.SelfOrderingRestaurant.Dto.Response.ShiftResponseDTO.ShiftResponseDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.StaffResponseDTO.GetAllStaffResponseDTO;
 
+import com.example.SelfOrderingRestaurant.Entity.Staff;
+import com.example.SelfOrderingRestaurant.Enum.UserStatus;
+import com.example.SelfOrderingRestaurant.Repository.StaffRepository;
 import com.example.SelfOrderingRestaurant.Service.AuthService;
 import com.example.SelfOrderingRestaurant.Service.RevenueService;
 import com.example.SelfOrderingRestaurant.Service.ShiftService;
 import com.example.SelfOrderingRestaurant.Service.StaffService;
+import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -29,6 +34,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @PreAuthorize("hasRole('ADMIN')")
@@ -40,6 +46,7 @@ public class AdminController {
     private final AuthService authService;
     private final ShiftService shiftService;
     private final RevenueService revenueService;
+    private final StaffRepository staffRepository;
 
     // Staff Management Endpoints
     @PostMapping("/staff/register")
@@ -49,9 +56,18 @@ public class AdminController {
     }
 
     @GetMapping("/staff")
-    public ResponseEntity<?> getAllStaff() {
-        List<GetAllStaffResponseDTO> staff = staffService.getAllStaff();
-        return ResponseEntity.ok(staff);
+    public List<GetAllStaffResponseDTO> getAllStaff(@RequestParam(required = false) UserStatus status) {
+        List<Staff> staffList = status != null
+                ? staffRepository.findAllByStatus(status)
+                : staffRepository.findAllByStatus(UserStatus.ACTIVE);
+        return staffList.stream()
+                .map(staff -> new GetAllStaffResponseDTO(
+                        staff.getStaffId(),
+                        staff.getFullname(),
+                        staff.getPosition(),
+                        staff.getStatus()
+                ))
+                .collect(Collectors.toList());
     }
 
     @GetMapping("/staff/{id}")
@@ -62,15 +78,33 @@ public class AdminController {
 
     @PutMapping("/staff/{id}")
     public ResponseEntity<?> updateStaff(@PathVariable("id") Integer id,
-                                         @RequestBody UpdateStaffDTO staffUpdateDTO) {
-        staffService.updateStaff(id, staffUpdateDTO);
-        return ResponseEntity.ok("Staff updated successfully!");
+                                         @Valid @RequestBody UpdateStaffDTO staffUpdateDTO) {
+        try {
+            staffService.updateStaff(id, staffUpdateDTO);
+            return ResponseEntity.ok("Staff updated successfully!");
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Staff with ID " + id + " not found");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error updating staff: " + e.getMessage());
+        }
     }
 
     @DeleteMapping("/staff/{id}")
     public ResponseEntity<?> deleteStaff(@PathVariable("id") Integer id) {
-        staffService.deleteStaff(id);
-        return ResponseEntity.ok("Staff deleted successfully!");
+        try {
+            staffService.deleteStaff(id);
+            return ResponseEntity.ok("Staff deleted successfully!");
+        } catch (EntityNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Staff with ID " + id + " not found");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error deleting staff: " + e.getMessage());
+        }
     }
 
     @PostMapping("/staff")
