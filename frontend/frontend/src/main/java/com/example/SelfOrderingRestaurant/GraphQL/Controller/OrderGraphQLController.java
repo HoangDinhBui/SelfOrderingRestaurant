@@ -128,13 +128,6 @@ public class OrderGraphQLController {
 
     @MutationMapping
     public OrderCartResponseDTO addDishToOrderCart(@Argument OrderItemInput input) {
-<<<<<<< HEAD
-        OrderItemDTO itemDTO = new OrderItemDTO();
-        itemDTO.setDishId(input.getDishId());
-        itemDTO.setQuantity(input.getQuantity());
-        itemDTO.setNotes(input.getNotes());
-        return orderService.addDishToOrderCart(itemDTO);
-=======
         try {
             log.info("Adding dish to order cart: {}", input);
             OrderItemDTO itemDTO = new OrderItemDTO();
@@ -148,7 +141,6 @@ public class OrderGraphQLController {
             log.error("Error adding dish to order cart: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to add dish to order cart: " + e.getMessage());
         }
->>>>>>> DishAPI
     }
 
     @MutationMapping
@@ -191,15 +183,6 @@ public class OrderGraphQLController {
     }
 
     @MutationMapping
-<<<<<<< HEAD
-    public String deleteOrder(@Argument String orderId) {
-        try {
-            orderService.deleteOrder(Integer.valueOf(orderId));
-            return "Order deleted successfully!";
-        } catch (Exception e) {
-            log.error("Error deleting order {}: {}", orderId, e.getMessage());
-            throw new RuntimeException("Failed to delete order: " + e.getMessage());
-=======
     public OrderResponseDTO removeOrderItem(@Argument String orderId, @Argument String dishId) {
         try {
             log.info("Removing item {} from order {}", dishId, orderId);
@@ -209,7 +192,6 @@ public class OrderGraphQLController {
         } catch (Exception e) {
             log.error("Error removing item {} from order {}: {}", dishId, orderId, e.getMessage(), e);
             throw new RuntimeException("Failed to remove item: " + e.getMessage());
->>>>>>> DishAPI
         }
     }
 
