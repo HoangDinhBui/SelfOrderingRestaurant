@@ -29,6 +29,7 @@ import AdminInformation from "./pages/Admin/AdminInformation/AdminInformation";
 import TableManagementAdmin from "./pages/Admin/TableManagement/TableManagement";
 import NotificationManagementAdmin from "./pages/Admin/NotificationManagement/NotificationManagement";
 import StaffManagement from "./pages/Admin/StaffManagement/StaffManagement";
+import InventoryManagement from "./pages/Admin/InventoryManagement/InventoryManagement";
 
 function App() {
   return (
@@ -60,6 +61,10 @@ function App() {
               <Route
                 path="/revenue-management"
                 element={<RevenueManagement />}
+              />
+              <Route
+                path="/inventory-management_admin"
+                element={<InventoryManagement />}
               />
               <Route path="/admin-information" element={<AdminInformation />} />
             </Routes>
