@@ -26,7 +26,7 @@ const NotificationManagementStaff = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [notificationToDelete, setNotificationToDelete] = useState(null);
   const [processing, setProcessing] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(""); // New state for date filter
+  const [selectedDate, setSelectedDate] = useState("");
 
   const tabs = [
     "Order Management",
@@ -179,6 +179,7 @@ const NotificationManagementStaff = () => {
     try {
       setLoading(notifications.length === 0);
       const data = await getCurrentShiftNotifications();
+      console.log("Fetched notifications:", data); // Debug log
       if (Array.isArray(data)) {
         setNotifications((prevNotifications) => {
           const newNotifications = data.map((notification) => {
@@ -207,13 +208,27 @@ const NotificationManagementStaff = () => {
         });
         setError(null);
       } else {
-        console.error("Invalid notification data format received");
-        setError("Failed to fetch notifications");
+        console.error("Invalid notification data format received:", data);
+        setError("Invalid notification data received from server");
+        toast.error("Invalid notification data format");
       }
     } catch (err) {
-      console.error("Error fetching notifications:", err);
-      setError("Error connecting to server");
-      toast.error("Failed to refresh notifications");
+      console.error("Error fetching notifications:", {
+        message: err.message,
+        response: err.response?.data,
+        status: err.response?.status,
+        headers: err.response?.headers,
+      });
+      setError(
+        `Failed to fetch notifications: ${
+          err.response?.data?.error || err.message
+        }`
+      );
+      toast.error(
+        `Failed to fetch notifications: ${
+          err.response?.data?.error || err.message
+        }`
+      );
     } finally {
       setLoading(false);
     }
@@ -232,7 +247,7 @@ const NotificationManagementStaff = () => {
         };
       })
       .filter((notification) => {
-        if (!selectedDate) return true; // Show all if no date selected
+        if (!selectedDate) return true;
         const selected = new Date(selectedDate);
         return (
           notification.dateObj.getFullYear() === selected.getFullYear() &&

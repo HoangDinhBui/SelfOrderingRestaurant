@@ -6,7 +6,6 @@ import MenuBar from "../../../components/layout/MenuBar";
 
 const DishManagementAdmin = () => {
 
-  
   // Confirmation dialog state
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
