@@ -114,7 +114,7 @@ public class PaymentService {
             log.info("Before update: Table {} status is {} for order {}",
                     table.getTableNumber(), table.getTableStatus(), order.getOrderId());
             table.setTableStatus(TableStatus.AVAILABLE);
-            tableRepository.save(table);
+            tableRepository.saveAndFlush(table);
             log.info("After update: Table {} status updated to AVAILABLE for order {}",
                     table.getTableNumber(), order.getOrderId());
         } else {

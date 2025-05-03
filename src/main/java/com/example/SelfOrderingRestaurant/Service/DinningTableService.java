@@ -44,11 +44,6 @@ public class DinningTableService implements IDinningTableService {
                     }
 
                     // Cập nhật trạng thái nếu khác
-                    if (table.getTableStatus() != status) {
-                        table.setTableStatus(status);
-                        dinningTableRepository.save(table);
-                    }
-
                     return convertToResponseDTO(table);
                 })
                 .collect(Collectors.toList());

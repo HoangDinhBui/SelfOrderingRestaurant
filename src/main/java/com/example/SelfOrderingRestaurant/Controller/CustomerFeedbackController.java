@@ -24,14 +24,14 @@ public class CustomerFeedbackController {
 
     // Xóa đánh giá
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteFeedback(@PathVariable Integer id) { // Thay Long thành Integer
+    public ResponseEntity<Void> deleteFeedback(@PathVariable Integer id) {
         feedbackService.deleteFeedback(id);
         return ResponseEntity.noContent().build();
     }
 
     // Đánh dấu đã đọc
     @PutMapping("/{id}/mark-as-read")
-    public ResponseEntity<CustomerFeedbackDTO> markAsRead(@PathVariable Integer id) { // Thay Long thành Integer
+    public ResponseEntity<CustomerFeedbackDTO> markAsRead(@PathVariable Integer id) {
         CustomerFeedbackDTO feedback = feedbackService.markAsRead(id);
         return ResponseEntity.ok(feedback);
     }
