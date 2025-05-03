@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCircleXmark } from "@fortawesome/free-solid-svg-icons";
 import MenuBarStaff from "../../../components/layout/MenuBar_Staff";
+import MenuBar from "../../../components/layout/MenuBar";
 
 const DishManagementStaff = () => {
   // Confirmation dialog state
@@ -54,7 +55,9 @@ const DishManagementStaff = () => {
       {/* Background blur khi modal mở */}
       <div className={`h-full w-full ${showConfirmation ? "blur-sm" : ""}`}>
         {/* Thay thế Header bằng MenuBar */}
-        <MenuBarStaff />
+        <MenuBar
+          title="Dish Management"
+          icon="https://img.icons8.com/?size=100&id=99345&format=png&color=FFFFFF"/>
 
         {/* Main Content - Đơn giản hóa */}
         <div className="flex-1 p-6 bg-gray-100 overflow-y-auto">

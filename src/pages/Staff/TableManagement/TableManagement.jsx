@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import MenuBarStaff from "../../../components/layout/MenuBar_Staff.jsx";
+import MenuBar from "../../../components/layout/MenuBar.jsx";
 import axios from "axios";
 import { useMemo } from "react";
 
@@ -1256,7 +1257,10 @@ const TableManagementStaff = () => {
         }`}
         onClick={() => setIsNotificationModalOpen(false)}
       >
-        <MenuBarStaff />
+        <MenuBar
+          title="Table Management"
+          icon="https://img.icons8.com/ios-filled/50/FFFFFF/table.png" />
+
         {/* Container chính nằm giữa */}
         <div
           style={{ marginTop: "30px" }}
