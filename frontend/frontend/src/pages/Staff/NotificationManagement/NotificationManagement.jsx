@@ -9,6 +9,7 @@ import {
 } from "react-icons/fa";
 import { toast } from "react-toastify";
 import MenuBarStaff from "../../../components/layout/MenuBar_Staff.jsx";
+import MenuBar from "../../../components/layout/MenuBar.jsx";
 import {
   getCurrentShiftNotifications,
   markNotificationAsRead,
@@ -441,7 +442,10 @@ const NotificationManagementStaff = () => {
   if (loading) {
     return (
       <div className="h-screen w-screen bg-blue-50 flex flex-col">
-        <MenuBarStaff />
+        <MenuBar
+          title="Notification Management"
+          icon="https://img.icons8.com/material-outlined/192/FFFFFF/alarm.png" />
+
         <div className="flex-1 p-6 bg-gray-100 flex items-center justify-center">
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
         </div>
@@ -464,7 +468,10 @@ const NotificationManagementStaff = () => {
 
   return (
     <div className="h-screen w-screen !bg-blue-50 flex flex-col">
-      <MenuBarStaff />
+      <MenuBar
+          title="Notification Management"
+          icon="https://img.icons8.com/material-outlined/192/FFFFFF/alarm.png" />
+
 
       {/* Main Content */}
       <div className="flex-1 p-6 bg-gray-100 overflow-y-auto">

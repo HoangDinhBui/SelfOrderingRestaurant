@@ -62,7 +62,7 @@ function App() {
                 element={<RevenueManagement />}
               />
               <Route
-                path="/admin ciernformation"
+                path="/admin-information"
                 element={<AdminInformation />}
               />
             </Routes>
