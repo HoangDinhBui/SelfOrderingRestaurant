@@ -61,10 +61,7 @@ function App() {
                 path="/revenue-management"
                 element={<RevenueManagement />}
               />
-              <Route
-                path="/admin-information"
-                element={<AdminInformation />}
-              />
+              <Route path="/admin-information" element={<AdminInformation />} />
             </Routes>
           </Router>
           {/* Toast Container for notifications */}
