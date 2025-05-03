@@ -70,21 +70,29 @@ function App() {
                   path="/admin-information"
                   element={<AdminInformation />}
                 />
+                <Route
+                  path="/table-management_admin"
+                  element={<TableManagementAdmin />}
+                />
+                <Route
+                  path="/notification-management_admin"
+                  element={<NotificationManagementAdmin />}
+                />
               </Routes>
             </ErrorBoundary>
+            {/* Toast Container for notifications */}
+            <ToastContainer
+              position="top-right"
+              autoClose={3000}
+              hideProgressBar={false}
+              newestOnTop
+              closeOnClick
+              rtl={false}
+              pauseOnFocusLoss
+              draggable
+              pauseOnHover
+            />
           </Router>
-          {/* Toast Container for notifications */}
-          <ToastContainer
-            position="top-right"
-            autoClose={3000}
-            hideProgressBar={false}
-            newestOnTop
-            closeOnClick
-            rtl={false}
-            pauseOnFocusLoss
-            draggable
-            pauseOnHover
-          />
         </MenuProvider>
       </CartProvider>
     </ApolloProvider>
