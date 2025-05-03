@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   FaCheck,
@@ -9,61 +9,18 @@ import {
 } from "react-icons/fa";
 import MenuBarStaff from "../../../components/layout/MenuBar_Staff.jsx";
 import MenuBar from "../../../components/layout/MenuBar.jsx";
+import axios from "axios";
 
 const EvaluteAdmin = () => {
   const [activeTab, setActiveTab] = useState("Notification Management");
-  const [reviews, setReviews] = useState([
-    {
-      id: 1,
-      customer: "Customer 1",
-      rating: 5,
-      comment: "Very good",
-      time: "18:30:00",
-      date: "Today",
-      checked: false,
-    },
-    {
-      id: 2,
-      customer: "Customer 2",
-      rating: 5,
-      comment: "Significant",
-      time: "18:10:00",
-      date: "Today",
-      checked: true,
-    },
-    {
-      id: 3,
-      customer: "Customer 3",
-      rating: 3,
-      comment: "Everything ok but music too loud",
-      time: "17:30:00",
-      date: "Today",
-      checked: true,
-    },
-    {
-      id: 4,
-      customer: "Customer 4",
-      rating: 4,
-      comment: "Delicious dish",
-      time: "17:30:00",
-      date: "Today",
-      checked: true,
-    },
-    {
-      id: 5,
-      customer: "Customer 5",
-      rating: 2,
-      comment: "I like the food here, but it's a bit cold and the dishes take a bit long to be served.",
-      time: "21:14:00",
-      date: "12/04/2025",
-      checked: true,
-    },
-  ]);
+  const [reviews, setReviews] = useState([]);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [reviewToDelete, setReviewToDelete] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterRating, setFilterRating] = useState("All");
   const [filterDate, setFilterDate] = useState("All");
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   const tabs = [
     "Order Management",
@@ -71,6 +28,33 @@ const EvaluteAdmin = () => {
     "Dish Management",
   ];
   const navigate = useNavigate();
+  const API_BASE_URL = "http://localhost:8080";
+
+  // Lấy danh sách feedback từ backend
+  const fetchFeedbacks = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/feedback`, {
+        params: {
+          search: searchTerm.trim() || undefined,
+          filterRating: filterRating === "All" ? undefined : filterRating,
+          filterDate: filterDate === "All" ? undefined : filterDate,
+        },
+      });
+      setReviews(response.data);
+    } catch (error) {
+      console.error("Error fetching feedbacks:", error);
+      setError("Failed to load feedbacks. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Gọi API khi component mount hoặc khi search/filter thay đổi
+  useEffect(() => {
+    fetchFeedbacks();
+  }, [searchTerm, filterRating, filterDate]);
 
   // Get unique dates for the filter dropdown
   const uniqueDates = ["All", ...new Set(reviews.map((review) => review.date))];
@@ -80,25 +64,6 @@ const EvaluteAdmin = () => {
     acc[star] = reviews.filter((review) => review.rating === star).length;
     return acc;
   }, {});
-
-  // Group reviews by date with filters applied
-  const groupedReviews = reviews
-    .filter((review) =>
-      review.customer.toLowerCase().includes(searchTerm.trim().toLowerCase())
-    )
-    .filter((review) =>
-      filterRating === "All" ? true : review.rating === parseInt(filterRating)
-    )
-    .filter((review) =>
-      filterDate === "All" ? true : review.date === filterDate
-    )
-    .reduce((acc, review) => {
-      if (!acc[review.date]) {
-        acc[review.date] = [];
-      }
-      acc[review.date].push(review);
-      return acc;
-    }, {});
 
   const handleTabClick = (tab) => {
     if (tab === "Order Management") {
@@ -110,24 +75,36 @@ const EvaluteAdmin = () => {
     }
   };
 
-  const handleCheckReview = (id) => {
-    setReviews(
-      reviews.map((rev) =>
-        rev.id === id ? { ...rev, checked: true } : rev
-      )
-    );
+  // Đánh dấu feedback là đã đọc
+  const handleCheckReview = async (id) => {
+    try {
+      const response = await axios.put(`${API_BASE_URL}/api/feedback/${id}/mark-as-read`);
+      setReviews(
+        reviews.map((rev) =>
+          rev.id === id ? { ...rev, checked: true } : rev
+        )
+      );
+    } catch (error) {
+      console.error("Error marking feedback as read:", error);
+      setError("Failed to mark feedback as read. Please try again.");
+    }
   };
 
+  // Xóa feedback
   const handleDeleteClick = (id) => {
     setReviewToDelete(id);
     setShowDeleteModal(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (reviewToDelete) {
-      setReviews(
-        reviews.filter((rev) => rev.id !== reviewToDelete)
-      );
+      try {
+        await axios.delete(`${API_BASE_URL}/api/feedback/${reviewToDelete}`);
+        setReviews(reviews.filter((rev) => rev.id !== reviewToDelete));
+      } catch (error) {
+        console.error("Error deleting feedback:", error);
+        setError("Failed to delete feedback. Please try again.");
+      }
     }
     setShowDeleteModal(false);
     setReviewToDelete(null);
@@ -175,14 +152,36 @@ const EvaluteAdmin = () => {
     );
   };
 
+  // Group reviews by date
+  const groupedReviews = reviews.reduce((acc, review) => {
+    if (!acc[review.date]) {
+      acc[review.date] = [];
+    }
+    acc[review.date].push(review);
+    return acc;
+  }, {});
+
   return (
     <div className="h-screen w-screen !bg-gradient-to-br from-blue-50 to-gray-100 flex flex-col">
-      <MenuBar 
-        title="Evalute   "
-        icon="https://img.icons8.com/ios-filled/50/FFFFFF/bookmark.png"/>
+      <MenuBar
+        title="Evaluate"
+        icon="https://img.icons8.com/ios-filled/50/FFFFFF/bookmark.png"
+      />
 
       {/* Main Content */}
       <div className="flex-1 p-8 bg-transparent overflow-y-auto">
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            <p>{error}</p>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading && (
+          <div className="text-center text-gray-600">Loading feedbacks...</div>
+        )}
+
         {/* Filter and Search */}
         <div className="mb-6 flex space-x-4 items-center">
           <div className="relative flex-1">
@@ -213,60 +212,70 @@ const EvaluteAdmin = () => {
 
         {/* Review List */}
         <div className="bg-white rounded-xl shadow-lg p-8">
-          {Object.entries(groupedReviews).map(([date, dateReviews]) => (
-            <div key={date} className="mb-8">
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4 border-b-2 border-gray-200 pb-2">{date}</h2>
-              {dateReviews.map((review) => (
-                <div
-                  key={review.id}
-                  className="relative flex justify-between items-center bg-gradient-to-r from-gray-50 to-white rounded-lg shadow-md p-6 mb-4 hover:shadow-lg transition-shadow duration-300"
-                >
-                  {/* Phần bên trái: Rating và thông tin */}
-                  <div className="flex items-center">
-                    {/* Rating */}
-                    {renderStars(review.rating)}
+          {Object.entries(groupedReviews).length === 0 && !loading ? (
+            <div className="text-center text-gray-600">No feedbacks found.</div>
+          ) : (
+            Object.entries(groupedReviews).map(([date, dateReviews]) => (
+              <div key={date} className="mb-8">
+                <h2 className="text-2xl font-semibold text-gray-800 mb-4 border-b-2 border-gray-200 pb-2">
+                  {date}
+                </h2>
+                {dateReviews.map((review) => (
+                  <div
+                    key={review.id}
+                    className="relative flex justify-between items-center bg-gradient-to-r from-gray-50 to-white rounded-lg shadow-md p-6 mb-4 hover:shadow-lg transition-shadow duration-300"
+                  >
+                    {/* Left Section: Rating and Info */}
+                    <div className="flex items-center">
+                      {renderStars(review.rating)}
+                      <div>
+                        <h3 className="font-bold text-xl text-gray-800">
+                          {review.customerName}
+                        </h3>
+                        <p className="text-gray-600 text-sm mt-1">
+                          {review.comment}
+                        </p>
+                      </div>
+                    </div>
 
-                    {/* Thông tin khách hàng và đánh giá */}
-                    <div>
-                      <h3 className="font-bold text-xl text-gray-800">{review.customer}</h3>
-                      <p className="text-gray-600 text-sm mt-1">{review.comment}</p>
+                    {/* Right Section: Time and Actions */}
+                    <div className="flex flex-col items-end">
+                      <span className="text-gray-500 text-sm font-medium mb-2">
+                        {review.time}
+                      </span>
+                      <div className="flex justify-end space-x-4">
+                        <button
+                          className={`flex items-center px-4 py-2 text-white rounded-lg shadow-md transition-all duration-200 ${
+                            review.checked
+                              ? "!bg-green-600 hover:bg-green-700"
+                              : "!bg-yellow-500 hover:bg-yellow-600"
+                          }`}
+                          onClick={() => handleCheckReview(review.id)}
+                        >
+                          <FaCheck className="mr-2" />{" "}
+                          {review.checked ? "Checked" : "Check"}
+                        </button>
+                        <button
+                          className="flex items-center px-4 py-2 !bg-red-500 text-white rounded-lg shadow-md hover:bg-red-600 transition-all duration-200"
+                          onClick={() => handleDeleteClick(review.id)}
+                        >
+                          <FaTrash className="mr-2" /> Delete
+                        </button>
+                      </div>
                     </div>
                   </div>
-
-                  {/* Thời gian và nút hành động */}
-                  <div className="flex flex-col items-end">
-                    <span className="text-gray-500 text-sm font-medium mb-2">
-                      {review.time}
-                    </span>
-                    <div className="flex justify-end space-x-4">
-                      <button
-                        className={`flex items-center px-4 py-2 text-white rounded-lg shadow-md transition-all duration-200 ${
-                          review.checked ? "!bg-green-600 hover:bg-green-700" : "!bg-yellow-500 hover:bg-yellow-600"
-                        }`}
-                        onClick={() => handleCheckReview(review.id)}
-                      >
-                        <FaCheck className="mr-2" /> {review.checked ? "Checked" : "Check"}
-                      </button>
-                      <button
-                        className="flex items-center px-4 py-2 !bg-red-500 text-white rounded-lg shadow-md hover:bg-red-600 transition-all duration-200"
-                        onClick={() => handleDeleteClick(review.id)}
-                      >
-                        <FaTrash className="mr-2" /> Delete
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ))}
+                ))}
+              </div>
+            ))
+          )}
         </div>
       </div>
 
+      {/* Delete Confirmation Modal */}
       {showDeleteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
           <div className="relative bg-white rounded-2xl shadow-2xl w-96 p-8 mx-4 transform transition-all duration-300 scale-100">
-            {/* Thêm logo nhà hàng */}
             <div className="flex justify-center mb-6">
               <img
                 alt="Logo"
