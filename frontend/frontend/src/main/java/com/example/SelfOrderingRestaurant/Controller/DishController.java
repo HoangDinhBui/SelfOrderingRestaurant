@@ -70,7 +70,7 @@ public class DishController {
 
     @GetMapping("/images/{imageName}")
     public ResponseEntity<Resource> getImage(@PathVariable String imageName) throws IOException {
-        Path imagePath = Paths.get("D:\\UTC2\\Frontend\\selforderingrestaurant\\src\\assets\\img", imageName);
+        Path imagePath = Paths.get("D:\\UTC2\\FrontendSelfOrderingRestaurant\\selforderingrestaurant\\src\\assets\\img", imageName);
 
         Resource imageResource = new UrlResource(imagePath.toUri());
 
