@@ -19,6 +19,7 @@ const Payment = () => {
   const momoPhoneNumber = "0329914143";
   const queryParams = new URLSearchParams(location.search);
   const orderId = queryParams.get("orderId");
+  const API_BASE_URL = "http://localhost:8080"; // Replace with your API base URL
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
