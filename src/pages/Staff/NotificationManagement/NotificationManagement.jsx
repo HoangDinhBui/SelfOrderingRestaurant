@@ -9,6 +9,7 @@ import {
 } from "react-icons/fa";
 import { toast } from "react-toastify";
 import MenuBarStaff from "../../../components/layout/MenuBar_Staff.jsx";
+import MenuBar from "../../../components/layout/MenuBar.jsx";
 import {
   getCurrentShiftNotifications,
   markNotificationAsRead,
@@ -24,7 +25,8 @@ const NotificationManagementStaff = () => {
   const [error, setError] = useState(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [notificationToDelete, setNotificationToDelete] = useState(null);
-  const [processing, setProcessing] = useState(false); // For payment confirmation spinner
+  const [processing, setProcessing] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(""); // New state for date filter
 
   const tabs = [
     "Order Management",
@@ -70,7 +72,7 @@ const NotificationManagementStaff = () => {
             if (data.type === "NOTIFICATION") {
               newNotification = data.notification || data;
             } else {
-              newNotification = data; // Xử lý định dạng phẳng
+              newNotification = data;
             }
 
             if (!newNotification.notificationId) {
@@ -190,7 +192,6 @@ const NotificationManagementStaff = () => {
             };
           });
 
-          // Hợp nhất và loại bỏ trùng lặp
           const mergedNotifications = [
             ...prevNotifications,
             ...newNotifications.filter(
@@ -219,16 +220,26 @@ const NotificationManagementStaff = () => {
   };
 
   const groupedNotifications = () => {
-    const notificationsWithDates = notifications.map((notification) => {
-      const date = new Date(notification.createAt || new Date());
-      return {
-        ...notification,
-        dateObj: date,
-        dateString: isToday(date) ? "Today" : format(date, "dd/MM/yyyy"),
-        timeString: format(date, "HH:mm:ss"),
-        dateTimestamp: date.getTime(),
-      };
-    });
+    const notificationsWithDates = notifications
+      .map((notification) => {
+        const date = new Date(notification.createAt || new Date());
+        return {
+          ...notification,
+          dateObj: date,
+          dateString: isToday(date) ? "Today" : format(date, "dd/MM/yyyy"),
+          timeString: format(date, "HH:mm:ss"),
+          dateTimestamp: date.getTime(),
+        };
+      })
+      .filter((notification) => {
+        if (!selectedDate) return true; // Show all if no date selected
+        const selected = new Date(selectedDate);
+        return (
+          notification.dateObj.getFullYear() === selected.getFullYear() &&
+          notification.dateObj.getMonth() === selected.getMonth() &&
+          notification.dateObj.getDate() === selected.getDate()
+        );
+      });
 
     const groups = notificationsWithDates.reduce((acc, notification) => {
       if (!acc[notification.dateString]) {
@@ -242,7 +253,7 @@ const NotificationManagementStaff = () => {
         ...notification,
         table: `Table ${notification.tableNumber || "Unknown"}`,
         time: notification.timeString,
-        content: notification.content || "No content", // Sử dụng content
+        content: notification.content || "No content",
       });
       return acc;
     }, {});
@@ -285,7 +296,6 @@ const NotificationManagementStaff = () => {
 
         const loadingToastId = toast.loading("Checking payment status...");
 
-        // Check payment status
         const statusResponse = await getPaymentStatus(notification.orderId);
         if (statusResponse.error) {
           toast.update(loadingToastId, {
@@ -304,7 +314,6 @@ const NotificationManagementStaff = () => {
             isLoading: false,
             autoClose: 3000,
           });
-          // Mark as read since payment is already confirmed
           const readResponse = await markNotificationAsRead(id);
           if (readResponse.error) {
             toast.error("Failed to mark notification as read");
@@ -325,7 +334,6 @@ const NotificationManagementStaff = () => {
             isLoading: false,
             autoClose: 5000,
           });
-          // Mark as read to clear invalid notification
           const readResponse = await markNotificationAsRead(id);
           if (readResponse.error) {
             toast.error("Failed to mark notification as read");
@@ -339,7 +347,6 @@ const NotificationManagementStaff = () => {
           return;
         }
 
-        // Confirm payment
         toast.update(loadingToastId, { render: "Confirming payment..." });
         const paymentResponse = await confirmPayment(notification.orderId);
         if (paymentResponse.success) {
@@ -360,7 +367,6 @@ const NotificationManagementStaff = () => {
         }
       }
 
-      // Mark notification as read (for all types)
       const readResponse = await markNotificationAsRead(id);
       if (readResponse.error) {
         toast.error("Failed to mark notification as read");
@@ -441,7 +447,10 @@ const NotificationManagementStaff = () => {
   if (loading) {
     return (
       <div className="h-screen w-screen bg-blue-50 flex flex-col">
-        <MenuBarStaff />
+        <MenuBar
+          title="Notification Management"
+          icon="https://img.icons8.com/material-outlined/192/FFFFFF/alarm.png"
+        />
         <div className="flex-1 p-6 bg-gray-100 flex items-center justify-center">
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
         </div>
@@ -452,7 +461,10 @@ const NotificationManagementStaff = () => {
   if (error) {
     return (
       <div className="h-screen w-screen bg-blue-50 flex flex-col">
-        <MenuBarStaff />
+        <MenuBar
+          title="Notification Management"
+          icon="https://img.icons8.com/material-outlined/192/FFFFFF/alarm.png"
+        />
         <div className="flex-1 p-6 bg-gray-100 flex items-center justify-center">
           <div className="text-xl font-bold text-red-500">{error}</div>
         </div>
@@ -464,10 +476,38 @@ const NotificationManagementStaff = () => {
 
   return (
     <div className="h-screen w-screen !bg-blue-50 flex flex-col">
-      <MenuBarStaff />
+      <MenuBar
+        title="Notification Management"
+        icon="https://img.icons8.com/material-outlined/192/FFFFFF/alarm.png"
+      />
 
       {/* Main Content */}
       <div className="flex-1 p-6 bg-gray-100 overflow-y-auto">
+        {/* Date Filter */}
+        <div className="mb-6">
+          <label htmlFor="dateFilter" className="mr-2 font-medium">
+            Filter by Date:
+          </label>
+          <input
+            type="date"
+            id="dateFilter"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="p-2 border rounded"
+          />
+          {selectedDate && (
+            <button
+              onClick={() => setSelectedDate("")}
+              className="ml-2 px-3 py-1 text-white rounded hover:bg-gray-600"
+              style={{
+                backgroundColor: "#FF6347",
+              }}
+            >
+              Clear Filter
+            </button>
+          )}
+        </div>
+
         {/* Notification List */}
         <div className="bg-white rounded-lg shadow-md p-6">
           {sortedNotificationGroups.length === 0 ? (
@@ -487,12 +527,9 @@ const NotificationManagementStaff = () => {
                   >
                     {/* Left side: Icon and info */}
                     <div className="flex items-center">
-                      {/* Icon */}
                       <div className="flex items-center justify-center w-12 h-12 bg-gray-200 rounded-full mr-4">
                         {getNotificationIcon(notification.type)}
                       </div>
-
-                      {/* Table and content info */}
                       <div>
                         <h3 className="font-bold text-lg">
                           {notification.table}
@@ -508,12 +545,9 @@ const NotificationManagementStaff = () => {
 
                     {/* Right side: Time and Buttons */}
                     <div className="flex flex-col items-end space-y-2">
-                      {/* Time */}
                       <span className="text-gray-500 text-sm">
                         {notification.time}
                       </span>
-
-                      {/* Buttons */}
                       <div className="flex justify-end space-x-4">
                         <button
                           aria-label={
@@ -542,8 +576,7 @@ const NotificationManagementStaff = () => {
                             handleDeleteClick(notification.notificationId)
                           }
                         >
-                          <FaTrash className="mr-1 w-6 h-6" />{" "}
-                          {/* Increased to w-6 h-6 */}
+                          <FaTrash className="mr-1 w-6 h-6" />
                           Delete
                         </button>
                       </div>
@@ -560,13 +593,12 @@ const NotificationManagementStaff = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
           <div className="relative bg-white rounded-xl shadow-2xl w-96 p-8 mx-4">
-            {/* Thêm logo nhà hàng */}
             <div className="flex justify-center mb-4">
               <img
                 alt="Logo"
                 className="w-24 h-24"
                 src="../../src/assets/img/logoremovebg.png"
-              ></img>
+              />
             </div>
             <h3 className="text-xl font-bold mb-4 text-center">
               ARE YOU SURE?

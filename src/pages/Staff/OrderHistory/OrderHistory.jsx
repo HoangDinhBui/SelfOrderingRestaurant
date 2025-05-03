@@ -9,6 +9,7 @@ import {
   FaCreditCard,
 } from "react-icons/fa";
 import MenuBarStaff from "../../../components/layout/MenuBar_Staff";
+import MenuBar from "../../../components/layout/MenuBar";
 import axios from "axios";
 import Order from "../../Customer/Order/Order";
 
@@ -328,7 +329,10 @@ const OrderHistoryStaff= () => {
 
   return (
     <div className="h-screen w-screen !bg-blue-50 flex flex-col">
-      <MenuBarStaff />
+      <MenuBar
+                title="Order History"
+                icon="https://img.icons8.com/?size=100&id=24874&format=png&color=FFFFFF" />
+      
 
       <div className="flex-1 p-6 bg-gray-100 overflow-y-auto">
         {/* Notification List */}
