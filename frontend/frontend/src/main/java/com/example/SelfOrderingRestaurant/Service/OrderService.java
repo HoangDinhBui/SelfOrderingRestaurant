@@ -18,6 +18,7 @@ import com.example.SelfOrderingRestaurant.Security.SecurityUtils;
 import com.example.SelfOrderingRestaurant.Service.Imp.IOrderService;
 import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,9 +27,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
-import lombok.AllArgsConstructor;
 
-@AllArgsConstructor
 @Service
 public class OrderService implements IOrderService {
 
@@ -41,31 +40,42 @@ public class OrderService implements IOrderService {
     private final HttpServletRequest httpServletRequest;
     private final SecurityUtils securityUtils;
 
-    private static Logger log = org.slf4j.LoggerFactory.getLogger(OrderService.class);
+    private static final Logger log = LoggerFactory.getLogger(OrderService.class);
+
+    @Autowired
+    public OrderService(
+            OrderRepository orderRepository,
+            OrderItemRepository orderItemRepository,
+            DishRepository dishRepository,
+            DinningTableRepository dinningTableRepository,
+            CustomerRepository customerRepository,
+            OrderCartService orderCartService,
+            HttpServletRequest httpServletRequest,
+            SecurityUtils securityUtils) {
+        this.orderRepository = orderRepository;
+        this.orderItemRepository = orderItemRepository;
+        this.dishRepository = dishRepository;
+        this.dinningTableRepository = dinningTableRepository;
+        this.customerRepository = customerRepository;
+        this.orderCartService = orderCartService;
+        this.httpServletRequest = httpServletRequest;
+        this.securityUtils = securityUtils;
+    }
 
     @Transactional
     @Override
     public Integer createOrder(OrderRequestDTO request) {
-        // Validate input data
         validateOrderRequest(request);
-        log.info("Creating order for table ID: {}", request.getTableId());
 
-        // Log all table statuses before update
-        logTableStatuses("Before fetching table");
-
-        // Check if table exists and is available
         DinningTable dinningTable = dinningTableRepository.findById(request.getTableId())
                 .orElseThrow(() -> new ResourceNotFoundException("Table not found with ID: " + request.getTableId()));
 
-        // Check table status
         if (TableStatus.OCCUPIED.equals(dinningTable.getTableStatus())) {
-            throw new ValidationException("Table " + dinningTable.getTableNumber() + " is already occupied");
+            throw new ValidationException("Table is already occupied");
         }
 
-        // Get or create customer
         Customer customer = getOrCreateCustomer(request);
 
-        // Create order
         Order order = new Order();
         order.setCustomer(customer);
         order.setTables(dinningTable);
@@ -78,64 +88,35 @@ public class OrderService implements IOrderService {
         Integer orderId = order.getOrderId();
         log.info("Created new order with ID: {}", orderId);
 
-        // Process order items and calculate total
         BigDecimal totalAmount = processOrderItems(order, request.getItems());
 
-        // Update order with calculated total amount
         order.setTotalAmount(totalAmount);
         orderRepository.save(order);
 
-        // Update table status to OCCUPIED
         dinningTable.setTableStatus(TableStatus.OCCUPIED);
         dinningTableRepository.save(dinningTable);
-        log.info("Updated table {} (ID: {}) status to OCCUPIED", dinningTable.getTableNumber(), dinningTable.getTableNumber());
+        log.info("Updated table {} status to OCCUPIED", dinningTable.getTableNumber());
 
-        // Verify no other tables were affected
-        verifyTableStatuses(dinningTable.getTableNumber());
-
-        // Clear the cart after creating the order
         orderCartService.clearCart();
 
         return orderId;
     }
 
-    private void logTableStatuses(String context) {
-        List<DinningTable> allTables = dinningTableRepository.findAll();
-        String statuses = allTables.stream()
-                .map(t -> "Table " + t.getTableNumber() + " (ID: " + t.getTableNumber() + "): " + t.getTableStatus())
-                .collect(Collectors.joining(", "));
-        log.info("{} - Table statuses: {}", context, statuses);
-    }
-
-    private void verifyTableStatuses(Integer updatedTableId) {
-        List<DinningTable> allTables = dinningTableRepository.findAll();
-        for (DinningTable table : allTables) {
-            if (!table.getTableNumber().equals(updatedTableId) && table.getTableStatus() == TableStatus.OCCUPIED) {
-                log.warn("Unexpected OCCUPIED status for table {} (ID: {}). Check DinningTableRepository or database triggers.",
-                        table.getTableNumber(), table.getTableNumber());
-            }
-        }
-    }
-
     private void validateOrderRequest(OrderRequestDTO request) {
         List<String> errors = new ArrayList<>();
 
-        // Validate table_id
         if (request.getTableId() == null || request.getTableId() <= 0) {
             errors.add("Table ID must be a positive integer");
         }
 
-        // Validate items
         if (request.getItems() == null || request.getItems().isEmpty()) {
             errors.add("Order must contain at least one item");
         } else {
-            // Validate each item
             for (int i = 0; i < request.getItems().size(); i++) {
                 OrderItemDTO item = request.getItems().get(i);
                 if (item.getDishId() == null || item.getDishId() <= 0) {
                     errors.add("Item #" + (i+1) + ": Dish ID must be a positive integer");
                 } else {
-                    // Check if dish exists
                     boolean dishExists = dishRepository.existsById(item.getDishId());
                     if (!dishExists) {
                         errors.add("Item #" + (i+1) + ": Dish with ID " + item.getDishId() + " does not exist");
@@ -146,7 +127,6 @@ public class OrderService implements IOrderService {
                     errors.add("Item #" + (i+1) + ": Quantity must be a positive integer");
                 }
 
-                // Notes validation (optional)
                 if (item.getNotes() != null && item.getNotes().length() > 255) {
                     errors.add("Item #" + (i+1) + ": Notes must not exceed 255 characters");
                 }
@@ -164,11 +144,9 @@ public class OrderService implements IOrderService {
             customer = customerRepository.findById(request.getCustomerId())
                     .orElseThrow(() -> new ResourceNotFoundException("Customer not found with ID: " + request.getCustomerId()));
         } else {
-            // Create a temporary customer for walk-in orders
             customer = new Customer();
             String guestName = request.getCustomerName();
             if (guestName == null || guestName.trim().isEmpty()) {
-                // Create a timestamp-based unique ID for the guest
                 String uniqueId = String.valueOf(System.currentTimeMillis());
                 guestName = "Guest_" + uniqueId;
             }
@@ -212,37 +190,40 @@ public class OrderService implements IOrderService {
 
     @Override
     public List<GetAllOrdersResponseDTO> getAllOrders() {
-        // Check authorization
-        if (!securityUtils.isAuthenticated()) {
-            throw new AuthorizationException("Authentication required to view orders");
+        try {
+            log.info("Fetching all unpaid orders");
+
+            List<Order> orders = orderRepository.findByPaymentStatus(PaymentStatus.UNPAID);
+            log.info("Retrieved {} unpaid orders", orders.size());
+
+            return orders.stream().map(order -> {
+                List<OrderItem> orderItems = orderItemRepository.findByOrder(order);
+
+                List<OrderItemDTO> items = orderItems.stream()
+                        .map(item -> {
+                            OrderItemDTO dto = new OrderItemDTO();
+                            dto.setDishId(item.getId().getDishId());
+                            dto.setQuantity(item.getQuantity());
+                            dto.setNotes(item.getNotes());
+                            dto.setDishName(item.getDish().getName());
+                            dto.setPrice(item.getDish().getPrice());
+                            return dto;
+                        }).collect(Collectors.toList());
+
+                return new GetAllOrdersResponseDTO(
+                        order.getOrderId(),
+                        order.getCustomer().getFullname(),
+                        order.getTables().getTableNumber(),
+                        order.getStatus().name(),
+                        order.getTotalAmount(),
+                        order.getPaymentStatus().name(),
+                        items
+                );
+            }).collect(Collectors.toList());
+        } catch (Exception e) {
+            log.error("Error fetching unpaid orders: {}", e.getMessage(), e);
+            throw new RuntimeException("Failed to fetch unpaid orders: " + e.getMessage());
         }
-
-        List<Order> orders = orderRepository.findAll();
-
-        return orders.stream().map(order -> {
-            List<OrderItem> orderItems = orderItemRepository.findByOrder(order);
-
-            List<OrderItemDTO> items = orderItems.stream()
-                    .map(item -> {
-                        OrderItemDTO dto = new OrderItemDTO();
-                        dto.setDishId(item.getId().getDishId());
-                        dto.setQuantity(item.getQuantity());
-                        dto.setNotes(item.getNotes());
-                        dto.setDishName(item.getDish().getName());
-                        dto.setPrice(item.getDish().getPrice());
-                        return dto;
-                    }).collect(Collectors.toList());
-
-            return new GetAllOrdersResponseDTO(
-                    order.getOrderId(),
-                    order.getCustomer().getFullname(),
-                    order.getTables().getTableNumber(),
-                    order.getStatus().name(),
-                    order.getTotalAmount(),
-                    order.getPaymentStatus().name(),
-                    items
-            );
-        }).collect(Collectors.toList());
     }
 
     @Override
@@ -281,7 +262,6 @@ public class OrderService implements IOrderService {
     @Transactional
     @Override
     public void updateOrderStatus(Integer orderId, String status) {
-        // Check authorization
         if (!securityUtils.isAuthenticated() && securityUtils.hasRole("STAFF")) {
             throw new AuthorizationException("Only staff members can update order status");
         }
@@ -306,11 +286,9 @@ public class OrderService implements IOrderService {
 
             log.info("Updated order {} status from {} to {}", orderId, oldStatus, newStatus);
 
-            // If order is completed or canceled, update table status if needed
             if (newStatus == OrderStatus.COMPLETED || newStatus == OrderStatus.CANCELLED) {
                 DinningTable table = order.getTables();
                 if (TableStatus.OCCUPIED.equals(table.getTableStatus())) {
-                    // Check if there are other active orders for this table
                     long activeOrderCount = orderRepository.countActiveOrdersByTableId(table.getTableNumber());
 
                     if (activeOrderCount == 0) {
@@ -325,20 +303,76 @@ public class OrderService implements IOrderService {
         }
     }
 
+    @Transactional
+    public OrderResponseDTO removeOrderItem(Integer orderId, Integer dishId) {
+        if (!securityUtils.isAuthenticated() && securityUtils.hasRole("STAFF")) {
+            throw new AuthorizationException("Only staff members can remove order items");
+        }
+
+        if (orderId == null || orderId <= 0) {
+            throw new ValidationException("Order ID must be a positive integer");
+        }
+
+        if (dishId == null || dishId <= 0) {
+            throw new ValidationException("Dish ID must be a positive integer");
+        }
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + orderId));
+
+        OrderItemKey key = new OrderItemKey();
+        key.setOrderId(orderId);
+        key.setDishId(dishId);
+
+        OrderItem orderItem = orderItemRepository.findById(key)
+                .orElseThrow(() -> new ResourceNotFoundException("Order item not found for order ID: " + orderId + " and dish ID: " + dishId));
+
+        orderItemRepository.delete(orderItem);
+        log.info("Removed item with dish ID {} from order {}", dishId, orderId);
+
+        // Recalculate total amount
+        List<OrderItem> remainingItems = orderItemRepository.findByOrder(order);
+        BigDecimal totalAmount = remainingItems.stream()
+                .map(item -> item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        order.setTotalAmount(totalAmount);
+        orderRepository.save(order);
+
+        // Return updated order
+        List<OrderItemDTO> items = remainingItems.stream()
+                .map(item -> {
+                    OrderItemDTO dto = new OrderItemDTO();
+                    dto.setDishId(item.getId().getDishId());
+                    dto.setQuantity(item.getQuantity());
+                    dto.setNotes(item.getNotes());
+                    dto.setDishName(item.getDish().getName());
+                    dto.setPrice(item.getDish().getPrice());
+                    return dto;
+                }).collect(Collectors.toList());
+
+        return new OrderResponseDTO(
+                order.getOrderId(),
+                order.getCustomer().getFullname(),
+                order.getTables().getTableNumber(),
+                order.getStatus().name(),
+                order.getTotalAmount(),
+                order.getPaymentStatus().name(),
+                items
+        );
+    }
+
     @Override
     public OrderCartResponseDTO addDishToOrderCart(OrderItemDTO orderItemDTO) {
-        // Validate dish ID
         if (orderItemDTO.getDishId() == null || orderItemDTO.getDishId() <= 0) {
             throw new ValidationException("Dish ID must be a positive integer");
         }
 
-        // Check if dish exists
         boolean dishExists = dishRepository.existsById(orderItemDTO.getDishId());
         if (!dishExists) {
             throw new ResourceNotFoundException("Dish not found with ID: " + orderItemDTO.getDishId());
         }
 
-        // Validate quantity
         if (orderItemDTO.getQuantity() <= 0) {
             throw new ValidationException("Quantity must be a positive integer");
         }
@@ -385,14 +419,12 @@ public class OrderService implements IOrderService {
 
         log.info("Updating notes for dish ID {}: {}", dishId, notes);
 
-        // Get current cart
         OrderCartResponseDTO currentCart = getCurrentOrderCart();
 
         if (currentCart == null || currentCart.getItems() == null) {
             throw new IllegalStateException("Cart not found or empty");
         }
 
-        // Find the item and update its notes
         boolean itemFound = false;
         for (OrderCartResponseDTO.CartItemDTO item : currentCart.getItems()) {
             if (item.getDishId().equals(dishId)) {
@@ -415,63 +447,11 @@ public class OrderService implements IOrderService {
         HttpSession session = httpServletRequest.getSession();
         Integer orderId = (Integer) session.getAttribute("currentOrderId");
 
-        // Update in database
         if (orderId != null) {
             orderItemRepository.updateNotes(orderId, dishId, notes);
             log.debug("Updated notes for dish {} in order {}", dishId, orderId);
         } else {
             log.warn("Cannot update notes in database: No current order ID found in session");
-        }
-    }
-
-    @Transactional
-    public void deleteOrder(Integer orderId) {
-        // Check authorization
-        if (!securityUtils.isAuthenticated() || !securityUtils.hasRole("STAFF")) {
-            throw new AuthorizationException("Only staff members can delete orders");
-        }
-
-        // Find order
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + orderId));
-
-        // Get related table
-        DinningTable table = order.getTables();
-        Integer tableNumber = table.getTableNumber();
-
-        // Delete order items
-        orderItemRepository.deleteByOrder(order);
-
-        // Delete order
-        orderRepository.delete(order);
-        log.info("Deleted order with ID: {}", orderId);
-
-        // Update table status
-        updateTableStatusAfterOrderChange(tableNumber);
-    }
-
-    private void updateTableStatusAfterOrderChange(Integer tableNumber) {
-        DinningTable table = dinningTableRepository.findById(tableNumber)
-                .orElseThrow(() -> new ResourceNotFoundException("Table not found with ID: " + tableNumber));
-
-        // Get remaining orders for the table
-        List<Order> tableOrders = orderRepository.findByTableNumber(tableNumber);
-
-        // Determine table status
-        TableStatus status;
-        if (tableOrders.isEmpty()) {
-            status = TableStatus.AVAILABLE;
-        } else if (tableOrders.size() == 1 && PaymentStatus.PAID.name().equals(tableOrders.get(0).getPaymentStatus())) {
-            status = TableStatus.AVAILABLE;
-        } else {
-            status = TableStatus.OCCUPIED;
-        }
-
-        // Update status if changed
-        if (table.getTableStatus() != status) {
-            table.setTableStatus(status);
-            dinningTableRepository.save(table);
-            log.info("Updated table {} status to {}", tableNumber, status);
         }
     }
 }
