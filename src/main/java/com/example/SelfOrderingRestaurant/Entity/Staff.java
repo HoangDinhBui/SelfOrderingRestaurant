@@ -9,6 +9,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -37,7 +38,7 @@ public class Staff {
     private BigDecimal salary;
 
     @Column(name = "hire_date", nullable = false)
-    private LocalDateTime hireDate = LocalDateTime.now();
+    private LocalDate hireDate = LocalDate.now();
 
     @Enumerated(EnumType.STRING)
     @Column(name = "Status")

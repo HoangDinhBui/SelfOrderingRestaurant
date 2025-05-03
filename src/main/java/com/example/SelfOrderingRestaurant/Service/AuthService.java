@@ -32,6 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.security.GeneralSecurityException;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Date;
@@ -79,7 +80,7 @@ public class AuthService {
         Staff staff = new Staff();
         staff.setUser(savedUser);
         staff.setFullname(request.getFullname());
-        staff.setHireDate(LocalDateTime.now()); // Set hire date to current time
+        staff.setHireDate(LocalDate.now()); // Set hire date to current time
         staff.setPosition("New Staff"); // Default position
         staff.setSalary(BigDecimal.ZERO); // Default salary, can be updated later
         staff.setStatus(UserStatus.ACTIVE);
