@@ -11,15 +11,13 @@ const CustomerRoutes = () => {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/menu" element={<Menu />} />
-        <Route path="/dish/:id" element={<DishDetails />} />
-        <Route path="/order" element={<Order />} />{" "}
-        {/* Thêm route cho trang Order */}
-        <Route path="/view/:id" element={<ViewItem />} />
-        <Route path="/note/:id" element={<Note />} />
-        <Route path="/payment" element={<Payment />} />
-        <Route path="/evaluate" element={<Evaluate />} />
+        <Route path="/home_cus" element={<Home />} />
+        <Route path="/menu_cus" element={<Menu />} />
+        <Route path="/order_cus" element={<Order />} />
+        <Route path="/viewitem/:id" element={<ViewItem />} />
+        <Route path="/note_cus/:id" element={<Note />} />
+        <Route path="/payment_cus" element={<Payment />} />
+        <Route path="/evaluate_cus" element={<Evaluate />} />
       </Routes>
     </Router>
   );

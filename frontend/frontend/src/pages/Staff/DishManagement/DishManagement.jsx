@@ -42,7 +42,7 @@ const REMOVE_ORDER_ITEM = gql`
   }
 `;
 
-const DishManagement = () => {
+const DishManagementStaff = () => {
   const [selectedOrderId, setSelectedOrderId] = useState("");
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
@@ -283,4 +283,4 @@ const DishManagement = () => {
   );
 };
 
-export default DishManagement;
+export default DishManagementStaff;
