@@ -54,7 +54,15 @@ public class NotificationService implements INotificationService {
     @Transactional
     @Override
     public void markNotificationAsRead(Integer notificationId) {
+        Notification notification = notificationRepository.findById(notificationId)
+                .orElseThrow(() -> new RuntimeException("Notification not found with id: " + notificationId));
+
         notificationRepository.markAsRead(notificationId);
+
+        // Gửi thông báo cập nhật qua WebSocket
+        NotificationResponseDTO notificationDTO = mapToResponseDTO(notification);
+        notificationDTO.setIsRead(true); // Cập nhật trạng thái
+        webSocketService.sendNotificationToActiveStaff(notificationDTO);
     }
 
     @Transactional
