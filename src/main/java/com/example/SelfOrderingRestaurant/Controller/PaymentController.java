@@ -141,22 +141,25 @@ public class PaymentController {
             Order order = orderRepository.findById(request.getOrderId())
                     .orElseThrow(() -> new IllegalArgumentException("Order not found with ID: " + request.getOrderId()));
 
-            List<Payment> existingPayments = paymentRepository.findByOrderAndStatus(order, PaymentStatus.PENDING);
-            if (!existingPayments.isEmpty()) {
-                Payment pendingPayment = existingPayments.get(0);
+            // Check for existing PENDING or UNPAID payments
+            List<Payment> existingPayments = paymentRepository.findByOrderAndStatusIn(
+                    order, Arrays.asList(PaymentStatus.PENDING, PaymentStatus.UNPAID));
+            for (Payment pendingPayment : existingPayments) {
                 LocalDateTime paymentDate = pendingPayment.getPaymentDate();
                 LocalDateTime expiryTime = paymentDate.plusMinutes(15);
+                log.info("Found existing payment for order {}: transactionId={}, status={}, paymentDate={}",
+                        request.getOrderId(), pendingPayment.getTransactionId(), pendingPayment.getStatus(), pendingPayment.getPaymentDate());
 
                 if (LocalDateTime.now().isBefore(expiryTime)) {
                     return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
                             "success", false,
-                            "message", "A pending payment transaction exists for order " + request.getOrderId() + ". Please wait for it to complete or expire."
+                            "message", "A " + pendingPayment.getStatus() + " payment transaction exists for order " + request.getOrderId() + ". Please wait for it to complete or expire."
                     ));
                 } else {
                     pendingPayment.setStatus(PaymentStatus.CANCELLED);
                     paymentRepository.save(pendingPayment);
-                    log.info("Cancelled expired pending payment for order {} with transaction ID: {}",
-                            request.getOrderId(), pendingPayment.getTransactionId());
+                    log.info("Cancelled expired {} payment for order {} with transaction ID: {}",
+                            pendingPayment.getStatus(), request.getOrderId(), pendingPayment.getTransactionId());
                 }
             }
 
@@ -181,12 +184,13 @@ public class PaymentController {
             payment.setPaymentDate(LocalDateTime.now());
 
             paymentRepository.save(payment);
+            log.info("Created/Updated payment for order {}: transactionId={}, status={}, method={}",
+                    request.getOrderId(), txnRef, payment.getStatus(), method);
 
             if (confirmPayment) {
                 order.setPaymentStatus(PaymentStatus.PAID);
                 orderRepository.save(order);
 
-                // Update table status to AVAILABLE
                 DinningTable table = order.getTables();
                 if (table != null) {
                     table.setTableStatus(TableStatus.AVAILABLE);
@@ -204,7 +208,7 @@ public class PaymentController {
 
             return ResponseEntity.ok(response);
         } catch (Exception e) {
-            log.error("Error processing payment: {}", e.getMessage(), e);
+            log.error("Error processing payment for order {}: {}", request.getOrderId(), e.getMessage(), e);
             Map<String, Object> response = new HashMap<>();
             response.put("success", false);
             response.put("message", e.getMessage());
@@ -217,8 +221,30 @@ public class PaymentController {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found with ID: " + orderId));
 
-        Payment payment = paymentRepository.findTopByOrderAndStatusOrderByPaymentDateDesc(order, PaymentStatus.UNPAID)
-                .orElseThrow(() -> new IllegalArgumentException("No pending payment found for order ID: " + orderId));
+        Optional<Payment> paymentOptional = paymentRepository.findTopByOrderAndStatusInOrderByPaymentDateDesc(
+                order, Arrays.asList(PaymentStatus.UNPAID, PaymentStatus.PENDING));
+
+        if (paymentOptional.isEmpty()) {
+            log.error("No UNPAID or PENDING payment found for order ID: {}", orderId);
+            throw new IllegalArgumentException("No pending payment found for order ID: " + orderId);
+        }
+
+        Payment payment = paymentOptional.get();
+        log.info("Found payment for order {}: transactionId={}, status={}, method={}",
+                orderId, payment.getTransactionId(), payment.getStatus(), payment.getPaymentMethod());
+
+        if (payment.getStatus() == PaymentStatus.PENDING) {
+            LocalDateTime paymentDate = payment.getPaymentDate();
+            LocalDateTime expiryTime = paymentDate.plusMinutes(15);
+            if (LocalDateTime.now().isAfter(expiryTime)) {
+                payment.setStatus(PaymentStatus.CANCELLED);
+                paymentRepository.save(payment);
+                log.info("Cancelled expired PENDING payment for order {}: transactionId={}",
+                        orderId, payment.getTransactionId());
+                throw new IllegalArgumentException("Pending payment has expired for order ID: " + orderId);
+            }
+            throw new IllegalStateException("Cannot confirm payment: Payment is still PENDING for order ID: " + orderId);
+        }
 
         payment.setStatus(PaymentStatus.PAID);
         paymentRepository.save(payment);
@@ -228,10 +254,14 @@ public class PaymentController {
 
         DinningTable table = order.getTables();
         if (table != null) {
+            log.info("Before update: Table {} status is {} for order {}",
+                    table.getTableNumber(), table.getTableStatus(), orderId);
             table.setTableStatus(TableStatus.AVAILABLE);
             tableRepository.save(table);
-            log.info("Table {} status updated to AVAILABLE after payment for order {}",
-                    table.getTableNumber(), order.getOrderId());
+            log.info("After update: Table {} status updated to AVAILABLE for order {}",
+                    table.getTableNumber(), orderId);
+        } else {
+            log.warn("No table associated with order {}", orderId);
         }
 
         log.info("Payment confirmed successfully for order ID: {}", orderId);

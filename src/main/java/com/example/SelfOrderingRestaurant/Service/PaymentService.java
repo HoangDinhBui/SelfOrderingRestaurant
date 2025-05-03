@@ -106,17 +106,19 @@ public class PaymentService {
 
         paymentRepository.save(payment);
 
-        // Update order status
         order.setPaymentStatus(PaymentStatus.PAID);
         orderRepository.save(order);
 
-        // Update table status to AVAILABLE
         DinningTable table = order.getTables();
         if (table != null) {
+            log.info("Before update: Table {} status is {} for order {}",
+                    table.getTableNumber(), table.getTableStatus(), order.getOrderId());
             table.setTableStatus(TableStatus.AVAILABLE);
             tableRepository.save(table);
-            log.info("Table {} status updated to AVAILABLE after cash payment for order {}",
+            log.info("After update: Table {} status updated to AVAILABLE for order {}",
                     table.getTableNumber(), order.getOrderId());
+        } else {
+            log.warn("No table associated with order {}", order.getOrderId());
         }
 
         PaymentResponseDTO response = new PaymentResponseDTO();
