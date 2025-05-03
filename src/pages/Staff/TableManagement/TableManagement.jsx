@@ -28,6 +28,93 @@ const TableManagementStaff = () => {
   const [orderLoading, setOrderLoading] = useState(false);
   const [orderError, setOrderError] = useState(null);
 
+  //Web socket
+  const [socket, setSocket] = useState(null);
+  const [socketError, setSocketError] = useState(null);
+
+  useEffect(() => {
+    let ws;
+    let reconnectTimeout;
+    let isMounted = true;
+    let reconnectAttempts = 0;
+    const maxReconnectAttempts = 5;
+    const baseReconnectDelay = 5000;
+
+    const connectWebSocket = () => {
+      if (!isMounted || reconnectAttempts >= maxReconnectAttempts) return;
+
+      ws = new WebSocket("ws://localhost:8080/ws/notifications");
+
+      ws.onopen = () => {
+        console.log("WebSocket connected");
+        setSocket(ws);
+        setSocketError(null);
+        reconnectAttempts = 0; // Reset số lần thử khi kết nối thành công
+        clearTimeout(reconnectTimeout);
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          if (typeof event.data !== "string") {
+            throw new Error("Received non-string WebSocket message");
+          }
+          const notification = JSON.parse(event.data);
+          if (!notification.notificationId || !notification.tableNumber) {
+            throw new Error("Invalid notification format");
+          }
+          console.log("Received WebSocket notification:", notification);
+
+          setTableNotifications((prev) => {
+            const exists = prev.some(
+              (n) => n.notificationId === notification.notificationId
+            );
+            if (exists) {
+              return prev.map((n) =>
+                n.notificationId === notification.notificationId
+                  ? { ...n, ...notification }
+                  : n
+              );
+            } else {
+              return [...prev, notification];
+            }
+          });
+        } catch (err) {
+          console.error("Error processing WebSocket message:", err);
+          setSocketError("Failed to process notification");
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error("WebSocket error:", error);
+        setSocketError("Failed to connect to notifications server");
+      };
+
+      ws.onclose = () => {
+        console.log("WebSocket disconnected");
+        setSocket(null);
+        if (isMounted && reconnectAttempts < maxReconnectAttempts) {
+          // Tăng delay theo cấp số nhân
+          const delay = baseReconnectDelay * Math.pow(2, reconnectAttempts);
+          reconnectAttempts++;
+          reconnectTimeout = setTimeout(() => {
+            connectWebSocket();
+          }, delay);
+        }
+      };
+    };
+
+    connectWebSocket();
+
+    return () => {
+      isMounted = false;
+      clearTimeout(reconnectTimeout);
+      if (ws) {
+        ws.close();
+        console.log("WebSocket closed during cleanup");
+      }
+    };
+  }, []);
+
   // Set up axios interceptor for authentication
   useEffect(() => {
     // Add request interceptor
@@ -86,6 +173,18 @@ const TableManagementStaff = () => {
       axios.interceptors.response.eject(responseInterceptor);
     };
   }, []);
+
+  // Calculate unread notifications by table
+  const unreadNotificationsByTable = useMemo(() => {
+    const result = tables.reduce((acc, table) => {
+      acc[table.id] = tableNotifications.filter(
+        (n) => n.tableNumber.toString() === table.id.toString() && !n.isRead
+      ).length;
+      return acc;
+    }, {});
+    console.log("unreadNotificationsByTable:", result);
+    return result;
+  }, [tableNotifications, tables]);
 
   // GraphQL request function
   const executeGraphQL = async (query, variables = {}) => {
@@ -296,7 +395,7 @@ const TableManagementStaff = () => {
     try {
       // For now, there's no GraphQL endpoint for this specific operation,
       // so we'll use REST directly
-      const response = await API.get(`/api/staff/tables/${tableId}/orders`);
+      const response = await API.get(`/api/staff/tables/${tableId}`);
       return response.data || [];
     } catch (err) {
       console.error(`Error fetching orders for table ${tableId}:`, err);
@@ -471,30 +570,22 @@ const TableManagementStaff = () => {
       try {
         setLoading(true);
 
-        // Use REST API for tables
         const response = await API.get("/api/staff/tables");
-
         if (!response.data) {
           throw new Error("No tables data returned from API");
         }
 
-        // Map the response to table structure
         const mappedTables = response.data.map((table) => ({
           id: table.table_id,
           status: table.status?.toLowerCase() || "available",
           capacity: table.capacity,
-          orders: [], // Initialize with empty orders array
+          orders: [],
         }));
 
         setTables(mappedTables);
-
-        // Now fetch all orders and associate them with tables
         await fetchOrders();
-
-        setLoading(false);
       } catch (err) {
         console.error("Error fetching tables:", err);
-
         if (err.response?.status === 403) {
           setError(
             "You don't have permission to access this resource. Please check your authentication."
@@ -502,13 +593,20 @@ const TableManagementStaff = () => {
         } else {
           setError("Failed to load tables. Please try again later.");
         }
-
+      } finally {
         setLoading(false);
       }
     };
 
     fetchTables();
   }, [fetchOrders]);
+
+  // Fetch notifications when tables are updated
+  useEffect(() => {
+    if (tables.length > 0) {
+      fetchAllNotifications();
+    }
+  }, [tables]);
 
   const ordersByTable = useMemo(() => {
     return orders.reduce((acc, order) => {
@@ -581,45 +679,23 @@ const TableManagementStaff = () => {
       setNotificationsLoading(true);
       setNotificationsError(null);
 
-      // Attempt to get real notifications
-      try {
-        const response = await API.get(`/api/notifications/table/${tableId}`);
-        setTableNotifications(response.data);
-      } catch (err) {
-        console.error("Failed to fetch real notifications, using mock:", err);
+      // Fetch notifications for the specific table
+      const response = await API.get(`/api/notifications/table/${tableId}`);
+      const notifications = response.data;
 
-        // Fall back to mock notification data
-        const mockNotifications = [
-          {
-            notificationId: 1,
-            title: "Assistance Needed",
-            content: `Customer at Table ${tableId} requested assistance`,
-            isRead: false,
-            type: "ASSISTANCE",
-            createAt: new Date().toISOString(),
-            tableNumber: tableId,
-            orderId: 100 + parseInt(tableId),
-          },
-          {
-            notificationId: 2,
-            title: "Order Ready",
-            content: `Order for Table ${tableId} is ready to be served`,
-            isRead: true,
-            type: "ORDER_READY",
-            createAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-            tableNumber: tableId,
-            orderId: 100 + parseInt(tableId),
-          },
-        ];
-
-        setTableNotifications(mockNotifications);
-      }
-
-      setNotificationsLoading(false);
+      // Update tableNotifications by replacing notifications for this table
+      setTableNotifications((prev) => {
+        // Keep notifications for other tables
+        const otherNotifications = prev.filter(
+          (n) => n.tableNumber !== tableId
+        );
+        // Add new notifications for this table
+        return [...otherNotifications, ...notifications];
+      });
     } catch (err) {
       console.error(`Error fetching notifications for table ${tableId}:`, err);
       setNotificationsError("Failed to load notifications. Please try again.");
-      setTableNotifications([]);
+    } finally {
       setNotificationsLoading(false);
     }
   };
@@ -659,6 +735,7 @@ const TableManagementStaff = () => {
     }
 
     setSelectedTable(table);
+    setCurrentPage(1); // Reset to first page
 
     // Only fetch notifications if we're opening the modal
     if (!isNotificationModalOpen) {
@@ -831,10 +908,16 @@ const TableManagementStaff = () => {
     if (!isNotificationModalOpen || !selectedTable) return null;
 
     const itemsPerPage = 5;
-    const totalPages = Math.ceil(tableNotifications.length / itemsPerPage);
+    // Filter notifications for the selected table
+    const tableSpecificNotifications = tableNotifications.filter(
+      (notification) => notification.tableNumber === selectedTable.id
+    );
+    const totalPages = Math.ceil(
+      tableSpecificNotifications.length / itemsPerPage
+    );
 
-    // Lấy thông báo cho trang hiện tại, sắp xếp mới nhất trước
-    const sortedNotifications = [...tableNotifications].sort(
+    // Sort notifications by creation date (newest first)
+    const sortedNotifications = [...tableSpecificNotifications].sort(
       (a, b) => new Date(b.createAt) - new Date(a.createAt)
     );
     const indexOfLastItem = currentPage * itemsPerPage;
@@ -844,7 +927,7 @@ const TableManagementStaff = () => {
       indexOfLastItem
     );
 
-    // Hàm định dạng ngày giờ
+    // Format date and time
     const formatDateTime = (isoString) => {
       try {
         const date = new Date(isoString);
@@ -860,14 +943,13 @@ const TableManagementStaff = () => {
       }
     };
 
-    // Hàm tạo danh sách nút phân trang
+    // Pagination buttons
     const getPaginationButtons = () => {
-      const maxButtons = 5; // Giới hạn số nút hiển thị
+      const maxButtons = 5;
       const buttons = [];
       let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
       let endPage = Math.min(totalPages, startPage + maxButtons - 1);
 
-      // Điều chỉnh startPage nếu endPage gần totalPages
       if (endPage - startPage + 1 < maxButtons) {
         startPage = Math.max(1, endPage - maxButtons + 1);
       }
@@ -892,8 +974,8 @@ const TableManagementStaff = () => {
     };
 
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg shadow-lg w-full max-w-lg mx-auto p-6 flex flex-col max-h-[80vh]">
+      <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg shadow-lg w-full max-w-3xl mx-auto p-6 flex flex-col max-h-[80vh]">
           {/* Header */}
           <div className="flex justify-between items-center mb-4 border-b pb-2">
             <h2 className="text-xl font-semibold">
@@ -960,10 +1042,6 @@ const TableManagementStaff = () => {
                             <p className="mt-1 text-gray-600">
                               {notification.content}
                             </p>
-                            <p className="mt-1 text-sm text-gray-500">
-                              Type: {notification.type} | Order #
-                              {notification.orderId}
-                            </p>
                           </div>
                           <span className="text-sm text-gray-500">
                             {formatDateTime(notification.createAt)}
@@ -976,7 +1054,7 @@ const TableManagementStaff = () => {
                                 notification.notificationId
                               )
                             }
-                            className="!bg-blue-600 mt-2 text-sm text-white hover:text-blue-800 font-medium"
+                            className="!bg-blue-600 mt-2 text-sm text-white hover:bg-blue-700 font-medium py-1 px-3 rounded"
                           >
                             Mark as Read
                           </button>
@@ -992,15 +1070,14 @@ const TableManagementStaff = () => {
           {/* Pagination */}
           {!notificationsLoading && !notificationsError && (
             <div className="mt-4 pt-3 border-t">
-              {tableNotifications.length > 0 && (
+              {tableSpecificNotifications.length > 0 && (
                 <div className="text-center text-sm text-gray-600 mb-2">
-                  Trang {currentPage} / {totalPages} (
-                  {tableNotifications.length} thông báo)
+                  Page {currentPage} / {totalPages} (
+                  {tableSpecificNotifications.length} notifications)
                 </div>
               )}
-              {tableNotifications.length > itemsPerPage && (
+              {tableSpecificNotifications.length > itemsPerPage && (
                 <div className="flex justify-center items-center space-x-1">
-                  {/* Nút "Đầu" */}
                   <button
                     onClick={() => setCurrentPage(1)}
                     disabled={currentPage === 1}
@@ -1012,8 +1089,6 @@ const TableManagementStaff = () => {
                   >
                     First
                   </button>
-
-                  {/* Nút "Trước" */}
                   <button
                     onClick={() =>
                       setCurrentPage((prev) => Math.max(prev - 1, 1))
@@ -1027,11 +1102,7 @@ const TableManagementStaff = () => {
                   >
                     «
                   </button>
-
-                  {/* Nút số trang */}
                   {getPaginationButtons()}
-
-                  {/* Nút "Sau" */}
                   <button
                     onClick={() =>
                       setCurrentPage((prev) => Math.min(prev + 1, totalPages))
@@ -1045,8 +1116,6 @@ const TableManagementStaff = () => {
                   >
                     »
                   </button>
-
-                  {/* Nút "Cuối" */}
                   <button
                     onClick={() => setCurrentPage(totalPages)}
                     disabled={currentPage === totalPages}
@@ -1238,8 +1307,44 @@ const TableManagementStaff = () => {
       </div>
     );
   };
-  // This is the updated return part of the component, integrating the missing functions
 
+  const fetchAllNotifications = async () => {
+    try {
+      setNotificationsLoading(true);
+      setNotificationsError(null);
+
+      const notificationsPromises = tables.map((table) =>
+        API.get(`/api/notifications/table/${table.id}`)
+          .then((response) => {
+            console.log(`Notifications for table ${table.id}:`, response.data);
+            return response.data;
+          })
+          .catch((err) => {
+            console.error(
+              `Error fetching notifications for table ${table.id}:`,
+              err
+            );
+            return [];
+          })
+      );
+
+      const notificationsArrays = await Promise.all(notificationsPromises);
+      const allNotifications = notificationsArrays
+        .flat()
+        .filter((n) => n.notificationId && typeof n.isRead === "boolean");
+
+      console.log("All notifications:", allNotifications);
+      setTableNotifications(allNotifications);
+    } catch (err) {
+      console.error("Error fetching all notifications:", err);
+      setNotificationsError("Failed to load notifications");
+      setTableNotifications([]);
+    } finally {
+      setNotificationsLoading(false);
+    }
+  };
+
+  // This is the updated return part of the component, integrating the missing functions
   return (
     <div className="h-screen w-screen bg-[#C2C7CA] flex justify-center items-center">
       {/* Background blur when any modal is open */}
@@ -1259,7 +1364,8 @@ const TableManagementStaff = () => {
       >
         <MenuBar
           title="Table Management"
-          icon="https://img.icons8.com/ios-filled/50/FFFFFF/table.png" />
+          icon="https://img.icons8.com/ios-filled/50/FFFFFF/table.png"
+        />
 
         {/* Container chính nằm giữa */}
         <div
@@ -1381,19 +1487,15 @@ const TableManagementStaff = () => {
                               d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
                             />
                           </svg>
-                          {/* Fix: Define notifications array if it doesn't exist */}
-                          {table.status === "occupied" &&
-                            tableNotifications.filter(
-                              (n) => n.tableId === table.id
-                            ).length > 0 && (
-                              <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
-                                {
-                                  tableNotifications.filter(
-                                    (n) => n.tableId === table.id
-                                  ).length
-                                }
-                              </span>
-                            )}
+                          {notificationsLoading ? (
+                            <span className="absolute -top-1 -right-1 bg-gray-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
+                              ...
+                            </span>
+                          ) : unreadNotificationsByTable[table.id] > 0 ? (
+                            <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
+                              {unreadNotificationsByTable[table.id]}
+                            </span>
+                          ) : null}
                         </div>
                       </div>
                       <div className="flex items-center">
