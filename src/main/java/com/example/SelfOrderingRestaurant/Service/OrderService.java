@@ -6,7 +6,6 @@ import com.example.SelfOrderingRestaurant.Dto.Response.OrderResponseDTO.GetAllOr
 import com.example.SelfOrderingRestaurant.Dto.Response.OrderResponseDTO.OrderResponseDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.OrderResponseDTO.OrderCartResponseDTO;
 import com.example.SelfOrderingRestaurant.Entity.*;
-import com.example.SelfOrderingRestaurant.Entity.DinningTable;
 import com.example.SelfOrderingRestaurant.Enum.OrderStatus;
 import com.example.SelfOrderingRestaurant.Enum.PaymentStatus;
 import com.example.SelfOrderingRestaurant.Entity.Key.OrderItemKey;
@@ -34,21 +33,13 @@ import lombok.AllArgsConstructor;
 public class OrderService implements IOrderService {
 
     private final OrderRepository orderRepository;
-
     private final OrderItemRepository orderItemRepository;
-
     private final DishRepository dishRepository;
-
     private final DinningTableRepository dinningTableRepository;
-
     private final CustomerRepository customerRepository;
-
     private final OrderCartService orderCartService;
-
     private final HttpServletRequest httpServletRequest;
-
     private final SecurityUtils securityUtils;
-
 
     private static Logger log = org.slf4j.LoggerFactory.getLogger(OrderService.class);
 
@@ -57,6 +48,10 @@ public class OrderService implements IOrderService {
     public Integer createOrder(OrderRequestDTO request) {
         // Validate input data
         validateOrderRequest(request);
+        log.info("Creating order for table ID: {}", request.getTableId());
+
+        // Log all table statuses before update
+        logTableStatuses("Before fetching table");
 
         // Check if table exists and is available
         DinningTable dinningTable = dinningTableRepository.findById(request.getTableId())
@@ -64,7 +59,7 @@ public class OrderService implements IOrderService {
 
         // Check table status
         if (TableStatus.OCCUPIED.equals(dinningTable.getTableStatus())) {
-            throw new ValidationException("Table is already occupied");
+            throw new ValidationException("Table " + dinningTable.getTableNumber() + " is already occupied");
         }
 
         // Get or create customer
@@ -93,12 +88,33 @@ public class OrderService implements IOrderService {
         // Update table status to OCCUPIED
         dinningTable.setTableStatus(TableStatus.OCCUPIED);
         dinningTableRepository.save(dinningTable);
-        log.info("Updated table {} status to OCCUPIED", dinningTable.getTableNumber());
+        log.info("Updated table {} (ID: {}) status to OCCUPIED", dinningTable.getTableNumber(), dinningTable.getTableNumber());
+
+        // Verify no other tables were affected
+        verifyTableStatuses(dinningTable.getTableNumber());
 
         // Clear the cart after creating the order
         orderCartService.clearCart();
 
         return orderId;
+    }
+
+    private void logTableStatuses(String context) {
+        List<DinningTable> allTables = dinningTableRepository.findAll();
+        String statuses = allTables.stream()
+                .map(t -> "Table " + t.getTableNumber() + " (ID: " + t.getTableNumber() + "): " + t.getTableStatus())
+                .collect(Collectors.joining(", "));
+        log.info("{} - Table statuses: {}", context, statuses);
+    }
+
+    private void verifyTableStatuses(Integer updatedTableId) {
+        List<DinningTable> allTables = dinningTableRepository.findAll();
+        for (DinningTable table : allTables) {
+            if (!table.getTableNumber().equals(updatedTableId) && table.getTableStatus() == TableStatus.OCCUPIED) {
+                log.warn("Unexpected OCCUPIED status for table {} (ID: {}). Check DinningTableRepository or database triggers.",
+                        table.getTableNumber(), table.getTableNumber());
+            }
+        }
     }
 
     private void validateOrderRequest(OrderRequestDTO request) {
@@ -196,7 +212,7 @@ public class OrderService implements IOrderService {
 
     @Override
     public List<GetAllOrdersResponseDTO> getAllOrders() {
-        // Check authorization (optional based on your requirements)
+        // Check authorization
         if (!securityUtils.isAuthenticated()) {
             throw new AuthorizationException("Authentication required to view orders");
         }
@@ -309,7 +325,6 @@ public class OrderService implements IOrderService {
         }
     }
 
-    // Cart management methods
     @Override
     public OrderCartResponseDTO addDishToOrderCart(OrderItemDTO orderItemDTO) {
         // Validate dish ID
@@ -411,27 +426,27 @@ public class OrderService implements IOrderService {
 
     @Transactional
     public void deleteOrder(Integer orderId) {
-        // Kiểm tra xác thực
+        // Check authorization
         if (!securityUtils.isAuthenticated() || !securityUtils.hasRole("STAFF")) {
             throw new AuthorizationException("Only staff members can delete orders");
         }
 
-        // Tìm đơn hàng
+        // Find order
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + orderId));
 
-        // Lấy bàn liên quan
+        // Get related table
         DinningTable table = order.getTables();
         Integer tableNumber = table.getTableNumber();
 
-        // Xóa các mục đơn hàng (order items)
+        // Delete order items
         orderItemRepository.deleteByOrder(order);
 
-        // Xóa đơn hàng
+        // Delete order
         orderRepository.delete(order);
         log.info("Deleted order with ID: {}", orderId);
 
-        // Cập nhật trạng thái bàn
+        // Update table status
         updateTableStatusAfterOrderChange(tableNumber);
     }
 
@@ -439,10 +454,10 @@ public class OrderService implements IOrderService {
         DinningTable table = dinningTableRepository.findById(tableNumber)
                 .orElseThrow(() -> new ResourceNotFoundException("Table not found with ID: " + tableNumber));
 
-        // Lấy danh sách đơn hàng còn lại của bàn
+        // Get remaining orders for the table
         List<Order> tableOrders = orderRepository.findByTableNumber(tableNumber);
 
-        // Tính trạng thái bàn
+        // Determine table status
         TableStatus status;
         if (tableOrders.isEmpty()) {
             status = TableStatus.AVAILABLE;
@@ -452,7 +467,7 @@ public class OrderService implements IOrderService {
             status = TableStatus.OCCUPIED;
         }
 
-        // Cập nhật trạng thái nếu khác
+        // Update status if changed
         if (table.getTableStatus() != status) {
             table.setTableStatus(status);
             dinningTableRepository.save(table);
