@@ -64,6 +64,7 @@ public class SecurityConfig {
                                 "/api/images/**",
                                 "/api/notifications/**",
                                 "/api/category/**",
+                                "/api/feedback/**",
                                 "/graphiql/**",
                                 "/graphql/**",
                                 "/ws/**",
