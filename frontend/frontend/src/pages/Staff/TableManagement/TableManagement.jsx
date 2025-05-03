@@ -21,14 +21,10 @@ const TableManagementStaff = () => {
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [notificationsError, setNotificationsError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
-
-  // New states for order data
   const [orders, setOrders] = useState([]);
   const [currentOrder, setCurrentOrder] = useState(null);
   const [orderLoading, setOrderLoading] = useState(false);
   const [orderError, setOrderError] = useState(null);
-
-  //Web socket
   const [socket, setSocket] = useState(null);
   const [socketError, setSocketError] = useState(null);
 
@@ -49,7 +45,7 @@ const TableManagementStaff = () => {
         console.log("WebSocket connected");
         setSocket(ws);
         setSocketError(null);
-        reconnectAttempts = 0; // Reset số lần thử khi kết nối thành công
+        reconnectAttempts = 0;
         clearTimeout(reconnectTimeout);
       };
 
@@ -93,7 +89,6 @@ const TableManagementStaff = () => {
         console.log("WebSocket disconnected");
         setSocket(null);
         if (isMounted && reconnectAttempts < maxReconnectAttempts) {
-          // Tăng delay theo cấp số nhân
           const delay = baseReconnectDelay * Math.pow(2, reconnectAttempts);
           reconnectAttempts++;
           reconnectTimeout = setTimeout(() => {
@@ -115,49 +110,29 @@ const TableManagementStaff = () => {
     };
   }, []);
 
-  // Set up axios interceptor for authentication
   useEffect(() => {
-    // Add request interceptor
     const requestInterceptor = axios.interceptors.request.use(
       (config) => {
-        // Get token from localStorage
         const token = localStorage.getItem("accessToken");
-
-        // If token exists, add to headers
         if (token) {
           config.headers["Authorization"] = `Bearer ${token}`;
         }
         return config;
       },
-      (error) => {
-        return Promise.reject(error);
-      }
+      (error) => Promise.reject(error)
     );
 
-    // Add response interceptor to handle auth errors
     const responseInterceptor = axios.interceptors.response.use(
       (response) => response,
       async (error) => {
         const originalRequest = error.config;
-
-        // If error is 401 or 403 and we haven't retried yet
         if (
           (error.response?.status === 401 || error.response?.status === 403) &&
           !originalRequest._retry
         ) {
           originalRequest._retry = true;
-
           try {
-            // Try to get a new token if you have a refresh token mechanism
-            // const refreshToken = localStorage.getItem("refreshToken");
-            // const response = await axios.post("/api/auth/refresh", { refreshToken });
-            // localStorage.setItem("accessToken", response.data.accessToken);
-
-            // Redirect to login if needed
             setAuthError("Your session has expired. Please log in again.");
-            // Optional: redirect to login
-            // window.location.href = "/login";
-
             return Promise.reject(error);
           } catch (refreshError) {
             return Promise.reject(refreshError);
@@ -167,14 +142,12 @@ const TableManagementStaff = () => {
       }
     );
 
-    // Clean up interceptors when component unmounts
     return () => {
       axios.interceptors.request.eject(requestInterceptor);
       axios.interceptors.response.eject(responseInterceptor);
     };
   }, []);
 
-  // Calculate unread notifications by table
   const unreadNotificationsByTable = useMemo(() => {
     const result = tables.reduce((acc, table) => {
       acc[table.id] = tableNotifications.filter(
@@ -186,20 +159,12 @@ const TableManagementStaff = () => {
     return result;
   }, [tableNotifications, tables]);
 
-  // GraphQL request function
   const executeGraphQL = async (query, variables = {}) => {
     try {
       const response = await axios.post(
         "http://localhost:8080/graphql",
-        {
-          query,
-          variables,
-        },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
+        { query, variables },
+        { headers: { "Content-Type": "application/json" } }
       );
 
       if (response.data.errors) {
@@ -213,7 +178,6 @@ const TableManagementStaff = () => {
     }
   };
 
-  // API object for REST requests
   const API = {
     get: (url) => axios.get(`http://localhost:8080${url}`),
     post: (url, data) => axios.post(`http://localhost:8080${url}`, data),
@@ -221,7 +185,6 @@ const TableManagementStaff = () => {
     delete: (url) => axios.delete(`http://localhost:8080${url}`),
   };
 
-  // Fetch all orders using GraphQL
   const fetchOrdersGraphQL = useCallback(async () => {
     try {
       const query = `
@@ -243,13 +206,10 @@ const TableManagementStaff = () => {
           }
         }
       `;
-
       const result = await executeGraphQL(query);
-
       if (!result || !result.orders) {
         throw new Error("Invalid GraphQL response structure");
       }
-
       return result.orders;
     } catch (err) {
       console.error("Error fetching orders via GraphQL:", err);
@@ -257,7 +217,6 @@ const TableManagementStaff = () => {
     }
   }, []);
 
-  // Fetch all orders
   const fetchOrders = useCallback(async () => {
     setOrderLoading(true);
     setOrderError(null);
@@ -304,7 +263,6 @@ const TableManagementStaff = () => {
     }
   }, [fetchOrdersGraphQL]);
 
-  // Fetch order by ID using GraphQL
   const fetchOrderByIdGraphQL = useCallback(async (orderId) => {
     try {
       const query = `
@@ -326,17 +284,11 @@ const TableManagementStaff = () => {
           }
         }
       `;
-
-      const variables = {
-        orderId: orderId.toString(),
-      };
-
+      const variables = { orderId: orderId.toString() };
       const result = await executeGraphQL(query, variables);
-
       if (!result || !result.order) {
         throw new Error("Invalid GraphQL response structure");
       }
-
       return result.order;
     } catch (err) {
       console.error(`Error fetching order ${orderId} via GraphQL:`, err);
@@ -344,7 +296,6 @@ const TableManagementStaff = () => {
     }
   }, []);
 
-  // Fetch order by ID
   const fetchOrderById = useCallback(
     async (orderId) => {
       if (!orderId) {
@@ -357,15 +308,12 @@ const TableManagementStaff = () => {
       setOrderError(null);
 
       try {
-        // Try GraphQL first
         const orderData = await fetchOrderByIdGraphQL(orderId);
         setCurrentOrder(orderData);
         return orderData;
       } catch (err) {
         console.error("GraphQL order fetch failed:", err);
-
         try {
-          // Fall back to REST API
           const response = await API.get(`/api/orders/${orderId}`);
           setCurrentOrder(response.data);
           return response.data;
@@ -381,7 +329,6 @@ const TableManagementStaff = () => {
     [fetchOrderByIdGraphQL]
   );
 
-  // Fetch orders by table ID
   const fetchOrdersByTableId = useCallback(async (tableId) => {
     if (!tableId) {
       console.error("Cannot fetch orders without tableId");
@@ -393,8 +340,6 @@ const TableManagementStaff = () => {
     setOrderError(null);
 
     try {
-      // For now, there's no GraphQL endpoint for this specific operation,
-      // so we'll use REST directly
       const response = await API.get(`/api/staff/tables/${tableId}`);
       return response.data || [];
     } catch (err) {
@@ -406,7 +351,6 @@ const TableManagementStaff = () => {
     }
   }, []);
 
-  // Update order status using GraphQL
   const updateOrderStatusGraphQL = useCallback(async (orderId, status) => {
     try {
       const mutation = `
@@ -414,14 +358,10 @@ const TableManagementStaff = () => {
           updateOrderStatus(orderId: $orderId, input: $input)
         }
       `;
-
       const variables = {
         orderId: orderId.toString(),
-        input: {
-          status: status,
-        },
+        input: { status },
       };
-
       const result = await executeGraphQL(mutation, variables);
       return result.updateOrderStatus;
     } catch (err) {
@@ -430,7 +370,6 @@ const TableManagementStaff = () => {
     }
   }, []);
 
-  // Update order status
   const updateOrderStatus = useCallback(
     async (orderId, status) => {
       if (!orderId) {
@@ -443,33 +382,24 @@ const TableManagementStaff = () => {
       setOrderError(null);
 
       try {
-        // Try GraphQL first
         const result = await updateOrderStatusGraphQL(orderId, status);
-
-        // Update local state
         setOrders((prevOrders) =>
           prevOrders.map((order) =>
             order.orderId === orderId ? { ...order, status } : order
           )
         );
-
         return result;
       } catch (err) {
         console.error("GraphQL order status update failed:", err);
-
         try {
-          // Fall back to REST API
           const response = await API.put(`/api/orders/${orderId}/status`, {
             status,
           });
-
-          // Update local state
           setOrders((prevOrders) =>
             prevOrders.map((order) =>
               order.orderId === orderId ? { ...order, status } : order
             )
           );
-
           return true;
         } catch (restErr) {
           console.error("REST order status update also failed:", restErr);
@@ -483,25 +413,18 @@ const TableManagementStaff = () => {
     [updateOrderStatusGraphQL]
   );
 
-  // Delete order using GraphQL
   const deleteOrderGraphQL = useCallback(async (orderId) => {
     try {
       const mutation = `
-      mutation DeleteOrder($orderId: String!) {
-        deleteOrder(orderId: $orderId)
-      }
-    `;
-
-      const variables = {
-        orderId: orderId.toString(),
-      };
-
+        mutation DeleteOrder($orderId: String!) {
+          deleteOrder(orderId: $orderId)
+        }
+      `;
+      const variables = { orderId: orderId.toString() };
       const result = await executeGraphQL(mutation, variables);
-
       if (!result || !result.deleteOrder) {
         throw new Error("Invalid GraphQL response structure");
       }
-
       return result.deleteOrder;
     } catch (err) {
       console.error(`Error deleting order ${orderId} via GraphQL:`, err);
@@ -509,7 +432,6 @@ const TableManagementStaff = () => {
     }
   }, []);
 
-  // Delete order
   const deleteOrder = useCallback(
     async (orderId) => {
       if (!orderId) {
@@ -522,13 +444,9 @@ const TableManagementStaff = () => {
       setOrderError(null);
 
       try {
-        // Gọi mutation deleteOrder qua GraphQL
         await deleteOrderGraphQL(orderId);
-
-        // Làm mới danh sách orders
         const updatedOrders = await fetchOrders();
 
-        // Cập nhật selectedTable.orders nếu đang mở modal
         if (selectedTable) {
           const tableOrders = updatedOrders.filter(
             (order) =>
@@ -540,14 +458,16 @@ const TableManagementStaff = () => {
           }));
         }
 
-        // Làm mới danh sách tables qua REST API
         const response = await API.get("/api/staff/tables");
         if (response.data) {
           const mappedTables = response.data.map((table) => ({
             id: table.table_id,
             status: table.status?.toLowerCase() || "available",
             capacity: table.capacity,
-            orders: [],
+            orders: updatedOrders.filter(
+              (order) =>
+                order.tableNumber.toString() === table.table_id.toString()
+            ),
           }));
           setTables(mappedTables);
         }
@@ -564,7 +484,6 @@ const TableManagementStaff = () => {
     [deleteOrderGraphQL, fetchOrders, selectedTable]
   );
 
-  // Fetch tables when component mounts
   useEffect(() => {
     const fetchTables = async () => {
       try {
@@ -601,7 +520,6 @@ const TableManagementStaff = () => {
     fetchTables();
   }, [fetchOrders]);
 
-  // Fetch notifications when tables are updated
   useEffect(() => {
     if (tables.length > 0) {
       fetchAllNotifications();
@@ -634,19 +552,14 @@ const TableManagementStaff = () => {
         currentStatus: table.status,
       });
 
+      // Table status is determined solely by orders, not notifications
       if (tableOrders.length === 0) {
         updatedStatus = "available";
       } else {
-        // Check if ANY orders for this table are unpaid
         const hasUnpaidOrders = tableOrders.some(
           (order) => order.paymentStatus?.toUpperCase() !== "PAID"
         );
-
-        if (hasUnpaidOrders) {
-          updatedStatus = "occupied";
-        } else {
-          updatedStatus = "available";
-        }
+        updatedStatus = hasUnpaidOrders ? "occupied" : "available";
       }
 
       if (
@@ -667,7 +580,6 @@ const TableManagementStaff = () => {
     }
   }, [ordersByTable, tables]);
 
-  // Function to fetch notifications for a specific table
   const fetchTableNotifications = async (tableId) => {
     if (!tableId) {
       console.error("Cannot fetch notifications for undefined table ID");
@@ -679,17 +591,13 @@ const TableManagementStaff = () => {
       setNotificationsLoading(true);
       setNotificationsError(null);
 
-      // Fetch notifications for the specific table
       const response = await API.get(`/api/notifications/table/${tableId}`);
       const notifications = response.data;
 
-      // Update tableNotifications by replacing notifications for this table
       setTableNotifications((prev) => {
-        // Keep notifications for other tables
         const otherNotifications = prev.filter(
           (n) => n.tableNumber !== tableId
         );
-        // Add new notifications for this table
         return [...otherNotifications, ...notifications];
       });
     } catch (err) {
@@ -700,7 +608,6 @@ const TableManagementStaff = () => {
     }
   };
 
-  // Mark notification as read
   const markNotificationAsRead = async (notificationId) => {
     if (!notificationId) {
       console.error("Cannot mark undefined notification as read");
@@ -709,8 +616,6 @@ const TableManagementStaff = () => {
 
     try {
       await API.put(`/api/notifications/${notificationId}/read`);
-
-      // Update local state to mark notification as read
       setTableNotifications(
         tableNotifications.map((notification) =>
           notification.notificationId === notificationId
@@ -726,7 +631,6 @@ const TableManagementStaff = () => {
     }
   };
 
-  // Open notification modal and fetch notifications for that table
   const toggleNotificationModal = async (e, table) => {
     e.stopPropagation();
     if (!table || !table.id) {
@@ -735,9 +639,8 @@ const TableManagementStaff = () => {
     }
 
     setSelectedTable(table);
-    setCurrentPage(1); // Reset to first page
+    setCurrentPage(1);
 
-    // Only fetch notifications if we're opening the modal
     if (!isNotificationModalOpen) {
       await fetchTableNotifications(table.id);
     }
@@ -746,23 +649,102 @@ const TableManagementStaff = () => {
   };
 
   const handleSelectTable = async (table) => {
-    setSelectedTable(table);
+    if (!table || !table.id) {
+      console.error("Cannot select undefined table");
+      return;
+    }
 
-    // If table is occupied, fetch orders for it
+    // Initialize orders as empty array
+    setSelectedTable({ ...table, orders: table.orders || [] });
+
     if (table.status === "occupied") {
-      const tableOrders = await fetchOrdersByTableId(table.id);
-
-      // Update the selected table with the orders
-      setSelectedTable((prev) => ({
-        ...prev,
-        orders: tableOrders,
-      }));
+      setOrderLoading(true);
+      try {
+        const tableOrders = await fetchOrdersByTableId(table.id);
+        setSelectedTable((prev) => ({
+          ...prev,
+          orders: tableOrders || [],
+        }));
+      } catch (err) {
+        console.error(`Failed to fetch orders for table ${table.id}:`, err);
+        setOrderError("Failed to load orders");
+      } finally {
+        setOrderLoading(false);
+      }
     }
   };
 
-  const handleShowDishModal = (table) => {
-    setSelectedTable(table);
+  const fetchUnpaidOrdersByTable = useCallback(
+    async (tableId) => {
+      if (!tableId) {
+        console.error("Cannot fetch orders without tableId");
+        setOrderError("Invalid table ID");
+        return [];
+      }
+
+      setOrderLoading(true);
+      setOrderError(null);
+
+      try {
+        const ordersData = await fetchOrdersGraphQL();
+        if (!ordersData) {
+          console.error("fetchOrdersGraphQL returned null or undefined");
+          return [];
+        }
+        const unpaidOrders = ordersData.filter(
+          (order) =>
+            order.tableNumber?.toString() === tableId.toString() &&
+            order.paymentStatus?.toUpperCase() === "UNPAID"
+        );
+        console.log(`Unpaid orders for table ${tableId}:`, unpaidOrders);
+        return unpaidOrders || [];
+      } catch (err) {
+        console.error(
+          `Error fetching unpaid orders for table ${tableId}:`,
+          err
+        );
+        setOrderError(`Failed to load unpaid orders for table #${tableId}`);
+        return [];
+      } finally {
+        setOrderLoading(false);
+      }
+    },
+    [fetchOrdersGraphQL]
+  );
+
+  const handleShowDishModal = async (table) => {
+    if (!table || !table.id) {
+      console.error("Cannot show dish modal for undefined table");
+      setOrderError("Invalid table selected");
+      return;
+    }
+
+    // Initialize selectedTable with an empty orders array
+    const initialTable = { ...table, orders: table.orders || [] };
+    setSelectedTable(initialTable);
     setIsDishModalOpen(true);
+
+    // Fetch unpaid orders
+    setOrderLoading(true);
+    try {
+      const unpaidOrders = await fetchUnpaidOrdersByTable(table.id);
+      setSelectedTable((prev) => ({
+        ...prev,
+        orders: unpaidOrders || [],
+      }));
+    } catch (err) {
+      console.error(
+        `Failed to fetch unpaid orders for table ${table.id}:`,
+        err
+      );
+      setOrderError("Failed to load unpaid orders");
+      setSelectedTable((prev) => ({
+        ...prev,
+        orders: [],
+      }));
+    } finally {
+      setOrderLoading(false);
+    }
   };
 
   const handleShowPaymentModal = () => {
@@ -777,12 +759,10 @@ const TableManagementStaff = () => {
     }
 
     try {
-      // Update table status
       await API.put(`/api/staff/tables/${selectedTable.id}`, {
         status: "AVAILABLE",
       });
 
-      // Update orders payment status
       if (selectedTable.orders && selectedTable.orders.length > 0) {
         for (const order of selectedTable.orders) {
           try {
@@ -798,7 +778,6 @@ const TableManagementStaff = () => {
         }
       }
 
-      // Update local state
       setTables((prevTables) =>
         prevTables.map((table) =>
           table.id === selectedTable.id
@@ -811,7 +790,6 @@ const TableManagementStaff = () => {
       setIsSuccessModalOpen(true);
     } catch (err) {
       console.error("Error updating table status:", err);
-      // Show payment success anyway, but log the error
       setIsPaymentModalOpen(false);
       setIsSuccessModalOpen(true);
     }
@@ -826,7 +804,6 @@ const TableManagementStaff = () => {
     setIsConfirmModalOpen(true);
   };
 
-  // Calculate total from order items
   const calculateTotalFromOrders = (orders) => {
     if (!orders || orders.length === 0) return 0;
 
@@ -835,80 +812,52 @@ const TableManagementStaff = () => {
     }, 0);
   };
 
-  // Calculate total from order items
   const totalAmount = selectedTable?.orders
     ? calculateTotalFromOrders(selectedTable.orders)
     : 0;
 
   const emptyTables = tables.filter((table) => table.status === "available");
 
-  // Example of a properly rendering list that uses unique keys
-  const renderTableList = () => {
-    if (loading) return <div className="loading">Loading tables...</div>;
-    if (error) return <div className="error">{error}</div>;
+  const fetchAllNotifications = async () => {
+    try {
+      setNotificationsLoading(true);
+      setNotificationsError(null);
 
-    return (
-      <div className="tables-grid">
-        {tables.map((table) => (
-          <div
-            key={`table-${table.id}`}
-            className={`table-item ${table.status}`}
-            onClick={() => handleSelectTable(table)}
-          >
-            <h3>Table {table.id}</h3>
-            <p>Status: {table.status}</p>
-            <p>Capacity: {table.capacity}</p>
+      const notificationsPromises = tables.map((table) =>
+        API.get(`/api/notifications/table/${table.id}`)
+          .then((response) => {
+            console.log(`Notifications for table ${table.id}:`, response.data);
+            return response.data;
+          })
+          .catch((err) => {
+            console.error(
+              `Error fetching notifications for table ${table.id}:`,
+              err
+            );
+            return [];
+          })
+      );
 
-            {/* Show notification bell icon */}
-            <button
-              onClick={(e) => toggleNotificationModal(e, table)}
-              className="notification-button"
-            >
-              🔔
-            </button>
+      const notificationsArrays = await Promise.all(notificationsPromises);
+      const allNotifications = notificationsArrays
+        .flat()
+        .filter((n) => n.notificationId && typeof n.isRead === "boolean");
 
-            {table.orders && table.orders.length > 0 && (
-              <div className="table-orders">
-                <h4>Orders:</h4>
-                <ul>
-                  {table.orders.map((order) => (
-                    <li key={order.orderId}>
-                      Order #{order.orderId}: {order.status}
-                      {order.items && order.items.length > 0 && (
-                        <ul>
-                          {order.items.map((item, index) => (
-                            <li key={`${order.orderId}-item-${index}`}>
-                              {item.dishName} x {item.quantity}
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-    );
-  };
-
-  useEffect(() => {
-    const itemsPerPage = 5;
-    const totalPages = Math.ceil(tableNotifications.length / itemsPerPage);
-    if (currentPage > totalPages && totalPages > 0) {
-      setCurrentPage(totalPages);
-    } else if (totalPages === 0) {
-      setCurrentPage(1);
+      console.log("All notifications:", allNotifications);
+      setTableNotifications(allNotifications);
+    } catch (err) {
+      console.error("Error fetching all notifications:", err);
+      setNotificationsError("Failed to load notifications");
+      setTableNotifications([]);
+    } finally {
+      setNotificationsLoading(false);
     }
-  }, [tableNotifications, currentPage]);
+  };
 
   const renderNotificationModal = () => {
     if (!isNotificationModalOpen || !selectedTable) return null;
 
     const itemsPerPage = 5;
-    // Filter notifications for the selected table
     const tableSpecificNotifications = tableNotifications.filter(
       (notification) => notification.tableNumber === selectedTable.id
     );
@@ -916,7 +865,6 @@ const TableManagementStaff = () => {
       tableSpecificNotifications.length / itemsPerPage
     );
 
-    // Sort notifications by creation date (newest first)
     const sortedNotifications = [...tableSpecificNotifications].sort(
       (a, b) => new Date(b.createAt) - new Date(a.createAt)
     );
@@ -927,7 +875,6 @@ const TableManagementStaff = () => {
       indexOfLastItem
     );
 
-    // Format date and time
     const formatDateTime = (isoString) => {
       try {
         const date = new Date(isoString);
@@ -943,7 +890,6 @@ const TableManagementStaff = () => {
       }
     };
 
-    // Pagination buttons
     const getPaginationButtons = () => {
       const maxButtons = 5;
       const buttons = [];
@@ -976,7 +922,6 @@ const TableManagementStaff = () => {
     return (
       <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
         <div className="bg-white rounded-lg shadow-lg w-full max-w-3xl mx-auto p-6 flex flex-col max-h-[80vh]">
-          {/* Header */}
           <div className="flex justify-between items-center mb-4 border-b pb-2">
             <h2 className="text-xl font-semibold">
               Notifications for Table {selectedTable.id}
@@ -1001,8 +946,6 @@ const TableManagementStaff = () => {
               </svg>
             </button>
           </div>
-
-          {/* Content */}
           <div className="flex-1 overflow-y-auto">
             {notificationsLoading && (
               <div className="flex justify-center items-center h-64">
@@ -1012,13 +955,11 @@ const TableManagementStaff = () => {
                 </span>
               </div>
             )}
-
             {notificationsError && (
               <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
                 {notificationsError}
               </div>
             )}
-
             {!notificationsLoading && !notificationsError && (
               <>
                 {currentNotifications.length === 0 ? (
@@ -1066,8 +1007,6 @@ const TableManagementStaff = () => {
               </>
             )}
           </div>
-
-          {/* Pagination */}
           {!notificationsLoading && !notificationsError && (
             <div className="mt-4 pt-3 border-t">
               {tableSpecificNotifications.length > 0 && (
@@ -1131,8 +1070,6 @@ const TableManagementStaff = () => {
               )}
             </div>
           )}
-
-          {/* Footer */}
           <div className="mt-4 flex justify-end">
             <button
               onClick={() => setIsNotificationModalOpen(false)}
@@ -1146,138 +1083,235 @@ const TableManagementStaff = () => {
     );
   };
 
-  // Render dish details modal
   const renderDishModal = () => {
     if (!isDishModalOpen || !selectedTable) return null;
 
+    const orders = selectedTable.orders || []; // Ensure orders is always an array
+
     return (
-      <div className="dish-modal">
-        <div className="modal-content">
-          <h2>Table {selectedTable.id} Orders</h2>
-
-          {orderLoading && <p>Loading order details...</p>}
-          {orderError && <p className="error">{orderError}</p>}
-
-          {!orderLoading && !orderError && selectedTable.orders && (
-            <>
-              {selectedTable.orders.length === 0 ? (
-                <p>No orders for this table</p>
-              ) : (
-                <div>
-                  {selectedTable.orders.map((order) => (
-                    <div key={order.orderId} className="order-details">
-                      <h3>Order #{order.orderId}</h3>
-                      <p>Status: {order.status}</p>
-                      <p>Customer: {order.customerName}</p>
-
-                      <h4>Items:</h4>
-                      <table className="items-table">
-                        <thead>
-                          <tr>
-                            <th>Dish</th>
-                            <th>Quantity</th>
-                            <th>Price</th>
-                            <th>Notes</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {order.items &&
-                            order.items.map((item, index) => (
-                              <tr key={`${order.orderId}-item-${index}`}>
-                                <td>{item.dishName}</td>
-                                <td>{item.quantity}</td>
-                                <td>${parseFloat(item.price).toFixed(2)}</td>
-                                <td>{item.notes || "—"}</td>
-                              </tr>
-                            ))}
-                        </tbody>
-                      </table>
-
-                      <p className="order-total">
-                        Total: ${parseFloat(order.totalAmount).toFixed(2)}
-                      </p>
-
-                      {/* Nút xóa đơn hàng */}
-                      <button
-                        onClick={() => deleteOrder(order.orderId)}
-                        className="delete-order-btn"
-                      >
-                        Delete Order
-                      </button>
-                    </div>
-                  ))}
-
-                  <p className="table-total">
-                    Table Total: ${totalAmount.toFixed(2)}
-                  </p>
-                </div>
-              )}
-
-              <div className="modal-actions">
-                <button
-                  onClick={handleShowPaymentModal}
-                  className="payment-btn"
-                >
-                  Process Payment
-                </button>
-                <button
-                  onClick={() => setIsDishModalOpen(false)}
-                  className="close-modal-btn"
-                >
-                  Close
-                </button>
+      <div className="fixed inset-0 flex items-center justify-center z-50">
+        <div
+          className="absolute inset-0 bg-gray-600 bg-opacity-50"
+          onClick={() => setIsDishModalOpen(false)}
+        ></div>
+        <div className="bg-white rounded-lg shadow-lg p-6 w-1/2 max-h-[80vh] overflow-y-auto relative z-50">
+          <div className="flex justify-between items-center mb-4 border-b pb-2">
+            <h2 className="text-xl font-bold">
+              Table {selectedTable.id || "Unknown"} - Unpaid Orders
+            </h2>
+            <button
+              className="text-gray-500 hover:text-gray-700"
+              onClick={() => setIsDishModalOpen(false)}
+            >
+              ✕
+            </button>
+          </div>
+          <div className="space-y-4">
+            {orderLoading && (
+              <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+                <span className="ml-2 text-gray-600">Loading orders...</span>
               </div>
-            </>
+            )}
+            {orderError && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+                {orderError}
+              </div>
+            )}
+            {!orderLoading && !orderError && (
+              <>
+                {orders.length === 0 ? (
+                  <div className="text-center py-10 text-gray-500">
+                    No unpaid orders for this table
+                  </div>
+                ) : (
+                  <div>
+                    {orders.map((order) => (
+                      <div key={order.orderId} className="mb-6">
+                        <h3 className="font-semibold text-lg mb-2">
+                          Order #{order.orderId}
+                        </h3>
+                        <table className="w-full border-collapse">
+                          <thead>
+                            <tr className="bg-gray-100">
+                              <th className="text-left py-2 px-4">Dish Name</th>
+                              <th className="text-left py-2 px-4">Quantity</th>
+                              <th className="text-left py-2 px-4">Price</th>
+                              <th className="text-left py-2 px-4">Notes</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {order.items && order.items.length > 0 ? (
+                              order.items.map((item, index) => (
+                                <tr
+                                  key={`${order.orderId}-item-${index}`}
+                                  className="border-b hover:bg-gray-50"
+                                >
+                                  <td className="py-2 px-4">
+                                    {item.dishName || "—"}
+                                  </td>
+                                  <td className="py-2 px-4">
+                                    {item.quantity || "—"}
+                                  </td>
+                                  <td className="py-2 px-4">
+                                    {item.price
+                                      ? `${parseFloat(
+                                          item.price
+                                        ).toLocaleString("vi-VN")} VND`
+                                      : "—"}
+                                  </td>
+                                  <td className="py-2 px-4">
+                                    {item.notes || "—"}
+                                  </td>
+                                </tr>
+                              ))
+                            ) : (
+                              <tr>
+                                <td
+                                  colSpan="4"
+                                  className="py-2 px-4 text-center text-gray-500"
+                                >
+                                  No items in this order
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                        <p className="mt-2 text-right font-semibold">
+                          Order Total:{" "}
+                          {order.totalAmount
+                            ? parseFloat(order.totalAmount).toLocaleString(
+                                "vi-VN"
+                              ) + " VND"
+                            : "0 VND"}
+                        </p>
+                      </div>
+                    ))}
+                    <p className="text-right font-bold text-lg mt-4">
+                      Table Total: {totalAmount.toLocaleString("vi-VN")} VND
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+          {!orderLoading && !orderError && orders.length > 0 && (
+            <div className="mt-4 flex justify-end space-x-4">
+              <button
+                className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded"
+                onClick={() => setIsDishModalOpen(false)}
+              >
+                Close
+              </button>
+              <button
+                className="!bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded"
+                onClick={handleShowPaymentModal}
+              >
+                Process Payment
+              </button>
+            </div>
           )}
         </div>
       </div>
     );
   };
 
-  // Render payment modal
   const renderPaymentModal = () => {
     if (!isPaymentModalOpen || !selectedTable) return null;
 
     return (
-      <div className="payment-modal">
-        <div className="modal-content">
-          <h2>Process Payment for Table {selectedTable.id}</h2>
-
-          <div className="payment-details">
-            <p>Total Amount: ${totalAmount.toFixed(2)}</p>
-
-            <div className="payment-method">
-              <h3>Payment Method</h3>
-              <div className="payment-options">
-                <label>
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="cash"
-                    defaultChecked
-                  />
-                  Cash
-                </label>
-                <label>
-                  <input type="radio" name="paymentMethod" value="card" />
-                  Credit/Debit Card
-                </label>
-              </div>
-            </div>
+      <div className="fixed inset-0 flex items-center justify-center z-50">
+        <div
+          className="absolute inset-0 bg-gray-600 bg-opacity-50"
+          onClick={() => setIsPaymentModalOpen(false)}
+        ></div>
+        <div className="bg-white rounded-lg shadow-xl p-6 w-2/3 relative z-50">
+          <div className="text-center mb-4">
+            <p className="text-sm text-gray-600">
+              450 Le Van Viet Street, Tang Nhon Phu A Ward, District 9
+            </p>
+            <p className="text-sm text-gray-600">Phone: 0987654321</p>
+            <h3 className="font-bold mt-2 text-xl text-blue-800">
+              Payment Slip 001
+            </h3>
           </div>
-
-          <div className="modal-actions">
+          <div className="flex justify-between border-b pb-2 mb-4">
+            <span className="font-bold text-gray-700">
+              Table {selectedTable.id}
+            </span>
+            <span className="font-bold text-gray-700">Payment Slip 001</span>
+          </div>
+          <div className="max-h-96 overflow-y-auto mb-4">
+            <table className="w-full">
+              <thead className="sticky top-0 bg-white">
+                <tr className="border-b">
+                  <th className="text-left py-2 font-medium text-gray-700">
+                    Dish name
+                  </th>
+                  <th className="text-left py-2 font-medium text-gray-700">
+                    Qty
+                  </th>
+                  <th className="text-left py-2 font-medium text-gray-700">
+                    Unit price
+                  </th>
+                  <th className="text-left py-2 font-medium text-gray-700">
+                    Total amount
+                  </th>
+                  <th className="text-left py-2 font-medium text-gray-700">
+                    Note
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {selectedTable.orders.flatMap((order) =>
+                  order.items.map((item, index) => (
+                    <tr
+                      key={`${order.orderId}-item-${index}`}
+                      className="border-b hover:bg-gray-50"
+                    >
+                      <td className="py-3 text-gray-800">
+                        {item.dishName || "—"}
+                      </td>
+                      <td className="py-3">{item.quantity || "—"}</td>
+                      <td className="py-3">
+                        {item.price
+                          ? parseFloat(item.price).toLocaleString("vi-VN")
+                          : "—"}{" "}
+                        VND
+                      </td>
+                      <td className="py-3 font-medium">
+                        {item.price && item.quantity
+                          ? (item.price * item.quantity).toLocaleString("vi-VN")
+                          : "—"}{" "}
+                        VND
+                      </td>
+                      <td className="py-3 text-gray-500">
+                        {item.notes || "—"}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          <div className="flex justify-between mt-4 border-t pt-4">
+            <span className="font-bold text-gray-700">Staff: 1</span>
+            <span className="font-bold text-lg text-blue-800">
+              Total Amount: {totalAmount.toLocaleString("vi-VN")} VND
+            </span>
+          </div>
+          <div className="mt-6 flex justify-center space-x-4">
             <button
-              onClick={handlePaymentSuccess}
-              className="confirm-payment-btn"
-            >
-              Confirm Payment
-            </button>
-            <button
+              className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg"
               onClick={() => setIsPaymentModalOpen(false)}
-              className="close-modal-btn"
             >
               Cancel
+            </button>
+            <button
+              className="!bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg"
+              onClick={handlePaymentSuccess}
+            >
+              Confirm Payment
             </button>
           </div>
         </div>
@@ -1285,63 +1319,210 @@ const TableManagementStaff = () => {
     );
   };
 
-  // Render success modal
   const renderSuccessModal = () => {
     if (!isSuccessModalOpen) return null;
 
     return (
-      <div className="success-modal">
-        <div className="modal-content">
-          <h2>Payment Successful</h2>
-          <p>
-            Table {selectedTable?.id} has been cleared and is now available.
+      <div className="fixed inset-0 flex items-center justify-center z-50">
+        <div
+          className="absolute inset-0 bg-gray-600 bg-opacity-50"
+          onClick={() => setIsSuccessModalOpen(false)}
+        ></div>
+        <div className="bg-white rounded-lg p-6 w-80 relative z-50 text-center">
+          <div className="flex justify-center mb-4">
+            <img
+              alt="Logo"
+              className="w-24 h-24"
+              src="../../src/assets/img/logoremovebg.png"
+            />
+          </div>
+          <p className="text-lg mb-6 text-green-600 font-medium">
+            Payment Successful
           </p>
-
           <button
+            className="!bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg"
             onClick={() => setIsSuccessModalOpen(false)}
-            className="close-modal-btn"
           >
-            Close
+            OK
           </button>
         </div>
       </div>
     );
   };
 
-  const fetchAllNotifications = async () => {
-    try {
-      setNotificationsLoading(true);
-      setNotificationsError(null);
+  const renderEmptyTableModal = () => {
+    if (!isEmptyTableModalOpen) return null;
 
-      const notificationsPromises = tables.map((table) =>
-        API.get(`/api/notifications/table/${table.id}`)
-          .then((response) => {
-            console.log(`Notifications for table ${table.id}:`, response.data);
-            return response.data;
-          })
-          .catch((err) => {
-            console.error(
-              `Error fetching notifications for table ${table.id}:`,
-              err
-            );
-            return [];
-          })
-      );
+    return (
+      <div className="fixed inset-0 flex items-center justify-center z-50">
+        <div
+          className="absolute inset-0 bg-gray-600 bg-opacity-50"
+          onClick={() => setIsEmptyTableModalOpen(false)}
+        ></div>
+        <div className="bg-white rounded-lg shadow-lg p-6 w-96 relative z-50">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold">Empty Table List</h2>
+            <button
+              className="text-gray-500 hover:text-gray-700"
+              onClick={() => setIsEmptyTableModalOpen(false)}
+            >
+              ✕
+            </button>
+          </div>
+          <div>
+            <table className="w-full">
+              <thead>
+                <tr className="bg-teal-100">
+                  <th className="p-2 text-left">Table</th>
+                  <th className="p-2 text-left">Capacity</th>
+                </tr>
+              </thead>
+              <tbody>
+                {emptyTables.map((table) => (
+                  <tr key={table.id} className="border-b">
+                    <td className="p-2">{table.id}</td>
+                    <td className="p-2">
+                      <div className="flex items-center">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-4 w-4 mr-1"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                          />
+                        </svg>
+                        {table.capacity}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
-      const notificationsArrays = await Promise.all(notificationsPromises);
-      const allNotifications = notificationsArrays
-        .flat()
-        .filter((n) => n.notificationId && typeof n.isRead === "boolean");
+  const renderBillModal = () => {
+    if (!isBillModalOpen || !selectedTable) return null;
 
-      console.log("All notifications:", allNotifications);
-      setTableNotifications(allNotifications);
-    } catch (err) {
-      console.error("Error fetching all notifications:", err);
-      setNotificationsError("Failed to load notifications");
-      setTableNotifications([]);
-    } finally {
-      setNotificationsLoading(false);
-    }
+    return (
+      <div className="fixed inset-0 flex items-center justify-center z-50">
+        <div
+          className="absolute inset-0 bg-gray-600 bg-opacity-50"
+          onClick={() => setIsBillModalOpen(false)}
+        ></div>
+        <div className="bg-white rounded-lg shadow-xl p-6 w-2/3 relative z-50">
+          <div className="text-center mb-4">
+            <h3 className="font-bold text-xl text-blue-800">Bill Details</h3>
+          </div>
+          <div className="max-h-96 overflow-y-auto mb-4">
+            <table className="w-full">
+              <thead className="sticky top-0 bg-white">
+                <tr className="border-b">
+                  <th className="text-left py-2 font-medium text-gray-700">
+                    Dish name
+                  </th>
+                  <th className="text-left py-2 font-medium text-gray-700">
+                    Qty
+                  </th>
+                  <th className="text-left py-2 font-medium text-gray-700">
+                    Price
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {selectedTable.orders.flatMap((order) =>
+                  order.items.map((item, index) => (
+                    <tr
+                      key={`${order.orderId}-item-${index}`}
+                      className="border-b hover:bg-gray-50"
+                    >
+                      <td className="py-3 text-gray-800">
+                        {item.dishName || "—"}
+                      </td>
+                      <td className="py-3">{item.quantity || "—"}</td>
+                      <td className="py-3">
+                        {item.price
+                          ? parseFloat(item.price).toLocaleString("vi-VN")
+                          : "—"}{" "}
+                        VND
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          <div className="flex justify-end mt-4 border-t pt-4">
+            <span className="font-bold text-lg text-blue-800">
+              Total: {totalAmount.toLocaleString("vi-VN")} VND
+            </span>
+          </div>
+          <div className="mt-6 flex justify-center space-x-4">
+            <button
+              className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg"
+              onClick={() => setIsBillModalOpen(false)}
+            >
+              Close
+            </button>
+            <button
+              className="!bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg"
+              onClick={handlePrintReceipt}
+            >
+              Print Receipt
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderConfirmModal = () => {
+    if (!isConfirmModalOpen) return null;
+
+    return (
+      <div className="fixed inset-0 flex items-center justify-center z-50">
+        <div
+          className="absolute inset-0 bg-gray-600 bg-opacity-50"
+          onClick={() => setIsConfirmModalOpen(false)}
+        ></div>
+        <div className="bg-white rounded-lg p-6 w-80 relative z-50 text-center">
+          <div className="flex justify-center mb-4">
+            <img
+              alt="Logo"
+              className="w-24 h-24"
+              src="../../src/assets/img/logoremovebg.png"
+            />
+          </div>
+          <p className="text-lg mb-6">ARE YOU SURE?</p>
+          <div className="flex justify-center space-x-4">
+            <button
+              className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg"
+              onClick={() => setIsConfirmModalOpen(false)}
+            >
+              NO
+            </button>
+            <button
+              className="!bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg"
+              onClick={() => {
+                setIsConfirmModalOpen(false);
+                setIsSuccessModalOpen(true);
+              }}
+            >
+              YES
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   // This is the updated return part of the component, integrating the missing functions
@@ -1435,14 +1616,14 @@ const TableManagementStaff = () => {
                       >
                         <span className="text-lg">
                           {table.orders && table.orders.length > 0
-                            ? `Dish ${
+                            ? `Unpaid Orders: ${
                                 table.orders.filter(
-                                  (d) =>
-                                    d.status === "Complete" ||
-                                    d.status === "COMPLETE"
+                                  (order) =>
+                                    order.paymentStatus?.toUpperCase() ===
+                                    "UNPAID"
                                 ).length
-                              }/${table.orders.length}`
-                            : "No orders"}
+                              }`
+                            : "No unpaid orders"}
                         </span>
                       </div>
                     </div>
@@ -1499,7 +1680,6 @@ const TableManagementStaff = () => {
                         </div>
                       </div>
                       <div className="flex items-center">
-                        {/* SVG icon */}
                         {table.status === "occupied" ? (
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
@@ -1595,345 +1775,14 @@ const TableManagementStaff = () => {
         </div>
       </div>
 
-      {/* Notification Modal - Updated to use tableNotifications */}
-      {isNotificationModalOpen && selectedTable && renderNotificationModal()}
-
-      {/* Dish Modal */}
-      {isDishModalOpen && selectedTable && (
-        <div className="fixed inset-0 flex items-center justify-center z-50">
-          <div
-            className="absolute inset-0 bg-opacity-50"
-            onClick={() => setIsDishModalOpen(false)}
-          ></div>
-          <div className="bg-white rounded-lg shadow-lg p-6 w-1/2 relative z-50">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">
-                Table {selectedTable.id} - Staff
-              </h2>
-              <button
-                className="text-gray-500 hover:text-gray-700"
-                onClick={() => setIsDishModalOpen(false)}
-              >
-                ✕
-              </button>
-            </div>
-            <div className="space-y-4">
-              {selectedTable.Staff.map((dish, index) => (
-                <div
-                  key={index}
-                  className="flex justify-between items-center border-b pb-2"
-                >
-                  <div className="flex items-center gap-4">
-                    <img
-                      src={dish.image}
-                      alt={dish.name}
-                      className="w-12 h-12 rounded-full"
-                    />
-                    <span>{dish.name}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button className="px-2 py-1 bg-gray-200 rounded">-</button>
-                    <span>{dish.quantity}</span>
-                    <button className="px-2 py-1 bg-gray-200 rounded">+</button>
-                  </div>
-                  <span
-                    className={`px-3 py-1 rounded ${
-                      dish.status === "Complete"
-                        ? "bg-green-500 text-white"
-                        : "bg-yellow-500 text-white"
-                    }`}
-                  >
-                    {dish.status}
-                  </span>
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 flex justify-end">
-              <button
-                className="!bg-blue-500 text-white px-4 py-2 rounded-lg"
-                onClick={handleShowPaymentModal}
-              >
-                Payment
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Payment Modal */}
-      {isPaymentModalOpen && selectedTable && (
-        <div className="fixed inset-0 flex items-center justify-center z-50">
-          <div
-            className="absolute inset-0 bg-opacity-50"
-            onClick={() => setIsPaymentModalOpen(false)}
-          ></div>
-          <div className="bg-white rounded-lg shadow-xl p-6 w-2/3 relative z-50">
-            <div className="text-center mb-4">
-              <p className="text-sm text-gray-600">
-                450 Le Van Viel Street, Tang Nhon Phu A Word, District 9
-              </p>
-              <p className="text-sm text-gray-600">Phone: 0987654321</p>
-              <h3 className="font-bold mt-2 text-xl text-blue-800">
-                Payment Slip 001
-              </h3>
-            </div>
-
-            <div className="flex justify-between border-b pb-2 mb-4">
-              <span className="font-bold text-gray-700">
-                Table {selectedTable.id}
-              </span>
-              <span className="font-bold text-gray-700">Payment Slip 001</span>
-            </div>
-
-            <div className="max-h-96 overflow-y-auto mb-4">
-              <table className="w-full">
-                <thead className="sticky top-0 bg-white">
-                  <tr className="border-b">
-                    <th className="text-left py-2 font-medium text-gray-700">
-                      Dish name
-                    </th>
-                    <th className="text-left py-2 font-medium text-gray-700">
-                      Qty
-                    </th>
-                    <th className="text-left py-2 font-medium text-gray-700">
-                      Unit price
-                    </th>
-                    <th className="text-left py-2 font-medium text-gray-700">
-                      Total amount
-                    </th>
-                    <th className="text-left py-2 font-medium text-gray-700">
-                      Note
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {selectedTable.Staff.map((dish, index) => (
-                    <tr key={index} className="border-b hover:bg-gray-50">
-                      <td className="py-3 text-gray-800">{dish.name}</td>
-                      <td className="py-3">{dish.quantity}</td>
-                      <td className="py-3">
-                        {dish.price ? dish.price.toLocaleString() : "-"}
-                      </td>
-                      <td className="py-3 font-medium">
-                        {dish.price
-                          ? (dish.price * dish.quantity).toLocaleString()
-                          : "-"}
-                      </td>
-                      <td className="py-3 text-gray-500">-</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="flex justify-between mt-4 border-t pt-4">
-              <span className="font-bold text-gray-700">Staff: 1</span>
-              <span className="font-bold text-lg text-blue-800">
-                Total Amount: {totalAmount.toLocaleString()} VND
-              </span>
-            </div>
-
-            <div className="mt-6 flex justify-center space-x-4">
-              <button
-                className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg"
-                onClick={() => setIsPaymentModalOpen(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className="!bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg"
-                onClick={handlePaymentSuccess}
-              >
-                Confirm Payment
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Empty Table List Modal */}
-      {isEmptyTableModalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center z-50">
-          <div
-            className="absolute inset-0 bg-opacity-50"
-            onClick={() => setIsEmptyTableModalOpen(false)}
-          ></div>
-          <div className="bg-white rounded-lg shadow-lg p-6 w-96 relative z-50">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold">Empty Table List</h2>
-              <button
-                className="text-gray-500 hover:text-gray-700"
-                onClick={() => setIsEmptyTableModalOpen(false)}
-              >
-                ✕
-              </button>
-            </div>
-            <div>
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-teal-100">
-                    <th className="p-2 text-left">Table</th>
-                    <th className="p-2 text-left">Capacity</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {emptyTables.map((table) => (
-                    <tr key={table.id} className="border-b">
-                      <td className="p-2">{table.id}</td>
-                      <td className="p-2">
-                        <div className="flex items-center">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-4 w-4 mr-1"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                            />
-                          </svg>
-                          {table.capacity}
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Bill Modal */}
-      {isBillModalOpen && selectedTable && (
-        <div className="fixed inset-0 flex items-center justify-center z-50">
-          <div
-            className="absolute inset-0 bg-opacity-50"
-            onClick={() => setIsBillModalOpen(false)}
-          ></div>
-          <div className="bg-white rounded-lg shadow-xl p-6 w-2/3 relative z-50">
-            <div className="text-center mb-4">
-              <h3 className="font-bold text-xl text-blue-800">Bill Details</h3>
-            </div>
-            <div className="max-h-96 overflow-y-auto mb-4">
-              <table className="w-full">
-                <thead className="sticky top-0 bg-white">
-                  <tr className="border-b">
-                    <th className="text-left py-2 font-medium text-gray-700">
-                      Dish name
-                    </th>
-                    <th className="text-left py-2 font-medium text-gray-700">
-                      Qty
-                    </th>
-                    <th className="text-left py-2 font-medium text-gray-700">
-                      Price
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {selectedTable.Staff.map((dish, index) => (
-                    <tr key={index} className="border-b hover:bg-gray-50">
-                      <td className="py-3 text-gray-800">{dish.name}</td>
-                      <td className="py-3">{dish.quantity}</td>
-                      <td className="py-3">
-                        {dish.price.toLocaleString()} VND
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div className="flex justify-end mt-4 border-t pt-4">
-              <span className="font-bold text-lg text-blue-800">
-                Total: {totalAmount.toLocaleString()} VND
-              </span>
-            </div>
-            <div className="mt-6 flex justify-center space-x-4">
-              <button
-                className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg"
-                onClick={() => setIsBillModalOpen(false)}
-              >
-                Close
-              </button>
-              <button
-                className="!bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg"
-                onClick={handlePrintReceipt}
-              >
-                Print Receipt
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Confirmation Modal */}
-      {isConfirmModalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center z-50">
-          <div
-            className="absolute inset-0 bg-opacity-50"
-            onClick={() => setIsConfirmModalOpen(false)}
-          ></div>
-          <div className="bg-white rounded-lg p-6 w-80 relative z-50 text-center">
-            <div className="flex justify-center mb-4">
-              <img
-                alt="Logo"
-                className="w-24 h-24"
-                src="../../src/assets/img/logoremovebg.png"
-              />
-            </div>
-            <p className="text-lg mb-6">ARE YOU SURE?</p>
-            <div className="flex justify-center space-x-4">
-              <button
-                className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg"
-                onClick={() => setIsConfirmModalOpen(false)}
-              >
-                NO
-              </button>
-              <button
-                className="!bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg"
-                onClick={() => {
-                  setIsConfirmModalOpen(false);
-                  setIsSuccessModalOpen(true);
-                }}
-              >
-                YES
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Success Modal */}
-      {isSuccessModalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center z-50">
-          <div
-            className="absolute inset-0 bg-opacity-50"
-            onClick={() => setIsSuccessModalOpen(false)}
-          ></div>
-          <div className="bg-white rounded-lg p-6 w-80 relative z-50 text-center">
-            <div className="flex justify-center mb-4">
-              <img
-                alt="Logo"
-                className="w-24 h-24"
-                src="../../src/assets/img/logoremovebg.png"
-              />
-            </div>
-            <p className="text-lg mb-6 text-green-600 font-medium">
-              Payment Successful
-            </p>
-            <button
-              className="!bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg"
-              onClick={() => setIsSuccessModalOpen(false)}
-            >
-              OK
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Render Modals Using Defined Functions */}
+      {renderNotificationModal()}
+      {renderDishModal()}
+      {renderPaymentModal()}
+      {renderEmptyTableModal()}
+      {renderBillModal()}
+      {renderConfirmModal()}
+      {renderSuccessModal()}
     </div>
   );
 };

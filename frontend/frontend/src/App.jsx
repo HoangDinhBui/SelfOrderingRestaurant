@@ -7,6 +7,7 @@ import "./axiosConfig";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 // Customer Pages
 import Home from "./pages/Customer/Home/Home";
@@ -36,33 +37,41 @@ function App() {
       <CartProvider>
         <MenuProvider>
           <Router>
-            <Routes>
-              {/* Customer Routes */}
-              <Route path="/" element={<Home />} />
-              <Route path="/menu" element={<Menu />} />
-              <Route path="/order" element={<Order />} />
-              <Route path="/view-item/:id" element={<ViewItem />} />
-              <Route path="/note/:id" element={<Note />} />
-              <Route path="/payment" element={<Payment />} />
-              <Route path="/evaluate" element={<Evaluate />} />
+            <ErrorBoundary>
+              <Routes>
+                {/* Customer Routes */}
+                <Route path="/" element={<Home />} />
+                <Route path="/menu" element={<Menu />} />
+                <Route path="/order" element={<Order />} />
+                <Route path="/view-item/:id" element={<ViewItem />} />
+                <Route path="/note/:id" element={<Note />} />
+                <Route path="/payment" element={<Payment />} />
+                <Route path="/evaluate" element={<Evaluate />} />
 
-              {/* Staff/Admin Routes */}
-              <Route path="/login" element={<Login />} />
-              <Route path="/staff-information" element={<StaffInformation />} />
-              <Route
-                path="/notification-management"
-                element={<NotificationManagement />}
-              />
-              <Route path="/dish-management" element={<DishManagement />} />
-              <Route path="/table-management" element={<TableManagement />} />
-              <Route path="/menu-management" element={<MenuManagement />} />
-              <Route path="/staff-management" element={<StaffManagement />} />
-              <Route
-                path="/revenue-management"
-                element={<RevenueManagement />}
-              />
-              <Route path="/admin-information" element={<AdminInformation />} />
-            </Routes>
+                {/* Staff/Admin Routes */}
+                <Route path="/login" element={<Login />} />
+                <Route
+                  path="/staff-information"
+                  element={<StaffInformation />}
+                />
+                <Route
+                  path="/notification-management"
+                  element={<NotificationManagement />}
+                />
+                <Route path="/dish-management" element={<DishManagement />} />
+                <Route path="/table-management" element={<TableManagement />} />
+                <Route path="/menu-management" element={<MenuManagement />} />
+                <Route path="/staff-management" element={<StaffManagement />} />
+                <Route
+                  path="/revenue-management"
+                  element={<RevenueManagement />}
+                />
+                <Route
+                  path="/admin-information"
+                  element={<AdminInformation />}
+                />
+              </Routes>
+            </ErrorBoundary>
           </Router>
           {/* Toast Container for notifications */}
           <ToastContainer
