@@ -113,7 +113,7 @@ public class StaffService implements IStaffService {
         // Ensure hireDate is not null
         if (staff.getHireDate() == null) {
             log.warn("hireDate is null for staff ID {}. Setting to current time.", id);
-            staff.setHireDate(LocalDateTime.now());
+            staff.setHireDate(LocalDate.now());
         }
 
         staffRepository.save(staff);
@@ -128,7 +128,7 @@ public class StaffService implements IStaffService {
         // Ensure hireDate is not null before saving
         if (staff.getHireDate() == null) {
             log.warn("hireDate is null for staff ID {}. Setting to current time.", id);
-            staff.setHireDate(LocalDateTime.now());
+            staff.setHireDate(LocalDate.now());
         }
 
         // Soft delete by setting status to INACTIVE
