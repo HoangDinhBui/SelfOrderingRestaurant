@@ -76,7 +76,7 @@ const MenuBar = ({
     profileDropdown: {
       position: "absolute",
       top: "70px",
-      right: "20px",
+      right: "55px",
       backgroundColor: "white",
       borderRadius: "8px",
       boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
@@ -96,15 +96,6 @@ const MenuBar = ({
       objectFit: "cover",
       marginBottom: "10px",
       border: "3px solid #1C2E4A",
-    },
-    profileName: {
-      fontSize: "16px",
-      fontWeight: "bold",
-      marginBottom: "4px",
-    },
-    profilePosition: {
-      fontSize: "14px",
-      color: "#666",
     },
     profileMenu: {
       padding: "10px 0",
@@ -131,10 +122,12 @@ const MenuBar = ({
       borderTop: "1px solid #f0f0f0",
     },
     profileButton: {
-      padding: "8px 16px",
+      padding: "12px 16px",
       borderRadius: "4px",
       fontWeight: "500",
       cursor: "pointer",
+      width: "100%",
+      boxSizing: "border-box",
     },
     viewProfileButton: {
       backgroundColor: "#1C2E4A",
@@ -154,15 +147,17 @@ const MenuBar = ({
   };
 
   const handleToggleProfileDropdown = () => {
-    if (isProfilePage) {
-      setProfileDropdownVisible(!isProfileDropdownVisible);
-      setMiniListVisible(false);
-    }
+    setProfileDropdownVisible(!isProfileDropdownVisible);
+    setMiniListVisible(false);
   };
 
   const handleOverlayClick = () => {
     setMiniListVisible(false);
     setProfileDropdownVisible(false);
+  };
+
+  const handleLogout = () => {
+    window.location.href = "/login";
   };
 
   return (
@@ -188,58 +183,35 @@ const MenuBar = ({
           onClick={handleToggleProfileDropdown}
         />
 
-{isProfilePage && isProfileDropdownVisible && (
-        <div style={{
-          position: 'absolute',
-          top: '60px',
-          right: '20px',
-          backgroundColor: 'white',
-          borderRadius: '8px',
-          boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
-          width: '180px',
-          zIndex: 1000,
-          padding: '10px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '8px'
-        }}>
-          <button 
-            style={{
-              padding: '10px 16px',
-              backgroundColor: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              textAlign: 'left',
-              borderRadius: '4px',
-              fontSize: '14px',
-              color: '#333',
-              '&:hover': {
-                backgroundColor: '#f5f5f5'
-              }
-            }}
-          >
-            Profile
-          </button>
-          
-          <button 
-            style={{
-              padding: '10px 16px',
-              backgroundColor: 'transparent',
-              border: 'none',
-              cursor: 'pointer',
-              textAlign: 'left',
-              borderRadius: '4px',
-              fontSize: '14px',
-              color: '#333',
-              '&:hover': {
-                backgroundColor: '#f5f5f5'
-              }
-            }}
-          >
-            Log out
-          </button>
-        </div>
-      )}
+        {isProfileDropdownVisible && (
+          <div style={styles.profileDropdown}>
+            <div style={styles.profileMenu}>
+              <div style={styles.profileMenuItem}>
+                <button
+                  style={{
+                    ...styles.profileButton,
+                    ...styles.viewProfileButton,
+                    textAlign: "left",
+                  }}
+                >
+                  Profile
+                </button>
+              </div>
+              <div style={styles.profileMenuItem}>
+                <button
+                  style={{
+                    ...styles.profileButton,
+                    ...styles.logoutButton,
+                    textAlign: "left",
+                  }}
+                  onClick={handleLogout}
+                >
+                  Log out
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {(isMiniListVisible || isProfileDropdownVisible) && (
@@ -251,12 +223,14 @@ const MenuBar = ({
           <MiniList
             items={[
               { label: "Table Management", icon: "https://img.icons8.com/ios-filled/50/1C2E4A/table.png" },
+              { label: "Notification Management", icon: "https://img.icons8.com/material-outlined/192/1C2E4A/alarm.png" },
+              { label: "Dish Management", icon: "https://img.icons8.com/?size=100&id=99345&format=png&color=1C2E4A" },
+              { label: "Order History", icon: "https://img.icons8.com/?size=100&id=24874&format=png&color=1C2E4A" },
               { label: "Menu Management", icon: "https://img.icons8.com/ios-filled/50/1C2E4A/menu.png" },
               { label: "Staff Management", icon: "https://img.icons8.com/ios-filled/50/1C2E4A/user.png" },
               { label: "Revenue Management", icon: "https://img.icons8.com/ios-filled/50/1C2E4A/money.png" },
               { label: "Evaluate", icon: "https://img.icons8.com/ios-filled/50/1C2E4A/bookmark.png" },
-              { label: "Dish Management", icon: "https://img.icons8.com/?size=100&id=99345&format=png&color=1C2E4A" },
-              { label: "Order History", icon: "https://img.icons8.com/?size=100&id=24874&format=png&color=1C2E4A" },
+              { label: "Inventory Management", icon: "https://img.icons8.com/?size=100&id=4NUeu__UwtXf&format=png&color=1C2E4A" },
             ]}
             onSelect={(item) => {
               console.log("Selected:", item);

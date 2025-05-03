@@ -29,7 +29,6 @@ import AdminInformation from "./pages/Admin/AdminInformation/AdminInformation";
 import TableManagementAdmin from "./pages/Admin/TableManagement/TableManagement";
 import NotificationManagementAdmin from "./pages/Admin/NotificationManagement/NotificationManagement";
 import StaffManagement from "./pages/Admin/StaffManagement/StaffManagement";
-import Evalute from "./pages/Admin/Evalute/Evalute";
 
 function App() {
   return (
@@ -64,9 +63,10 @@ function App() {
                 element={<RevenueManagement />}
               />
               <Route
-                path="/admin ciernformation"
-                element={<AdminInformation />}
+                path="/inventory-management_admin"
+                element={<InventoryManagement />}
               />
+              <Route path="/admin-information" element={<AdminInformation />} />
             </Routes>
           </Router>
           {/* Toast Container for notifications */}
