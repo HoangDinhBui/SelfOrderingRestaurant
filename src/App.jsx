@@ -29,6 +29,7 @@ import AdminInformation from "./pages/Admin/AdminInformation/AdminInformation";
 import TableManagementAdmin from "./pages/Admin/TableManagement/TableManagement";
 import NotificationManagementAdmin from "./pages/Admin/NotificationManagement/NotificationManagement";
 import StaffManagement from "./pages/Admin/StaffManagement/StaffManagement";
+import Evalute from "./pages/Admin/Evalute/Evalute";
 
 function App() {
   return (
@@ -45,6 +46,7 @@ function App() {
               <Route path="/note/:id" element={<Note />} />
               <Route path="/payment" element={<Payment />} />
               <Route path="/evaluate" element={<Evaluate />} />
+              <Route path="/evalute" element={<Evalute />} />
 
               {/* Staff/Admin Routes */}
               <Route path="/login" element={<Login />} />
