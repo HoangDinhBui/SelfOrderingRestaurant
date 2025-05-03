@@ -40,9 +40,6 @@ public class PaymentController {
     @PostMapping("/vnpay")
     public ResponseEntity<?> createPayment(@RequestBody PaymentVNPayRequestDTO request, HttpServletRequest httpRequest) {
         try {
-//            log.info("🔹 Creating VNPay Payment: {}", request);
-
-            // Make sure orderInfo contains order ID for reference
             if (!request.getOrderInfo().contains("Order:")) {
                 request.setOrderInfo("Payment for Order: " + request.getOrderId());
             }
@@ -65,7 +62,6 @@ public class PaymentController {
             String queryString = request.getQueryString();
             log.info("🔹 Original query string: {}", queryString);
 
-            // Parse query string without decoding to preserve encoded values
             Map<String, String> params = parseQueryString(queryString);
             log.info("🔹 Parsed params: {}", params);
 
@@ -82,6 +78,19 @@ public class PaymentController {
             responseBody.put("responseCode", responseCode);
 
             if (status == 1) {
+                // Additional check to ensure table status is updated
+                String txnRef = params.get("vnp_TxnRef");
+                Payment payment = paymentRepository.findByTransactionId(txnRef);
+                if (payment != null && payment.getOrder() != null) {
+                    DinningTable table = payment.getOrder().getTables();
+                    if (table != null && table.getTableStatus() != TableStatus.AVAILABLE) {
+                        table.setTableStatus(TableStatus.AVAILABLE);
+                        tableRepository.save(table);
+                        log.warn("Table {} status was not updated correctly by service layer. Corrected to AVAILABLE for order {}",
+                                table.getTableNumber(), payment.getOrder().getOrderId());
+                    }
+                }
+
                 responseBody.put("message", "Thanh toán thành công!");
                 return ResponseEntity.ok(responseBody);
             } else if (status == 0) {
@@ -89,7 +98,7 @@ public class PaymentController {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseBody);
             } else {
                 responseBody.put("message", "Sai chữ ký hoặc giao dịch bị thay đổi!");
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseBody); // Thay 401 thành 400
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(responseBody);
             }
         } catch (Exception e) {
             log.error("Lỗi xử lý VNPay: {}", e.getMessage());
@@ -110,7 +119,6 @@ public class PaymentController {
             if (idx > 0) {
                 String key = pair.substring(0, idx);
                 String value = idx < pair.length() - 1 ? pair.substring(idx + 1) : "";
-                // DO NOT decode values - this is critical
                 result.put(key, value);
             }
         }
@@ -130,11 +138,9 @@ public class PaymentController {
                 ));
             }
 
-            // Find the order
             Order order = orderRepository.findById(request.getOrderId())
                     .orElseThrow(() -> new IllegalArgumentException("Order not found with ID: " + request.getOrderId()));
 
-            // Check for existing pending payments
             List<Payment> existingPayments = paymentRepository.findByOrderAndStatus(order, PaymentStatus.PENDING);
             if (!existingPayments.isEmpty()) {
                 Payment pendingPayment = existingPayments.get(0);
@@ -154,20 +160,17 @@ public class PaymentController {
                 }
             }
 
-            // Convert payment method string to enum
             PaymentMethod method;
             try {
                 method = PaymentMethod.valueOf(request.getPaymentMethod().toUpperCase());
             } catch (IllegalArgumentException e) {
-                method = PaymentMethod.CASH; // Default to CASH if invalid
+                method = PaymentMethod.CASH;
             }
 
-            // Generate a transaction ID
             String txnRef = generateTransactionId();
 
             boolean confirmPayment = request.isConfirmPayment();
 
-            // Create payment record
             Payment payment = new Payment();
             payment.setOrder(order);
             payment.setCustomer(order.getCustomer());
@@ -182,6 +185,15 @@ public class PaymentController {
             if (confirmPayment) {
                 order.setPaymentStatus(PaymentStatus.PAID);
                 orderRepository.save(order);
+
+                // Update table status to AVAILABLE
+                DinningTable table = order.getTables();
+                if (table != null) {
+                    table.setTableStatus(TableStatus.AVAILABLE);
+                    tableRepository.save(table);
+                    log.info("Table {} status updated to AVAILABLE after payment for order {}",
+                            table.getTableNumber(), order.getOrderId());
+                }
             }
 
             Map<String, Object> response = new HashMap<>();
@@ -202,23 +214,18 @@ public class PaymentController {
 
     @Transactional
     public void confirmPayment(Integer orderId) {
-        // Find the order
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new IllegalArgumentException("Order not found with ID: " + orderId));
 
-        // Find the most recent unpaid payment for this order
         Payment payment = paymentRepository.findTopByOrderAndStatusOrderByPaymentDateDesc(order, PaymentStatus.UNPAID)
                 .orElseThrow(() -> new IllegalArgumentException("No pending payment found for order ID: " + orderId));
 
-        // Update payment status
         payment.setStatus(PaymentStatus.PAID);
         paymentRepository.save(payment);
 
-        // Update order status
         order.setPaymentStatus(PaymentStatus.PAID);
         orderRepository.save(order);
 
-        // Update table status to AVAILABLE
         DinningTable table = order.getTables();
         if (table != null) {
             table.setTableStatus(TableStatus.AVAILABLE);
@@ -248,13 +255,12 @@ public class PaymentController {
             response.put("success", true);
             response.put("message", "Payment confirmed successfully");
 
-            // Find the payment to include the transaction ID in the response
             Optional<Payment> paymentOptional = paymentRepository.findTopByOrder_OrderIdAndStatusOrderByPaymentDateDesc(orderId, PaymentStatus.PAID);
 
-            Payment payment = paymentOptional.orElse(null);
+            Payment planning = paymentOptional.orElse(null);
 
-            if (payment != null) {
-                response.put("transactionId", payment.getTransactionId());
+            if (planning != null) {
+                response.put("transactionId", planning.getTransactionId());
             }
 
             return ResponseEntity.ok(response);
