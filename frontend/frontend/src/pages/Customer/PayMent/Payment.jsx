@@ -295,6 +295,8 @@ const Payment = () => {
           statusResponse.message || "Failed to check payment status"
         );
       }
+      console.log("Payment status before confirmation:", statusResponse);
+
       if (statusResponse.paymentStatus === "PAID") {
         setExistingPaymentDetected(true);
         setExistingPaymentDetails({
@@ -306,15 +308,21 @@ const Payment = () => {
         setShowModal(true);
         return;
       }
-      if (statusResponse.paymentStatus !== "PENDING") {
-        setError(`No pending payment found for order ${orderId}`);
+
+      if (statusResponse.paymentStatus === "PENDING") {
+        setTransactionStatus("PENDING");
+        setError(
+          "A pending payment transaction exists. Please wait for it to complete or try again later."
+        );
         setShowModal(true);
         return;
       }
 
       // Confirm payment
-      const response = await confirmPayment(orderId);
-      if (response.success) {
+      const response = await authAPI.post(`/payment/confirm`, {
+        orderId: parseInt(orderId),
+      });
+      if (response.data.success) {
         try {
           const customerInfo = JSON.parse(
             localStorage.getItem("customerInfo")
@@ -374,15 +382,27 @@ const Payment = () => {
           navigate("/evaluate");
         }, 1000);
       } else {
-        setError("Failed to confirm payment: " + response.message);
+        setError("Failed to confirm payment: " + response.data.message);
+        setShowModal(true);
       }
     } catch (err) {
       console.error("Error confirming payment:", err);
       if (
-        err.message.includes("No pending payment found") ||
-        err.response?.status === 404
+        err.response?.status === 400 &&
+        err.response?.data?.message.includes("No pending payment found")
       ) {
-        setError(`No pending payment found for order ${orderId}`);
+        setError(
+          `No pending payment found for order ${orderId}. Please initiate a payment first.`
+        );
+        setShowModal(true);
+      } else if (
+        err.response?.status === 400 &&
+        err.response?.data?.message.includes("Payment is still PENDING")
+      ) {
+        setTransactionStatus("PENDING");
+        setError(
+          "Payment is still pending. Please wait for it to complete or try again later."
+        );
         setShowModal(true);
       } else if (err.response?.status === 409) {
         setExistingPaymentDetected(true);
@@ -417,6 +437,7 @@ const Payment = () => {
           err.response?.data?.message ||
             "Failed to confirm payment. Please try again!"
         );
+        setShowModal(true);
       }
     } finally {
       setProcessingPayment(false);
