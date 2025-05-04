@@ -21,6 +21,8 @@ import com.example.SelfOrderingRestaurant.Service.ShiftService;
 import com.example.SelfOrderingRestaurant.Service.StaffService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -154,7 +156,9 @@ public class AdminController {
     public ResponseEntity<List<RevenueDTO>> getDailyRevenue(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-
+        if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+            throw new IllegalArgumentException("startDate must be before or equal to endDate");
+        }
         List<RevenueDTO> revenues = revenueService.getDailyRevenue(startDate, endDate);
         return ResponseEntity.ok(revenues);
     }
@@ -163,7 +167,14 @@ public class AdminController {
     public ResponseEntity<MonthlyRevenueDTO> getMonthlyRevenue(
             @RequestParam(required = false, defaultValue = "#{T(java.time.LocalDate).now().getYear()}") int year,
             @RequestParam(required = false, defaultValue = "#{T(java.time.LocalDate).now().getMonthValue()}") int month) {
-
+        // Validate month
+        if (month < 1 || month > 12) {
+            throw new IllegalArgumentException("Month must be between 1 and 12");
+        }
+        // Validate year (optional, can be adjusted based on requirements)
+        if (year < 2000 || year > LocalDate.now().getYear() + 1) {
+            throw new IllegalArgumentException("Year must be between 2000 and " + (LocalDate.now().getYear() + 1));
+        }
         MonthlyRevenueDTO monthlyRevenue = revenueService.getMonthlyRevenue(year, month);
         return ResponseEntity.ok(monthlyRevenue);
     }

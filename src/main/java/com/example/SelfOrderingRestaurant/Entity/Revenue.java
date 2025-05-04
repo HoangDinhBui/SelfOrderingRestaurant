@@ -24,10 +24,10 @@ public class Revenue {
     private LocalDate date;
 
     @Column(name = "total_revenue", precision = 12, scale = 2)
-    private BigDecimal totalRevenue = BigDecimal.ZERO;
+    private BigDecimal totalRevenue;
 
     @Column(name = "total_orders")
-    private Integer totalOrders = 0;
+    private Integer totalOrders;
 
     @Column(name = "total_customers")
     private Integer totalCustomers = 0;
@@ -44,21 +44,11 @@ public class Revenue {
     @Column(name = "total_discount", precision = 10, scale = 2)
     private BigDecimal totalDiscount = BigDecimal.ZERO;
 
-    // Vì net_revenue là trường được tự động tính toán từ cơ sở dữ liệu,
-    // ta nên thêm method để tính toán trong Java
-    @Transient // Không lưu vào cơ sở dữ liệu
-    public BigDecimal getNetRevenue() {
-        return totalRevenue.subtract(totalDiscount);
-    }
+    @Column(name = "net_revenue", precision = 12, scale = 2, insertable = false, updatable = false)
+    private BigDecimal netRevenue;
 
-    // Tương tự cho average_order_value
-    @Transient
-    public BigDecimal getAverageOrderValue() {
-        if (totalOrders == null || totalOrders == 0) {
-            return BigDecimal.ZERO;
-        }
-        return totalRevenue.divide(new BigDecimal(totalOrders), 2, BigDecimal.ROUND_HALF_UP);
-    }
+    @Column(name = "average_order_value", precision = 12, scale = 2, insertable = false, updatable = false)
+    private BigDecimal averageOrderValue;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "staff_id")

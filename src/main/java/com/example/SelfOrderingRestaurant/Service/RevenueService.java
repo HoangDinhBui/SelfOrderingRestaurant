@@ -141,7 +141,16 @@ public class RevenueService {
     }
 
     public MonthlyRevenueDTO getMonthlyRevenue(int year, int month) {
-        List<Revenue> monthRevenues = revenueRepository.findByYearAndMonth(year, month);
+        List<Revenue> monthRevenues;
+        try {
+            monthRevenues = revenueRepository.findByYearAndMonth(year, month);
+        } catch (Exception e) {
+            // Log lỗi và trả về DTO mặc định
+            System.err.println("Lỗi khi truy vấn revenueRepository.findByYearAndMonth: " + e.getMessage());
+            return new MonthlyRevenueDTO(year, month, BigDecimal.ZERO, BigDecimal.ZERO,
+                    BigDecimal.ZERO, 0, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
+                    Collections.emptyList());
+        }
 
         if (monthRevenues.isEmpty()) {
             return new MonthlyRevenueDTO(year, month, BigDecimal.ZERO, BigDecimal.ZERO,
@@ -149,41 +158,49 @@ public class RevenueService {
                     Collections.emptyList());
         }
 
-        // Calculate monthly totals
-        BigDecimal totalRevenue = monthRevenues.stream()
-                .map(Revenue::getTotalRevenue)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        try {
+            // Calculate monthly totals
+            BigDecimal totalRevenue = monthRevenues.stream()
+                    .map(revenue -> Objects.requireNonNullElse(revenue.getTotalRevenue(), BigDecimal.ZERO))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        BigDecimal totalDiscount = monthRevenues.stream()
-                .map(Revenue::getTotalDiscount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal totalDiscount = monthRevenues.stream()
+                    .map(revenue -> Objects.requireNonNullElse(revenue.getTotalDiscount(), BigDecimal.ZERO))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        BigDecimal netRevenue = totalRevenue.subtract(totalDiscount);
+            BigDecimal netRevenue = totalRevenue.subtract(totalDiscount);
 
-        int totalOrders = monthRevenues.stream()
-                .mapToInt(Revenue::getTotalOrders)
-                .sum();
+            int totalOrders = monthRevenues.stream()
+                    .mapToInt(revenue -> Objects.requireNonNullElse(revenue.getTotalOrders(), 0))
+                    .sum();
 
-        BigDecimal foodRevenue = monthRevenues.stream()
-                .map(Revenue::getFoodRevenue)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal foodRevenue = monthRevenues.stream()
+                    .map(revenue -> Objects.requireNonNullElse(revenue.getFoodRevenue(), BigDecimal.ZERO))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        BigDecimal drinkRevenue = monthRevenues.stream()
-                .map(Revenue::getDrinkRevenue)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal drinkRevenue = monthRevenues.stream()
+                    .map(revenue -> Objects.requireNonNullElse(revenue.getDrinkRevenue(), BigDecimal.ZERO))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        BigDecimal otherRevenue = monthRevenues.stream()
-                .map(Revenue::getOtherRevenue)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+            BigDecimal otherRevenue = monthRevenues.stream()
+                    .map(revenue -> Objects.requireNonNullElse(revenue.getOtherRevenue(), BigDecimal.ZERO))
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        List<RevenueDTO> dailyRevenues = monthRevenues.stream()
-                .map(this::convertToDTO)
-                .collect(Collectors.toList());
+            List<RevenueDTO> dailyRevenues = monthRevenues.stream()
+                    .map(this::convertToDTO)
+                    .collect(Collectors.toList());
 
-        return new MonthlyRevenueDTO(
-                year, month, totalRevenue, totalDiscount, netRevenue, totalOrders,
-                foodRevenue, drinkRevenue, otherRevenue, dailyRevenues
-        );
+            return new MonthlyRevenueDTO(
+                    year, month, totalRevenue, totalDiscount, netRevenue, totalOrders,
+                    foodRevenue, drinkRevenue, otherRevenue, dailyRevenues
+            );
+        } catch (Exception e) {
+            // Log lỗi và trả về DTO mặc định
+            System.err.println("Lỗi khi tính toán MonthlyRevenueDTO: " + e.getMessage());
+            return new MonthlyRevenueDTO(year, month, BigDecimal.ZERO, BigDecimal.ZERO,
+                    BigDecimal.ZERO, 0, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
+                    Collections.emptyList());
+        }
     }
 
     public YearlyRevenueDTO getYearlyRevenue(int year) {
@@ -664,15 +681,15 @@ public class RevenueService {
         RevenueDTO dto = new RevenueDTO();
         dto.setRevenueId(revenue.getRevenueId());
         dto.setDate(revenue.getDate());
-        dto.setTotalRevenue(revenue.getTotalRevenue());
-        dto.setTotalOrders(revenue.getTotalOrders());
-        dto.setTotalCustomers(revenue.getTotalCustomers());
-        dto.setFoodRevenue(revenue.getFoodRevenue());
-        dto.setDrinkRevenue(revenue.getDrinkRevenue());
-        dto.setOtherRevenue(revenue.getOtherRevenue());
-        dto.setTotalDiscount(revenue.getTotalDiscount());
-        dto.setNetRevenue(revenue.getNetRevenue());
-        dto.setAverageOrderValue(revenue.getAverageOrderValue());
+        dto.setTotalRevenue(Objects.requireNonNullElse(revenue.getTotalRevenue(), BigDecimal.ZERO));
+        dto.setTotalOrders(Objects.requireNonNullElse(revenue.getTotalOrders(), 0));
+        dto.setTotalCustomers(Objects.requireNonNullElse(revenue.getTotalCustomers(), 0));
+        dto.setFoodRevenue(Objects.requireNonNullElse(revenue.getFoodRevenue(), BigDecimal.ZERO));
+        dto.setDrinkRevenue(Objects.requireNonNullElse(revenue.getDrinkRevenue(), BigDecimal.ZERO));
+        dto.setOtherRevenue(Objects.requireNonNullElse(revenue.getOtherRevenue(), BigDecimal.ZERO));
+        dto.setTotalDiscount(Objects.requireNonNullElse(revenue.getTotalDiscount(), BigDecimal.ZERO));
+        dto.setNetRevenue(Objects.requireNonNullElse(revenue.getNetRevenue(), BigDecimal.ZERO));
+        dto.setAverageOrderValue(Objects.requireNonNullElse(revenue.getAverageOrderValue(), BigDecimal.ZERO));
         dto.setNotes(revenue.getNotes());
         return dto;
     }
