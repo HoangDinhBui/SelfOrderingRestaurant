@@ -106,7 +106,7 @@ const Menu = () => {
 
   const handleViewDish = (dishId) => {
     console.log(`View dish with ID: ${dishId}`);
-    navigate(`/view-item/${dishId}`); // đường dẫn đến ViewItem.jsx
+    navigate(`/viewitem/${dishId}`); // đường dẫn đến ViewItem.jsx
   };
 
   // Updated order dish function to call GraphQL API
@@ -299,6 +299,16 @@ const Menu = () => {
           <div className="flex-1 text-center">
             <div className="text-base font-bold">Menu</div>
           </div>
+          <button
+            onClick={() => navigate("/order_cus")}
+            className=" rounded-full bg-white-100 hover:bg-gray-300"
+          >
+            <img
+              src="https://img.icons8.com/?size=100&id=59997&format=png&color=000000"
+              alt="Cart Icon"
+              className="w-5 h-5"
+            />
+          </button>
           <div className="w-6"></div>
         </div>
       </div>

@@ -45,7 +45,7 @@ function App() {
             <Routes>
 
               {/* Customer Routes */}
-              <Route path="/home_cus" element={<Home />} />
+              <Route path="/" element={<Home />} />
               <Route path="/menu_cus" element={<Menu />} />
               <Route path="/order_cus" element={<Order />} />
               <Route path="/viewitem/:id" element={<ViewItem />} />
