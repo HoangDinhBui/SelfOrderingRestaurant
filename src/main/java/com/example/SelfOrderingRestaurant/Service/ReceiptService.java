@@ -8,9 +8,7 @@ import com.lowagie.text.*;
 import com.lowagie.text.pdf.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
@@ -23,10 +21,7 @@ import lombok.AllArgsConstructor;
 public class ReceiptService {
     private final Logger log = LoggerFactory.getLogger(ReceiptService.class);
 
-
     private final OrderRepository orderRepository;
-
-
     private final OrderItemRepository orderItemRepository;
 
     /**
@@ -85,6 +80,10 @@ public class ReceiptService {
         header.setAlignment(Element.ALIGN_CENTER);
         document.add(header);
 
+        Paragraph address = new Paragraph("450 Le Van Viet Street, Tang Nhon Phu A Ward, District 9", subHeaderFont);
+        address.setAlignment(Element.ALIGN_CENTER);
+        document.add(address);
+
         document.add(new Paragraph(" ")); // Add spacing
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -114,26 +113,85 @@ public class ReceiptService {
     }
 
     private void addItemsTable(Document document, List<OrderItem> orderItems) throws DocumentException {
-        PdfPTable table = new PdfPTable(4);
+        PdfPTable table = new PdfPTable(6); // 6 columns: No., Item, Price, Qty, Notes, Subtotal
         table.setWidthPercentage(100);
-        table.setWidths(new float[] {2, 1, 1, 1});
+        table.setWidths(new float[] {0.5f, 2f, 1f, 0.8f, 1.5f, 1f}); // Adjusted column widths
 
         // Add table headers
         Font headerFont = new Font(Font.HELVETICA, 12, Font.BOLD);
-        table.addCell(new PdfPCell(new Phrase("Item", headerFont)));
-        table.addCell(new PdfPCell(new Phrase("Price", headerFont)));
-        table.addCell(new PdfPCell(new Phrase("Qty", headerFont)));
-        table.addCell(new PdfPCell(new Phrase("Subtotal", headerFont)));
+        PdfPCell cell;
+
+        cell = new PdfPCell(new Phrase("No.", headerFont));
+        cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        cell.setPadding(5);
+        table.addCell(cell);
+
+        cell = new PdfPCell(new Phrase("Item", headerFont));
+        cell.setHorizontalAlignment(Element.ALIGN_LEFT);
+        cell.setPadding(5);
+        table.addCell(cell);
+
+        cell = new PdfPCell(new Phrase("Price", headerFont));
+        cell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+        cell.setPadding(5);
+        table.addCell(cell);
+
+        cell = new PdfPCell(new Phrase("Qty", headerFont));
+        cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+        cell.setPadding(5);
+        table.addCell(cell);
+
+        cell = new PdfPCell(new Phrase("Notes", headerFont));
+        cell.setHorizontalAlignment(Element.ALIGN_LEFT);
+        cell.setPadding(5);
+        table.addCell(cell);
+
+        cell = new PdfPCell(new Phrase("Subtotal", headerFont));
+        cell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+        cell.setPadding(5);
+        table.addCell(cell);
 
         // Add items
         Font contentFont = new Font(Font.HELVETICA, 11);
+        int index = 1;
         for (OrderItem item : orderItems) {
-            table.addCell(new Phrase(item.getDish().getName(), contentFont));
-            table.addCell(new Phrase(item.getUnitPrice().toString(), contentFont));
-            table.addCell(new Phrase(item.getQuantity().toString(), contentFont));
+            // STT
+            cell = new PdfPCell(new Phrase(String.valueOf(index++), contentFont));
+            cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+            cell.setPadding(5);
+            table.addCell(cell);
 
+            // Item name
+            cell = new PdfPCell(new Phrase(item.getDish().getName(), contentFont));
+            cell.setHorizontalAlignment(Element.ALIGN_LEFT);
+            cell.setPadding(5);
+            table.addCell(cell);
+
+            // Unit price
+            cell = new PdfPCell(new Phrase(String.format("%.2f", item.getUnitPrice()), contentFont));
+            cell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+            cell.setPadding(5);
+            table.addCell(cell);
+
+            // Quantity
+            cell = new PdfPCell(new Phrase(item.getQuantity().toString(), contentFont));
+            cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+            cell.setPadding(5);
+            table.addCell(cell);
+
+            // Notes
+            String notes = item.getNotes() != null ? item.getNotes() : "";
+            cell = new PdfPCell(new Phrase(notes, contentFont));
+            cell.setHorizontalAlignment(Element.ALIGN_LEFT);
+            cell.setPadding(5);
+            table.addCell(cell);
+
+            // Subtotal
             BigDecimal subtotal = item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
-            table.addCell(new Phrase(subtotal.toString(), contentFont));
+            cell = new PdfPCell(new Phrase(String.format("%.2f", subtotal), contentFont));
+            cell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+            cell.setPadding(5);
+            table.addCell(cell);
         }
 
         document.add(table);
@@ -152,12 +210,12 @@ public class ReceiptService {
         totalsTable.getDefaultCell().setHorizontalAlignment(Element.ALIGN_RIGHT);
 
         totalsTable.addCell(new Phrase("Subtotal:", normalFont));
-        totalsTable.addCell(new Phrase(order.getTotalAmount().toString(), normalFont));
+        totalsTable.addCell(new Phrase(String.format("%.2f", order.getTotalAmount()), normalFont));
 
         // Discount (if any)
         if (order.getDiscount() != null && order.getDiscount().compareTo(BigDecimal.ZERO) > 0) {
             totalsTable.addCell(new Phrase("Discount:", normalFont));
-            totalsTable.addCell(new Phrase(order.getDiscount().toString(), normalFont));
+            totalsTable.addCell(new Phrase(String.format("%.2f", order.getDiscount()), normalFont));
         }
 
         // Total
@@ -167,7 +225,7 @@ public class ReceiptService {
         }
 
         totalsTable.addCell(new Phrase("Total:", boldFont));
-        totalsTable.addCell(new Phrase(totalAfterDiscount.toString(), boldFont));
+        totalsTable.addCell(new Phrase(String.format("%.2f", totalAfterDiscount), boldFont));
 
         document.add(totalsTable);
         document.add(new Paragraph(" ")); // Add spacing
