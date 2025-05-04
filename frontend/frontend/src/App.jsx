@@ -31,7 +31,7 @@ import RevenueManagement from "./pages/Admin/RevenueManagement/RevenueManagement
 import StaffManagement from "./pages/Admin/StaffManagement/StaffManagement";
 
 // Staff Pages
-import DishManagementStaff from "./pages/Staff";
+import DishManagementStaff from "./pages/Staff/DishManagement/DishManagement";
 import OrderHistoryStaff from "./pages/Staff/OrderHistory/OrderHistory";
 import TableManagementStaff from "./pages/Staff/TableManagement/TableManagement";
 import StaffInformation from "./pages/Staff/StaffInformation/StaffInformation";
