@@ -88,7 +88,7 @@ const Home = () => {
         await fetchCartData();
       }
       // Navigate to Order page
-      navigate("/order");
+      navigate("/order_cus");
     } catch (err) {
       console.error("Error navigating to order page:", err);
     }
@@ -191,7 +191,7 @@ const Home = () => {
       }
 
       // Navigate to payment page with order ID
-      navigate(`/payment?orderId=${orderId}`);
+      navigate(`/payment_cus?orderId=${orderId}`);
     } catch (err) {
       console.error("Error in payment flow:", err);
       setPaymentError(
@@ -205,7 +205,7 @@ const Home = () => {
 
   const handleViewMenu = () => {
     // Navigate to menu page
-    navigate("/menu");
+    navigate("/menu_cus");
   };
 
   return (

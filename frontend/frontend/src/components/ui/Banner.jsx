@@ -150,11 +150,11 @@ const Banner = () => {
 
       console.log("Navigating to order page");
       // Navigate to Order page even if all fetching methods fail
-      navigate("/order");
+      navigate("/order_cus");
     } catch (err) {
       console.error("Error in Order Now flow:", err);
       // Still navigate even if there's an error
-      navigate("/order");
+      navigate("/order_cus");
     }
   };
 

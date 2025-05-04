@@ -304,7 +304,7 @@ const Order = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center">
+    <div className="min-h-screen w-110 bg-gray-100 flex flex-col items-center">
       {/* Debug information - Fixed NODE_ENV check */}
       {typeof window !== "undefined" && window.ENV_DEBUG && (
         <div className="w-full bg-yellow-100 p-2 text-xs text-center">
@@ -325,7 +325,7 @@ const Order = () => {
         {/* Menu and Home buttons */}
         <div className="flex justify-between mt-4">
           <button
-            onClick={() => navigate("/menu")}
+            onClick={() => navigate("/menu_cus")}
             className="p-2 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center font-bold"
           >
             <svg
@@ -403,7 +403,7 @@ const Order = () => {
       <div className="container mx-auto p-4 flex flex-col items-center">
         <div className="flex items-center w-full max-w-2xl mb-4">
           <button
-            onClick={() => navigate("/menu")}
+            onClick={() => navigate("/menu_cus")}
             className="p-2 rounded-full bg-gray-200 hover:bg-gray-300 mr-2"
           >
             <svg
@@ -444,7 +444,7 @@ const Order = () => {
             <div className="bg-white p-6 rounded-lg shadow-sm text-center">
               <p className="text-gray-500">Your cart is empty</p>
               <button
-                onClick={() => navigate("/menu")}
+                onClick={() => navigate("/menu_cus")}
                 className="mt-4 !bg-red-500 text-white py-2 px-6 rounded-lg"
               >
                 Browse Menu
@@ -511,7 +511,7 @@ const Order = () => {
                     </div>
                     <button
                       onClick={() =>
-                        navigate(`/note/${item.dishId}`, {
+                        navigate(`/note_cus/${item.dishId}`, {
                           state: { name: item.dishName },
                         })
                       }

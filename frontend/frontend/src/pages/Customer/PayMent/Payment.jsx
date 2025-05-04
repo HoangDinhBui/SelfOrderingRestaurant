@@ -274,7 +274,7 @@ const Payment = () => {
       sessionStorage.removeItem("latestOrderInfo");
       setShowModal(false);
       setTimeout(() => {
-        navigate("/evaluate");
+        navigate("/evaluate_cus");
       }, 1000);
       return;
     }
@@ -379,7 +379,7 @@ const Payment = () => {
         });
 
         setTimeout(() => {
-          navigate("/evaluate");
+          navigate("/evaluate_cus");
         }, 1000);
       } else {
         setError("Failed to confirm payment: " + response.data.message);
@@ -589,7 +589,7 @@ const Payment = () => {
         <div className="bg-red-100 p-4 rounded-lg text-center">
           <p className="text-red-700 mb-2">{error}</p>
           <button
-            onClick={() => navigate("/menu")}
+            onClick={() => navigate("/menu_cus")}
             className="!bg-red-500 text-white py-2 px-4 rounded-lg"
           >
             Return to Menu
@@ -603,7 +603,7 @@ const Payment = () => {
   const momoQrUrl = `https://nhantien.momo.vn/${momoPhoneNumber}`;
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
+    <div className="min-h-screen w-110 bg-gray-100 flex flex-col">
       <div className="bg-white py-3 shadow-md fixed top-0 left-0 w-full z-10">
         <div className="flex items-center px-4 w-full">
           <button
@@ -829,7 +829,7 @@ const Payment = () => {
             existingPaymentDetected) && (
             <button
               className="w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition"
-              onClick={() => navigate("/evaluate")}
+              onClick={() => navigate("/evaluate_cus")}
             >
               COMPLETE
             </button>
@@ -903,7 +903,7 @@ const Payment = () => {
                   <button
                     onClick={() => {
                       setShowModal(false);
-                      navigate("/evaluate");
+                      navigate("/evaluate_cus");
                     }}
                     className="w-1/2 !bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition"
                   >
