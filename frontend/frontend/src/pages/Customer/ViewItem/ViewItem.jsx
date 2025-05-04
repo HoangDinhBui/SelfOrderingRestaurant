@@ -189,7 +189,7 @@ const ViewItem = () => {
       {/* Header */}
       <div className="bg-white py-3 shadow-md sticky top-0 z-10 flex items-center px-4">
         <button
-          onClick={() => navigate("/menu")}
+          onClick={() => navigate("/menu_cus")}
           className="p-2 rounded-full bg-gray-200 hover:bg-gray-300"
         >
           <svg
