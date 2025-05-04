@@ -28,25 +28,38 @@ const TableManagementStaff = () => {
   const [socket, setSocket] = useState(null);
   const [socketError, setSocketError] = useState(null);
 
+  // Assume userId is stored in localStorage or fetched from auth context
+  const userId = localStorage.getItem("userId") || "1"; // Replace with actual userId retrieval logic
+
   useEffect(() => {
     let ws;
     let reconnectTimeout;
     let isMounted = true;
     let reconnectAttempts = 0;
     const maxReconnectAttempts = 5;
-    const baseReconnectDelay = 5000;
+    const baseReconnectDelay = 3000;
 
     const connectWebSocket = () => {
-      if (!isMounted || reconnectAttempts >= maxReconnectAttempts) return;
+      if (!isMounted || reconnectAttempts >= maxReconnectAttempts) {
+        console.log("Max reconnect attempts reached or component unmounted");
+        return;
+      }
 
-      ws = new WebSocket("ws://localhost:8080/ws/notifications");
+      console.log(
+        `Attempting WebSocket connection (Attempt ${reconnectAttempts + 1})`
+      );
+      ws = new WebSocket(
+        `ws://localhost:8080/ws/notifications?userType=STAFF&userId=${userId}`
+      );
 
       ws.onopen = () => {
-        console.log("WebSocket connected");
+        console.log("WebSocket connected successfully");
         setSocket(ws);
         setSocketError(null);
         reconnectAttempts = 0;
         clearTimeout(reconnectTimeout);
+        // Fetch initial notifications via REST since server doesn't handle INIT_NOTIFICATIONS
+        fetchAllNotifications();
       };
 
       ws.onmessage = (event) => {
@@ -54,26 +67,37 @@ const TableManagementStaff = () => {
           if (typeof event.data !== "string") {
             throw new Error("Received non-string WebSocket message");
           }
-          const notification = JSON.parse(event.data);
-          if (!notification.notificationId || !notification.tableNumber) {
-            throw new Error("Invalid notification format");
-          }
-          console.log("Received WebSocket notification:", notification);
+          const message = JSON.parse(event.data);
+          console.log("Received WebSocket message:", message);
 
-          setTableNotifications((prev) => {
-            const exists = prev.some(
-              (n) => n.notificationId === notification.notificationId
-            );
-            if (exists) {
-              return prev.map((n) =>
-                n.notificationId === notification.notificationId
-                  ? { ...n, ...notification }
-                  : n
+          // Server sends NotificationResponseDTO directly
+          if (message.notificationId && message.tableNumber !== undefined) {
+            setTableNotifications((prev) => {
+              // Check if notification already exists
+              const exists = prev.some(
+                (n) => n.notificationId === message.notificationId
               );
-            } else {
-              return [...prev, notification];
-            }
-          });
+              if (exists) {
+                // Update existing notification (e.g., for mark-as-read)
+                console.log(`Updating notification ${message.notificationId}`);
+                return prev.map((n) =>
+                  n.notificationId === message.notificationId
+                    ? { ...n, ...message } // Merge to preserve fields
+                    : n
+                );
+              } else {
+                // Add new notification
+                console.log(
+                  `Adding new notification ${message.notificationId}`
+                );
+                return [...prev, message];
+              }
+            });
+          } else if (message === "PONG") {
+            console.log("Received PONG from server");
+          } else {
+            console.warn("Unrecognized WebSocket message:", message);
+          }
         } catch (err) {
           console.error("Error processing WebSocket message:", err);
           setSocketError("Failed to process notification");
@@ -91,24 +115,44 @@ const TableManagementStaff = () => {
         if (isMounted && reconnectAttempts < maxReconnectAttempts) {
           const delay = baseReconnectDelay * Math.pow(2, reconnectAttempts);
           reconnectAttempts++;
+          console.log(
+            `Scheduling reconnect in ${delay}ms (Attempt ${reconnectAttempts})`
+          );
           reconnectTimeout = setTimeout(() => {
             connectWebSocket();
           }, delay);
         }
       };
+
+      // Send periodic PING to keep connection alive
+      const pingInterval = setInterval(() => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          console.log("Sending PING");
+          ws.send(JSON.stringify({ type: "PING" }));
+        }
+      }, 30000);
     };
 
     connectWebSocket();
 
+    // Periodic sync for unread notifications
+    const syncInterval = setInterval(() => {
+      if (isMounted && tables.length > 0) {
+        console.log("Performing periodic notification sync");
+        fetchUnreadNotifications();
+      }
+    }, 120000); // Sync every 2 minutes
+
     return () => {
       isMounted = false;
       clearTimeout(reconnectTimeout);
+      clearInterval(syncInterval);
       if (ws) {
+        console.log("Closing WebSocket during cleanup");
         ws.close();
-        console.log("WebSocket closed during cleanup");
       }
     };
-  }, []);
+  }, [tables, userId]);
 
   useEffect(() => {
     const requestInterceptor = axios.interceptors.request.use(
@@ -155,7 +199,7 @@ const TableManagementStaff = () => {
       ).length;
       return acc;
     }, {});
-    console.log("unreadNotificationsByTable:", result);
+    console.log("Calculated unreadNotificationsByTable:", result);
     return result;
   }, [tableNotifications, tables]);
 
@@ -520,12 +564,6 @@ const TableManagementStaff = () => {
     fetchTables();
   }, [fetchOrders]);
 
-  useEffect(() => {
-    if (tables.length > 0) {
-      fetchAllNotifications();
-    }
-  }, [tables]);
-
   const ordersByTable = useMemo(() => {
     return orders.reduce((acc, order) => {
       if (order.tableNumber) {
@@ -552,7 +590,6 @@ const TableManagementStaff = () => {
         currentStatus: table.status,
       });
 
-      // Table status is determined solely by orders, not notifications
       if (tableOrders.length === 0) {
         updatedStatus = "available";
       } else {
@@ -592,9 +629,11 @@ const TableManagementStaff = () => {
       setNotificationsError(null);
 
       const response = await API.get(`/api/notifications/table/${tableId}`);
+      console.log(`Fetched notifications for table ${tableId}:`, response.data);
       const notifications = response.data;
 
       setTableNotifications((prev) => {
+        // Remove existing notifications for this table to avoid duplicates
         const otherNotifications = prev.filter(
           (n) => n.tableNumber !== tableId
         );
@@ -608,6 +647,84 @@ const TableManagementStaff = () => {
     }
   };
 
+  const fetchUnreadNotifications = async () => {
+    try {
+      setNotificationsLoading(true);
+      setNotificationsError(null);
+
+      const notificationsPromises = tables.map((table) =>
+        API.get(`/api/notifications/table/${table.id}`)
+          .then((response) => {
+            console.log(`Notifications for table ${table.id}:`, response.data);
+            return response.data.filter((n) => !n.isRead);
+          })
+          .catch((err) => {
+            console.error(
+              `Error fetching notifications for table ${table.id}:`,
+              err
+            );
+            return [];
+          })
+      );
+
+      const notificationsArrays = await Promise.all(notificationsPromises);
+      const allNotifications = notificationsArrays
+        .flat()
+        .filter((n) => n.notificationId && typeof n.isRead === "boolean");
+
+      console.log("Fetched unread notifications:", allNotifications);
+      setTableNotifications((prev) => {
+        // Merge new notifications, updating existing ones
+        const notificationMap = new Map();
+        [...prev, ...allNotifications].forEach((n) => {
+          notificationMap.set(n.notificationId, n);
+        });
+        return Array.from(notificationMap.values());
+      });
+    } catch (err) {
+      console.error("Error fetching unread notifications:", err);
+      setNotificationsError("Failed to load unread notifications");
+    } finally {
+      setNotificationsLoading(false);
+    }
+  };
+
+  const fetchAllNotifications = async () => {
+    try {
+      setNotificationsLoading(true);
+      setNotificationsError(null);
+
+      const notificationsPromises = tables.map((table) =>
+        API.get(`/api/notifications/table/${table.id}`)
+          .then((response) => {
+            console.log(`Notifications for table ${table.id}:`, response.data);
+            return response.data;
+          })
+          .catch((err) => {
+            console.error(
+              `Error fetching notifications for table ${table.id}:`,
+              err
+            );
+            return [];
+          })
+      );
+
+      const notificationsArrays = await Promise.all(notificationsPromises);
+      const allNotifications = notificationsArrays
+        .flat()
+        .filter((n) => n.notificationId && typeof n.isRead === "boolean");
+
+      console.log("All notifications fetched:", allNotifications);
+      setTableNotifications(allNotifications);
+    } catch (err) {
+      console.error("Error fetching all notifications:", err);
+      setNotificationsError("Failed to load notifications");
+      setTableNotifications([]);
+    } finally {
+      setNotificationsLoading(false);
+    }
+  };
+
   const markNotificationAsRead = async (notificationId) => {
     if (!notificationId) {
       console.error("Cannot mark undefined notification as read");
@@ -615,19 +732,25 @@ const TableManagementStaff = () => {
     }
 
     try {
-      await API.put(`/api/notifications/${notificationId}/read`);
-      setTableNotifications(
-        tableNotifications.map((notification) =>
+      console.log(`Marking notification ${notificationId} as read`);
+      // Optimistically update local state
+      setTableNotifications((prev) =>
+        prev.map((notification) =>
           notification.notificationId === notificationId
             ? { ...notification, isRead: true }
             : notification
         )
       );
+      // Send request to server
+      await API.put(`/api/notifications/${notificationId}/read`);
     } catch (err) {
       console.error(
         `Error marking notification ${notificationId} as read:`,
         err
       );
+      setNotificationsError("Failed to mark notification as read");
+      // Revert optimistic update and sync
+      fetchUnreadNotifications();
     }
   };
 
@@ -638,6 +761,7 @@ const TableManagementStaff = () => {
       return;
     }
 
+    console.log(`Toggling notification modal for table ${table.id}`);
     setSelectedTable(table);
     setCurrentPage(1);
 
@@ -654,7 +778,7 @@ const TableManagementStaff = () => {
       return;
     }
 
-    // Initialize orders as empty array
+    console.log(`Selecting table ${table.id}`);
     setSelectedTable({ ...table, orders: table.orders || [] });
 
     if (table.status === "occupied") {
@@ -719,12 +843,11 @@ const TableManagementStaff = () => {
       return;
     }
 
-    // Initialize selectedTable with an empty orders array
+    console.log(`Showing dish modal for table ${table.id}`);
     const initialTable = { ...table, orders: table.orders || [] };
     setSelectedTable(initialTable);
     setIsDishModalOpen(true);
 
-    // Fetch unpaid orders
     setOrderLoading(true);
     try {
       const unpaidOrders = await fetchUnpaidOrdersByTable(table.id);
@@ -748,6 +871,7 @@ const TableManagementStaff = () => {
   };
 
   const handleShowPaymentModal = () => {
+    console.log("Showing payment modal");
     setIsDishModalOpen(false);
     setIsPaymentModalOpen(true);
   };
@@ -758,6 +882,7 @@ const TableManagementStaff = () => {
       return;
     }
 
+    console.log(`Processing payment success for table ${selectedTable.id}`);
     try {
       await API.put(`/api/staff/tables/${selectedTable.id}`, {
         status: "AVAILABLE",
@@ -796,10 +921,12 @@ const TableManagementStaff = () => {
   };
 
   const handleShowEmptyTableModal = () => {
+    console.log("Showing empty table modal");
     setIsEmptyTableModalOpen(true);
   };
 
   const handlePrintReceipt = () => {
+    console.log("Printing receipt");
     setIsBillModalOpen(false);
     setIsConfirmModalOpen(true);
   };
@@ -817,42 +944,6 @@ const TableManagementStaff = () => {
     : 0;
 
   const emptyTables = tables.filter((table) => table.status === "available");
-
-  const fetchAllNotifications = async () => {
-    try {
-      setNotificationsLoading(true);
-      setNotificationsError(null);
-
-      const notificationsPromises = tables.map((table) =>
-        API.get(`/api/notifications/table/${table.id}`)
-          .then((response) => {
-            console.log(`Notifications for table ${table.id}:`, response.data);
-            return response.data;
-          })
-          .catch((err) => {
-            console.error(
-              `Error fetching notifications for table ${table.id}:`,
-              err
-            );
-            return [];
-          })
-      );
-
-      const notificationsArrays = await Promise.all(notificationsPromises);
-      const allNotifications = notificationsArrays
-        .flat()
-        .filter((n) => n.notificationId && typeof n.isRead === "boolean");
-
-      console.log("All notifications:", allNotifications);
-      setTableNotifications(allNotifications);
-    } catch (err) {
-      console.error("Error fetching all notifications:", err);
-      setNotificationsError("Failed to load notifications");
-      setTableNotifications([]);
-    } finally {
-      setNotificationsLoading(false);
-    }
-  };
 
   const renderNotificationModal = () => {
     if (!isNotificationModalOpen || !selectedTable) return null;
@@ -1086,7 +1177,7 @@ const TableManagementStaff = () => {
   const renderDishModal = () => {
     if (!isDishModalOpen || !selectedTable) return null;
 
-    const orders = selectedTable.orders || []; // Ensure orders is always an array
+    const orders = selectedTable.orders || [];
 
     return (
       <div className="fixed inset-0 flex items-center justify-center z-50">
