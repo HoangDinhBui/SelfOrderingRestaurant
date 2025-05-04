@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import MiniList from "./MiniList";
 
 const MenuBar = ({
@@ -10,6 +11,7 @@ const MenuBar = ({
 }) => {
   const [isMiniListVisible, setMiniListVisible] = useState(false);
   const [isProfileDropdownVisible, setProfileDropdownVisible] = useState(false);
+  const navigate = useNavigate();
 
   const styles = {
     menuBar: {
@@ -84,19 +86,6 @@ const MenuBar = ({
       zIndex: 110,
       overflow: "hidden",
     },
-    profileHeader: {
-      padding: "20px",
-      textAlign: "center",
-      borderBottom: "1px solid #f0f0f0",
-    },
-    profileAvatarLarge: {
-      width: "80px",
-      height: "80px",
-      borderRadius: "50%",
-      objectFit: "cover",
-      marginBottom: "10px",
-      border: "3px solid #1C2E4A",
-    },
     profileMenu: {
       padding: "10px 0",
     },
@@ -109,17 +98,6 @@ const MenuBar = ({
       "&:hover": {
         backgroundColor: "#f5f5f5",
       },
-    },
-    menuItemIcon: {
-      width: "20px",
-      height: "20px",
-      marginRight: "12px",
-    },
-    profileFooter: {
-      display: "flex",
-      justifyContent: "space-between",
-      padding: "15px 20px",
-      borderTop: "1px solid #f0f0f0",
     },
     profileButton: {
       padding: "12px 16px",
@@ -157,8 +135,21 @@ const MenuBar = ({
   };
 
   const handleLogout = () => {
-    window.location.href = "/login";
+    navigate("/login");
   };
+
+  // Danh sách menu items với path từ App.js
+  const menuItems = [
+    { label: "Table Management", icon: "https://img.icons8.com/ios-filled/50/1C2E4A/table.png", path: "/table-management_admin" },
+    { label: "Notification Management", icon: "https://img.icons8.com/material-outlined/192/1C2E4A/alarm.png", path: "/notification-management" },
+    { label: "Dish Management", icon: "https://img.icons8.com/?size=100&id=99345&format=png&color=1C2E4A", path: "/dish-management" },
+    { label: "Order History", icon: "https://img.icons8.com/?size=100&id=24874&format=png&color=1C2E4A", path: "/order-history" },
+    { label: "Menu Management", icon: "https://img.icons8.com/ios-filled/50/1C2E4A/menu.png", path: "/menu-management_admin" },
+    { label: "Staff Management", icon: "https://img.icons8.com/ios-filled/50/1C2E4A/user.png", path: "/staff-management_admin" },
+    { label: "Revenue Management", icon: "https://img.icons8.com/ios-filled/50/1C2E4A/money.png", path: "/revenue-management_admin" },
+    { label: "Evaluate", icon: "https://img.icons8.com/ios-filled/50/1C2E4A/bookmark.png", path: "/evaluate_admin" },
+    { label: "Inventory Management", icon: "https://img.icons8.com/?size=100&id=4NUeu__UwtXf&format=png&color=1C2E4A", path: "/inventory-management_admin" },
+  ];
 
   return (
     <>
@@ -193,6 +184,7 @@ const MenuBar = ({
                     ...styles.viewProfileButton,
                     textAlign: "left",
                   }}
+                  onClick={() => navigate("/admin/information")}
                 >
                   Profile
                 </button>
@@ -221,20 +213,10 @@ const MenuBar = ({
       {isMiniListVisible && (
         <div style={styles.miniListContainer}>
           <MiniList
-            items={[
-              { label: "Table Management", icon: "https://img.icons8.com/ios-filled/50/1C2E4A/table.png" },
-              { label: "Notification Management", icon: "https://img.icons8.com/material-outlined/192/1C2E4A/alarm.png" },
-              { label: "Dish Management", icon: "https://img.icons8.com/?size=100&id=99345&format=png&color=1C2E4A" },
-              { label: "Order History", icon: "https://img.icons8.com/?size=100&id=24874&format=png&color=1C2E4A" },
-              { label: "Menu Management", icon: "https://img.icons8.com/ios-filled/50/1C2E4A/menu.png" },
-              { label: "Staff Management", icon: "https://img.icons8.com/ios-filled/50/1C2E4A/user.png" },
-              { label: "Revenue Management", icon: "https://img.icons8.com/ios-filled/50/1C2E4A/money.png" },
-              { label: "Evaluate", icon: "https://img.icons8.com/ios-filled/50/1C2E4A/bookmark.png" },
-              { label: "Inventory Management", icon: "https://img.icons8.com/?size=100&id=4NUeu__UwtXf&format=png&color=1C2E4A" },
-            ]}
+            items={menuItems}
             onSelect={(item) => {
-              console.log("Selected:", item);
-              setMiniListVisible(false);
+              navigate(item.path); // Điều hướng đến path của item
+              setMiniListVisible(false); // Đóng MiniList
             }}
           />
         </div>

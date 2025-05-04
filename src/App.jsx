@@ -59,7 +59,7 @@ function App() {
               <Route path="/notification-management" element={<NotificationManagementStaff />}/>
               <Route path="/admin-infomation_admin" element={<AdminInformation />}/>
               <Route path="/table-management_admin" element={<TableManagementAdmin />}/>
-              <Route path="/evaluate_admin" element={<Evaluate />} />
+              <Route path="/evaluate_admin" element={<EvaluateAdmin />} />
               <Route path="/menu-management_admin" element={<MenuManagementAdmin />}/>
               <Route path="/revenue-management_admin" element={<RevenueManagement />}/>
               <Route path="/staff-management_admin" element={<StaffManagement />}/>
