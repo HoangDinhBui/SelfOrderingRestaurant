@@ -57,7 +57,7 @@ public class ReceiptService {
             // Add total section
             addTotalSection(document, order);
 
-            // Add footer
+
             addFooter(document);
 
         } catch (Exception e) {
