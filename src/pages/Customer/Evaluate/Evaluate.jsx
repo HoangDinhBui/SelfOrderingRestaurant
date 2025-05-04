@@ -92,6 +92,7 @@ const Evaluate = () => {
   const handleBack = () => {
     setIsSubmitted(false);
     setError(null);
+    navigate("/menu_cus");
   };
 
   // ... (phần JSX giữ nguyên như trong câu hỏi trước)
