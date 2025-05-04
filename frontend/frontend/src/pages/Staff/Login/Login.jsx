@@ -37,13 +37,13 @@ const Login = () => {
       // Role-based redirection
       switch (response.userType) {
         case "ADMIN":
-          navigate("/table-management");
+          navigate("/table-management_admin");
           break;
         case "STAFF":
-          navigate("/table-management");
+          navigate("/table-management_staff");
           break;
         default:
-          navigate("/table-management");
+          navigate("/table-management_staff");
       }
     } catch (error) {
       console.error("Login failed:", error);
