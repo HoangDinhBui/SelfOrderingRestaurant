@@ -84,7 +84,7 @@ public class ReceiptService {
         address.setAlignment(Element.ALIGN_CENTER);
         document.add(address);
 
-        document.add(new Paragraph(" ")); // Add spacing
+        document.add(new Paragraph(" "));
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
         Paragraph dateTime = new Paragraph("Date: " + dateFormat.format(order.getOrderDate()), subHeaderFont);
