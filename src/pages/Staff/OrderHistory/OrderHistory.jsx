@@ -1,444 +1,355 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   FaCheck,
   FaTrash,
   FaMoneyBillWave,
   FaBell,
   FaUtensils,
-  FaShoppingCart,
-  FaCreditCard,
 } from "react-icons/fa";
-import MenuBarStaff from "../../../components/layout/MenuBar_Staff";
-import MenuBar from "../../../components/layout/MenuBar";
-import axios from "axios";
-import Order from "../../Customer/Order/Order";
+import MenuBarStaff from "../../../components/layout/MenuBar_Staff.jsx";
+import MenuBar from "../../../components/layout/menuBar.jsx";
 
-const OrderHistoryStaff= () => {
-  const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [notificationToDelete, setNotificationToDelete] = useState(null);
+const OrderHistory = () => {
+  const [isBillModalOpen, setIsBillModalOpen] = useState(false);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [selectedTable, setSelectedTable] = useState(null);
+  const [totalAmount, setTotalAmount] = useState(0);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+  const [notifications, setNotifications] = useState([
+    {
+      id: 1,
+      customer: 1,
+      table: "Table 1",
+      paymentSlip: 1,
+      total: 1000000,
+      time: "18:30:00",
+      date: "Today",
+    },
+    {
+      id: 2,
+      customer: 4,
+      table: "Table 4",
+      paymentSlip: 2,
+      total: 1500000,
+      time: "18:30:00",
+      date: "Today",
+    },
+    {
+      id: 3,
+      customer: 2,
+      table: "Table 2",
+      paymentSlip: 3,
+      total: 1200000,
+      time: "18:30:00",
+      date: "Today",
+    },
+    {
+      id: 4,
+      customer: 3,
+      table: "Table 3",
+      paymentSlip: 4,
+      total: 1300000,
+      time: "18:30:00",
+      date: "Today",
+    },
+    {
+      id: 5,
+      customer: 2,
+      table: "Table 2",
+      paymentSlip: 5,
+      total: 1500000,
+      time: "18:30:00",
+      date: "12/04/2025",
+    },
+  ]);
 
-  // Base API URL to ensure consistency
-  const API_BASE_URL = "http://localhost:8080";
-
-  // Add consistent sorting function after state declarations
-  function sortByNewestFirst(a, b) {
-    // Get timestamps, with fallbacks in case data is missing
-    const timeA =
-      a.createdAtTimestamp ||
-      (a.createdAt instanceof Date
-        ? a.createdAt.getTime()
-        : typeof a.createdAt === "string"
-        ? new Date(a.createdAt).getTime()
-        : 0);
-
-    const timeB =
-      b.createdAtTimestamp ||
-      (b.createdAt instanceof Date
-        ? b.createdAt.getTime()
-        : typeof b.createdAt === "string"
-        ? new Date(b.createdAt).getTime()
-        : 0);
-
-    return timeB - timeA; // Newest first
-  }
-
-  // Fetch notifications from API
-  const fetchNotifications = async () => {
-    try {
-      setLoading(true);
-      const response = await axios.get(
-        `${API_BASE_URL}/api/notifications/shift/current`
-      );
-
-      if (response.data && Array.isArray(response.data)) {
-        // Map the backend fields to frontend fields for consistency
-        const mappedNotifications = response.data.map((notification) => {
-          // Create a Date object from the timestamp
-          const createdAtDate = new Date(notification.createAt);
-
-          return {
-            id: notification.notificationId,
-            tableId: notification.tableNumber,
-            message: notification.content,
-            type: notification.type,
-            checked: notification.isRead,
-            createdAt: createdAtDate, // Date object
-            createdAtTimestamp: createdAtDate.getTime(), // Add timestamp for sorting
-            orderId: notification.orderId,
-            paymentMethod: notification.paymentMethod,
-            // Include the raw timestamp for reference
-            rawTimestamp: notification.createAt,
-          };
-        });
-
-        // Sort notifications using the consistent sort function
-        const sortedNotifications = mappedNotifications.sort(sortByNewestFirst);
-        setNotifications(sortedNotifications);
-      } else {
-        console.error("Unexpected API response format:", response.data);
-        setError("Failed to load notifications. Unexpected data format.");
-      }
-    } catch (err) {
-      console.error("Error fetching notifications:", err);
-      setError("Failed to load notifications. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+  const mockDishes = {
+    1: [
+      { name: "Phở Bò", quantity: 2, price: 50000, note: "-" },
+      { name: "Nước Ngọt", quantity: 1, price: 20000, note: "Không đá" },
+    ],
+    2: [
+      { name: "Cơm Tấm", quantity: 3, price: 40000, note: "-" },
+      { name: "Trà Đá", quantity: 2, price: 10000, note: "-" },
+    ],
+    3: [
+      { name: "Bún Chả", quantity: 2, price: 45000, note: "-" },
+      { name: "Nước Mía", quantity: 1, price: 15000, note: "-" },
+    ],
+    4: [
+      { name: "Hủ Tiếu", quantity: 2, price: 35000, note: "Ít hành" },
+      { name: "Cà Phê", quantity: 1, price: 20000, note: "-" },
+    ],
+    5: [
+      { name: "Bánh Mì", quantity: 3, price: 30000, note: "-" },
+      { name: "Sữa Tươi", quantity: 2, price: 15000, note: "-" },
+    ],
   };
 
-  // Load notifications when component mounts
-  useEffect(() => {
-    fetchNotifications();
-
-    // Set up polling to check for new notifications every 30 seconds
-    const intervalId = setInterval(() => {
-      fetchNotifications();
-    }, 30000);
-
-    // Clean up interval on unmount
-    return () => clearInterval(intervalId);
-  }, []);
-
-  // Format date for display
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    const today = new Date();
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    // Check if date is today
-    if (date.toDateString() === today.toDateString()) {
-      return "Today";
-    }
-
-    // Check if date is yesterday
-    if (date.toDateString() === yesterday.toDateString()) {
-      return "Yesterday";
-    }
-
-    // Otherwise return formatted date
-    return date.toLocaleDateString();
+  const handleViewBill = (notification) => {
+    const tableData = {
+      id: notification.table,
+      dishes: mockDishes[notification.id] || [],
+    };
+    setSelectedTable(tableData);
+    setTotalAmount(notification.total);
+    setIsBillModalOpen(true);
   };
 
-  // Format time for display
-  const formatTime = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
+  const handlePrintBill = () => {
+    setIsPrintModalOpen(true);
   };
 
-  // Group notifications by date
+  const handlePrintReceipt = () => {
+    setIsBillModalOpen(false);
+    setIsConfirmModalOpen(true);
+  };
+
+  const handlePaymentSuccess = () => {
+    setIsPaymentModalOpen(false);
+    setIsSuccessModalOpen(true);
+  };
+
+  const handleConfirmPrint = () => {
+    console.log("Printing bill...");
+    setIsPrintModalOpen(false);
+  };
+
+  const handleCancelPrint = () => {
+    setIsPrintModalOpen(false);
+  };
+
+  const tabs = ["Order Management", "Notification Management", "Dish Management"];
+  const navigate = useNavigate();
+
   const groupedNotifications = notifications.reduce((acc, notification) => {
-    const date = formatDate(notification.createdAt);
-    if (!acc[date]) {
-      acc[date] = [];
+    if (!acc[notification.date]) {
+      acc[notification.date] = [];
     }
-    acc[date].push({
-      ...notification,
-      formattedTime: formatTime(notification.createdAt),
-    });
+    acc[notification.date].push(notification);
     return acc;
   }, {});
 
-  // Sort notifications within each date group using the consistent sort function
-  Object.keys(groupedNotifications).forEach((date) => {
-    groupedNotifications[date].sort(sortByNewestFirst);
-  });
-
-  // Enhanced function to get friendly payment method display text
-  const getPaymentMethodDisplayText = (method) => {
-    switch (method) {
-      case "CASH":
-        return "Cash";
-      case "VNPAY":
-        return "VNPay";
-      case "CREDIT":
-        return "Credit Card";
-      case "MOMO":
-        return "Momo";
-      default:
-        return method || "";
+  const handleTabClick = (tab) => {
+    if (tab === "Order Management") {
+      navigate("/order-management");
+    } else if (tab === "Dish Management") {
+      navigate("/dish-management");
     }
   };
 
-  // Function to enhance notification message with payment method info if needed
-  const enhanceNotificationMessage = (notification) => {
-    let message = notification.message || "";
-
-    // For payment notifications, enhance with payment method info if available
-    if (notification.type === "PAYMENT_REQUEST" && notification.paymentMethod) {
-      if (!message.toLowerCase().includes("using")) {
-        const paymentMethodText = getPaymentMethodDisplayText(
-          notification.paymentMethod
-        );
-        message = `${message} using ${paymentMethodText}`;
-      }
-    }
-
-    return message;
+  const handleCheckNotification = (id) => {
+    setNotifications(
+      notifications.map((noti) =>
+        noti.id === id ? { ...noti, checked: true } : noti
+      )
+    );
   };
 
-  // Get payment method icon based on the payment method
-  const getPaymentMethodIcon = (paymentMethod) => {
-    switch (paymentMethod) {
-      case "CASH":
-        return <FaMoneyBillWave />;
-      case "VNPAY":
-        return <FaCreditCard />;
-      case "CREDIT":
-        return <FaCreditCard />;
-      case "MOMO":
-        return <FaCreditCard />;
-      default:
-        return null;
-    }
-  };
-
-  // Updated function to mark notification as read
-  const handleCheckNotification = async (id) => {
-    try {
-      await axios.put(`${API_BASE_URL}/api/notifications/${id}/read`);
-
-      // Update local state
-      const updatedNotifications = notifications.map((noti) =>
-        noti.id === id ? { ...noti, isRead: true, checked: true } : noti
-      );
-
-      // Apply consistent sorting after updating
-      const sortedUpdatedNotifications =
-        updatedNotifications.sort(sortByNewestFirst);
-      setNotifications(sortedUpdatedNotifications);
-
-      // You need a way to communicate this change to TableManagement
-      // One approach is to use localStorage to signal that notifications changed
-      localStorage.setItem("notificationsUpdated", Date.now().toString());
-
-      // Or if you're using a state management library like Redux, you would dispatch an action here
-    } catch (err) {
-      console.error("Error marking notification as read:", err);
-      setError("Failed to mark notification as read.");
-    }
-  };
-
-  const handleDeleteClick = (id) => {
-    setNotificationToDelete(id);
-    setShowDeleteModal(true);
-  };
-
-  const handleConfirmDelete = async () => {
-    if (notificationToDelete) {
-      try {
-        // Call the API to delete the notification
-        const response = await fetch(
-          `/api/notifications/${notificationToDelete}`,
-          {
-            method: "DELETE",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        if (response.ok) {
-          // If API call successful, update the UI
-          const filteredNotifications = notifications.filter(
-            (noti) => noti.id !== notificationToDelete
-          );
-
-          // Apply consistent sorting after deleting
-          const sortedFilteredNotifications =
-            filteredNotifications.sort(sortByNewestFirst);
-          setNotifications(sortedFilteredNotifications);
-
-          // Optional: Show success toast/message
-          // toast.success("Notification deleted successfully");
-        } else {
-          // Handle error response
-          const errorData = await response.json();
-          console.error("Failed to delete notification:", errorData.error);
-          // Optional: Show error toast/message
-          // toast.error("Failed to delete notification");
-        }
-      } catch (error) {
-        console.error("Error deleting notification:", error);
-        // Optional: Show error toast/message
-        // toast.error("Error deleting notification");
-      }
-
-      setShowDeleteModal(false);
-      setNotificationToDelete(null);
-    }
-  };
-
-  const handleCancelDelete = () => {
-    setShowDeleteModal(false);
-    setNotificationToDelete(null);
-  };
-
-  // Updated function to handle backend notification types
   const getNotificationIcon = (type) => {
     switch (type) {
-      case "PAYMENT_REQUEST":
-      case "PAYMENT":
-        return <FaMoneyBillWave />;
-      case "CALL_STAFF":
-      case "CALL":
-        return <FaBell />;
-      case "NEW_ORDER":
-      case "ORDER":
-        return <FaUtensils />;
+      case "Payment request":
+        return <FaMoneyBillWave className="text-green-500 mr-2" />;
+      case "Call staff":
+        return <FaBell className="text-blue-500 mr-2" />;
+      case "Other":
+        return <FaUtensils className="text-orange-500 mr-2" />;
       default:
-        return <FaShoppingCart />;
+        return <FaBell className="text-gray-500 mr-2" />;
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <div className="text-center">
-          <div className="spinner mb-4"></div>
-          <p>Loading notifications...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <div className="text-center">
-          <div className="bg-red-100 p-4 rounded-lg mb-4">
-            <p className="text-red-500">{error}</p>
-          </div>
-          <button
-            className="bg-blue-500 text-white px-4 py-2 rounded"
-            onClick={fetchNotifications}
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const isModalOpen = isBillModalOpen || isPrintModalOpen;
 
   return (
     <div className="h-screen w-screen !bg-blue-50 flex flex-col">
-      <MenuBar
-                title="Order History"
-                icon="https://img.icons8.com/?size=100&id=24874&format=png&color=FFFFFF" />
-      
+      <div className={isModalOpen ? "blur-sm" : ""}>
+        <MenuBar
+          title="Order History"
+          icon="https://img.icons8.com/?size=100&id=24874&format=png&color=FFFFFF"
+        />
+      </div>
 
-      <div className="flex-1 p-6 bg-gray-100 overflow-y-auto">
+      {/* Main Content */}
+      <div
+        className={`flex-1 p-6 bg-gray-100 overflow-y-auto ${
+          isModalOpen ? "blur-sm" : ""
+        }`}
+      >
         {/* Notification List */}
         <div className="bg-white rounded-lg shadow-md p-6">
-          {Object.keys(groupedNotifications).length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              No notifications to display
-            </div>
-          ) : (
-            Object.entries(groupedNotifications).map(
-              ([date, dateNotifications]) => (
-                <div key={date} className="mb-8">
-                  <h2 className="text-xl font-bold mb-4 border-b pb-2">
-                    {date}
-                  </h2>
-                  {dateNotifications.map((notification) => (
-                    <div
-                      key={notification.id}
-                      className="mb-6 border-b pb-4 last:border-b-0"
-                    >
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="flex items-center">
-                          {getNotificationIcon(notification.type)}
-                          <div>
-                            <h3 className="font-bold">
-                              Table {notification.tableId}
-                            </h3>
-                            <p className="text-gray-600 flex items-center">
-                              - {notification.type}
-                              {notification.type === "PAYMENT_REQUEST" &&
-                                notification.paymentMethod && (
-                                  <span className="flex items-center ml-2">
-                                    via{" "}
-                                    {getPaymentMethodDisplayText(
-                                      notification.paymentMethod
-                                    )}
-                                    {getPaymentMethodIcon(
-                                      notification.paymentMethod
-                                    )}
-                                  </span>
-                                )}
-                            </p>
-                          </div>
-                        </div>
-                        <span className="text-gray-500">
-                          {notification.formattedTime}
-                        </span>
+          {Object.entries(groupedNotifications).map(
+            ([date, dateNotifications]) => (
+              <div key={date} className="mb-8">
+                <h2 className="text-xl font-bold mb-4 border-b pb-2">{date}</h2>
+                {dateNotifications.map((notification) => (
+                  <div
+                    key={notification.id}
+                    className="relative flex justify-between items-center bg-white rounded-lg shadow-md p-4 mb-4"
+                  >
+                    <div className="flex items-center">
+                      <div className="flex items-center justify-center w-15 h-15 bg-gray-200 rounded-full mr-4">
+                        Table {notification.paymentSlip}
                       </div>
-                      <p className="mb-4 pl-8">
-                        {enhanceNotificationMessage(notification)}
-                      </p>
-                      <div className="flex justify-end space-x-4">
-                        <button
-                          className={`flex items-center px-3 py-1 text-white rounded ${
-                            notification.checked
-                              ? "!bg-gray-400 cursor-not-allowed"
-                              : "!bg-green-500 hover:bg-green-600"
-                          }`}
-                          onClick={() =>
-                            handleCheckNotification(notification.id)
-                          }
-                          disabled={notification.checked}
-                        >
-                          <FaCheck className="mr-1" />{" "}
-                          {notification.checked ? "Checked" : "Check"}
-                        </button>
-                        <button
-                          className="flex items-center px-3 py-1 !bg-red-500 text-white rounded hover:bg-red-600"
-                          onClick={() => handleDeleteClick(notification.id)}
-                        >
-                          <FaTrash className="mr-1" /> Delete
-                        </button>
+                      <div>
+                        <h3 className="font-bold text-lg">
+                          Customer {notification.customer}
+                        </h3>
+                        <p className="text-gray-600 text-sm">
+                          - Payment slip: {notification.paymentSlip} <br />
+                          - Total: {notification.total.toLocaleString()} VND
+                        </p>
                       </div>
                     </div>
-                  ))}
-                </div>
-              )
+
+                    <span className="absolute top-2 right-4 text-gray-500 text-sm">
+                      {notification.time}
+                    </span>
+
+                    <div className="flex justify-end space-x-4">
+                      <button
+                        className="flex items-center px-3 py-1 !bg-[#49B02D] text-white rounded hover:bg-green-600"
+                        onClick={() => handleViewBill(notification)}
+                      >
+                        View
+                      </button>
+                      <button
+                        className="flex items-center px-3 py-1 !bg-[#3F26B9] text-white rounded hover:bg-blue-700"
+                        onClick={handlePrintBill}
+                      >
+                        <FaTrash className="mr-1" /> Print
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             )
           )}
         </div>
       </div>
 
-      {showDeleteModal && (
+      {/* Payment Modal */}
+      {isBillModalOpen && selectedTable && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setIsBillModalOpen(false)}
+          ></div>
+          <div className="bg-white rounded-lg shadow-xl p-6 w-2/3 relative z-50">
+            <div className="text-center mb-4">
+              <p className="text-sm text-gray-600">
+                450 Le Van Viet Street, Tang Nhon Phu A Ward, District 9
+              </p>
+              <p className="text-sm text-gray-600">Phone: 0987654321</p>
+              <h3 className="font-bold mt-2 text-xl text-blue-800">
+                Payment Slip {selectedTable.id.split(" ")[1].padStart(3, "0")}
+              </h3>
+            </div>
+
+            <div className="flex justify-between border-b pb-2 mb-4">
+              <span className="font-bold text-gray-700">{selectedTable.id}</span>
+              <span className="font-bold text-gray-700">
+                Payment Slip {selectedTable.id.split(" ")[1].padStart(3, "0")}
+              </span>
+            </div>
+
+            <div className="max-h-96 overflow-y-auto mb-4">
+              <table className="w-full">
+                <thead className="sticky top-0 bg-white">
+                  <tr className="border-b">
+                    <th className="text-left py-2 font-medium text-gray-700">
+                      Dish name
+                    </th>
+                    <th className="text-left py-2 font-medium text-gray-700">
+                      Qty
+                    </th>
+                    <th className="text-left py-2 font-medium text-gray-700">
+                      Unit price
+                    </th>
+                    <th className="text-left py-2 font-medium text-gray-700">
+                      Total amount
+                    </th>
+                    <th className="text-left py-2 font-medium text-gray-700">
+                      Note
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedTable.dishes.map((dish, index) => (
+                    <tr key={index} className="border-b hover:bg-gray-50">
+                      <td className="py-3 text-gray-800">{dish.name}</td>
+                      <td className="py-3">{dish.quantity}</td>
+                      <td className="py-3">
+                        {dish.price ? dish.price.toLocaleString() : "-"} VND
+                      </td>
+                      <td className="py-3 font-medium">
+                        {dish.price
+                          ? (dish.price * dish.quantity).toLocaleString()
+                          : "-"} VND
+                      </td>
+                      <td className="py-3 text-gray-500">{dish.note}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex justify-between mt-4 border-t pt-4">
+              <span className="font-bold text-gray-700">Staff: 1</span>
+              <span className="font-bold text-lg text-blue-800">
+                Total Amount: {totalAmount.toLocaleString()} VND
+              </span>
+            </div>
+
+            <div className="mt-6 flex justify-center space-x-4">
+              <button
+                className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg"
+                onClick={() => setIsBillModalOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="!bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg"
+                onClick={handlePrintReceipt}
+              >
+                Confirm Payment
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Print Modal */}
+      {isPrintModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setIsPrintModalOpen(false)}
+          ></div>
           <div className="relative bg-white rounded-xl shadow-2xl w-96 p-8 mx-4">
             <div className="flex justify-center mb-4">
               <img
                 alt="Logo"
                 className="w-24 h-24"
                 src="../../src/assets/img/logoremovebg.png"
-              ></img>
+              />
             </div>
             <h3 className="text-xl font-bold mb-4 text-center">
-              ARE YOU SURE?
+              CONFIRM PRINT?
             </h3>
             <div className="flex justify-center space-x-4">
               <button
-                className="px-4 py-2 !bg-red-500 text-white rounded hover:bg-red-600"
-                onClick={handleConfirmDelete}
+                className="px-4 py-2 !bg-green-500 text-white rounded hover:bg-green-600"
+                onClick={handleConfirmPrint}
               >
                 YES
               </button>
               <button
                 className="px-4 py-2 !bg-gray-500 text-white rounded hover:bg-gray-600"
-                onClick={handleCancelDelete}
+                onClick={handleCancelPrint}
               >
                 NO
               </button>
@@ -450,4 +361,4 @@ const OrderHistoryStaff= () => {
   );
 };
 
-export default OrderHistoryStaff;
+export default OrderHistory;
