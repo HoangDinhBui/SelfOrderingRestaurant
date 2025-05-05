@@ -1,10 +1,14 @@
 package com.example.SelfOrderingRestaurant.Controller;
 
+import com.example.SelfOrderingRestaurant.Dto.Request.DinningTableRequestDTO.CreateTableRequestDTO;
+import com.example.SelfOrderingRestaurant.Dto.Request.DinningTableRequestDTO.DinningTableRequestDTO;
+import com.example.SelfOrderingRestaurant.Dto.Request.DinningTableRequestDTO.UpdateTableRequestDTO;
 import com.example.SelfOrderingRestaurant.Dto.Request.UserRequestDTO.RegisterRequestDto;
 import com.example.SelfOrderingRestaurant.Dto.Request.RevenueRequestDTO.RevenueExportDTO;
 import com.example.SelfOrderingRestaurant.Dto.Request.ShiftRequestDTO.ShiftRequestDTO;
 import com.example.SelfOrderingRestaurant.Dto.Request.StaffRequestDTO.AssignStaffRequestDTO;
 import com.example.SelfOrderingRestaurant.Dto.Request.StaffRequestDTO.UpdateStaffDTO;
+import com.example.SelfOrderingRestaurant.Dto.Response.DinningTableResponseDTO.DinningTableResponseDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.RevenueResponseDTO.MonthlyRevenueDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.RevenueResponseDTO.OverviewRevenueDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.RevenueResponseDTO.RevenueDTO;
@@ -19,11 +23,7 @@ import com.example.SelfOrderingRestaurant.Exception.BadRequestException;
 import com.example.SelfOrderingRestaurant.Exception.ResourceNotFoundException;
 import com.example.SelfOrderingRestaurant.Repository.StaffRepository;
 import com.example.SelfOrderingRestaurant.Repository.StaffShiftRepository;
-import com.example.SelfOrderingRestaurant.Service.AuthService;
-import com.example.SelfOrderingRestaurant.Service.RevenueService;
-import com.example.SelfOrderingRestaurant.Service.ShiftService;
-import com.example.SelfOrderingRestaurant.Service.StaffService;
-import com.example.SelfOrderingRestaurant.Service.StaffShiftService;
+import com.example.SelfOrderingRestaurant.Service.*;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -47,7 +47,6 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
 public class AdminController {
-
     private static final Logger logger = LoggerFactory.getLogger(AdminController.class);
 
     private final StaffService staffService;
@@ -57,6 +56,58 @@ public class AdminController {
     private final StaffRepository staffRepository;
     private final StaffShiftService staffShiftService;
     private final StaffShiftRepository staffShiftRepository;
+    private final DinningTableService dinningTableService;
+
+    @GetMapping("/tables")
+    public ResponseEntity<List<DinningTableResponseDTO>> getAllTables() {
+        List<DinningTableResponseDTO> tables = dinningTableService.getAllTables();
+        return ResponseEntity.ok(tables);
+    }
+
+    @PostMapping("/tables")
+    public ResponseEntity<?> createTable(@Valid @RequestBody CreateTableRequestDTO request) {
+        try {
+            logger.info("Creating new table with number: {}", request.getTableNumber());
+            DinningTableResponseDTO createdTable = dinningTableService.createTable(request);
+            return ResponseEntity.status(HttpStatus.CREATED).body(createdTable);
+        } catch (IllegalArgumentException e) {
+            logger.warn("Invalid table creation request: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            logger.error("Error creating table: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error creating table: " + e.getMessage());
+        }
+    }
+
+    @PutMapping("/tables/{tableNumber}")
+    public ResponseEntity<?> updateTable(@PathVariable Integer tableNumber,
+                                         @Valid @RequestBody UpdateTableRequestDTO request) {
+        try {
+            logger.info("Updating table with number: {}", tableNumber);
+            DinningTableResponseDTO updatedTable = dinningTableService.updateTable(tableNumber, request);
+            return ResponseEntity.ok(updatedTable);
+        } catch (ResourceNotFoundException e) {
+            logger.warn("Table not found with number: {}", tableNumber);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Table with number " + tableNumber + " not found");
+        } catch (IllegalArgumentException e) {
+            logger.warn("Invalid table update request: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            logger.error("Error updating table with number {}: {}", tableNumber, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error updating table: " + e.getMessage());
+        }
+    }
+
+    @PutMapping("/tables/{table_id}")
+    public ResponseEntity<String> updateTableStatus(
+            @PathVariable("table_id") Integer tableId,
+            @RequestBody DinningTableRequestDTO dinningTableRequestDTO) {
+        dinningTableService.updateTableStatus(tableId, dinningTableRequestDTO.getStatus());
+        return ResponseEntity.ok("Table status updated successfully!");
+    }
 
     // Staff Management Endpoints
     @PostMapping("/staff/register")

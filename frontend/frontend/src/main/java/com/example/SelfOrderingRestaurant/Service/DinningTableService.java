@@ -1,13 +1,17 @@
 package com.example.SelfOrderingRestaurant.Service;
 
+import com.example.SelfOrderingRestaurant.Dto.Request.DinningTableRequestDTO.CreateTableRequestDTO;
+import com.example.SelfOrderingRestaurant.Dto.Request.DinningTableRequestDTO.UpdateTableRequestDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.DinningTableResponseDTO.DinningTableResponseDTO;
 import com.example.SelfOrderingRestaurant.Entity.DinningTable;
 import com.example.SelfOrderingRestaurant.Entity.Order;
 import com.example.SelfOrderingRestaurant.Enum.PaymentStatus;
 import com.example.SelfOrderingRestaurant.Enum.TableStatus;
+import com.example.SelfOrderingRestaurant.Exception.ResourceNotFoundException;
 import com.example.SelfOrderingRestaurant.Repository.DinningTableRepository;
 import com.example.SelfOrderingRestaurant.Repository.OrderRepository;
 import com.example.SelfOrderingRestaurant.Service.Imp.IDinningTableService;
+import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,14 +19,51 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@AllArgsConstructor
 public class DinningTableService implements IDinningTableService {
 
     private final DinningTableRepository dinningTableRepository;
     private final OrderRepository orderRepository;
 
-    public DinningTableService(DinningTableRepository dinningTableRepository, OrderRepository orderRepository) {
-        this.dinningTableRepository = dinningTableRepository;
-        this.orderRepository = orderRepository;
+    @Transactional
+    @Override
+    public DinningTableResponseDTO createTable(CreateTableRequestDTO request) {
+        if (dinningTableRepository.existsById(request.getTableNumber())) {
+            throw new IllegalArgumentException("Table with number " + request.getTableNumber() + " already exists");
+        }
+
+        DinningTable table = new DinningTable();
+        table.setTableNumber(request.getTableNumber());
+        table.setCapacity(request.getCapacity());
+        table.setTableStatus(request.getTableStatus() != null ? request.getTableStatus() : TableStatus.AVAILABLE);
+        table.setLocation(request.getLocation());
+        table.setQrCode(request.getQrCode());
+
+        DinningTable savedTable = dinningTableRepository.save(table);
+        return convertToResponseDTO(savedTable);
+    }
+
+    @Transactional
+    @Override
+    public DinningTableResponseDTO updateTable(Integer tableNumber, UpdateTableRequestDTO request) {
+        DinningTable table = dinningTableRepository.findById(tableNumber)
+                .orElseThrow(() -> new ResourceNotFoundException("Table with number " + tableNumber + " not found"));
+
+        if (request.getCapacity() != null) {
+            table.setCapacity(request.getCapacity());
+        }
+        if (request.getTableStatus() != null) {
+            table.setTableStatus(request.getTableStatus());
+        }
+        if (request.getLocation() != null) {
+            table.setLocation(request.getLocation());
+        }
+        if (request.getQrCode() != null) {
+            table.setQrCode(request.getQrCode());
+        }
+
+        DinningTable updatedTable = dinningTableRepository.save(table);
+        return convertToResponseDTO(updatedTable);
     }
 
     @Transactional

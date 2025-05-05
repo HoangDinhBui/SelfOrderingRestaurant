@@ -1,5 +1,7 @@
 package com.example.SelfOrderingRestaurant.Service.Imp;
 
+import com.example.SelfOrderingRestaurant.Dto.Request.DinningTableRequestDTO.CreateTableRequestDTO;
+import com.example.SelfOrderingRestaurant.Dto.Request.DinningTableRequestDTO.UpdateTableRequestDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.DinningTableResponseDTO.DinningTableResponseDTO;
 import com.example.SelfOrderingRestaurant.Entity.DinningTable;
 import com.example.SelfOrderingRestaurant.Enum.TableStatus;
@@ -10,4 +12,6 @@ public interface IDinningTableService {
     List<DinningTableResponseDTO> getAllTables();
     void updateTableStatus(Integer tableNumber, TableStatus status);
     DinningTableResponseDTO convertToResponseDTO(DinningTable dinningTable);
+    DinningTableResponseDTO createTable(CreateTableRequestDTO request);
+    DinningTableResponseDTO updateTable(Integer tableNumber, UpdateTableRequestDTO request);
 }

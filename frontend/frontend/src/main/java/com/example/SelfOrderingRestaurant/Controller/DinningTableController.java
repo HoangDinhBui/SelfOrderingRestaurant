@@ -16,7 +16,6 @@ import lombok.AllArgsConstructor;
 @RequestMapping("/api/staff/tables")
 public class DinningTableController {
 
-
     private final DinningTableService dinningTableService;
 
     @GetMapping
@@ -24,12 +23,6 @@ public class DinningTableController {
         List<DinningTableResponseDTO> tables = dinningTableService.getAllTables();
         return ResponseEntity.ok(tables);
     }
-
-//    @GetMapping("/complete")
-//    public ResponseEntity<List<CompleteTableResponseDTO>> getTablesWithCompleteInfo() {
-//        List<CompleteTableResponseDTO> tables = dinningTableService.getTablesWithCompleteInfo();
-//        return ResponseEntity.ok(tables);
-//    }
 
     @PutMapping("/{table_id}")
     public ResponseEntity<String> updateTableStatus(
