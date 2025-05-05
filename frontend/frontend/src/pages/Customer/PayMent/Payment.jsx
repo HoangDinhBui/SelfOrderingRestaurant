@@ -603,8 +603,9 @@ const Payment = () => {
   const momoQrUrl = `https://nhantien.momo.vn/${momoPhoneNumber}`;
 
   return (
-    <div className="min-h-screen w-110 bg-gray-100 flex flex-col">
-      <div className="bg-white py-3 shadow-md fixed top-0 left-0 w-full z-10">
+<div className="min-h-screen w-full bg-gray-100 flex flex-col">
+  {/* Header Container - Changed from fixed to container style */}
+  <div className="max-w-lg mx-auto w-full bg-white py-2 shadow-md z-10">
         <div className="flex items-center px-4 w-full">
           <button
             onClick={() => navigate(-1)}
@@ -632,7 +633,7 @@ const Payment = () => {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto mt-16 p-4">
+      <div className="flex-1 overflow-y-auto mt-6 p-4">
         {(existingPaymentDetected || transactionStatus === "PENDING") && (
           <div className="bg-green-100 border-l-4 border-green-500 p-4 mb-4 rounded-lg">
             <div className="flex items-center">

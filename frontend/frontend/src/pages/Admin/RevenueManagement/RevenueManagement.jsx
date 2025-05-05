@@ -33,6 +33,45 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// Dropdown Component
+const Dropdown = ({ label, items, onSelect, gradientFrom, gradientTo, icon }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={`flex items-center px-3 py-1.5 bg-gradient-to-r ${gradientFrom} ${gradientTo} text-white rounded-md shadow-sm hover:${gradientFrom.replace(
+          "-400",
+          "-500"
+        )} hover:${gradientTo.replace(
+          "-500",
+          "-600"
+        )} hover:scale-105 transition-all duration-200 text-sm min-w-fit`}
+      >
+        {icon}
+        {label}
+      </button>
+      {isOpen && (
+        <div className="absolute right-0 mt-1 w-32 bg-white rounded-md shadow-lg z-10">
+          {items.map((item) => (
+            <button
+              key={item.value}
+              onClick={() => {
+                onSelect(item.value);
+                setIsOpen(false);
+              }}
+              className="block w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100 transition-colors duration-150"
+            >
+              {item.label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 const RevenueManagementAdmin = () => {
   const [viewMode, setViewMode] = useState("Day");
   const [chartData, setChartData] = useState([]);
@@ -352,18 +391,32 @@ const RevenueManagementAdmin = () => {
     }
   };
 
+  // Dropdown items for PDF and Excel
+  const pdfItems = [
+    { label: "Daily", value: "daily" },
+    { label: "Monthly", value: "monthly" },
+    { label: "Yearly", value: "yearly" },
+  ];
+
+  const excelItems = [
+    { label: "Daily", value: "daily" },
+    { label: "Monthly", value: "monthly" },
+    { label: "Yearly", value: "yearly" },
+  ];
+
   return (
     <div className="h-screen w-screen flex flex-col bg-gray-100">
-      <MenuBar title="Revenue Management" />
+      <MenuBar title="Revenue Management"
+        icon="https://img.icons8.com/ios-filled/50/FFFFFF/money.png" />
       <div className="flex-1 p-5 overflow-auto">
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-200">
             <h1 className="text-xl font-medium text-gray-800 text-center">
               Revenue
             </h1>
-            <div className="flex flex-wrap items-center mt-3 pb-3 border-b justify-end gap-2">
+            <div className="flex flex-wrap items-center mt-3 pb-3 border-b justify-end gap-1">
               <select
-                className="w-32 px-3 py-2 rounded border border-gray-300 focus:ring-2 focus:ring-blue-400"
+                className="w-20 px-2 py-1.5 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 text-sm"
                 value={viewMode}
                 onChange={(e) => {
                   setViewMode(e.target.value);
@@ -377,7 +430,7 @@ const RevenueManagementAdmin = () => {
 
               {/* Filter theo Day */}
               {viewMode === "Day" && (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
                   <DatePicker
                     selected={startDate}
                     onChange={(date) => setStartDate(date)}
@@ -385,7 +438,7 @@ const RevenueManagementAdmin = () => {
                     startDate={startDate}
                     endDate={endDate}
                     dateFormat="dd/MM/yyyy"
-                    className="w-32 px-3 py-2 rounded border border-gray-300 focus:ring-2 focus:ring-blue-400"
+                    className="w-20 px-2 py-1.5 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 text-sm"
                     placeholderText="Start Date"
                   />
                   <DatePicker
@@ -396,7 +449,7 @@ const RevenueManagementAdmin = () => {
                     endDate={endDate}
                     minDate={startDate}
                     dateFormat="dd/MM/yyyy"
-                    className="w-32 px-3 py-2 rounded border border-gray-300 focus:ring-2 focus:ring-blue-400"
+                    className="w-20 px-2 py-1.5 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 text-sm"
                     placeholderText="End Date"
                   />
                 </div>
@@ -409,7 +462,7 @@ const RevenueManagementAdmin = () => {
                   onChange={(date) => setSelectedMonth(date)}
                   dateFormat="MM/yyyy"
                   showMonthYearPicker
-                  className="w-32 px-3 py-2 rounded border border-gray-300 focus:ring-2 focus:ring-blue-400"
+                  className="w-20 px-2 py-1.5 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 text-sm"
                   placeholderText="Select Month"
                 />
               )}
@@ -421,64 +474,81 @@ const RevenueManagementAdmin = () => {
                   onChange={(date) => setSelectedYear(moment(date).year())}
                   dateFormat="yyyy"
                   showYearPicker
-                  className="w-32 px-3 py-2 rounded border border-gray-300 focus:ring-2 focus:ring-blue-400"
+                  className="w-20 px-2 py-1.5 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 text-sm"
                   placeholderText="Select Year"
                 />
               )}
 
               <button
                 onClick={handleApplyFilter}
-                className="px-4 py-2 !bg-blue-500 text-white rounded hover:bg-blue-600"
+                className="flex items-center px-3 py-1.5 bg-gradient-to-r from-blue-400 to-blue-500 text-white rounded-md shadow-sm hover:from-blue-500 hover:to-blue-600 hover:scale-105 transition-all duration-200 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-sm"
                 disabled={loading}
               >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-4 w-4 mr-1"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+                  />
+                </svg>
                 Apply
               </button>
 
-              {/* Nút in PDF */}
-              <button
-                onClick={() => handlePrintReport("daily")}
-                className="px-4 py-2 !bg-green-500 text-white rounded hover:bg-green-600"
-                disabled={loading}
-              >
-                Print Daily PDF
-              </button>
-              <button
-                onClick={() => handlePrintReport("monthly")}
-                className="px-4 py-2 !bg-green-500 text-white rounded hover:bg-green-600"
-                disabled={loading}
-              >
-                Print Monthly PDF
-              </button>
-              <button
-                onClick={() => handlePrintReport("yearly")}
-                className="px-4 py-2 !bg-green-500 text-white rounded hover:bg-green-600"
-                disabled={loading}
-              >
-                Print Yearly PDF
-              </button>
-
-              {/* Nút xuất Excel */}
-              <button
-                onClick={() => handleExportExcel("daily")}
-                className="px-4 py-2 !bg-purple-500 text-white rounded hover:bg-purple-600"
-                disabled={loading}
-              >
-                Export Daily Excel
-              </button>
-              <button
-                onClick={() => handleExportExcel("monthly")}
-                className="px-4 py-2 !bg-purple-500 text-white rounded hover:bg-purple-600"
-                disabled={loading}
-              >
-                Export Monthly Excel
-              </button>
-              <button
-                onClick={() => handleExportExcel("yearly")}
-                className="px-4 py-2 !bg-purple-500 text-white rounded hover:bg-purple-600"
-                disabled={loading}
-              >
-                Export Yearly Excel
-              </button>
+              <div className="flex flex-row gap-1">
+                <Dropdown
+                  label="Export PDF"
+                  items={pdfItems}
+                  onSelect={handlePrintReport}
+                  gradientFrom="from-green-400"
+                  gradientTo="to-green-500"
+                  icon={
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4 mr-1"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+                      />
+                    </svg>
+                  }
+                />
+                <Dropdown
+                  label="Export Excel"
+                  items={excelItems}
+                  onSelect={handleExportExcel}
+                  gradientFrom="from-purple-400"
+                  gradientTo="to-purple-500"
+                  icon={
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-4 w-4 mr-1"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    </svg>
+                  }
+                />
+              </div>
             </div>
           </div>
 
