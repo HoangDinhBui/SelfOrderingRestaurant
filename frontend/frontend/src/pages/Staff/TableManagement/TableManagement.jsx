@@ -545,7 +545,13 @@ const TableManagementStaff = () => {
           orders: [],
         }));
 
-        setTables(mappedTables);
+        setTables((prev) => {
+          // Only update if the data has changed to avoid infinite loops
+          if (JSON.stringify(prev) !== JSON.stringify(mappedTables)) {
+            return mappedTables;
+          }
+          return prev;
+        });
         await fetchOrders();
       } catch (err) {
         console.error("Error fetching tables:", err);
@@ -1011,8 +1017,12 @@ const TableManagementStaff = () => {
     };
 
     return (
-      <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-        <div className="bg-white rounded-lg shadow-lg w-full max-w-3xl mx-auto p-6 flex flex-col max-h-[80vh]">
+      <div className="fixed inset-0 flex items-center justify-center z-50">
+        <div
+          className="absolute inset-0"
+          style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
+        ></div>
+        <div className="bg-white rounded-lg shadow-lg w-full max-w-3xl mx-auto p-6 flex flex-col max-h-[80vh] relative z-50">
           <div className="flex justify-between items-center mb-4 border-b pb-2">
             <h2 className="text-xl font-semibold">
               Notifications for Table {selectedTable.id}
@@ -1182,7 +1192,8 @@ const TableManagementStaff = () => {
     return (
       <div className="fixed inset-0 flex items-center justify-center z-50">
         <div
-          className="absolute inset-0 bg-gray-600 bg-opacity-50"
+          className="absolute inset-0"
+          style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
           onClick={() => setIsDishModalOpen(false)}
         ></div>
         <div className="bg-white rounded-lg shadow-lg p-6 w-1/2 max-h-[80vh] overflow-y-auto relative z-50">
@@ -1313,7 +1324,8 @@ const TableManagementStaff = () => {
     return (
       <div className="fixed inset-0 flex items-center justify-center z-50">
         <div
-          className="absolute inset-0 bg-gray-600 bg-opacity-50"
+          className="absolute inset-0"
+          style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
           onClick={() => setIsPaymentModalOpen(false)}
         ></div>
         <div className="bg-white rounded-lg shadow-xl p-6 w-2/3 relative z-50">
@@ -1416,7 +1428,8 @@ const TableManagementStaff = () => {
     return (
       <div className="fixed inset-0 flex items-center justify-center z-50">
         <div
-          className="absolute inset-0 bg-gray-600 bg-opacity-50"
+          className="absolute inset-0"
+          style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
           onClick={() => setIsSuccessModalOpen(false)}
         ></div>
         <div className="bg-white rounded-lg p-6 w-80 relative z-50 text-center">
@@ -1447,7 +1460,8 @@ const TableManagementStaff = () => {
     return (
       <div className="fixed inset-0 flex items-center justify-center z-50">
         <div
-          className="absolute inset-0 bg-gray-600 bg-opacity-50"
+          className="absolute inset-0"
+          style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
           onClick={() => setIsEmptyTableModalOpen(false)}
         ></div>
         <div className="bg-white rounded-lg shadow-lg p-6 w-96 relative z-50">
@@ -1507,7 +1521,8 @@ const TableManagementStaff = () => {
     return (
       <div className="fixed inset-0 flex items-center justify-center z-50">
         <div
-          className="absolute inset-0 bg-gray-600 bg-opacity-50"
+          className="absolute inset-0"
+          style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
           onClick={() => setIsBillModalOpen(false)}
         ></div>
         <div className="bg-white rounded-lg shadow-xl p-6 w-2/3 relative z-50">
@@ -1582,7 +1597,8 @@ const TableManagementStaff = () => {
     return (
       <div className="fixed inset-0 flex items-center justify-center z-50">
         <div
-          className="absolute inset-0 bg-gray-600 bg-opacity-50"
+          className="absolute inset-0"
+          style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
           onClick={() => setIsConfirmModalOpen(false)}
         ></div>
         <div className="bg-white rounded-lg p-6 w-80 relative z-50 text-center">
@@ -1616,10 +1632,8 @@ const TableManagementStaff = () => {
     );
   };
 
-  // This is the updated return part of the component, integrating the missing functions
   return (
     <div className="h-screen w-screen bg-[#C2C7CA] flex justify-center items-center">
-      {/* Background blur when any modal is open */}
       <div
         className={`h-full w-full ${
           isDishModalOpen ||
@@ -1639,24 +1653,19 @@ const TableManagementStaff = () => {
           icon="https://img.icons8.com/ios-filled/50/FFFFFF/table.png"
         />
 
-        {/* Container chính nằm giữa */}
         <div
           style={{ marginTop: "30px" }}
-          className="flex-1 flex justify-center Items-center"
+          className="flex-1 flex justify-center items-center"
         >
           <div className="w-[90%] h-[95%] bg-[#F0F8FD] rounded-lg shadow-lg overflow-hidden">
-            {/* Nội dung chính */}
             <div className="flex-1 p-6 bg-gray-100 flex">
-              {/* Table Grid */}
               <div className="flex-1 grid grid-cols-2 gap-4">
-                {/* Nội dung bảng */}
                 {tables.map((table) => (
                   <div
                     key={table.id}
                     className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer"
                     onClick={() => handleSelectTable(table)}
                   >
-                    {/* Table Header */}
                     <div
                       style={{ backgroundColor: "#1C2E4A" }}
                       className="text-white p-3 flex justify-between items-center"
@@ -1672,7 +1681,6 @@ const TableManagementStaff = () => {
                         />
                       </div>
                     </div>
-                    {/* Table Details */}
                     <div className="grid grid-cols-2 bg-gray-200">
                       <div
                         style={{
@@ -1804,7 +1812,6 @@ const TableManagementStaff = () => {
                 ))}
               </div>
 
-              {/* Right Side Information Cards */}
               <div className="ml-4 w-64 flex flex-col gap-4">
                 <div className="bg-white rounded-lg shadow-md p-4">
                   <div className="flex items-center gap-2 mb-2">
@@ -1866,7 +1873,6 @@ const TableManagementStaff = () => {
         </div>
       </div>
 
-      {/* Render Modals Using Defined Functions */}
       {renderNotificationModal()}
       {renderDishModal()}
       {renderPaymentModal()}

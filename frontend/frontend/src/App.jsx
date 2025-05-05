@@ -94,7 +94,7 @@ function App() {
                 element={<InventoryManagement />}
               />
               <Route
-                path="/order-history_admin"
+                path="/order-history"
                 element={<OrderHistoryAdmin />}
               />
 
@@ -102,10 +102,6 @@ function App() {
               <Route
                 path="/dish-management_staff"
                 element={<DishManagementStaff />}
-              />
-              <Route
-                path="/order-history_staff"
-                element={<OrderHistoryStaff />}
               />
               <Route
                 path="/staff-information_staff"
