@@ -5,6 +5,7 @@ import com.example.SelfOrderingRestaurant.Dto.Request.InventoryRequestDTO.Update
 import com.example.SelfOrderingRestaurant.Dto.Response.InventoryResponseDTO.GetInventoryResponseDTO;
 import com.example.SelfOrderingRestaurant.Entity.Ingredient;
 import com.example.SelfOrderingRestaurant.Entity.Inventory;
+import com.example.SelfOrderingRestaurant.Entity.Supplier;
 import com.example.SelfOrderingRestaurant.Repository.IngredientRepository;
 import com.example.SelfOrderingRestaurant.Repository.InventoryRepository;
 import com.example.SelfOrderingRestaurant.Repository.SupplierRepository;
@@ -42,7 +43,9 @@ public class InventoryService implements IInventoryService {
                         inventory.getIngredient().getIngredientId(),
                         inventory.getQuantity(),
                         inventory.getUnit(),
-                        inventory.getLastUpdated()
+                        inventory.getLastUpdated(),
+                        inventory.getIngredient().getSupplier().getName(),
+                        inventory.getIngredient().getName()
                 )).collect(Collectors.toList());
     }
 
@@ -57,23 +60,36 @@ public class InventoryService implements IInventoryService {
                 inventory.getIngredient().getIngredientId(),
                 inventory.getQuantity(),
                 inventory.getUnit(),
-                inventory.getLastUpdated()
+                inventory.getLastUpdated(),
+                inventory.getIngredient().getSupplier().getName(),
+                inventory.getIngredient().getName()
         );
     }
 
     @Transactional
     @Override
-    public void createInventory(CreateInventoryRequestDTO request){
+    public void createInventory(CreateInventoryRequestDTO request) {
+        // Tìm Ingredient theo ingredientId
         Ingredient ingredient = ingredientRepository.findById(request.getIngredientId())
                 .orElseThrow(() -> new RuntimeException("Ingredient not found"));
 
+        // Kiểm tra nếu ingredient đã có supplier, không cần truy vấn lại supplier
+        if (ingredient.getSupplier() == null) {
+            Supplier supplier = supplierRepository.findById(request.getSupplierId())
+                    .orElseThrow(() -> new RuntimeException("Supplier not found"));
+            ingredient.setSupplier(supplier);  // Cập nhật supplier cho ingredient
+        }
+
+        // Tạo đối tượng Inventory và thiết lập các giá trị
         Inventory inventory = new Inventory();
         inventory.setIngredient(ingredient);
         inventory.setQuantity(request.getQuantity());
         inventory.setUnit(request.getUnit());
 
+        // Lưu Inventory vào cơ sở dữ liệu
         inventoryRepository.save(inventory);
     }
+
 
     @Transactional
     @Override

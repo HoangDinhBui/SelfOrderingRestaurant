@@ -10,4 +10,5 @@ public class CreateInventoryRequestDTO {
     private Double quantity;
     private String unit;
     private LocalDate lastUpdated;
+    private Integer supplierId;
 }

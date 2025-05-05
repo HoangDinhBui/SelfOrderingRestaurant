@@ -15,4 +15,6 @@ public class GetInventoryResponseDTO {
     private Double quantity;
     private String unit;
     private Date lastUpdated;
+    private String supplierName;
+    private String ingredientName;
 }
