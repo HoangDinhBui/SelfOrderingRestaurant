@@ -1,185 +1,267 @@
-import React from "react";
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import MenuBar from "../../../components/layout/MenuBar";
 import logoRemoveBg from "../../../assets/img/logoremovebg.png";
+import { authAPI } from "../../../services/api";
 
 const InventoryManagement = () => {
-  const [inventory, setInventory] = useState([
-    {
-      id: 1,
-      ingredientName: "Tran Thi My Dung",
-      supplierName: "ABC",
-      quantity: 1,
-      unit: "Kg",
-      lastUpdate: "1/1/2025",
-    },
-    {
-      id: 2,
-      ingredientName: "Bui Dinh Hoang",
-      supplierName: "TNH1",
-      quantity: 1,
-      unit: "G",
-      lastUpdate: "1/1/2025",
-    },
-    {
-      id: 3,
-      ingredientName: "Tran Van Minh Tu",
-      supplierName: "SHSHSH",
-      quantity: 1,
-      unit: "Kg",
-      lastUpdate: "1/1/2025",
-    },
-    {
-      id: 4,
-      ingredientName: "Nguyen Van Java",
-      supplierName: "ABD",
-      quantity: 1,
-      unit: "G",
-      lastUpdate: "1/1/2025",
-    },
-    {
-      id: 5,
-      ingredientName: "Pham Tran React",
-      supplierName: "ABFF",
-      quantity: 1,
-      unit: "Kg",
-      lastUpdate: "1/1/2025",
-    },
-    {
-      id: 6,
-      ingredientName: "Doan Thi My SQL",
-      supplierName: "ABFF",
-      quantity: 1,
-      unit: "G",
-      lastUpdate: "1/1/2025",
-    },
-    {
-        id: 7,
-        ingredientName: "Doan Thi My SQL",
-        supplierName: "ABFF",
-        quantity: 1,
-        unit: "G",
-        lastUpdate: "1/1/2025",
-    },
-  ]);
-
+  const [inventory, setInventory] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
+  const [ingredients, setIngredients] = useState([]);
+  const [filteredInventory, setFilteredInventory] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
   const [newItem, setNewItem] = useState({
-    ingredientName: "",
-    supplierName: "",
+    ingredientId: "",
     quantity: "",
     unit: "",
-    lastUpdate: "",
+    customUnit: "",
   });
-
   const [errorMessage, setErrorMessage] = useState("");
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [showDeletePopup, setShowDeletePopup] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
   const [showEditForm, setShowEditForm] = useState(false);
   const [itemToEdit, setItemToEdit] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Lấy danh sách các supplier và unit duy nhất từ inventory
-  const uniqueSuppliers = [...new Set(inventory.map(item => item.supplierName))];
-  const uniqueUnits = [...new Set(inventory.map(item => item.unit))];
+  // API base URL
+  const API_BASE_URL = "http://localhost:8080/api/admin";
 
+  // Get auth headers with Bearer token
+  const getAuthHeaders = () => ({
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+  });
+
+  // Fetch all inventories, suppliers, and ingredients on mount
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        await Promise.all([fetchSuppliers(), fetchIngredients()]);
+        await fetchInventories();
+      } catch (error) {
+        setErrorMessage("Lỗi khi tải dữ liệu ban đầu!");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const fetchInventories = async () => {
+    try {
+      const response = await authAPI.get(`${API_BASE_URL}/inventory`, {
+        headers: getAuthHeaders(),
+      });
+      const data = response.data || [];
+      console.log("Inventories fetched:", data); // Debug
+      const mappedData = data.map((item) => ({
+        id: item.inventoryId,
+        ingredientId: item.ingredientId,
+        ingredientName: item.ingredientName || "Unknown",
+        supplierName: item.supplierName || "Unknown",
+        quantity: item.quantity,
+        unit: item.unit,
+        lastUpdate: new Date(item.lastUpdated).toLocaleDateString("en-US"),
+      }));
+      setInventory(mappedData);
+      setFilteredInventory(mappedData);
+    } catch (error) {
+      handleApiError(error, "Lỗi khi lấy danh sách inventory");
+    }
+  };
+
+  const fetchSuppliers = async () => {
+    try {
+      const response = await authAPI.get(`${API_BASE_URL}/suppliers`, {
+        headers: getAuthHeaders(),
+      });
+      const data = response.data || [];
+      console.log("Suppliers fetched:", data); // Debug
+      setSuppliers(data);
+    } catch (error) {
+      handleApiError(error, "Lỗi khi lấy danh sách nhà cung cấp");
+    }
+  };
+
+  const fetchIngredients = async () => {
+    try {
+      const response = await authAPI.get(`${API_BASE_URL}/ingredient`, {
+        headers: getAuthHeaders(),
+      });
+      const data = response.data || [];
+      console.log("Ingredients fetched:", data); // Debug
+      setIngredients(data);
+    } catch (error) {
+      handleApiError(error, "Lỗi khi lấy danh sách nguyên liệu");
+    }
+  };
+
+  // Handle API errors
+  const handleApiError = (error, defaultMessage) => {
+    console.error(defaultMessage, error, {
+      status: error.response?.status,
+      data: error.response?.data,
+    });
+    const status = error.response?.status;
+    let message = error.response?.data?.message || defaultMessage;
+    if (status === 403 || status === 401) {
+      message = "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.";
+      localStorage.clear();
+      window.location.href = "/login";
+    } else if (status === 404) {
+      message = `Không tìm thấy endpoint: ${error.config.url}`;
+    } else if (status === 400) {
+      message = error.response?.data?.message || "Dữ liệu không hợp lệ. Vui lòng kiểm tra lại!";
+    }
+    setErrorMessage(message);
+  };
+
+  // Handle search by ingredient name
+  const handleSearch = (event) => {
+    if (event.key === "Enter") {
+      if (searchTerm.trim() === "") {
+        setFilteredInventory(inventory);
+      } else {
+        const filtered = inventory.filter((item) =>
+          item.ingredientName.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        setFilteredInventory(filtered);
+      }
+    }
+  };
+
+  // Handle delete inventory
   const handleDeleteItem = (item) => {
     setItemToDelete(item);
     setShowDeletePopup(true);
   };
 
-  const confirmDeleteItem = () => {
-    const updatedInventory = inventory.filter(
-      (item) => item.id !== itemToDelete.id
-    );
-    setInventory(updatedInventory);
-    setShowDeletePopup(false);
-    setItemToDelete(null);
+  const confirmDeleteItem = async () => {
+    try {
+      await authAPI.delete(`${API_BASE_URL}/inventory/${itemToDelete.id}`, {
+        headers: getAuthHeaders(),
+      });
+      const updatedInventory = inventory.filter(
+        (item) => item.id !== itemToDelete.id
+      );
+      setInventory(updatedInventory);
+      setFilteredInventory(updatedInventory);
+      setShowDeletePopup(false);
+      setItemToDelete(null);
+      setShowSuccessPopup(true);
+      setTimeout(() => setShowSuccessPopup(false), 2000);
+    } catch (error) {
+      handleApiError(error, "Lỗi khi xóa inventory");
+    }
   };
 
+  // Handle edit inventory
   const handleEditItem = (item) => {
     setItemToEdit(item);
-    setNewItem(item);
+    setNewItem({
+      ingredientId: item.ingredientId,
+      quantity: item.quantity,
+      unit: item.unit,
+      customUnit: "",
+    });
     setShowEditForm(true);
   };
 
-  const confirmEditItem = () => {
-    if (
-      !newItem.ingredientName ||
-      !newItem.supplierName ||
-      !newItem.quantity ||
-      !newItem.unit
-    ) {
-      setErrorMessage("All fields are required!");
+  const confirmEditItem = async () => {
+    if (!newItem.quantity || !newItem.unit) {
+      setErrorMessage("Số lượng và đơn vị là bắt buộc!");
       return;
     }
-
-    if (isNaN(parseInt(newItem.quantity))) {
-      setErrorMessage("Quantity must be a valid number!");
+    const parsedQuantity = parseFloat(newItem.quantity);
+    const finalUnit = newItem.unit === "new" ? newItem.customUnit : newItem.unit;
+    if (isNaN(parsedQuantity) || parsedQuantity <= 0) {
+      setErrorMessage("Số lượng phải là số dương!");
       return;
     }
-
-    const updatedInventory = inventory.map((item) =>
-      item.id === itemToEdit.id ? { ...newItem, id: itemToEdit.id, lastUpdate: new Date().toLocaleDateString("en-US") } : item
-    );
-    setInventory(updatedInventory);
-    setShowEditForm(false);
-    setItemToEdit(null);
-    setNewItem({
-      ingredientName: "",
-      supplierName: "",
-      quantity: "",
-      unit: "",
-      lastUpdate: "",
-    });
-    setErrorMessage("");
-    setShowSuccessPopup(true);
-    setTimeout(() => setShowSuccessPopup(false), 2000);
+    if (!finalUnit) {
+      setErrorMessage("Đơn vị không hợp lệ!");
+      return;
+    }
+    try {
+      await authAPI.put(
+        `${API_BASE_URL}/inventory/${itemToEdit.id}`,
+        {
+          quantity: parsedQuantity,
+          unit: finalUnit,
+          lastUpdated: new Date().toISOString().split("T")[0],
+        },
+        { headers: getAuthHeaders() }
+      );
+      await fetchInventories();
+      setShowEditForm(false);
+      setItemToEdit(null);
+      setNewItem({ ingredientId: "", quantity: "", unit: "", customUnit: "" });
+      setErrorMessage("");
+      setShowSuccessPopup(true);
+      setTimeout(() => setShowSuccessPopup(false), 2000);
+    } catch (error) {
+      handleApiError(error, "Lỗi khi cập nhật inventory");
+    }
   };
 
-  const validateAndAddItem = () => {
-    if (
-      !newItem.ingredientName ||
-      !newItem.supplierName ||
-      !newItem.quantity ||
-      !newItem.unit
-    ) {
-      setErrorMessage("All fields are required!");
+  // Handle add inventory
+  const validateAndAddItem = async () => {
+    console.log("New item:", newItem); // Debug
+    console.log("Ingredients:", ingredients); // Debug
+    if (!newItem.ingredientId || !newItem.quantity || !newItem.unit) {
+      setErrorMessage("Tất cả các trường đều bắt buộc!");
       return;
     }
-
-    if (isNaN(parseInt(newItem.quantity))) {
-      setErrorMessage("Quantity must be a valid number!");
+    const parsedIngredientId = parseInt(newItem.ingredientId);
+    const parsedQuantity = parseFloat(newItem.quantity);
+    const finalUnit = newItem.unit === "new" ? newItem.customUnit : newItem.unit;
+    if (isNaN(parsedIngredientId) || parsedIngredientId <= 0) {
+      setErrorMessage("ID nguyên liệu phải là số dương hợp lệ!");
       return;
     }
-
-    const isDuplicate = inventory.some(
-      (item) =>
-        item.ingredientName.toLowerCase() ===
-        newItem.ingredientName.toLowerCase()
-    );
-    if (isDuplicate) {
-      setErrorMessage("Ingredient name already exists!");
+    if (ingredients.length === 0) {
+      setErrorMessage("Không thể tải danh sách nguyên liệu. Vui lòng thử lại!");
       return;
     }
-
-    const updatedInventory = [
-      ...inventory,
-      { ...newItem, id: inventory.length + 1, lastUpdate: new Date().toLocaleDateString("en-US") },
-    ];
-    setInventory(updatedInventory);
-    setShowAddForm(false);
-    setNewItem({
-      ingredientName: "",
-      supplierName: "",
-      quantity: "",
-      unit: "",
-      lastUpdate: "",
-    });
-    setErrorMessage("");
-    setShowSuccessPopup(true);
-    setTimeout(() => setShowSuccessPopup(false), 2000);
+    const ingredient = ingredients.find(ing => ing.ingredientId === parsedIngredientId);
+    if (!ingredient) {
+      setErrorMessage(`Nguyên liệu với ID ${parsedIngredientId} không tồn tại!`);
+      return;
+    }
+    if (isNaN(parsedQuantity) || parsedQuantity <= 0) {
+      setErrorMessage("Số lượng phải là số dương!");
+      return;
+    }
+    if (!finalUnit) {
+      setErrorMessage("Đơn vị không hợp lệ!");
+      return;
+    }
+    try {
+      await authAPI.post(
+        `${API_BASE_URL}/inventory`,
+        {
+          ingredientId: parsedIngredientId,
+          quantity: parsedQuantity,
+          unit: finalUnit,
+          lastUpdated: new Date().toISOString().split("T")[0],
+        },
+        { headers: getAuthHeaders() }
+      );
+      await fetchInventories();
+      setShowAddForm(false);
+      setNewItem({ ingredientId: "", quantity: "", unit: "", customUnit: "" });
+      setErrorMessage("");
+      setShowSuccessPopup(true);
+      setTimeout(() => setShowSuccessPopup(false), 2000);
+    } catch (error) {
+      handleApiError(error, "Lỗi khi thêm inventory");
+    }
   };
+
+  // Unique units for dropdown
+  const uniqueUnits = [...new Set(inventory.map((item) => item.unit))];
 
   const styles = {
     outerContainer: {
@@ -215,15 +297,15 @@ const InventoryManagement = () => {
     tableContainer: {
       backgroundColor: "rgba(157, 198, 206, 0.3)",
       borderRadius: "10px",
-      overflowX: "auto", // Cho phép kéo trượt ngang
-      overflowY: "auto", // Cho phép kéo trượt dọc
-      maxHeight: "500px", // Giới hạn chiều cao để kéo trượt dọc
+      overflowX: "auto",
+      overflowY: "auto",
+      maxHeight: "500px",
       width: "100%",
       position: "relative",
     },
     table: {
       width: "100%",
-      minWidth: "800px", // Đảm bảo table có chiều rộng tối thiểu để kéo trượt ngang
+      minWidth: "800px",
       borderCollapse: "collapse",
       border: "2px solid #9DC6CE",
     },
@@ -241,7 +323,7 @@ const InventoryManagement = () => {
       padding: "12px",
       textAlign: "center",
       color: "#ffffff",
-      width: "150px", // Chiều rộng cố định cho mỗi cột
+      width: "150px",
       minWidth: "150px",
     },
     td: {
@@ -325,8 +407,8 @@ const InventoryManagement = () => {
     },
     actionButtons: {
       display: "flex",
-      justifyContent: "center", // Thay đổi từ flex-end thành center để căn giữa
-      gap: "20px", // Tăng khoảng cách giữa các nút
+      justifyContent: "center",
+      gap: "20px",
       marginTop: "25px",
       width: "100%",
     },
@@ -427,6 +509,23 @@ const InventoryManagement = () => {
       width: "100%",
       fontWeight: "500",
     },
+    searchRow: {
+      display: "flex",
+      flexDirection: "row",
+      alignItems: "center",
+      gap: "10px",
+      marginBottom: "20px",
+    },
+    input: {
+      padding: "12px",
+      borderRadius: "8px",
+      border: "1px solid #ddd",
+      fontSize: "16px",
+      width: "200px",
+      boxSizing: "border-box",
+      backgroundColor: "#f9f9f9",
+      transition: "border-color 0.3s, box-shadow 0.3s",
+    },
   };
 
   return (
@@ -449,7 +548,6 @@ const InventoryManagement = () => {
           label:hover {
             color: #2c3e50;
           }
-          /* Tùy chỉnh thanh cuộn */
           div::-webkit-scrollbar {
             width: 8px;
             height: 8px;
@@ -467,175 +565,161 @@ const InventoryManagement = () => {
           }
         `}
       </style>
-      <MenuBar 
-        title="Inventory Management"
-        icon="https://img.icons8.com/?size=100&id=4NUeu__UwtXf&format=png&color=FFFFFF" />
+      <MenuBar
+        title="Quản Lý Inventory"
+        icon="https://img.icons8.com/?size=100&id=4NUeu__UwtXf&format=png&color=FFFFFF"
+      />
       <div style={styles.outerContainer}>
         <div style={styles.innerContainer}>
           <h1 style={styles.title}>Inventory</h1>
-          <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "20px" }}>
-            <button
-              style={styles.addButton}
-              onClick={() => setShowAddForm(true)}
-            >
-              +
-            </button>
-          </div>
-          <div style={styles.tableContainer}>
-            <table style={styles.table}>
-              <thead style={styles.thead}>
-                <tr>
-                  <th style={styles.th}>ID</th>
-                  <th style={styles.th}>Ingredient Name</th>
-                  <th style={styles.th}>Supplier Name</th>
-                  <th style={styles.th}>Quantity</th>
-                  <th style={styles.th}>Unit</th>
-                  <th style={styles.th}>Last Update</th>
-                  <th style={styles.th}>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {inventory.map((item, index) => (
-                  <tr
-                    key={item.id}
-                    style={index % 2 === 0 ? styles.evenRow : styles.oddRow}
-                  >
-                    <td style={styles.td}>{item.id}</td>
-                    <td style={styles.td}>{item.ingredientName}</td>
-                    <td style={styles.td}>{item.supplierName}</td>
-                    <td style={styles.td}>{item.quantity}</td>
-                    <td style={styles.td}>{item.unit}</td>
-                    <td style={styles.td}>{item.lastUpdate}</td>
-                    <td style={styles.td}>
-                      <button
-                        style={{ marginRight: "10px", cursor: "pointer" }}
-                        onClick={() => handleEditItem(item)}
+          {isLoading ? (
+            <p>Đang tải dữ liệu...</p>
+          ) : (
+            <>
+              <div style={styles.searchRow}>
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm theo tên nguyên liệu..."
+                  style={styles.input}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={handleSearch}
+                />
+                <button
+                  style={styles.addButton}
+                  onClick={() => setShowAddForm(true)}
+                  disabled={ingredients.length === 0}
+                >
+                  +
+                </button>
+              </div>
+              <div style={styles.tableContainer}>
+                <table style={styles.table}>
+                  <thead style={styles.thead}>
+                    <tr>
+                      <th style={styles.th}>ID</th>
+                      <th style={styles.th}>Ingredient Name</th>
+                      <th style={styles.th}>Supplier Name</th>
+                      <th style={styles.th}>Quality</th>
+                      <th style={styles.th}>Unit</th>
+                      <th style={styles.th}>Last Update</th>
+                      <th style={styles.th}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredInventory.map((item, index) => (
+                      <tr
+                        key={item.id}
+                        style={index % 2 === 0 ? styles.evenRow : styles.oddRow}
                       >
-                        ✏️
-                      </button>
-                      <button
-                        style={{ cursor: "pointer" }}
-                        onClick={() => handleDeleteItem(item)}
-                      >
-                        🗑️
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                        <td style={styles.td}>{item.id}</td>
+                        <td style={styles.td}>{item.ingredientName}</td>
+                        <td style={styles.td}>{item.supplierName}</td>
+                        <td style={styles.td}>{item.quantity}</td>
+                        <td style={styles.td}>{item.unit}</td>
+                        <td style={styles.td}>{item.lastUpdate}</td>
+                        <td style={styles.td}>
+                          <button
+                            style={{ marginRight: "10px", cursor: "pointer" }}
+                            onClick={() => handleEditItem(item)}
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            style={{ cursor: "pointer" }}
+                            onClick={() => handleDeleteItem(item)}
+                          >
+                            🗑️
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
-      {showAddForm && (
+      {showAddForm && !isLoading && ingredients.length > 0 && (
         <>
           <div
             style={styles.overlay}
             onClick={() => setShowAddForm(false)}
           ></div>
           <div style={styles.addFormContainer}>
-            <h2 style={styles.addFormTitle}>Add Item</h2>
+            <h2 style={styles.addFormTitle}>Thêm Mục Inventory</h2>
             <div style={styles.addForm}>
               <div style={styles.formFields}>
                 <label style={styles.formLabel}>
-                  <span style={styles.labelText}>Ingredient Name<span style={styles.requiredMark}>(*)</span></span>
-                  <div style={styles.inputContainer}>
-                    <input
-                      type="text"
-                      value={newItem.ingredientName}
-                      onChange={(e) =>
-                        setNewItem({ ...newItem, ingredientName: e.target.value })
-                      }
-                      style={styles.inputField}
-                    />
-                  </div>
-                </label>
-                <label style={styles.formLabel}>
-                  <span style={styles.labelText}>Supplier Name<span style={styles.requiredMark}>(*)</span></span>
+                  <span style={styles.labelText}>Nguyên liệu<span style={styles.requiredMark}>(*)</span></span>
                   <div style={styles.inputContainer}>
                     <select
-                      value={newItem.supplierName}
-                      onChange={(e) => {
-                        if (e.target.value === "new") {
-                          setNewItem({ ...newItem, supplierName: "" });
-                        } else {
-                          setNewItem({ ...newItem, supplierName: e.target.value });
-                        }
-                      }}
+                      value={newItem.ingredientId}
+                      onChange={(e) =>
+                        setNewItem({ ...newItem, ingredientId: e.target.value })
+                      }
                       style={styles.selectField}
                     >
-                      <option value="">Select Supplier</option>
-                      {uniqueSuppliers.map((supplier) => (
-                        <option key={supplier} value={supplier}>
-                          {supplier}
+                      <option value="">Chọn nguyên liệu</option>
+                      {ingredients.map((ingredient) => (
+                        <option key={ingredient.ingredientId} value={ingredient.ingredientId}>
+                          {ingredient.name}
                         </option>
                       ))}
-                      <option value="new">Add New Supplier</option>
                     </select>
-                    {newItem.supplierName === "" && (
-                      <input
-                        type="text"
-                        value={newItem.supplierName}
-                        onChange={(e) =>
-                          setNewItem({ ...newItem, supplierName: e.target.value })
-                        }
-                        style={styles.inputField}
-                        placeholder="Enter new supplier"
-                      />
-                    )}
                   </div>
                 </label>
                 <label style={styles.formLabel}>
-                  <span style={styles.labelText}>Quantity<span style={styles.requiredMark}>(*)</span></span>
+                  <span style={styles.labelText}>Số lượng<span style={styles.requiredMark}>(*)</span></span>
                   <div style={styles.inputContainer}>
                     <input
-                      type="text"
+                      type="number"
+                      step="0.01"
+                      min="0.01"
                       value={newItem.quantity}
                       onChange={(e) =>
                         setNewItem({ ...newItem, quantity: e.target.value })
                       }
                       style={styles.inputField}
+                      placeholder="Nhập số lượng (ví dụ: 25.5)"
                     />
                   </div>
                 </label>
                 <label style={styles.formLabel}>
-                  <span style={styles.labelText}>Unit<span style={styles.requiredMark}>(*)</span></span>
+                  <span style={styles.labelText}>Đơn vị<span style={styles.requiredMark}>(*)</span></span>
                   <div style={styles.inputContainer}>
                     <select
-                      value={newItem.unit}
-                      onChange={(e) => {
-                        if (e.target.value === "new") {
-                          setNewItem({ ...newItem, unit: "" });
-                        } else {
-                          setNewItem({ ...newItem, unit: e.target.value });
-                        }
-                      }}
+                      value={newItem.unit === "new" ? "" : newItem.unit}
+                      onChange={(e) =>
+                        setNewItem({ ...newItem, unit: e.target.value || "new" })
+                      }
                       style={styles.selectField}
                     >
-                      <option value="">Select Unit</option>
+                      <option value="">Chọn đơn vị</option>
                       {uniqueUnits.map((unit) => (
                         <option key={unit} value={unit}>
                           {unit}
                         </option>
                       ))}
-                      <option value="new">Add New Unit</option>
+                      <option value="new">Thêm đơn vị mới</option>
                     </select>
-                    {newItem.unit === "" && (
+                    {newItem.unit === "new" && (
                       <input
                         type="text"
-                        value={newItem.unit}
+                        value={newItem.customUnit || ""}
                         onChange={(e) =>
-                          setNewItem({ ...newItem, unit: e.target.value })
+                          setNewItem({ ...newItem, customUnit: e.target.value, unit: e.target.value })
                         }
                         style={styles.inputField}
-                        placeholder="Enter new unit"
+                        placeholder="Nhập đơn vị mới (ví dụ: lít)"
                       />
                     )}
                   </div>
                 </label>
                 <label style={styles.formLabel}>
-                  <span style={styles.labelText}>Last Update</span>
+                  <span style={styles.labelText}>Ngày cập nhật</span>
                   <div style={styles.inputContainer}>
                     <input
                       type="text"
@@ -649,13 +733,13 @@ const InventoryManagement = () => {
               {errorMessage && <p style={styles.errorText}>{errorMessage}</p>}
               <div style={styles.actionButtons}>
                 <button onClick={validateAndAddItem} style={styles.addButton}>
-                  Add
+                  Thêm
                 </button>
                 <button
                   onClick={() => setShowAddForm(false)}
                   style={styles.cancelButton}
                 >
-                  Cancel
+                  Hủy
                 </button>
               </div>
             </div>
@@ -667,7 +751,7 @@ const InventoryManagement = () => {
         <div style={styles.successPopup}>
           <img src={logoRemoveBg} alt="Bon Appétit" style={styles.successImage} />
           <p style={styles.successText}>
-            <b>Successful</b>
+            <b>Thành công</b>
           </p>
           <div style={styles.successIcon}>✔</div>
         </div>
@@ -677,132 +761,101 @@ const InventoryManagement = () => {
         <div style={styles.successPopup}>
           <img src={logoRemoveBg} alt="Bon Appétit" style={styles.successImage} />
           <p style={styles.successText}>
-            <b>Are you sure?</b>
+            <b>Bạn có chắc chắn?</b>
           </p>
           <div style={{ ...styles.actionButtons, justifyContent: "center" }}>
             <button onClick={confirmDeleteItem} style={styles.addButton}>
-              Yes
+              Có
             </button>
             <button
               onClick={() => setShowDeletePopup(false)}
               style={styles.cancelButton}
             >
-              No
+              Không
             </button>
           </div>
         </div>
       )}
 
-      {showEditForm && (
+      {showEditForm && !isLoading && (
         <>
           <div
             style={styles.overlay}
             onClick={() => setShowEditForm(false)}
           ></div>
           <div style={styles.addFormContainer}>
-            <h2 style={styles.addFormTitle}>Edit Item</h2>
+            <h2 style={styles.addFormTitle}>Chỉnh Sửa Mục</h2>
             <div style={styles.addForm}>
               <div style={styles.formFields}>
                 <label style={styles.formLabel}>
-                  <span style={styles.labelText}>Ingredient Name<span style={styles.requiredMark}>(*)</span></span>
-                  <div style={styles.inputContainer}>
-                    <input
-                      type="text"
-                      value={newItem.ingredientName}
-                      onChange={(e) =>
-                        setNewItem({ ...newItem, ingredientName: e.target.value })
-                      }
-                      style={styles.inputField}
-                      placeholder={itemToEdit?.ingredientName}
-                    />
-                  </div>
-                </label>
-                <label style={styles.formLabel}>
-                  <span style={styles.labelText}>Supplier Name<span style={styles.requiredMark}>(*)</span></span>
+                  <span style={styles.labelText}>Nguyên liệu<span style={styles.requiredMark}>(*)</span></span>
                   <div style={styles.inputContainer}>
                     <select
-                      value={newItem.supplierName}
-                      onChange={(e) => {
-                        if (e.target.value === "new") {
-                          setNewItem({ ...newItem, supplierName: "" });
-                        } else {
-                          setNewItem({ ...newItem, supplierName: e.target.value });
-                        }
-                      }}
+                      value={newItem.ingredientId}
+                      onChange={(e) =>
+                        setNewItem({ ...newItem, ingredientId: e.target.value })
+                      }
                       style={styles.selectField}
+                      disabled
                     >
-                      <option value="">Select Supplier</option>
-                      {uniqueSuppliers.map((supplier) => (
-                        <option key={supplier} value={supplier}>
-                          {supplier}
+                      <option value="">Chọn nguyên liệu</option>
+                      {ingredients.map((ingredient) => (
+                        <option key={ingredient.ingredientId} value={ingredient.ingredientId}>
+                          {ingredient.name}
                         </option>
                       ))}
-                      <option value="new">Add New Supplier</option>
                     </select>
-                      {newItem.supplierName === "" && (
-                        <input
-                          type="text"
-                          value={newItem.supplierName}
-                          onChange={(e) =>
-                            setNewItem({ ...newItem, supplierName: e.target.value })
-                          }
-                          style={styles.inputField}
-                          placeholder="Enter new supplier"
-                        />
-                      )}
                   </div>
                 </label>
                 <label style={styles.formLabel}>
-                  <span style={styles.labelText}>Quantity<span style={styles.requiredMark}>(*)</span></span>
+                  <span style={styles.labelText}>Số lượng<span style={styles.requiredMark}>(*)</span></span>
                   <div style={styles.inputContainer}>
                     <input
-                      type="text"
+                      type="number"
+                      step="0.01"
+                      min="0.01"
                       value={newItem.quantity}
                       onChange={(e) =>
                         setNewItem({ ...newItem, quantity: e.target.value })
                       }
                       style={styles.inputField}
-                      placeholder={itemToEdit?.quantity}
+                      placeholder="Nhập số lượng (ví dụ: 25.5)"
                     />
                   </div>
                 </label>
                 <label style={styles.formLabel}>
-                  <span style={styles.labelText}>Unit<span style={styles.requiredMark}>(*)</span></span>
+                  <span style={styles.labelText}>Đơn vị<span style={styles.requiredMark}>(*)</span></span>
                   <div style={styles.inputContainer}>
                     <select
-                      value={newItem.unit}
-                      onChange={(e) => {
-                        if (e.target.value === "new") {
-                          setNewItem({ ...newItem, unit: "" });
-                        } else {
-                          setNewItem({ ...newItem, unit: e.target.value });
-                        }
-                      }}
+                      value={newItem.unit === "new" ? "" : newItem.unit}
+                      onChange={(e) =>
+                        setNewItem({ ...newItem, unit: e.target.value || "new" })
+                      }
                       style={styles.selectField}
                     >
-                      <option value="">Select Unit</option>
+                      <option value="">Chọn đơn vị</option>
                       {uniqueUnits.map((unit) => (
                         <option key={unit} value={unit}>
                           {unit}
                         </option>
                       ))}
-                      <option value="new">Add New Unit</option>
+                      <option value="new">Thêm đơn vị mới</option>
                     </select>
-                    {newItem.unit === "" && (
+                    {newItem.unit === "new" && (
                       <input
                         type="text"
-                        value={newItem.unit}
+                        value={newItem.customUnit || ""}
                         onChange={(e) =>
-                          setNewItem({ ...newItem, unit: e.target.value })
+                          setNewItem({ ...newItem, customUnit: e.target.value, unit: e.target.value })
                         }
                         style={styles.inputField}
-                        placeholder="Enter new unit"
+                        placeholder="Nhập đơn vị mới (ví dụ: lít)"
                       />
                     )}
                   </div>
                 </label>
                 <label style={styles.formLabel}>
-                  <span style={styles.labelText}>Last Update</span>
+                  <span style={styles.labelText}>Ngày cập nhật</span>
                   <div style={styles.inputContainer}>
                     <input
                       type="text"
@@ -816,13 +869,13 @@ const InventoryManagement = () => {
               {errorMessage && <p style={styles.errorText}>{errorMessage}</p>}
               <div style={styles.actionButtons}>
                 <button onClick={confirmEditItem} style={styles.addButton}>
-                  Save
+                  Lưu
                 </button>
                 <button
                   onClick={() => setShowEditForm(false)}
                   style={styles.cancelButton}
                 >
-                  Cancel
+                  Hủy
                 </button>
               </div>
             </div>
