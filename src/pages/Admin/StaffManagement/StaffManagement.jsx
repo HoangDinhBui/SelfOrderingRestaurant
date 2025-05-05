@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from "react";
-import MenuBar from "../../../components/layout/menuBar";
+import MenuBar from "../../../components/layout/MenuBar"; // Corrected import name
 import logoRemoveBg from "../../../assets/img/logoremovebg.png";
-import { authAPI, publicAPI } from "../../../services/api"; // Adjust path to your API file
+import chefImage from "../../../assets/img/chef.png"; // Import chef image
+import { authAPI } from "../../../services/api"; // Adjust path to your API file
 
 const StaffManagementAdmin = () => {
   const [staff, setStaff] = useState([]);
@@ -27,9 +28,19 @@ const StaffManagementAdmin = () => {
   const [staffToDelete, setStaffToDelete] = useState(null);
   const [showEditForm, setShowEditForm] = useState(false);
   const [staffToEdit, setStaffToEdit] = useState(null);
+  const [userRole, setUserRole] = useState(null);
 
   // API base URL
   const API_BASE_URL = "http://localhost:8080/api/admin";
+
+  // Check user role on component mount
+  useEffect(() => {
+    const role = localStorage.getItem("userType");
+    setUserRole(role);
+    if (role !== "ADMIN") {
+      setErrorMessage("Access denied: Administrator privileges required.");
+    }
+  }, []);
 
   // Lấy token từ localStorage
   const getAuthHeaders = () => ({
@@ -37,15 +48,19 @@ const StaffManagementAdmin = () => {
     Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
   });
 
-  // Lấy danh sách nhân viên khi component mount
+  // Lấy danh sách nhân viên khi component mount và userRole là ADMIN
   useEffect(() => {
-    fetchStaff();
-  }, []);
+    if (userRole === "ADMIN") {
+      fetchStaff();
+    }
+  }, [userRole]);
 
   const fetchStaff = async () => {
     try {
       console.log("Fetching staff");
-      const response = await authAPI.get("/admin/staff");
+      const response = await authAPI.get(`${API_BASE_URL}/staff`, {
+        headers: getAuthHeaders(),
+      });
       const data = response.data || []; // Fallback to empty array
       const mappedData = data
         .filter((item) => item.status === "ACTIVE")
@@ -72,9 +87,7 @@ const StaffManagementAdmin = () => {
       let message =
         error.response?.data?.message || "Lỗi khi lấy danh sách nhân viên";
       if (status === 403 || status === 401) {
-        message = "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.";
-        localStorage.clear();
-        window.location.href = "/login";
+        message = "Access denied: Administrator privileges required.";
       } else if (status === 404) {
         message = "Không tìm thấy endpoint /api/admin/staff.";
       }
@@ -83,6 +96,7 @@ const StaffManagementAdmin = () => {
   };
 
   const confirmDeleteStaff = async () => {
+    if (userRole !== "ADMIN") return;
     console.log("Deleting staff:", staffToDelete.id);
     try {
       const updatedStaff = staff.filter((item) => item.id !== staffToDelete.id);
@@ -92,7 +106,9 @@ const StaffManagementAdmin = () => {
       setStaff(updatedStaff);
       setFilteredStaff(updatedFilteredStaff);
 
-      await authAPI.delete(`/api/admin/staff/${staffToDelete.id}`);
+      await authAPI.delete(`${API_BASE_URL}/staff/${staffToDelete.id}`, {
+        headers: getAuthHeaders(),
+      });
       setShowDeletePopup(false);
       setStaffToDelete(null);
       setShowSuccessPopup(true);
@@ -106,9 +122,7 @@ const StaffManagementAdmin = () => {
       const status = error.response?.status;
       let message = error.response?.data?.message || "Lỗi khi xóa nhân viên";
       if (status === 403 || status === 401) {
-        message = "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.";
-        localStorage.clear();
-        window.location.href = "/login";
+        message = "Access denied: Administrator privileges required.";
       } else if (status === 404) {
         message = "Không tìm thấy endpoint /api/admin/staff.";
       }
@@ -118,6 +132,7 @@ const StaffManagementAdmin = () => {
 
   // Xử lý tìm kiếm cục bộ
   const handleSearch = (event) => {
+    if (userRole !== "ADMIN") return;
     if (event.key === "Enter") {
       if (searchTerm.trim() === "") {
         setFilteredStaff(staff);
@@ -132,12 +147,14 @@ const StaffManagementAdmin = () => {
 
   // Xử lý xóa nhân viên
   const handleDeleteStaff = (staff) => {
+    if (userRole !== "ADMIN") return;
     setStaffToDelete(staff);
     setShowDeletePopup(true);
   };
 
   // Xử lý sửa nhân viên
   const handleEditStaff = (staff) => {
+    if (userRole !== "ADMIN") return;
     setStaffToEdit(staff);
     setNewStaff({
       position: staff.position || staff.role,
@@ -148,6 +165,7 @@ const StaffManagementAdmin = () => {
   };
 
   const validateAndAddStaff = async () => {
+    if (userRole !== "ADMIN") return;
     console.log("Adding staff:", newStaff);
     if (
       !newStaff.fullName ||
@@ -182,7 +200,7 @@ const StaffManagementAdmin = () => {
     }
 
     try {
-      await authAPI.post("/admin/staff/register", {
+      await authAPI.post(`${API_BASE_URL}/staff/register`, {
         username: newStaff.username,
         email: newStaff.email,
         password: newStaff.password,
@@ -215,15 +233,14 @@ const StaffManagementAdmin = () => {
       const status = error.response?.status;
       let message = error.response?.data?.message || "Lỗi khi thêm nhân viên!";
       if (status === 403 || status === 401) {
-        message = "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.";
-        localStorage.clear();
-        window.location.href = "/login";
+        message = "Access denied: Administrator privileges required.";
       }
       setErrorMessage(message);
     }
   };
 
   const confirmEditStaff = async () => {
+    if (userRole !== "ADMIN") return;
     console.log("Editing staff:", staffToEdit.id, newStaff);
     if (!newStaff.position || !newStaff.salary) {
       setErrorMessage("Vui lòng điền vị trí và lương!");
@@ -239,7 +256,7 @@ const StaffManagementAdmin = () => {
       return;
     }
     try {
-      await authAPI.put(`/admin/staff/${staffToEdit.id}`, {
+      await authAPI.put(`${API_BASE_URL}/staff/${staffToEdit.id}`, {
         position: newStaff.position,
         salary: newStaff.salary,
         status: newStaff.status,
@@ -270,13 +287,28 @@ const StaffManagementAdmin = () => {
       let message =
         error.response?.data?.message || "Lỗi khi cập nhật nhân viên";
       if (status === 403 || status === 401) {
-        message = "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.";
-        localStorage.clear();
-        window.location.href = "/login";
+        message = "Access denied: Administrator privileges required.";
       }
       setErrorMessage(message);
     }
   };
+
+  // Render "Access Denied" message if user is not ADMIN
+  if (userRole !== "ADMIN") {
+    return (
+      <div className="h-screen w-screen flex flex-col bg-gradient-to-br from-blue-50 to-gray-100">
+        <MenuBar
+          title="Staff Management"
+          icon="https://img.icons8.com/ios-filled/50/FFFFFF/user.png"
+        />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg shadow-lg text-xl">
+            {errorMessage}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const styles = {
     outerContainer: {
@@ -625,12 +657,14 @@ const StaffManagementAdmin = () => {
                         <button
                           style={{ marginRight: "10px", cursor: "pointer" }}
                           onClick={() => handleEditStaff(item)}
+                          disabled={userRole !== "ADMIN"}
                         >
                           ✏️
                         </button>
                         <button
                           style={{ cursor: "pointer" }}
                           onClick={() => handleDeleteStaff(item)}
+                          disabled={userRole !== "ADMIN"}
                         >
                           🗑️
                         </button>
@@ -649,19 +683,17 @@ const StaffManagementAdmin = () => {
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onKeyDown={handleSearch}
+                  disabled={userRole !== "ADMIN"}
                 />
                 <button
                   style={styles.addButton}
                   onClick={() => setShowAddForm(true)}
+                  disabled={userRole !== "ADMIN"}
                 >
                   +
                 </button>
               </div>
-              <img
-                src="./src/assets/img/chef.png"
-                alt="Chef"
-                style={styles.chefMouseImage}
-              />
+              <img src={chefImage} alt="Chef" style={styles.chefMouseImage} />
             </div>
           </div>
 
@@ -861,9 +893,7 @@ const StaffManagementAdmin = () => {
                 alt="Bon Appétit"
                 style={styles.successImage}
               />
-              <p>
-                <b>Thành công</b>
-              </p>
+              <p style={styles.successText}>Thành công</p>
               <div style={styles.successIcon}>✔</div>
             </div>
           )}
@@ -875,9 +905,7 @@ const StaffManagementAdmin = () => {
                 alt="Bon Appétit"
                 style={styles.successImage}
               />
-              <p>
-                <b>Bạn có chắc chắn?</b>
-              </p>
+              <p style={styles.successText}>Bạn có chắc chắn?</p>
               <div style={styles.actionButtons}>
                 <button onClick={confirmDeleteStaff} style={styles.addButton}>
                   Có
