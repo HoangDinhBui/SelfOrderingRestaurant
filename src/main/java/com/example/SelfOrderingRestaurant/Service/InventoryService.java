@@ -86,7 +86,7 @@ public class InventoryService implements IInventoryService {
         inventory.setQuantity(request.getQuantity());
         inventory.setUnit(request.getUnit());
 
-        // Lưu Inventory vào cơ sở dữ liệu
+
         inventoryRepository.save(inventory);
     }
 
