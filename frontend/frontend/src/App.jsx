@@ -64,6 +64,7 @@ function App() {
               <Route path="/revenue-management_admin" element={<RevenueManagement />}/>
               <Route path="/staff-management_admin" element={<StaffManagement />}/>
               <Route path="/inventory-management_admin" element={<InventoryManagement />}/>
+              <Route path="/order-history_admin" element={<OrderHistoryAdmin />}/>
 
               {/* Staff Routes */}
               <Route path="/login" element={<Login />} />
