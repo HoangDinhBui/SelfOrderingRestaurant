@@ -410,7 +410,7 @@ const InventoryManagement = () => {
             ))}
           </select>
           <button
-            className="h-12 px-6 bg-green-500 text-white rounded-xl shadow-md hover:bg-green-600 transition-all duration-200"
+            className="h-12 px-6 !bg-green-500 text-white rounded-xl shadow-md hover:bg-green-600 transition-all duration-200"
             onClick={() => setShowAddForm(true)}
             disabled={ingredients.length === 0 || userRole !== "ADMIN"}
           >
