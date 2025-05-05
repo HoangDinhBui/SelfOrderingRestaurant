@@ -1,4 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import MenuBar from "../../../components/layout/MenuBar";
 
 // Shift models data
@@ -17,7 +20,7 @@ const shiftModels = {
 const timeSlots = [
   "7:30am - 12:30pm",
   "12:30pm - 17:30pm",
-  "17h30pm - 22h30pm",
+  "17:30pm - 22:30pm",
 ];
 
 const StaffInformation = () => {
@@ -27,6 +30,7 @@ const StaffInformation = () => {
   const [isShiftModalOpen, setIsShiftModalOpen] = useState(false);
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   const [staffData, setStaffData] = useState({
     fullName: "Tran Thi My Dung",
@@ -43,17 +47,117 @@ const StaffInformation = () => {
     newPassword: "",
   });
 
-  // State to store registered shifts
-  const [registeredShifts, setRegisteredShifts] = useState([]);
-
   const [shiftForm, setShiftForm] = useState({
     day: shiftModels["Full-time"].days[0],
     timeSlot: timeSlots[0],
   });
 
-  const handleScheduleShiftClick = () => {
-    setIsScheduleModalOpen(true);
+  const [schedule, setSchedule] = useState({});
+
+  // Ánh xạ timeSlot sang shiftId
+  const timeSlotToShiftId = {
+    "7:30am - 12:30pm": 1, // Morning
+    "12:30pm - 17:30pm": 2, // Afternoon
+    "17:30pm - 22:30pm": 3, // Evening
   };
+
+  // Hàm chuyển đổi ngày thành LocalDate
+  const dayToDate = (day) => {
+    const today = new Date();
+    const daysOfWeek = [
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+      "Sunday",
+    ];
+    const targetDayIndex = daysOfWeek.indexOf(day);
+    const currentDayIndex = today.getDay() === 0 ? 6 : today.getDay() - 1;
+    const diff = targetDayIndex - currentDayIndex;
+    today.setDate(today.getDate() + diff);
+    return today.toISOString().split("T")[0]; // Format yyyy-mm-dd
+  };
+
+  // Hàm làm mới accessToken
+  const refreshAccessToken = async () => {
+    try {
+      const refreshToken = localStorage.getItem("refreshToken");
+      if (!refreshToken) {
+        throw new Error("No refresh token available");
+      }
+      const response = await axios.post(
+        "http://localhost:8080/api/auth/refresh-token",
+        {
+          refreshToken,
+        }
+      );
+      const newAccessToken = response.data.accessToken;
+      localStorage.setItem("accessToken", newAccessToken);
+      return newAccessToken;
+    } catch (error) {
+      toast.error("Session expired. Please log in again.");
+      // Có thể chuyển hướng đến trang đăng nhập
+      // window.location.href = "/login";
+      throw error;
+    }
+  };
+
+  // Lấy lịch làm việc
+  const fetchSchedule = async () => {
+    setLoading(true);
+    let accessToken = localStorage.getItem("accessToken");
+    if (!accessToken) {
+      toast.error("Please log in to view your schedule");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const response = await axios.get(
+        "http://localhost:8080/api/staff/shifts/my-schedule",
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+      setSchedule(response.data);
+      toast.success("Schedule loaded successfully!");
+    } catch (error) {
+      if (error.response?.status === 401) {
+        try {
+          accessToken = await refreshAccessToken();
+          const retryResponse = await axios.get(
+            "http://localhost:8080/api/staff/shifts/my-schedule",
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+              },
+            }
+          );
+          setSchedule(retryResponse.data);
+          toast.success("Schedule loaded successfully!");
+        } catch (retryError) {
+          console.error("Retry failed:", retryError);
+        }
+      } else if (error.response?.status === 403) {
+        toast.error(
+          "Access denied: Please check your account permissions or contact admin"
+        );
+      } else {
+        toast.error(error.response?.data?.message || "Failed to load schedule");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Gọi API khi component mount
+  useEffect(() => {
+    fetchSchedule();
+  }, []);
 
   const handleAvatarClick = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -90,34 +194,143 @@ const StaffInformation = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     setIsEditModalOpen(false);
+    toast.success("Staff information saved!");
   };
 
   const handlePasswordSubmit = (e) => {
     e.preventDefault();
     setIsPasswordModalOpen(false);
     setPasswordData({ oldPassword: "", newPassword: "" });
+    toast.success("Password changed!");
   };
 
-  const handleShiftSubmit = (e) => {
+  const handleShiftSubmit = async (e) => {
     e.preventDefault();
-    setRegisteredShifts((prev) => [
-      ...prev,
-      { day: shiftForm.day, timeSlot: shiftForm.timeSlot },
-    ]);
-    setShiftForm({
-      day: shiftModels[staffData.workShift].days[0],
-      timeSlot: timeSlots[0],
-    });
-    setIsScheduleModalOpen(false);
+    setLoading(true);
+
+    let accessToken = localStorage.getItem("accessToken");
+    if (!accessToken) {
+      toast.error("Please log in to register a shift");
+      setLoading(false);
+      return;
+    }
+
+    const shiftRegistration = {
+      shiftId: timeSlotToShiftId[shiftForm.timeSlot],
+      date: dayToDate(shiftForm.day),
+    };
+
+    try {
+      await axios.post(
+        "http://localhost:8080/api/staff/shifts/register",
+        shiftRegistration,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+      toast.success("Shift registered successfully!");
+      fetchSchedule(); // Làm mới lịch
+      setShiftForm({
+        day: shiftModels[staffData.workShift].days[0],
+        timeSlot: timeSlots[0],
+      });
+      setIsScheduleModalOpen(false);
+    } catch (error) {
+      if (error.response?.status === 401) {
+        try {
+          accessToken = await refreshAccessToken();
+          await axios.post(
+            "http://localhost:8080/api/staff/shifts/register",
+            shiftRegistration,
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+              },
+            }
+          );
+          toast.success("Shift registered successfully!");
+          fetchSchedule();
+          setShiftForm({
+            day: shiftModels[staffData.workShift].days[0],
+            timeSlot: timeSlots[0],
+          });
+          setIsScheduleModalOpen(false);
+        } catch (retryError) {
+          console.error("Retry failed:", retryError);
+        }
+      } else if (error.response?.status === 403) {
+        toast.error(
+          "Access denied: Please check your account permissions or contact admin"
+        );
+      } else {
+        toast.error(
+          error.response?.data?.message || "Failed to register shift"
+        );
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancelShift = async (staffShiftId) => {
+    setLoading(true);
+    let accessToken = localStorage.getItem("accessToken");
+    if (!accessToken) {
+      toast.error("Please log in to cancel a shift");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      await axios.delete(
+        `http://localhost:8080/api/staff/shifts/${staffShiftId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+      toast.success("Shift cancelled successfully!");
+      fetchSchedule();
+    } catch (error) {
+      if (error.response?.status === 401) {
+        try {
+          accessToken = await refreshAccessToken();
+          await axios.delete(
+            `http://localhost:8080/api/staff/shifts/${staffShiftId}`,
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+              },
+            }
+          );
+          toast.success("Shift cancelled successfully!");
+          fetchSchedule();
+        } catch (retryError) {
+          console.error("Retry failed:", retryError);
+        }
+      } else if (error.response?.status === 403) {
+        toast.error(
+          "Access denied: Please check your account permissions or contact admin"
+        );
+      } else {
+        toast.error(error.response?.data?.message || "Failed to cancel shift");
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   const currentShiftModel = shiftModels[staffData.workShift];
 
   return (
     <div className="h-screen w-screen bg-gray-100 flex flex-col relative">
+      <ToastContainer position="top-right" autoClose={3000} />
       {/* Header */}
       <MenuBar
-        tilte="Profile"
+        title="Profile"
         icon="https://img.icons8.com/?size=100&id=34105&format=png&color=FFFFFF"
       />
 
@@ -147,14 +360,12 @@ const StaffInformation = () => {
                 </svg>
               </button>
             </div>
-
             <div className="flex flex-col items-center">
               <img
                 src="./src/assets/img/MyDung.jpg"
                 alt="User Avatar Large"
                 className="w-48 h-48 rounded-full border-2 border-gray-200 mb-4 object-cover"
               />
-
               <div className="flex space-x-4 mt-4">
                 <button className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
                   Change Photo
@@ -212,7 +423,6 @@ const StaffInformation = () => {
                   Staff Information
                 </h2>
               </div>
-
               <form onSubmit={handleSubmit}>
                 <table className="w-full border-collapse mb-8">
                   <tbody>
@@ -231,7 +441,6 @@ const StaffInformation = () => {
                         />
                       </td>
                     </tr>
-
                     <tr className="border border-gray-300">
                       <td className="py-3 px-6 font-medium border-r border-gray-300 text-center">
                         Start date of work
@@ -247,7 +456,6 @@ const StaffInformation = () => {
                         />
                       </td>
                     </tr>
-
                     <tr className="border border-gray-300">
                       <td className="py-3 px-6 font-medium border-r border-gray-300 text-center">
                         Work shift
@@ -264,7 +472,6 @@ const StaffInformation = () => {
                         </select>
                       </td>
                     </tr>
-
                     <tr className="border border-gray-300">
                       <td className="py-3 px-6 font-medium border-r border-gray-300 text-center">
                         Employee position
@@ -282,7 +489,6 @@ const StaffInformation = () => {
                         </select>
                       </td>
                     </tr>
-
                     <tr className="border border-gray-300">
                       <td className="py-3 px-6 font-medium border-r border-gray-300 text-center">
                         Phone number
@@ -301,7 +507,6 @@ const StaffInformation = () => {
                         </div>
                       </td>
                     </tr>
-
                     <tr className="border border-gray-300">
                       <td className="py-3 px-6 font-medium border-r border-gray-300 text-center">
                         Address
@@ -317,7 +522,6 @@ const StaffInformation = () => {
                         />
                       </td>
                     </tr>
-
                     <tr className="border border-gray-300">
                       <td className="py-3 px-6 font-medium border-r border-gray-300 text-center">
                         Email
@@ -335,7 +539,6 @@ const StaffInformation = () => {
                     </tr>
                   </tbody>
                 </table>
-
                 <div className="flex justify-end">
                   <button
                     type="submit"
@@ -378,7 +581,6 @@ const StaffInformation = () => {
                 </button>
                 <h2 className="text-2xl font-bold mx-auto">Change password</h2>
               </div>
-
               <form onSubmit={handlePasswordSubmit}>
                 <div className="space-y-4 mb-6">
                   <div>
@@ -394,7 +596,6 @@ const StaffInformation = () => {
                       placeholder="Enter old password"
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       New password
@@ -409,7 +610,6 @@ const StaffInformation = () => {
                     />
                   </div>
                 </div>
-
                 <div className="flex justify-center">
                   <button
                     type="submit"
@@ -454,28 +654,48 @@ const StaffInformation = () => {
                   Shift Information
                 </h2>
               </div>
-
               <div className="mb-4">
                 <p className="font-medium text-center mb-2">
                   Staff: {staffData.workShift}
                 </p>
                 <div className="border-t border-gray-200 pt-4">
-                  <p className="font-medium mb-2">Registered Shifts:</p>
-                  {registeredShifts.length > 0 ? (
-                    <ul className="space-y-2">
-                      {registeredShifts.map((shift, index) => (
-                        <li key={index} className="flex justify-between">
-                          <span>{shift.day}:</span>
-                          <span>{shift.timeSlot}</span>
-                        </li>
-                      ))}
-                    </ul>
+                  <p className="font-medium mb-2">Your Schedule:</p>
+                  {loading ? (
+                    <p>Loading...</p>
+                  ) : Object.keys(schedule).length > 0 ? (
+                    Object.entries(schedule).map(([date, shifts]) => (
+                      <div key={date} className="mb-2">
+                        <p className="font-medium">{date}:</p>
+                        {shifts.length > 0 ? (
+                          shifts.map((shift, index) => (
+                            <div
+                              key={index}
+                              className="flex justify-between items-center"
+                            >
+                              <p>
+                                {shift.shiftName}: {shift.startTime} -{" "}
+                                {shift.endTime}
+                              </p>
+                              <button
+                                onClick={() =>
+                                  handleCancelShift(shift.staffShiftId)
+                                }
+                                className="text-red-500 hover:text-red-700"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          ))
+                        ) : (
+                          <p>No shifts scheduled</p>
+                        )}
+                      </div>
+                    ))
                   ) : (
-                    <p className="text-gray-500">No shifts registered.</p>
+                    <p className="text-gray-500">No schedule available.</p>
                   )}
                 </div>
               </div>
-
               <div className="flex justify-center mt-6">
                 <button
                   onClick={() => setIsShiftModalOpen(false)}
@@ -517,7 +737,6 @@ const StaffInformation = () => {
                 </button>
                 <h2 className="text-2xl font-bold mx-auto">Schedule a shift</h2>
               </div>
-
               <form onSubmit={handleShiftSubmit}>
                 <div className="mb-4">
                   <h3 className="font-bold text-lg mb-2">
@@ -546,7 +765,7 @@ const StaffInformation = () => {
                         Time Slot
                       </label>
                       <select
-                        name="subs"
+                        name="timeSlot"
                         value={shiftForm.timeSlot}
                         onChange={handleShiftFormChange}
                         className="w-full px-4 py-2 border border-gray-300 rounded-md"
@@ -560,19 +779,20 @@ const StaffInformation = () => {
                     </div>
                   </div>
                 </div>
-
                 <div className="flex justify-center mt-6 space-x-4">
                   <button
                     type="submit"
                     className="px-8 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors shadow-md"
                     style={{ backgroundColor: "#000000" }}
+                    disabled={loading}
                   >
-                    Save
+                    {loading ? "Saving..." : "Save"}
                   </button>
                   <button
                     type="button"
                     onClick={() => setIsScheduleModalOpen(false)}
                     className="px-8 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors shadow-md"
+                    disabled={loading}
                   >
                     Cancel
                   </button>
@@ -593,18 +813,17 @@ const StaffInformation = () => {
               backgroundImage: "url('./src/assets/img/StaffInforBG.jpg')",
             }}
           >
-            {/* Name and position overlay on the image */}
             <div className="absolute bottom-0 left-64 text-white pb-1">
               <h2 className="text-lg font-bold">Tran Thi My Dung</h2>
               <p className="text-sm">Position: Staff</p>
             </div>
           </div>
-
-          {/* Content area with white background */}
           <div className="bg-gray-100 p-8 relative">
-            {/* Profile avatar positioned on the left, overlapping the banner */}
             <div className="absolute -top-16 left-24">
-              <div className="p-1 bg-white rounded-full shadow-lg">
+              <div
+                className="p-1 bg-white rounded-full shadow-lg cursor-pointer"
+                onClick={toggleAvatarModal}
+              >
                 <img
                   src="./src/assets/img/MyDung.jpg"
                   alt="Staff Avatar"
@@ -612,12 +831,8 @@ const StaffInformation = () => {
                 />
               </div>
             </div>
-
-            {/* Main content containers */}
             <div className="w-full flex pt-20 gap-6">
-              {/* Left column */}
               <div className="w-1/3 flex flex-col gap-4">
-                {/* First panel */}
                 <div className="bg-blue-100 rounded-lg border border-gray-200 p-2">
                   <button
                     className="w-full text-left flex items-center px-4 py-2 text-blue-500 hover:bg-gray-100 rounded-lg"
@@ -657,11 +872,9 @@ const StaffInformation = () => {
                       </svg>
                       Language
                     </div>
-                    <span className="text-blue-Tx500">English</span>
+                    <span className="text-blue-500">English</span>
                   </div>
                 </div>
-
-                {/* Second panel */}
                 <div className="bg-blue-100 rounded-lg border border-gray-200 p-2">
                   <button
                     className="w-full text-left flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
@@ -685,7 +898,7 @@ const StaffInformation = () => {
                   </button>
                   <button
                     className="w-full text-left flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
-                    onClick={handleScheduleShiftClick}
+                    onClick={() => setIsScheduleModalOpen(true)}
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
@@ -742,8 +955,6 @@ const StaffInformation = () => {
                   </button>
                 </div>
               </div>
-
-              {/* Right column */}
               <div className="w-2/3">
                 <div className="bg-blue-100 p-6 rounded-lg">
                   <div className="grid grid-cols-1 gap-3">
@@ -768,12 +979,6 @@ const StaffInformation = () => {
                     </p>
                     <p className="text-sm">
                       <strong>Address:</strong> {staffData.address}
-                    </p>
-                    <p className="text-sm">
-                      <strong>Working shift:</strong>
-                    </p>
-                    <p className="text-sm text-center">
-                      Shift 01: 7:00am - 13:00pm
                     </p>
                   </div>
                 </div>
