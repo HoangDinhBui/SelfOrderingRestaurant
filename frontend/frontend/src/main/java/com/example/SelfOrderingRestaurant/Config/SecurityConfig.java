@@ -65,7 +65,7 @@ public class SecurityConfig {
                                 "/api/notifications/**",
                                 "/api/category/**",
                                 "/api/feedback/**",
-
+                                "/uploads/**",
                                 "/api/receipts/**",
                                 "/graphiql/**",
                                 "/graphql/**",

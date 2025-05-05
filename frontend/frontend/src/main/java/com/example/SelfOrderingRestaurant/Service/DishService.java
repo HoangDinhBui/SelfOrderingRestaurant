@@ -67,6 +67,49 @@ public class DishService implements IDishService {
         dishRepository.save(dish);
     }
 
+    @Transactional
+    @Override
+    public void updateDish(Integer dishId, DishRequestDTO request, Authentication authentication) {
+        // Kiểm tra quyền admin
+        if (!hasAdminRole(authentication)) {
+            throw new ForbiddenException("Chỉ admin mới được cập nhật món ăn");
+        }
+
+        // Tìm món ăn
+        Dish dish = dishRepository.findById(dishId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy món ăn với id: " + dishId));
+
+        // Kiểm tra dữ liệu đầu vào
+        validateUpdateDishRequest(request, dish.getName());
+
+        // Kiểm tra danh mục
+        Category category = categoryRepository.findById(request.getCategoryId())
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục với id: " + request.getCategoryId()));
+
+        // Cập nhật các trường
+        dish.setName(request.getName());
+        dish.setPrice(request.getPrice());
+        dish.setCategory(category);
+        dish.setStatus(request.getStatus());
+        dish.setDescription(request.getDescription());
+
+        // Xử lý upload hình ảnh
+        if (request.getImage() != null && !request.getImage().isEmpty()) {
+            try {
+                // Xóa hình cũ nếu có
+                if (dish.getImage() != null && !dish.getImage().isEmpty()) {
+                    fileStorageService.deleteFile(dish.getImage());
+                }
+                String imagePath = fileStorageService.saveFile(request.getImage(), DISH_IMAGE_DIR);
+                dish.setImage(imagePath);
+            } catch (RuntimeException e) {
+                throw new ValidationException("Lỗi khi upload hình ảnh: " + e.getMessage());
+            }
+        }
+
+        dishRepository.save(dish);
+    }
+
     private boolean hasAdminRole(Authentication authentication) {
         return authentication.getAuthorities().stream()
                 .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"));
@@ -82,6 +125,38 @@ public class DishService implements IDishService {
         } else if (request.getName().length() > 100) {
             errors.add("Dish name must be between 1 and 100 characters");
         } else if (dishRepository.existsByName(request.getName())) {
+            errors.add("Dish name already exists");
+        }
+
+        // Validate price
+        if (request.getPrice() == null || request.getPrice().compareTo(BigDecimal.ZERO) <= 0) {
+            errors.add("Price must be a positive number");
+        }
+
+        // Validate category_id
+        if (request.getCategoryId() == null || request.getCategoryId() <= 0) {
+            errors.add("Category ID must be a positive integer");
+        }
+
+        // Validate status
+        if (!(request.getStatus() == DishStatus.AVAILABLE || request.getStatus() == DishStatus.UNAVAILABLE)) {
+            errors.add("Status must be either 'AVAILABLE' or 'UNAVAILABLE'");
+        }
+
+        if (!errors.isEmpty()) {
+            throw new ValidationException(String.join(", ", errors));
+        }
+    }
+
+    private void validateUpdateDishRequest(DishRequestDTO request, String currentDishName) {
+        List<String> errors = new ArrayList<>();
+
+        // Validate name
+        if (request.getName() == null || request.getName().isEmpty()) {
+            errors.add("Dish name cannot be empty");
+        } else if (request.getName().length() > 100) {
+            errors.add("Dish name must be between 1 and 100 characters");
+        } else if (!request.getName().equals(currentDishName) && dishRepository.existsByName(request.getName())) {
             errors.add("Dish name already exists");
         }
 
@@ -160,7 +235,7 @@ public class DishService implements IDishService {
         Dish dish = dishRepository.findById(dishId)
                 .orElseThrow(() -> new IllegalArgumentException("Dish not found with id: " + dishId));
 
-        // Xóa file ảnh trước khi xóa entity
+        // Delete image file before deleting entity
         if (dish.getImage() != null && !dish.getImage().isEmpty()) {
             fileStorageService.deleteFile(dish.getImage());
         }
