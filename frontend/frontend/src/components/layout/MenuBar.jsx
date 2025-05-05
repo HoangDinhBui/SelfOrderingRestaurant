@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import MiniList from "./MiniList";
 
 const MenuBar = ({
-  title = "Management",
+  title = "Profile",
   icon = "./src/assets/img/mealicon.png",
   iconStyle = {},
   titleStyle = {},
