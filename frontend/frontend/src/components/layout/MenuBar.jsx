@@ -13,7 +13,11 @@ const MenuBar = ({
   const [isProfileDropdownVisible, setProfileDropdownVisible] = useState(false);
   const navigate = useNavigate();
 
+  // Giả định userType được lấy từ localStorage hoặc context
+  const userType = localStorage.getItem("userType") || null; // Thay bằng logic context nếu cần
+
   const styles = {
+    // Giữ nguyên styles của bạn
     menuBar: {
       display: "flex",
       alignItems: "center",
@@ -135,20 +139,74 @@ const MenuBar = ({
   };
 
   const handleLogout = () => {
+    localStorage.removeItem("userType"); // Xóa userType khi logout
     navigate("/login");
   };
 
-  // Danh sách menu items với path từ App.js
+  const handleViewProfile = () => {
+    if (!userType) {
+      navigate("/login");
+      return;
+    }
+    if (userType === "STAFF") {
+      navigate("/staff-information_staff");
+    } else if (userType === "ADMIN") {
+      navigate("/admin-information_admin");
+    } else {
+      navigate("/login");
+    }
+  };
+
   const menuItems = [
-    { label: "Table Management", icon: "https://img.icons8.com/ios-filled/50/1C2E4A/table.png", path: "/table-management_admin" },
-    { label: "Notification Management", icon: "https://img.icons8.com/material-outlined/192/1C2E4A/alarm.png", path: "/notification-management" },
-    { label: "Dish Management", icon: "https://img.icons8.com/?size=100&id=99345&format=png&color=1C2E4A", path: "/dish-management" },
-    { label: "Order History", icon: "https://img.icons8.com/?size=100&id=24874&format=png&color=1C2E4A", path: "/order-history" },
-    { label: "Menu Management", icon: "https://img.icons8.com/ios-filled/50/1C2E4A/menu.png", path: "/menu-management_admin" },
-    { label: "Staff Management", icon: "https://img.icons8.com/ios-filled/50/1C2E4A/user.png", path: "/staff-management_admin" },
-    { label: "Revenue Management", icon: "https://img.icons8.com/ios-filled/50/1C2E4A/money.png", path: "/revenue-management_admin" },
-    { label: "Evaluate", icon: "https://img.icons8.com/ios-filled/50/1C2E4A/bookmark.png", path: "/evaluate_admin" },
-    { label: "Inventory Management", icon: "https://img.icons8.com/?size=100&id=4NUeu__UwtXf&format=png&color=1C2E4A", path: "/inventory-management_admin" },
+    {
+      label: "Table Management",
+      icon: "https://img.icons8.com/ios-filled/50/1C2E4A/table.png",
+      path:
+        userType === "STAFF"
+          ? "/table-management_staff"
+          : "/table-management_admin",
+    },
+    {
+      label: "Notification Management",
+      icon: "https://img.icons8.com/material-outlined/192/1C2E4A/alarm.png",
+      path: "/notification-management",
+    },
+    {
+      label: "Dish Management",
+      icon: "https://img.icons8.com/?size=100&id=99345&format=png&color=1C2E4A",
+      path:
+        userType === "STAFF" ? "/dish-management_staff" : "/dish-management",
+    },
+    {
+      label: "Order History",
+      icon: "https://img.icons8.com/?size=100&id=24874&format=png&color=1C2E4A",
+      path: "/order-history",
+    },
+    {
+      label: "Menu Management",
+      icon: "https://img.icons8.com/ios-filled/50/1C2E4A/menu.png",
+      path: "/menu-management_admin",
+    },
+    {
+      label: "Staff Management",
+      icon: "https://img.icons8.com/ios-filled/50/1C2E4A/user.png",
+      path: "/staff-management_admin",
+    },
+    {
+      label: "Revenue Management",
+      icon: "https://img.icons8.com/ios-filled/50/1C2E4A/money.png",
+      path: "/revenue-management_admin",
+    },
+    {
+      label: "Evaluate",
+      icon: "https://img.icons8.com/ios-filled/50/1C2E4A/bookmark.png",
+      path: "/evaluate_admin",
+    },
+    {
+      label: "Inventory Management",
+      icon: "https://img.icons8.com/?size=100&id=4NUeu__UwtXf&format=png&color=1C2E4A",
+      path: "/inventory-management_admin",
+    },
   ];
 
   return (
@@ -184,7 +242,7 @@ const MenuBar = ({
                     ...styles.viewProfileButton,
                     textAlign: "left",
                   }}
-                  onClick={() => navigate("/admin/information")}
+                  onClick={handleViewProfile}
                 >
                   Profile
                 </button>
@@ -215,8 +273,8 @@ const MenuBar = ({
           <MiniList
             items={menuItems}
             onSelect={(item) => {
-              navigate(item.path); // Điều hướng đến path của item
-              setMiniListVisible(false); // Đóng MiniList
+              navigate(item.path);
+              setMiniListVisible(false);
             }}
           />
         </div>
