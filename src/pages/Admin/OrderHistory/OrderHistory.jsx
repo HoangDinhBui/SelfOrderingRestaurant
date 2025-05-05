@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useQuery, gql } from "@apollo/client";
 import {
   FaCheck,
   FaTrash,
@@ -10,6 +11,27 @@ import {
 import MenuBarStaff from "../../../components/layout/MenuBar_Staff.jsx";
 import MenuBar from "../../../components/layout/menuBar.jsx";
 
+// GraphQL query to fetch all orders
+const GET_ORDERS = gql`
+  query Orders {
+    orders {
+      orderId
+      customerName
+      tableNumber
+      totalAmount
+      paymentStatus
+      status
+      items {
+        dishId
+        dishName
+        quantity
+        price
+        notes
+      }
+    }
+  }
+`;
+
 const OrderHistory = () => {
   const [isBillModalOpen, setIsBillModalOpen] = useState(false);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
@@ -18,89 +40,83 @@ const OrderHistory = () => {
   const [totalAmount, setTotalAmount] = useState(0);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      customer: 1,
-      table: "Table 1",
-      paymentSlip: 1,
-      total: 1000000,
-      time: "18:30:00",
-      date: "Today",
-    },
-    {
-      id: 2,
-      customer: 4,
-      table: "Table 4",
-      paymentSlip: 2,
-      total: 1500000,
-      time: "18:30:00",
-      date: "Today",
-    },
-    {
-      id: 3,
-      customer: 2,
-      table: "Table 2",
-      paymentSlip: 3,
-      total: 1200000,
-      time: "18:30:00",
-      date: "Today",
-    },
-    {
-      id: 4,
-      customer: 3,
-      table: "Table 3",
-      paymentSlip: 4,
-      total: 1300000,
-      time: "18:30:00",
-      date: "Today",
-    },
-    {
-      id: 5,
-      customer: 2,
-      table: "Table 2",
-      paymentSlip: 5,
-      total: 1500000,
-      time: "18:30:00",
-      date: "12/04/2025",
-    },
-  ]);
 
-  const mockDishes = {
-    1: [
-      { name: "Phở Bò", quantity: 2, price: 50000, note: "-" },
-      { name: "Nước Ngọt", quantity: 1, price: 20000, note: "Không đá" },
-    ],
-    2: [
-      { name: "Cơm Tấm", quantity: 3, price: 40000, note: "-" },
-      { name: "Trà Đá", quantity: 2, price: 10000, note: "-" },
-    ],
-    3: [
-      { name: "Bún Chả", quantity: 2, price: 45000, note: "-" },
-      { name: "Nước Mía", quantity: 1, price: 15000, note: "-" },
-    ],
-    4: [
-      { name: "Hủ Tiếu", quantity: 2, price: 35000, note: "Ít hành" },
-      { name: "Cà Phê", quantity: 1, price: 20000, note: "-" },
-    ],
-    5: [
-      { name: "Bánh Mì", quantity: 3, price: 30000, note: "-" },
-      { name: "Sữa Tươi", quantity: 2, price: 15000, note: "-" },
-    ],
-  };
+  const navigate = useNavigate();
+
+  // Fetch orders using Apollo Client
+  const { loading, error, data } = useQuery(GET_ORDERS);
+
+  // Transform orders to match the notification structure
+  const notifications = data?.orders
+    ? data.orders.map((order) => ({
+        id: order.orderId,
+        customer: order.customerName,
+        table: `Table ${order.tableNumber}`,
+        paymentSlip: order.orderId,
+        total: order.totalAmount,
+        time: new Date().toLocaleTimeString(), // You can adjust to use order date
+        date: new Date().toLocaleDateString("en-US", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        }),
+      }))
+    : [];
+
+  // Transform orders to dishes for modal display
+  const orderItems = data?.orders
+    ? data.orders.reduce((acc, order) => {
+        acc[order.orderId] = order.items.map((item) => ({
+          name: item.dishName,
+          quantity: item.quantity,
+          price: item.price,
+          note: item.notes || "-",
+        }));
+        return acc;
+      }, {})
+    : {};
 
   const handleViewBill = (notification) => {
     const tableData = {
       id: notification.table,
-      dishes: mockDishes[notification.id] || [],
+      dishes: orderItems[notification.id] || [],
     };
     setSelectedTable(tableData);
     setTotalAmount(notification.total);
     setIsBillModalOpen(true);
   };
 
-  const handlePrintBill = () => {
-    setIsPrintModalOpen(true);
+  const handlePrintBill = async (orderId) => {
+    try {
+      // Call the backend API to generate PDF
+      const response = await fetch(`/api/receipts/generate/${orderId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/pdf",
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate PDF");
+      }
+
+      // Convert response to blob and trigger download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `receipt-order-${orderId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      // Show success modal or confirmation
+      setIsPrintModalOpen(false);
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      alert("Failed to generate receipt. Please try again.");
+    }
   };
 
   const handlePrintReceipt = () => {
@@ -114,7 +130,14 @@ const OrderHistory = () => {
   };
 
   const handleConfirmPrint = () => {
-    console.log("Printing bill...");
+    if (selectedTable) {
+      const orderId = notifications.find(
+        (noti) => noti.table === selectedTable.id
+      )?.id;
+      if (orderId) {
+        handlePrintBill(orderId);
+      }
+    }
     setIsPrintModalOpen(false);
   };
 
@@ -123,7 +146,6 @@ const OrderHistory = () => {
   };
 
   const tabs = ["Order Management", "Notification Management", "Dish Management"];
-  const navigate = useNavigate();
 
   const groupedNotifications = notifications.reduce((acc, notification) => {
     if (!acc[notification.date]) {
@@ -142,11 +164,8 @@ const OrderHistory = () => {
   };
 
   const handleCheckNotification = (id) => {
-    setNotifications(
-      notifications.map((noti) =>
-        noti.id === id ? { ...noti, checked: true } : noti
-      )
-    );
+    // Optionally update notification status in backend
+    console.log("Check notification:", id);
   };
 
   const getNotificationIcon = (type) => {
@@ -164,6 +183,9 @@ const OrderHistory = () => {
 
   const isModalOpen = isBillModalOpen || isPrintModalOpen;
 
+  if (loading) return <p>Loading orders...</p>;
+  if (error) return <p>Error loading orders: {error.message}</p>;
+
   return (
     <div className="h-screen w-screen !bg-blue-50 flex flex-col">
       <div className={isModalOpen ? "blur-sm" : ""}>
@@ -173,7 +195,7 @@ const OrderHistory = () => {
         />
       </div>
 
-      {/* Main Content */}
+      {/* Main  Main Content */}
       <div
         className={`flex-1 p-6 bg-gray-100 overflow-y-auto ${
           isModalOpen ? "blur-sm" : ""
@@ -218,7 +240,13 @@ const OrderHistory = () => {
                       </button>
                       <button
                         className="flex items-center px-3 py-1 !bg-[#3F26B9] text-white rounded hover:bg-blue-700"
-                        onClick={handlePrintBill}
+                        onClick={() => {
+                          setSelectedTable({
+                            id: notification.table,
+                            dishes: orderItems[notification.id] || [],
+                          });
+                          setIsPrintModalOpen(true);
+                        }}
                       >
                         <FaTrash className="mr-1" /> Print
                       </button>
