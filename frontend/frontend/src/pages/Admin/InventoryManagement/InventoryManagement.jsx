@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { authAPI } from "../../../services/api";
+import { useNavigate } from "react-router-dom";
+import { FaCheck, FaTrash, FaEdit } from "react-icons/fa";
 import MenuBar from "../../../components/layout/MenuBar";
 import axios from "axios";
 import logoRemoveBg from "../../../assets/img/logoremovebg.png";
-import { authAPI } from "../../../services/api";
 
 const InventoryManagement = () => {
   const [inventory, setInventory] = useState([]);
@@ -11,7 +11,7 @@ const InventoryManagement = () => {
   const [ingredients, setIngredients] = useState([]);
   const [filteredInventory, setFilteredInventory] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filteredDishes, setFilteredDishes] = useState([]);
+  const [filterUnit, setFilterUnit] = useState("All");
   const [showAddForm, setShowAddForm] = useState(false);
   const [newItem, setNewItem] = useState({
     ingredientId: "",
@@ -20,9 +20,9 @@ const InventoryManagement = () => {
     customUnit: "",
   });
   const [errorMessage, setErrorMessage] = useState("");
-  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
-  const [showDeletePopup, setShowDeletePopup] = useState(false);
-  const [dishToDelete, setDishToDelete] = useState(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [itemToDelete, setItemToDelete] = useState(null);
   const [showEditForm, setShowEditForm] = useState(false);
   const [itemToEdit, setItemToEdit] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -33,7 +33,7 @@ const InventoryManagement = () => {
 
   // Check user role on component mount
   useEffect(() => {
-    const role = localStorage.getItem("userType"); // Use userType instead of userRole
+    const role = localStorage.getItem("userRole");
     setUserRole(role);
     if (role !== "ADMIN") {
       setErrorMessage("Access denied: Administrator privileges required.");
@@ -113,24 +113,20 @@ const InventoryManagement = () => {
     Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
   });
 
-  // Fetch dishes on component mount
-  useEffect(() => {
-    fetchDishes();
-  }, []);
-
-  const fetchDishes = async () => {
-    setIsLoading(true);
+  // Refresh token function
+  const refreshToken = async () => {
     try {
-      const response = await authAPI.get(`${API_URL}/dishes`, {
-        headers: getAuthHeaders(),
+      const response = await axios.post(`${API_BASE_URL}/refresh-token`, {
+        refreshToken: localStorage.getItem("refreshToken"),
       });
-      const data = response.data || [];
-      setDishes(data);
-      setFilteredDishes(data);
+      const { accessToken } = response.data;
+      localStorage.setItem("accessToken", accessToken);
+      return accessToken;
     } catch (error) {
-      handleApiError(error, "Failed to load dishes.");
-    } finally {
-      setIsLoading(false);
+      console.error("Error refreshing token:", error);
+      localStorage.clear();
+      navigate("/login");
+      return null;
     }
   };
 
@@ -142,7 +138,42 @@ const InventoryManagement = () => {
     });
     const status = error.response?.status;
     let message = error.response?.data?.message || defaultMessage;
-    if (status === 403 || status === 401) {
+    if (status === 401) {
+      const newToken = await refreshToken();
+      if (newToken) {
+        try {
+          const retryResponse = await axios.request({
+            ...error.config,
+            headers: {
+              ...error.config.headers,
+              Authorization: `Bearer ${newToken}`,
+            },
+          });
+          if (error.config.url.includes("inventory")) {
+            const data = retryResponse.data || [];
+            const mappedData = data.map((item) => ({
+              id: item.inventoryId,
+              ingredientId: item.ingredientId,
+              ingredientName: item.ingredientName || "Unknown",
+              supplierName: item.supplierName || "Unknown",
+              quantity: item.quantity,
+              unit: item.unit,
+              lastUpdate: new Date(item.lastUpdated).toLocaleDateString(
+                "en-US"
+              ),
+            }));
+            setInventory(mappedData);
+            setFilteredInventory(mappedData);
+          } else if (error.config.url.includes("suppliers")) {
+            setSuppliers(retryResponse.data || []);
+          } else if (error.config.url.includes("ingredient")) {
+            setIngredients(retryResponse.data || []);
+          }
+          return;
+        } catch (retryError) {
+          console.error("Retry failed:", retryError);
+        }
+      }
       message = "Session expired. Please log in again.";
       localStorage.clear();
       navigate("/login");
@@ -152,7 +183,7 @@ const InventoryManagement = () => {
         navigate("/dashboard");
       }, 2000);
     } else if (status === 404) {
-      message = `Không tìm thấy endpoint: ${error.config.url}`;
+      message = `Endpoint not found: ${error.config.url}`;
     } else if (status === 400) {
       message =
         error.response?.data?.message || "Invalid data. Please check again!";
@@ -222,9 +253,11 @@ const InventoryManagement = () => {
       setErrorMessage("Quantity and unit are required!");
       return;
     }
-
-    if (isNaN(parseFloat(newDish.price))) {
-      setErrorMessage("Price must be a valid number!");
+    const parsedQuantity = parseFloat(newItem.quantity);
+    const finalUnit =
+      newItem.unit === "new" ? newItem.customUnit : newItem.unit;
+    if (isNaN(parsedQuantity) || parsedQuantity <= 0) {
+      setErrorMessage("Quantity must be a positive number!");
       return;
     }
     if (!finalUnit) {
@@ -246,9 +279,8 @@ const InventoryManagement = () => {
       setItemToEdit(null);
       setNewItem({ ingredientId: "", quantity: "", unit: "", customUnit: "" });
       setErrorMessage("");
-      setShowSuccessPopup(true);
-      setTimeout(() => setShowSuccessPopup(false), 2000);
-      await fetchDishes();
+      setShowSuccessModal(true);
+      setTimeout(() => setShowSuccessModal(false), 2000);
     } catch (error) {
       await handleApiError(error, "Failed to update inventory");
     }
@@ -423,14 +455,14 @@ const InventoryManagement = () => {
                   </span>
                   <div className="flex justify-end space-x-4">
                     <button
-                      className="flex items-center px-4 py-2 !bg-yellow-500 text-white rounded-lg shadow-md hover:bg-yellow-600 transition-all duration-200"
+                      className="flex items-center px-4 py-2 bg-yellow-500 text-white rounded-lg shadow-md hover:bg-yellow-600 transition-all duration-200"
                       onClick={() => handleEditClick(item)}
                       disabled={userRole !== "ADMIN"}
                     >
                       <FaEdit className="mr-2" /> Edit
                     </button>
                     <button
-                      className="flex items-center px-4 py-2 !bg-red-500 text-white rounded-lg shadow-md hover:bg-red-600 transition-all duration-200"
+                      className="flex items-center px-4 py-2 bg-red-500 text-white rounded-lg shadow-md hover:bg-red-600 transition-all duration-200"
                       onClick={() => handleDeleteClick(item)}
                       disabled={userRole !== "ADMIN"}
                     >
@@ -478,32 +510,73 @@ const InventoryManagement = () => {
                   ))}
                 </select>
               </div>
-              <div style={styles.searchAndButtonContainer}>
-                <div style={styles.searchRow}>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Quantity <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  value={newItem.quantity}
+                  onChange={(e) =>
+                    setNewItem({ ...newItem, quantity: e.target.value })
+                  }
+                  className="w-full h-12 p-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                  placeholder="Enter quantity (e.g., 25.5)"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Unit <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={newItem.unit === "new" ? "" : newItem.unit}
+                  onChange={(e) =>
+                    setNewItem({ ...newItem, unit: e.target.value || "new" })
+                  }
+                  className="w-full h-12 p-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                >
+                  <option value="">Select unit</option>
+                  {uniqueUnits
+                    .filter((u) => u !== "All")
+                    .map((unit) => (
+                      <option key={unit} value={unit}>
+                        {unit}
+                      </option>
+                    ))}
+                  <option value="new">Add new unit</option>
+                </select>
+                {newItem.unit === "new" && (
                   <input
                     type="text"
-                    placeholder="Search..."
-                    style={styles.input}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    onKeyDown={handleSearch}
+                    value={newItem.customUnit || ""}
+                    onChange={(e) =>
+                      setNewItem({
+                        ...newItem,
+                        customUnit: e.target.value,
+                        unit: e.target.value,
+                      })
+                    }
+                    className="w-full h-12 p-3 mt-2 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                    placeholder="Enter new unit (e.g., liters)"
                   />
-                  <button
-                    style={styles.addButton}
-                    onClick={() => setShowAddForm(true)}
-                  >
-                    +
-                  </button>
-                </div>
-                <img
-                  src="./src/assets/img/chefmouse.png"
-                  alt="Chef Mouse"
-                  style={styles.chefMouseImage}
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Last Updated
+                </label>
+                <input
+                  type="text"
+                  value={new Date().toLocaleDateString("en-US")}
+                  disabled
+                  className="w-full h-12 p-3 bg-gray-100 border border-gray-200 rounded-xl shadow-sm"
                 />
               </div>
             </div>
             {errorMessage && (
-              <p className="text-red-500 mt-4 text-center">{errorMessage}</p>
+              <p className="text-red-500  mt-4 text-center">{errorMessage}</p>
             )}
             <div className="flex justify-center space-x-4 mt-6">
               <button
@@ -523,127 +596,142 @@ const InventoryManagement = () => {
         </div>
       )}
 
+      {/* Edit Form Modal */}
       {showEditForm && !isLoading && (
-        <>
-          <div
-            style={styles.overlay}
-            onClick={() => setShowEditForm(false)}
-          ></div>
-          <div style={styles.addFormContainer}>
-            <h2 style={styles.addFormTitle}>Edit Dish</h2>
-            <div style={styles.addForm}>
-              <div style={styles.addFormContent}>
-                <div style={styles.imageUploadSection}>
-                  <label style={styles.imageUploadContainer}>
-                    <div style={styles.imagePreview}>
-                      {newDish.image ? (
-                        <img
-                          src={URL.createObjectURL(newDish.image)}
-                          alt="Dish Preview"
-                          style={styles.image}
-                        />
-                      ) : dishToEdit.imageUrl ? (
-                        <img
-                          src={dishToEdit.imageUrl}
-                          alt="Dish Preview"
-                          style={styles.image}
-                        />
-                      ) : (
-                        <div style={styles.placeholderText}>
-                          Select images in the formats (.jpg, .jpeg, .png, .gif)
-                        </div>
-                      )}
-                    </div>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      style={styles.fileInput}
-                      onChange={(e) =>
-                        setNewDish({ ...newDish, image: e.target.files[0] })
-                      }
-                    />
-                  </label>
-                  <p style={styles.imageNote}>
-                    Select images in the formats (.jpg, .jpeg, .png, .gif)
-                  </p>
-                </div>
-                <div style={styles.formFields}>
-                  <label style={styles.formLabel}>
-                    Name <span style={styles.requiredMark}>(*)</span>:
-                    <input
-                      type="text"
-                      value={newDish.name}
-                      onChange={(e) =>
-                        setNewDish({ ...newDish, name: e.target.value })
-                      }
-                      style={styles.inputField}
-                    />
-                  </label>
-                  <label style={styles.formLabel}>
-                    Price <span style={styles.requiredMark}>(*)</span>:
-                    <input
-                      type="text"
-                      value={newDish.price}
-                      onChange={(e) =>
-                        setNewDish({ ...newDish, price: e.target.value })
-                      }
-                      style={styles.inputField}
-                    />
-                  </label>
-                  <label style={styles.formLabel}>
-                    Category <span style={styles.requiredMark}>(*)</span>:
-                    <select
-                      value={newDish.category}
-                      onChange={(e) =>
-                        setNewDish({ ...newDish, category: e.target.value })
-                      }
-                      style={styles.selectField}
-                    >
-                      <option value="Appetizers">Appetizers</option>
-                      <option value="Main">Main</option>
-                      <option value="Desserts">Desserts</option>
-                    </select>
-                  </label>
-                  <label style={styles.formLabel}>
-                    Description <span style={styles.requiredMark}>(*)</span>:
-                    <textarea
-                      value={newDish.description}
-                      onChange={(e) =>
-                        setNewDish({ ...newDish, description: e.target.value })
-                      }
-                      style={styles.textareaField}
-                    />
-                  </label>
-                </div>
-              </div>
-              {errorMessage && <p style={styles.errorText}>{errorMessage}</p>}
-              <div style={styles.actionButtons}>
-                <button onClick={confirmEditDish} style={styles.addButton}>
-                  Save
-                </button>
-                <button
-                  onClick={() => setShowEditForm(false)}
-                  style={styles.cancelButton}
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8 mx-4 transform transition-all duration-300 scale-100">
+            <div className="flex justify-center mb-6">
+              <img alt="Logo" className="w-24 h-24" src={logoRemoveBg} />
+            </div>
+            <h3 className="text-2xl font-bold mb-6 text-center text-gray-800">
+              Edit Inventory Item
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Ingredient <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={newItem.ingredientId}
+                  onChange={(e) =>
+                    setNewItem({ ...newItem, ingredientId: e.target.value })
+                  }
+                  className="w-full h-12 p-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                  disabled
                 >
-                  Cancel
-                </button>
+                  <option value="">Select ingredient</option>
+                  {ingredients.map((ingredient) => (
+                    <option
+                      key={ingredient.ingredientId}
+                      value={ingredient.ingredientId}
+                    >
+                      {ingredient.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Quantity <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  value={newItem.quantity}
+                  onChange={(e) =>
+                    setNewItem({ ...newItem, quantity: e.target.value })
+                  }
+                  className="w-full h-12 p-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                  placeholder="Enter quantity (e.g., 25.5)"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Unit <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={newItem.unit === "new" ? "" : newItem.unit}
+                  onChange={(e) =>
+                    setNewItem({ ...newItem, unit: e.target.value || "new" })
+                  }
+                  className="w-full h-12 p-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                >
+                  <option value="">Select unit</option>
+                  {uniqueUnits
+                    .filter((u) => u !== "All")
+                    .map((unit) => (
+                      <option key={unit} value={unit}>
+                        {unit}
+                      </option>
+                    ))}
+                  <option value="new">Add new unit</option>
+                </select>
+                {newItem.unit === "new" && (
+                  <input
+                    type="text"
+                    value={newItem.customUnit || ""}
+                    onChange={(e) =>
+                      setNewItem({
+                        ...newItem,
+                        customUnit: e.target.value,
+                        unit: e.target.value,
+                      })
+                    }
+                    className="w-full h-12 p-3 mt-2 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                    placeholder="Enter new unit (e.g., liters)"
+                  />
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Last Updated
+                </label>
+                <input
+                  type="text"
+                  value={new Date().toLocaleDateString("en-US")}
+                  disabled
+                  className="w-full h-12 p-3 bg-gray-100 border border-gray-200 rounded-xl shadow-sm"
+                />
               </div>
             </div>
+            {errorMessage && (
+              <p className="text-red-500 mt-4 text-center">{errorMessage}</p>
+            )}
+            <div className="flex justify-center space-x-4 mt-6">
+              <button
+                className="px-6 py-3 bg-green-500 text-white rounded-lg shadow-md hover:bg-green-600 transition-all duration-200"
+                onClick={confirmEditItem}
+              >
+                Save
+              </button>
+              <button
+                className="px-6 py-3 bg-gray-500 text-white rounded-lg shadow-md hover:bg-gray-600 transition-all duration-200"
+                onClick={() => setShowEditForm(false)}
+              >
+                Cancel
+              </button>
+            </div>
           </div>
-        </>
+        </div>
       )}
 
-      {showSuccessPopup && (
-        <div style={styles.successPopup}>
-          <img
-            src={logoRemoveBg}
-            alt="Bon Appétit"
-            style={styles.successImage}
-          />
-          <p>
-            <b>Successful</b>
-          </p>
-          <div style={styles.successIcon}>✔</div>
+      {/* Success Modal */}
+      {showSuccessModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+          <div className="relative bg-white rounded-2xl shadow-2xl w-96 p-8 mx-4 transform transition-all duration-300 scale-100">
+            <div className="flex justify-center mb-6">
+              <img alt="Logo" className="w-24 h-24" src={logoRemoveBg} />
+            </div>
+            <h3 className="text-2xl font-bold mb-6 text-center text-gray-800">
+              Success
+            </h3>
+            <div className="flex justify-center">
+              <FaCheck className="text-4xl text-green-500" />
+            </div>
+          </div>
         </div>
       )}
 
@@ -679,4 +767,4 @@ const InventoryManagement = () => {
   );
 };
 
-export default MenuManagementAdmin;
+export default InventoryManagement;
