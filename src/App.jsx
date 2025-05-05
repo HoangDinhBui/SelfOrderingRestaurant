@@ -77,26 +77,10 @@ function App() {
                 element={<TableManagementAdmin />}
               />
               <Route path="/evaluate_admin" element={<EvaluateAdmin />} />
-              <Route
-                path="/menu-management_admin"
-                element={<MenuManagementAdmin />}
-              />
-              <Route
-                path="/revenue-management_admin"
-                element={<RevenueManagement />}
-              />
-              <Route
-                path="/staff-management_admin"
-                element={<StaffManagement />}
-              />
-              <Route
-                path="/inventory-management_admin"
-                element={<InventoryManagement />}
-              />
-              <Route
-                path="/order-history"
-                element={<OrderHistoryAdmin />}
-              />
+              <Route path="/menu-management_admin" element={<MenuManagementAdmin />}/>
+              <Route path="/revenue-management_admin" element={<RevenueManagement />}/>
+              <Route path="/staff-management_admin" element={<StaffManagement />}/>
+              <Route path="/inventory-management_admin" element={<InventoryManagement />}/>
 
               {/* Staff Routes */}
               <Route
