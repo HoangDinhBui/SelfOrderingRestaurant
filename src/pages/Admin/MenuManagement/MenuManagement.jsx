@@ -1,251 +1,333 @@
-import React from "react";
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
+import axios from "axios";
 import MenuBar from "../../../components/layout/MenuBar";
 import logoRemoveBg from "../../../assets/img/logoremovebg.png";
 
+// Cấu hình Axios
+const API_BASE_URL = "http://localhost:8080";
+const api = axios.create({
+  baseURL: API_BASE_URL,
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
 const MenuManagementAdmin = () => {
-  const [Staff, setStaff] = useState([
-    {
-      id: "A1",
-      name: "Huitres Fraiches (6PSC)",
-      price: "$25,35",
-      category: "Appetizers",
-      image: "huitres1.jpg",
-    },
-    {
-      id: "A2",
-      name: "Huitres Gratinees (6PCS)",
-      price: "$25,74",
-      category: "Appetizers",
-      image: "huitres2.jpg",
-    },
-    {
-      id: "A3",
-      name: "Tartare De Saumon",
-      price: "$14,04",
-      category: "Appetizers",
-      image: "tartare.jpg",
-    },
-    {
-      id: "A4",
-      name: "Salad Gourmande",
-      price: "$13,65",
-      category: "Appetizers",
-      image: "salad1.jpg",
-    },
-    {
-      id: "A5",
-      name: "Salad Landaise",
-      price: "$12,29",
-      category: "Appetizers",
-      image: "salad2.jpg",
-    },
-    {
-      id: "M1",
-      name: "Magret De Canard",
-      price: "$17,55",
-      category: "Main",
-      image: "magret.jpg",
-    },
-  ]);
-
-  const [searchTerm, setSearchTerm] = useState(""); // Lưu giá trị tìm kiếm
-  const [filteredStaff, setFilteredStaff] = useState(Staff); // Lưu danh sách món ăn được lọc
-
-  const [showAddForm, setShowAddForm] = useState(false); // Hiển thị form thêm món ăn
+  const [dishes, setDishes] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filteredDishes, setFilteredDishes] = useState([]);
+  const [showAddForm, setShowAddForm] = useState(false);
   const [newDish, setNewDish] = useState({
     name: "",
     price: "",
-    category: "",
+    category: "Appetizers",
     description: "",
-    image: "",
+    image: null,
   });
+  const [errorMessage, setErrorMessage] = useState("");
+  const [showSuccessPopup, setShowSuccessPopup] = useState(false);
+  const [showDeletePopup, setShowDeletePopup] = useState(false);
+  const [dishToDelete, setDishToDelete] = useState(null);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [dishToEdit, setDishToEdit] = useState(null);
 
-  const [errorMessage, setErrorMessage] = useState(""); // Lưu thông báo lỗi
-  const [showSuccessPopup, setShowSuccessPopup] = useState(false); // Hiển thị popup thành công
-
-  const [showDeletePopup, setShowDeletePopup] = useState(false); // Hiển thị popup xác nhận xóa
-  const [dishToDelete, setDishToDelete] = useState(null); // Món ăn cần xóa
-
-  const [showEditForm, setShowEditForm] = useState(false); // Hiển thị form chỉnh sửa
-  const [dishToEdit, setDishToEdit] = useState(null); // Món ăn cần chỉnh sửa
-
-  const handleDeleteDish = (dish) => {
-    setDishToDelete(dish); // Lưu món ăn cần xóa
-    setShowDeletePopup(true); // Hiển thị popup xác nhận
-  };
-
-  const confirmDeleteDish = () => {
-    const updatedStaff = Staff.filter((dish) => dish.id !== dishToDelete.id); // Xóa món ăn
-    setStaff(updatedStaff); // Cập nhật danh sách món ăn
-    setFilteredStaff(updatedStaff); // Cập nhật danh sách hiển thị
-    setShowDeletePopup(false); // Ẩn popup
-    setDishToDelete(null); // Xóa món ăn khỏi state
-  };
-
-  const handleEditDish = (dish) => {
-    setDishToEdit(dish); // Lưu món ăn cần chỉnh sửa
-    setNewDish(dish); // Điền thông tin cũ vào form
-    setShowEditForm(true); // Hiển thị form chỉnh sửa
-  };
-
-  const confirmEditDish = () => {
-    // Validate dữ liệu
-    if (!newDish.name || !newDish.price || !newDish.description) {
-      setErrorMessage("All fields are required!");
+  // Kiểm tra quyền ADMIN khi component mount
+  useEffect(() => {
+    const userType = localStorage.getItem("userType");
+    if (userType !== "ADMIN") {
+      setErrorMessage("Bạn cần quyền ADMIN để truy cập trang này.");
       return;
     }
-  
-    if (isNaN(parseFloat(newDish.price.replace("$", "")))) {
-      setErrorMessage("Price must be a valid number!");
-      return;
+    fetchDishes();
+    fetchCategories();
+  }, []);
+
+  const fetchDishes = async () => {
+    try {
+      const response = await api.get("/api/dishes");
+      setDishes(response.data);
+      setFilteredDishes(response.data);
+    } catch (error) {
+      console.error("Error fetching dishes:", error.response?.data);
+      let errorMessage = "Không thể tải danh sách món ăn. Vui lòng thử lại.";
+      if (error.response?.status === 401) {
+        errorMessage = "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.";
+      } else if (error.response?.status === 403) {
+        errorMessage = "Bạn không có quyền truy cập. Vui lòng đăng nhập với tài khoản ADMIN.";
+      }
+      setErrorMessage(errorMessage);
     }
-  
-    // Cập nhật món ăn
-    const updatedStaff = Staff.map((dish) =>
-      dish.id === dishToEdit.id ? { ...newDish, id: dishToEdit.id } : dish
-    );
-    setStaff(updatedStaff); // Cập nhật danh sách món ăn
-    setFilteredStaff(updatedStaff); // Cập nhật danh sách hiển thị
-    setShowEditForm(false); // Ẩn form
-    setDishToEdit(null); // Xóa món ăn khỏi state
-    setNewDish({
-      name: "",
-      price: "",
-      category: "Appetizers",
-      description: "",
-      image: "",
-    }); // Reset form
-    setErrorMessage(""); // Xóa thông báo lỗi
-  
-    // Hiển thị popup thành công
-    setShowSuccessPopup(true);
-    setTimeout(() => setShowSuccessPopup(false), 2000); // Ẩn popup sau 2 giây
   };
 
-  const validateAndAddDish = () => {
-    // Kiểm tra dữ liệu nhập
-    if (!newDish.name || !newDish.price || !newDish.description) {
-      setErrorMessage("All fields are required!");
+  const fetchCategories = async () => {
+    try {
+      const response = await api.get("/api/categories");
+      setCategories(response.data);
+    } catch (error) {
+      console.error("Error fetching categories:", error.response?.data);
+      let errorMessage = "Không thể tải danh sách danh mục. Vui lòng thử lại.";
+      if (error.response?.status === 401) {
+        errorMessage = "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.";
+      } else if (error.response?.status === 403) {
+        errorMessage = "Bạn không có quyền truy cập. Vui lòng đăng nhập với tài khoản ADMIN.";
+      }
+      setErrorMessage(errorMessage);
+    }
+  };
+
+  // Handle search in frontend
+  const handleSearch = (event) => {
+    if (event.key === "Enter") {
+      if (searchTerm.trim() === "") {
+        setFilteredDishes(dishes);
+      } else {
+        const filtered = dishes.filter((dish) =>
+          dish.dishName.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        setFilteredDishes(filtered);
+      }
+    }
+  };
+
+  // Add new dish
+  const validateAndAddDish = async () => {
+    if (!newDish.name || !newDish.price || !newDish.description || !newDish.image) {
+      setErrorMessage("Tất cả các trường là bắt buộc!");
       return;
     }
 
     if (isNaN(parseFloat(newDish.price))) {
-      setErrorMessage("Price must be a valid number!");
+      setErrorMessage("Giá phải là số hợp lệ!");
       return;
     }
 
-    // Kiểm tra tên món ăn đã tồn tại
-    const isDuplicate = Staff.some(
-      (dish) => dish.name.toLowerCase() === newDish.name.toLowerCase()
+    if (newDish.name.length > 100) {
+      setErrorMessage("Tên món ăn phải dưới 100 ký tự!");
+      return;
+    }
+
+    const isDuplicate = dishes.some(
+      (dish) => dish.dishName.toLowerCase() === newDish.name.toLowerCase()
     );
     if (isDuplicate) {
-      setErrorMessage("Dish name already exists!");
+      setErrorMessage("Tên món ăn đã tồn tại!");
       return;
     }
 
-    // Thêm món ăn mới
-    const updatedStaff = [
-      ...Staff,
-      { ...newDish, id: `A${Staff.length + 1}` }, // Tạo ID tự động
-    ];
-    setStaff(updatedStaff); // Cập nhật danh sách món ăn
-    setFilteredStaff(updatedStaff); // Cập nhật danh sách hiển thị
-    setShowAddForm(false); // Ẩn form
-    setNewDish({
-      name: "",
-      price: "",
-      category: "Appetizers",
-      description: "",
-      image: "",
-    }); // Reset form
-    setErrorMessage(""); // Xóa thông báo lỗi
+    const category = categories.find((cat) => cat.name === newDish.category);
+    if (!category) {
+      setErrorMessage("Danh mục không hợp lệ!");
+      return;
+    }
 
-    // Hiển thị popup thành công
-    setShowSuccessPopup(true);
-    setTimeout(() => setShowSuccessPopup(false), 2000); // Ẩn popup sau 2 giây
-  };
+    const formData = new FormData();
+    formData.append("name", newDish.name);
+    formData.append("price", parseFloat(newDish.price));
+    formData.append("categoryId", category.id);
+    formData.append("description", newDish.description);
+    formData.append("image", newDish.image);
+    formData.append("status", newDish.status?.toUpperCase() || "AVAILABLE");
 
-  const handleAddDish = () => {
-    // Thêm món ăn mới vào danh sách
-    const updatedStaff = [
-      ...Staff,
-      { ...newDish, id: `A${Staff.length + 1}` }, // Tạo ID tự động
-    ];
-    setFilteredStaff(updatedStaff); // Cập nhật danh sách hiển thị
-    setShowAddForm(false); // Ẩn form
-    setNewDish({
-      name: "",
-      price: "",
-      category: "Appetizers",
-      description: "",
-      image: "",
-    }); // Reset form
-  };
-  
-
-  //Xử lí tìm kiếmkiếm
-  const handleSearch = (event) => {
-    if (event.key === "Enter") {
-      if (searchTerm.trim() === "") {
-        setFilteredStaff(Staff); // Hiển thị toàn bộ danh sách nếu ô tìm kiếm trống
-      } else {
-        const filtered = Staff.filter((dish) =>
-          dish.name.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-        setFilteredStaff(filtered); // Cập nhật danh sách món ăn được lọc
+    try {
+      await api.post("/api/admin/dishes", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      setShowAddForm(false);
+      setNewDish({
+        name: "",
+        price: "",
+        category: "Appetizers",
+        description: "",
+        image: null,
+      });
+      setErrorMessage("");
+      setShowSuccessPopup(true);
+      setTimeout(() => setShowSuccessPopup(false), 2000);
+      fetchDishes();
+    } catch (error) {
+      console.error("Error adding dish:", error.response?.data);
+      let errorMessage = "Không thể thêm món ăn. Vui lòng thử lại.";
+      if (error.response?.status === 401) {
+        errorMessage = "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.";
+      } else if (error.response?.status === 403) {
+        errorMessage = "Bạn không có quyền thêm món ăn. Vui lòng đăng nhập với tài khoản ADMIN.";
+      } else if (error.response?.status === 400) {
+        errorMessage = error.response.data?.message || "Dữ liệu đầu vào không hợp lệ.";
       }
+      setErrorMessage(errorMessage);
+    }
+  };
+
+  // Edit dish
+  const handleEditDish = (dish) => {
+    setDishToEdit(dish);
+    setNewDish({
+      name: dish.dishName,
+      price: dish.price,
+      category: dish.categoryName,
+      description: dish.description || "",
+      image: null,
+    });
+    setShowEditForm(true);
+  };
+
+  const confirmEditDish = async () => {
+    if (!newDish.name || !newDish.price || !newDish.description) {
+      setErrorMessage("Tên, giá và mô tả là bắt buộc!");
+      return;
+    }
+
+    if (isNaN(parseFloat(newDish.price))) {
+      setErrorMessage("Giá phải là số hợp lệ!");
+      return;
+    }
+
+    if (newDish.name.length > 100) {
+      setErrorMessage("Tên món ăn phải dưới 100 ký tự!");
+      return;
+    }
+
+    const category = categories.find((cat) => cat.name === newDish.category);
+    if (!category) {
+      setErrorMessage("Danh mục không hợp lệ!");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("name", newDish.name);
+    formData.append("price", parseFloat(newDish.price));
+    formData.append("categoryId", category.id);
+    formData.append("description", newDish.description);
+    formData.append("status", "AVAILABLE");
+    if (newDish.image) {
+      formData.append("image", newDish.image);
+      console.log("Image file:", newDish.image.name, newDish.image.type, newDish.image.size);
+    } else {
+      console.log("No new image provided, using existing image (if any).");
+    }
+
+    console.log("FormData contents:");
+    for (let [key, value] of formData.entries()) {
+      console.log(`${key}: ${value}`);
+    }
+
+    try {
+      const response = await api.post(`/api/admin/dishes/${dishToEdit.dishId}`, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      console.log("Update response:", response.data);
+      setShowEditForm(false);
+      setNewDish({
+        name: "",
+        price: "",
+        category: "Appetizers",
+        description: "",
+        image: null,
+      });
+      setDishToEdit(null);
+      setErrorMessage("");
+      setShowSuccessPopup(true);
+      setTimeout(() => setShowSuccessPopup(false), 2000);
+      fetchDishes();
+    } catch (error) {
+      console.error("Full error response:", error.response?.data);
+      let errorMessage = "Không thể cập nhật món ăn. Vui lòng thử lại.";
+      if (error.response?.status === 401) {
+        errorMessage = "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.";
+      } else if (error.response?.status === 403) {
+        errorMessage = "Bạn không có quyền cập nhật món ăn. Vui lòng đăng nhập với tài khoản ADMIN.";
+      } else if (error.response?.status === 400) {
+        errorMessage = error.response.data?.message || "Dữ liệu đầu vào không hợp lệ.";
+      }
+      setErrorMessage(errorMessage);
+    }
+  };
+
+  // Delete dish
+  const confirmDeleteDish = async () => {
+    try {
+      await api.delete(`/api/dishes/${dishToDelete.dishId}`);
+      setShowDeletePopup(false);
+      setDishToDelete(null);
+      setShowSuccessPopup(true);
+      setTimeout(() => setShowSuccessPopup(false), 2000);
+      fetchDishes();
+    } catch (error) {
+      console.error("Error deleting dish:", error.response?.data);
+      let errorMessage = "Không thể xóa món ăn. Vui lòng thử lại.";
+      if (error.response?.status === 401) {
+        errorMessage = "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.";
+      } else if (error.response?.status === 403) {
+        errorMessage = "Bạn không có quyền xóa món ăn. Vui lòng đăng nhập với tài khoản ADMIN.";
+      }
+      setErrorMessage(errorMessage);
     }
   };
 
   const styles = {
     outerContainer: {
       fontFamily: "Arial, sans-serif",
-      backgroundColor: "rgba(157, 198, 206, 0.33)", // Màu #9DC6CE với độ mờ 30%
-      minHeight: "auto", // Chiều cao tối thiểu là toàn màn hình
-      width: "100vw", // Chiều rộng tối đa là toàn màn hình
+      backgroundColor: "rgba(157, 198, 206, 0.33)",
+      minHeight: "100vh",
+      width: "100vw",
       display: "flex",
-      justifyContent: "center", // Căn giữa nội dung theo chiều ngang
-      alignItems: "center", // Căn giữa nội dung theo chiều dọc
-      padding: "30px", // Khoảng cách giữa nội dung và viền ngoài
-      boxSizing: "border-box", // Đảm bảo padding không làm tăng kích thước container
+      justifyContent: "center",
+      alignItems: "center",
+      padding: "30px",
+      boxSizing: "border-box",
     },
     innerContainer: {
-      backgroundColor: "#F0F8FD", // Màu nền của innerContainer
-      borderRadius: "10px", // Bo góc
-      padding: "20px", // Khoảng cách bên trong
-      boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)", // Đổ bóng nhẹ
-      border: "3px solid rgba(0, 0, 0, 0.1)", // Viền nhẹ
-      width: "100%", // Chiều rộng đầy đủ
-      maxWidth: "1200px", // Giới hạn chiều rộng tối đa
+      backgroundColor: "#F0F8FD",
+      borderRadius: "10px",
+      padding: "20px",
+      boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+      border: "3px solid rgba(0, 0, 0, 0.1)",
+      width: "100%",
+      maxWidth: "1200px",
       display: "flex",
       flexDirection: "column",
-      boxSizing: "border-box", // Đảm bảo padding không làm tăng kích thước container
+      boxSizing: "border-box",
     },
     title: {
       textAlign: "center",
-      fontSize: "35px",
+      fontSize: "24px",
       fontWeight: "bold",
       marginBottom: "15px",
     },
     tableAndControls: {
       display: "flex",
-      alignItems: "flex-start", // Căn các thành phần theo chiều dọc
-      gap: "20px", // Khoảng cách giữa bảng và ô tìm kiếm/nút
-      flex: 1, // Khoảng cách giữa bảng và ô tìm kiếm/nút
+      alignItems: "flex-start",
+      gap: "20px",
+      flex: 1,
     },
     searchAndButtonContainer: {
-      flex: 1, // Container bên cạnh chiếm ít không gian hơn
+      flex: 1,
       display: "flex",
-      flexDirection: "column", // Đặt các thành phần theo chiều dọc
-      alignItems: "flex-end", // Căn sang phải
-      gap: "10px", // Khoảng cách giữa các thành phần
+      flexDirection: "column",
+      alignItems: "flex-end",
+      gap: "10px",
     },
     searchRow: {
       display: "flex",
-      flexDirection: "row", // Đặt ô tìm kiếm và nút trên cùng một hàng
-      alignItems: "center", // Căn giữa theo chiều dọc
-      gap: "10px", // Khoảng cách giữa ô tìm kiếm và nút
+      flexDirection: "row",
+      alignItems: "center",
+      gap: "10px",
     },
     input: {
       padding: "10px",
@@ -254,17 +336,17 @@ const MenuManagementAdmin = () => {
       width: "200px",
     },
     chefMouseImage: {
-      marginTop: "55px", // Khoảng cách giữa hình ảnh và nút
-      width: "280px", // Chiều rộng của hình ảnh
-      height: "400px", // Tự động điều chỉnh chiều cao theo tỷ lệ
+      marginTop: "55px",
+      width: "280px",
+      height: "400px",
     },
     tableContainer: {
-      flex: 3, // Bảng chiếm nhiều không gian hơn
-      backgroundColor: "rgba(157, 198, 206, 0.3)", // Nền màu
+      flex: 3,
+      backgroundColor: "rgba(157, 198, 206, 0.3)",
       borderRadius: "10px",
-      overflowY: "auto", // Kích hoạt thanh cuộn dọc
-      maxHeight: "500px", // Giới hạn chiều cao của bảng
-      width: "100%", // Chiều rộng đầy đủ
+      overflowY: "auto",
+      maxHeight: "500px",
+      width: "100%",
     },
     table: {
       width: "100%",
@@ -272,12 +354,12 @@ const MenuManagementAdmin = () => {
       border: "2px solid #9DC6CE",
     },
     thead: {
-      position: "sticky", // Cố định tiêu đề bảng
+      position: "sticky",
       padding: "0 0 10px ",
-      top: 0, // Cố định ở đầu container
-      zIndex: 2, // Đảm bảo tiêu đề nằm trên các thành phần khác
-      backgroundColor: "#9DC6CE", // Màu nền tiêu đề
-      border: "1px solid rgb(0, 0, 0)", // Viền tiêu đề
+      top: 0,
+      zIndex: 2,
+      backgroundColor: "#9DC6CE",
+      border: "1px solid rgb(0, 0, 0)",
     },
     th: {
       backgroundColor: "#9DC6CE",
@@ -296,10 +378,10 @@ const MenuManagementAdmin = () => {
       fontWeight: "bold",
     },
     oddRow: {
-      backgroundColor: "rgba(157, 198, 206, 0.3)", // Màu #9DC6CE với độ mờ 30%
+      backgroundColor: "rgba(157, 198, 206, 0.3)",
     },
     evenRow: {
-      backgroundColor: "#FFFFFF", // Màu trắng
+      backgroundColor: "#FFFFFF",
     },
     overlay: {
       position: "fixed",
@@ -307,8 +389,8 @@ const MenuManagementAdmin = () => {
       left: 0,
       width: "100vw",
       height: "100vh",
-      backgroundColor: "rgba(0, 0, 0, 0.5)", // Làm mờ màn hình
-      zIndex: 999, // Đảm bảo lớp phủ nằm trên các thành phần khác
+      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      zIndex: 999,
     },
     addFormContainer: {
       position: "fixed",
@@ -322,9 +404,9 @@ const MenuManagementAdmin = () => {
       zIndex: 1000,
       width: "650px",
       maxWidth: "90%",
-      height: "auto", // Chiều cao tự động
-      maxHeight: "90vh", // Giới hạn chiều cao tối đa
-      overflowY: "auto", // Kích hoạt thanh cuộn dọc nếu nội dung vượt quá chiều cao
+      height: "auto",
+      maxHeight: "90vh",
+      overflowY: "auto",
     },
     addFormTitle: {
       fontSize: "24px",
@@ -355,7 +437,7 @@ const MenuManagementAdmin = () => {
     },
     addFormContent: {
       display: "flex",
-      gap: "20px", // Khoảng cách giữa 2 cột
+      gap: "20px",
     },
     formFields: {
       flex: "1",
@@ -378,19 +460,19 @@ const MenuManagementAdmin = () => {
       position: "relative",
     },
     imageUploadSection: {
-      flex: "0 0 40%", // Chiếm 40% chiều rộng
+      flex: "0 0 40%",
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
       justifyContent: "center",
       gap: "10px",
-      border: "1px solid #ddd", // Viền bao quanh
-      borderRadius: "10px", // Bo góc
-      padding: "20px", // Khoảng cách bên trong
-      backgroundColor: "#f9f9f9", // Màu nền nhạt
+      border: "1px solid #ddd",
+      borderRadius: "10px",
+      padding: "20px",
+      backgroundColor: "#f9f9f9",
     },
     imagePreview: {
-      width: "250px", // Tăng kích thước ô hình
+      width: "250px",
       height: "250px",
       border: "1px solid #ddd",
       borderRadius: "10px",
@@ -398,12 +480,12 @@ const MenuManagementAdmin = () => {
       display: "flex",
       justifyContent: "center",
       alignItems: "center",
-      backgroundColor: "#fff", // Nền trắng cho ô hình
+      backgroundColor: "#fff",
     },
     image: {
       width: "100%",
       height: "100%",
-      objectFit: "cover", // Đảm bảo hình ảnh vừa khít
+      objectFit: "cover",
     },
     placeholderText: {
       fontSize: "14px",
@@ -430,10 +512,10 @@ const MenuManagementAdmin = () => {
       fontSize: "14px",
       fontWeight: "bold",
       display: "flex",
-      gap: "5px", // Khoảng cách giữa nhãn và trường nhập liệu
+      gap: "5px",
     },
     requiredMark: {
-      color: "#e74c3c", // Màu đỏ cho dấu (*)
+      color: "#e74c3c",
       marginLeft: "5px",
     },
     inputField: {
@@ -442,7 +524,7 @@ const MenuManagementAdmin = () => {
       border: "1px solid #ddd",
       fontSize: "14px",
       width: "100%",
-      maxWidth: "300px", // Giới hạn chiều rộng tối đa
+      maxWidth: "300px",
     },
     selectField: {
       padding: "10px",
@@ -450,7 +532,7 @@ const MenuManagementAdmin = () => {
       border: "1px solid #ddd",
       fontSize: "14px",
       width: "100%",
-      maxWidth: "300px", // Giới hạn chiều rộng tối đa
+      maxWidth: "300px",
     },
     textareaField: {
       padding: "10px",
@@ -458,7 +540,7 @@ const MenuManagementAdmin = () => {
       border: "1px solid #ddd",
       fontSize: "14px",
       width: "100%",
-      maxWidth: "300px", // Giới hạn chiều rộng tối đa
+      maxWidth: "300px",
       height: "80px",
       resize: "none",
     },
@@ -475,10 +557,10 @@ const MenuManagementAdmin = () => {
       boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
       textAlign: "center",
       zIndex: 1001,
-      display: "flex", // Sử dụng Flexbox
-      flexDirection: "column", // Căn chỉnh các phần tử theo chiều dọc
-      alignItems: "center", // Căn giữa theo chiều ngang
-      justifyContent: "center", // Căn giữa theo chiều dọc
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      justifyContent: "center",
     },
     successIcon: {
       fontSize: "24px",
@@ -486,8 +568,8 @@ const MenuManagementAdmin = () => {
       marginTop: "10px",
     },
     successImage: {
-      width: "100px", // Kích thước hình ảnh
-      height: "auto", // Tự động điều chỉnh chiều cao theo tỷ lệ
+      width: "100px",
+      height: "auto",
     },
     successText: {
       fontSize: "18px",
@@ -495,28 +577,62 @@ const MenuManagementAdmin = () => {
       marginBottom: "5px",
     },
     errorText: {
-      color: "#e74c3c", // Màu đỏ
+      color: "#e74c3c",
       fontSize: "14px",
-      marginBottom: "10px", // Khoảng cách bên dưới
-      textAlign: "center", // Căn giữa
+      marginBottom: "10px",
+      textAlign: "center",
+    },
+    errorContainer: {
+      textAlign: "center",
+      padding: "20px",
+      color: "#e74c3c",
+      fontSize: "16px",
+      fontWeight: "bold",
+    },
+    actionButtonContainer: {
+      display: "flex",
+      flexDirection: "row", // sắp xếp theo chiều ngang
+      justifyContent: "center",
+      gap: "10px", // khoảng cách giữa các nút
+    },
+    actionButton: {
+      padding: "6px 12px",
+      fontSize: "16px",
+      border: "1px solid #9DC6CE",
+      borderRadius: "5px",
+      backgroundColor: "#fff",
+      cursor: "pointer",
+      transition: "background-color 0.2s",
+    },
+    editButton: {
+      color: "#4CAF50",
+    },
+    deleteButton: {
+      color: "#e74c3c",
     },
   };
 
+  // Nếu không có quyền ADMIN, chỉ hiển thị thông báo lỗi
+  if (errorMessage && errorMessage.includes("Bạn cần quyền ADMIN")) {
+    return (
+      <div style={styles.outerContainer}>
+        <div style={styles.innerContainer}>
+          <div style={styles.errorContainer}>{errorMessage}</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
-      {/* Thanh menu */}
       <MenuBar title="Menu Management" />
-
-      {/* Container ngoài */}
       <div style={styles.outerContainer}>
-        {/* Container bên trong */}
         <div style={styles.innerContainer}>
-          {/* Tiêu đề */}
           <h1 style={styles.title}>Menu</h1>
-
-          {/* Bảng và ô tìm kiếm/nút */}
+          {errorMessage && (
+            <div style={styles.errorContainer}>{errorMessage}</div>
+          )}
           <div style={styles.tableAndControls}>
-            {/* Bảng món ăn */}
             <div style={styles.tableContainer}>
               <table style={styles.table}>
                 <thead style={styles.thead}>
@@ -530,16 +646,16 @@ const MenuManagementAdmin = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredStaff.map((dish, index) => (
+                  {filteredDishes.map((dish, index) => (
                     <tr
-                      key={dish.id}
+                      key={dish.dishId}
                       style={index % 2 === 0 ? styles.evenRow : styles.oddRow}
                     >
                       <td style={styles.td}>
                         <div style={{ display: "flex", alignItems: "center" }}>
                           <img
-                            src={`./src/assets/img/${dish.image}`}
-                            alt={dish.name}
+                            src={dish.imageUrl || "./src/assets/img/placeholder.jpg"}
+                            alt={dish.dishName}
                             style={{
                               width: "50px",
                               height: "50px",
@@ -547,58 +663,51 @@ const MenuManagementAdmin = () => {
                               marginRight: "10px",
                             }}
                           />
-                          {dish.name}
+                          {dish.dishName}
                         </div>
                       </td>
-                      <td style={styles.td}>{dish.id}</td>
-                      <td style={{ ...styles.td, ...styles.price }}>
-                        {dish.price}
-                      </td>
-                      <td style={styles.td}>{dish.category}</td>
+                      <td style={styles.td}>{dish.dishId}</td>
+                      <td style={{ ...styles.td, ...styles.price }}>${dish.price}</td>
+                      <td style={styles.td}>{dish.categoryName}</td>
+                      <td style={styles.td}>{dish.description || "No description"}</td>
                       <td style={styles.td}>
-                        {dish.description || "No description"}
-                      </td>{" "}
-                      {/* Hiển thị Description */}
-                      <td style={styles.td}>
-                        <button
-                          style={{ marginRight: "10px", cursor: "pointer" }}
-                          onClick={() => handleEditDish(dish)} // Chỉnh sửa món ăn
-                        >
-                          ✏️
-                        </button>
-                        <button
-                          style={{ cursor: "pointer" }}
-                          onClick={() => handleDeleteDish(dish)} // Xóa món ăn
-                        >
-                          🗑️
-                        </button>
+                        <div style={styles.actionButtonContainer}>
+                          <button
+                            style={{ ...styles.actionButton, ...styles.editButton }}
+                            onClick={() => handleEditDish(dish)}
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            style={{ ...styles.actionButton, ...styles.deleteButton }}
+                            onClick={() => handleDeleteDish(dish)}
+                          >
+                            🗑️
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-
-            {/* Ô tìm kiếm, nút "+" và hình ảnh */}
             <div style={styles.searchAndButtonContainer}>
-              {/* Hàng chứa ô tìm kiếm và nút */}
               <div style={styles.searchRow}>
                 <input
                   type="text"
                   placeholder="Search..."
                   style={styles.input}
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)} // Cập nhật giá trị tìm kiếm
-                  onKeyDown={handleSearch} // Lắng nghe sự kiện nhấn phím Enter
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={handleSearch}
                 />
                 <button
                   style={styles.addButton}
-                  onClick={() => setShowAddForm(true)} // Hiển thị form khi nhấn nút
+                  onClick={() => setShowAddForm(true)}
                 >
                   +
                 </button>
               </div>
-              {/* Hình ảnh Chef Mouse */}
               <img
                 src="./src/assets/img/chefmouse.png"
                 alt="Chef Mouse"
@@ -609,31 +718,23 @@ const MenuManagementAdmin = () => {
 
           {showAddForm && (
             <>
-              {/* Lớp phủ làm mờ màn hình */}
-              <div
-                style={styles.overlay}
-                onClick={() => setShowAddForm(false)} // Đóng modal khi nhấn vào lớp phủ
-              ></div>
-
-              {/* Modal thêm món ăn */}
+              <div style={styles.overlay} onClick={() => setShowAddForm(false)}></div>
               <div style={styles.addFormContainer}>
                 <h2 style={styles.addFormTitle}>Add Dish</h2>
                 <div style={styles.addForm}>
                   <div style={styles.addFormContent}>
-                    {/* Cột bên trái: Chọn ảnh */}
                     <div style={styles.imageUploadSection}>
                       <label style={styles.imageUploadContainer}>
                         <div style={styles.imagePreview}>
                           {newDish.image ? (
                             <img
-                              src={newDish.image}
+                              src={URL.createObjectURL(newDish.image)}
                               alt="Dish Preview"
                               style={styles.image}
                             />
                           ) : (
                             <div style={styles.placeholderText}>
-                              Select images in the formats (.jpg, .jpeg, .png,
-                              .gif)
+                              Select images in the formats (.jpg, .jpeg, .png, .gif)
                             </div>
                           )}
                         </div>
@@ -642,10 +743,7 @@ const MenuManagementAdmin = () => {
                           accept="image/*"
                           style={styles.fileInput}
                           onChange={(e) =>
-                            setNewDish({
-                              ...newDish,
-                              image: URL.createObjectURL(e.target.files[0]),
-                            })
+                            setNewDish({ ...newDish, image: e.target.files[0] })
                           }
                         />
                       </label>
@@ -653,8 +751,6 @@ const MenuManagementAdmin = () => {
                         Select images in the formats (.jpg, .jpeg, .png, .gif)
                       </p>
                     </div>
-
-                    {/* Cột bên phải: Các trường nhập liệu */}
                     <div style={styles.formFields}>
                       <label style={styles.formLabel}>
                         Name <span style={styles.requiredMark}>(*)</span>:
@@ -687,38 +783,28 @@ const MenuManagementAdmin = () => {
                           }
                           style={styles.selectField}
                         >
-                          <option value="Appetizers">Appetizers</option>
-                          <option value="Main">Main</option>
-                          <option value="Desserts">Desserts</option>
+                          {categories.map((category) => (
+                            <option key={category.id} value={category.name}>
+                              {category.name}
+                            </option>
+                          ))}
                         </select>
                       </label>
                       <label style={styles.formLabel}>
-                        Description <span style={styles.requiredMark}>(*)</span>
-                        :
+                        Description <span style={styles.requiredMark}>(*)</span>:
                         <textarea
                           value={newDish.description}
                           onChange={(e) =>
-                            setNewDish({
-                              ...newDish,
-                              description: e.target.value,
-                            })
+                            setNewDish({ ...newDish, description: e.target.value })
                           }
                           style={styles.textareaField}
                         />
                       </label>
                     </div>
                   </div>
-
-                  {errorMessage && (
-                    <p style={styles.errorText}>{errorMessage}</p> // Hiển thị lỗi nếu có
-                  )}
-
-                  {/* Nút hành động */}
+                  {errorMessage && <p style={styles.errorText}>{errorMessage}</p>}
                   <div style={styles.actionButtons}>
-                    <button
-                      onClick={validateAndAddDish}
-                      style={styles.addButton}
-                    >
+                    <button onClick={validateAndAddDish} style={styles.addButton}>
                       Add
                     </button>
                     <button
@@ -733,68 +819,31 @@ const MenuManagementAdmin = () => {
             </>
           )}
 
-          {/* Popup thêm thành công */}
-          {showSuccessPopup && (
-            <div style={styles.successPopup}>
-              <img
-                src={logoRemoveBg}
-                alt="Bon Appétit"
-                style={styles.successImage} // Thêm style riêng cho hình ảnh
-              />
-              <p>
-                <b>Successful</b>
-              </p>
-              <div style={styles.successIcon}>✔</div>
-            </div>
-          )}
-
-          {/* Popup xóa dữ liệu*/}
-          {showDeletePopup && (
-            <div style={styles.successPopup}>
-              <img
-                src={logoRemoveBg}
-                alt="Bon Appétit"
-                style={styles.successImage} // Thêm style riêng cho hình ảnh
-              />
-              <p><b>Are you sure?</b></p>
-              <div style={styles.actionButtons}>
-                <button onClick={confirmDeleteDish} style={styles.addButton}>
-                  Yes
-                </button>
-                <button
-                  onClick={() => setShowDeletePopup(false)}
-                  style={styles.cancelButton}
-                >
-                  No
-                </button>
-              </div>
-            </div>
-          )}
-
           {showEditForm && (
             <>
-              <div
-                style={styles.overlay}
-                onClick={() => setShowEditForm(false)} // Đóng modal khi nhấn vào lớp phủ
-              ></div>
+              <div style={styles.overlay} onClick={() => setShowEditForm(false)}></div>
               <div style={styles.addFormContainer}>
                 <h2 style={styles.addFormTitle}>Edit Dish</h2>
                 <div style={styles.addForm}>
                   <div style={styles.addFormContent}>
-                    {/* Cột bên trái: Chọn ảnh */}
                     <div style={styles.imageUploadSection}>
                       <label style={styles.imageUploadContainer}>
                         <div style={styles.imagePreview}>
                           {newDish.image ? (
                             <img
-                              src={newDish.image}
+                              src={URL.createObjectURL(newDish.image)}
+                              alt="Dish Preview"
+                              style={styles.image}
+                            />
+                          ) : dishToEdit.imageUrl ? (
+                            <img
+                              src={dishToEdit.imageUrl}
                               alt="Dish Preview"
                               style={styles.image}
                             />
                           ) : (
                             <div style={styles.placeholderText}>
-                              Select images in the formats (.jpg, .jpeg, .png,
-                              .gif)
+                              Select images in the formats (.jpg, .jpeg, .png, .gif)
                             </div>
                           )}
                         </div>
@@ -803,10 +852,7 @@ const MenuManagementAdmin = () => {
                           accept="image/*"
                           style={styles.fileInput}
                           onChange={(e) =>
-                            setNewDish({
-                              ...newDish,
-                              image: URL.createObjectURL(e.target.files[0]),
-                            })
+                            setNewDish({ ...newDish, image: e.target.files[0] })
                           }
                         />
                       </label>
@@ -814,8 +860,6 @@ const MenuManagementAdmin = () => {
                         Select images in the formats (.jpg, .jpeg, .png, .gif)
                       </p>
                     </div>
-
-                    {/* Cột bên phải: Các trường nhập liệu */}
                     <div style={styles.formFields}>
                       <label style={styles.formLabel}>
                         Name <span style={styles.requiredMark}>(*)</span>:
@@ -826,7 +870,6 @@ const MenuManagementAdmin = () => {
                             setNewDish({ ...newDish, name: e.target.value })
                           }
                           style={styles.inputField}
-                          placeholder={dishToEdit?.name} // Hiển thị thông tin cũ
                         />
                       </label>
                       <label style={styles.formLabel}>
@@ -838,7 +881,6 @@ const MenuManagementAdmin = () => {
                             setNewDish({ ...newDish, price: e.target.value })
                           }
                           style={styles.inputField}
-                          placeholder={dishToEdit?.price} // Hiển thị thông tin cũ
                         />
                       </label>
                       <label style={styles.formLabel}>
@@ -850,34 +892,26 @@ const MenuManagementAdmin = () => {
                           }
                           style={styles.selectField}
                         >
-                          <option value="Appetizers">Appetizers</option>
-                          <option value="Main">Main</option>
-                          <option value="Desserts">Desserts</option>
+                          {categories.map((category) => (
+                            <option key={category.id} value={category.name}>
+                              {category.name}
+                            </option>
+                          ))}
                         </select>
                       </label>
                       <label style={styles.formLabel}>
-                        Description <span style={styles.requiredMark}>(*)</span>
-                        :
+                        Description <span style={styles.requiredMark}>(*)</span>:
                         <textarea
                           value={newDish.description}
                           onChange={(e) =>
-                            setNewDish({
-                              ...newDish,
-                              description: e.target.value,
-                            })
+                            setNewDish({ ...newDish, description: e.target.value })
                           }
                           style={styles.textareaField}
-                          placeholder={dishToEdit?.description} // Hiển thị thông tin cũ
                         />
                       </label>
                     </div>
                   </div>
-
-                  {errorMessage && (
-                    <p style={styles.errorText}>{errorMessage}</p> // Hiển thị lỗi nếu có
-                  )}
-
-                  {/* Nút hành động */}
+                  {errorMessage && <p style={styles.errorText}>{errorMessage}</p>}
                   <div style={styles.actionButtons}>
                     <button onClick={confirmEditDish} style={styles.addButton}>
                       Save
@@ -892,6 +926,36 @@ const MenuManagementAdmin = () => {
                 </div>
               </div>
             </>
+          )}
+
+          {showSuccessPopup && (
+            <div style={styles.successPopup}>
+              <img src={logoRemoveBg} alt="Bon Appétit" style={styles.successImage} />
+              <p>
+                <b>Successful</b>
+              </p>
+              <div style={styles.successIcon}>✔</div>
+            </div>
+          )}
+
+          {showDeletePopup && (
+            <div style={styles.successPopup}>
+              <img src={logoRemoveBg} alt="Bon Appétit" style={styles.successImage} />
+              <p>
+                <b>Are you sure?</b>
+              </p>
+              <div style={styles.actionButtons}>
+                <button onClick={confirmDeleteDish} style={styles.addButton}>
+                  Yes
+                </button>
+                <button
+                  onClick={() => setShowDeletePopup(false)}
+                  style={styles.cancelButton}
+                >
+                  No
+                </button>
+              </div>
+            </div>
           )}
         </div>
       </div>
