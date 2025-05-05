@@ -26,8 +26,86 @@ const InventoryManagement = () => {
   const [showEditForm, setShowEditForm] = useState(false);
   const [itemToEdit, setItemToEdit] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [userRole, setUserRole] = useState(null);
 
-  const API_URL = "http://localhost:8080/api";
+  const navigate = useNavigate();
+  const API_BASE_URL = "http://localhost:8080";
+
+  // Check user role on component mount
+  useEffect(() => {
+    const role = localStorage.getItem("userType"); // Use userType instead of userRole
+    setUserRole(role);
+    if (role !== "ADMIN") {
+      setErrorMessage("Access denied: Administrator privileges required.");
+    }
+  }, []);
+
+  // Fetch all inventories, suppliers, and ingredients on mount
+  useEffect(() => {
+    if (userRole !== "ADMIN") return;
+    const fetchData = async () => {
+      setIsLoading(true);
+      setErrorMessage(null);
+      try {
+        await Promise.all([fetchSuppliers(), fetchIngredients()]);
+        await fetchInventories();
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        setErrorMessage("Failed to load data. Please try again.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, [userRole]);
+
+  const fetchInventories = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/admin/inventory`, {
+        headers: getAuthHeaders(),
+        params: {
+          search: searchTerm.trim() || undefined,
+          filterUnit: filterUnit === "All" ? undefined : filterUnit,
+        },
+      });
+      const data = response.data || [];
+      const mappedData = data.map((item) => ({
+        id: item.inventoryId,
+        ingredientId: item.ingredientId,
+        ingredientName: item.ingredientName || "Unknown",
+        supplierName: item.supplierName || "Unknown",
+        quantity: item.quantity,
+        unit: item.unit,
+        lastUpdate: new Date(item.lastUpdated).toLocaleDateString("en-US"),
+      }));
+      setInventory(mappedData);
+      setFilteredInventory(mappedData);
+    } catch (error) {
+      await handleApiError(error, "Failed to fetch inventory list");
+    }
+  };
+
+  const fetchSuppliers = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/admin/suppliers`, {
+        headers: getAuthHeaders(),
+      });
+      setSuppliers(response.data || []);
+    } catch (error) {
+      await handleApiError(error, "Failed to fetch suppliers list");
+    }
+  };
+
+  const fetchIngredients = async () => {
+    try {
+      const response = await axios.get(`${API_BASE_URL}/api/admin/ingredient`, {
+        headers: getAuthHeaders(),
+      });
+      setIngredients(response.data || []);
+    } catch (error) {
+      await handleApiError(error, "Failed to fetch ingredients list");
+    }
+  };
 
   // Get auth headers with Bearer token
   const getAuthHeaders = () => ({
@@ -76,90 +154,72 @@ const InventoryManagement = () => {
     } else if (status === 404) {
       message = `Không tìm thấy endpoint: ${error.config.url}`;
     } else if (status === 400) {
-      message = error.response?.data?.message || "Invalid data. Please check again!";
+      message =
+        error.response?.data?.message || "Invalid data. Please check again!";
     }
     setErrorMessage(message);
   };
 
-  // Handle search by dish name
-  const handleSearch = (event) => {
-    if (event.key === "Enter") {
-      if (searchTerm.trim() === "") {
-        setFilteredDishes(dishes);
-      } else {
-        const filtered = dishes.filter((dish) =>
-          dish.dishName.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-        setFilteredDishes(filtered);
-      }
-    }
+  // Handle search and filter
+  useEffect(() => {
+    if (userRole !== "ADMIN") return;
+    fetchInventories();
+  }, [searchTerm, filterUnit, userRole]);
+
+  // Unique units for filter dropdown
+  const uniqueUnits = ["All", ...new Set(inventory.map((item) => item.unit))];
+
+  // Handle delete inventory
+  const handleDeleteClick = (item) => {
+    if (userRole !== "ADMIN") return;
+    setItemToDelete(item);
+    setShowDeleteModal(true);
   };
 
-  // Add new dish
-  const validateAndAddDish = async () => {
-    if (!newDish.name || !newDish.price || !newDish.description || !newDish.image) {
-      setErrorMessage("All fields are required!");
-      return;
-    }
-
-    if (isNaN(parseFloat(newDish.price))) {
-      setErrorMessage("Price must be a valid number!");
-      return;
-    }
-
-    const isDuplicate = dishes.some(
-      (dish) => dish.dishName.toLowerCase() === newDish.name.toLowerCase()
-    );
-    if (isDuplicate) {
-      setErrorMessage("Dish name already exists!");
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("name", newDish.name);
-    formData.append("price", parseFloat(newDish.price));
-    formData.append("categoryId", newDish.category === "Appetizers" ? 1 : newDish.category === "Main" ? 2 : 3);
-    formData.append("description", newDish.description);
-    formData.append("image", newDish.image);
-    formData.append("status", "AVAILABLE");
-
+  const handleConfirmDelete = async () => {
+    if (userRole !== "ADMIN" || !itemToDelete) return;
     try {
-      await authAPI.post(`${API_URL}/admin/dishes`, formData, {
-        headers: getAuthHeaders(),
-      });
-      setShowAddForm(false);
-      setNewDish({
-        name: "",
-        price: "",
-        category: "Appetizers",
-        description: "",
-        image: null,
-      });
-      setErrorMessage("");
-      setShowSuccessPopup(true);
-      setTimeout(() => setShowSuccessPopup(false), 2000);
-      await fetchDishes();
+      await axios.delete(
+        `${API_BASE_URL}/api/admin/inventory/${itemToDelete.id}`,
+        {
+          headers: getAuthHeaders(),
+        }
+      );
+      const updatedInventory = inventory.filter(
+        (item) => item.id !== itemToDelete.id
+      );
+      setInventory(updatedInventory);
+      setFilteredInventory(updatedInventory);
     } catch (error) {
-      handleApiError(error, "Failed to add dish.");
+      await handleApiError(error, "Failed to delete inventory");
     }
+    setShowDeleteModal(false);
+    setItemToDelete(null);
   };
 
-  // Edit dish
-  const handleEditDish = (dish) => {
-    setDishToEdit(dish);
-    setNewDish({
-      name: dish.dishName,
-      price: dish.price,
-      category: dish.categoryName,
-      description: dish.description || "",
-      image: null,
+  const handleCancelDelete = () => {
+    if (userRole !== "ADMIN") return;
+    setShowDeleteModal(false);
+    setItemToDelete(null);
+  };
+
+  // Handle edit inventory
+  const handleEditClick = (item) => {
+    if (userRole !== "ADMIN") return;
+    setItemToEdit(item);
+    setNewItem({
+      ingredientId: item.ingredientId,
+      quantity: item.quantity,
+      unit: item.unit,
+      customUnit: "",
     });
     setShowEditForm(true);
   };
 
-  const confirmEditDish = async () => {
-    if (!newDish.name || !newDish.price || !newDish.description) {
-      setErrorMessage("All fields are required!");
+  const confirmEditItem = async () => {
+    if (userRole !== "ADMIN") return;
+    if (!newItem.quantity || !newItem.unit) {
+      setErrorMessage("Quantity and unit are required!");
       return;
     }
 
@@ -167,429 +227,256 @@ const InventoryManagement = () => {
       setErrorMessage("Price must be a valid number!");
       return;
     }
-
-    const formData = new FormData();
-    formData.append("name", newDish.name);
-    formData.append("price", parseFloat(newDish.price));
-    formData.append("categoryId", newDish.category === "Appetizers" ? 1 : newDish.category === "Main" ? 2 : 3);
-    formData.append("description", newDish.description);
-    if (newDish.image) {
-      formData.append("image", newDish.image);
+    if (!finalUnit) {
+      setErrorMessage("Invalid unit!");
+      return;
     }
-    formData.append("status", "AVAILABLE");
-
     try {
-      await authAPI.post(`${API_URL}/dishes/${dishToEdit.dishId}`, formData, {
-        headers: getAuthHeaders(),
-      });
+      await axios.put(
+        `${API_BASE_URL}/api/admin/inventory/${itemToEdit.id}`,
+        {
+          quantity: parsedQuantity,
+          unit: finalUnit,
+          lastUpdated: new Date().toISOString().split("T")[0],
+        },
+        { headers: getAuthHeaders() }
+      );
+      await fetchInventories();
       setShowEditForm(false);
-      setNewDish({
-        name: "",
-        price: "",
-        category: "Appetizers",
-        description: "",
-        image: null,
-      });
-      setDishToEdit(null);
+      setItemToEdit(null);
+      setNewItem({ ingredientId: "", quantity: "", unit: "", customUnit: "" });
       setErrorMessage("");
       setShowSuccessPopup(true);
       setTimeout(() => setShowSuccessPopup(false), 2000);
       await fetchDishes();
     } catch (error) {
-      handleApiError(error, "Failed to update dish.");
+      await handleApiError(error, "Failed to update inventory");
     }
   };
 
-  // Delete dish
-  const handleDeleteDish = (dish) => {
-    setDishToDelete(dish);
-    setShowDeletePopup(true);
-  };
-
-  const confirmDeleteDish = async () => {
+  // Handle add inventory
+  const validateAndAddItem = async () => {
+    if (userRole !== "ADMIN") return;
+    if (!newItem.ingredientId || !newItem.quantity || !newItem.unit) {
+      setErrorMessage("All fields are required!");
+      return;
+    }
+    const parsedIngredientId = parseInt(newItem.ingredientId);
+    const parsedQuantity = parseFloat(newItem.quantity);
+    const finalUnit =
+      newItem.unit === "new" ? newItem.customUnit : newItem.unit;
+    if (isNaN(parsedIngredientId) || parsedIngredientId <= 0) {
+      setErrorMessage("Ingredient ID must be a valid positive number!");
+      return;
+    }
+    if (ingredients.length === 0) {
+      setErrorMessage("Unable to load ingredients. Please try again!");
+      return;
+    }
+    const ingredient = ingredients.find(
+      (ing) => ing.ingredientId === parsedIngredientId
+    );
+    if (!ingredient) {
+      setErrorMessage(
+        `Ingredient with ID ${parsedIngredientId} does not exist!`
+      );
+      return;
+    }
+    if (isNaN(parsedQuantity) || parsedQuantity <= 0) {
+      setErrorMessage("Quantity must be a positive number!");
+      return;
+    }
+    if (!finalUnit) {
+      setErrorMessage("Invalid unit!");
+      return;
+    }
     try {
-      await authAPI.delete(`${API_URL}/dishes/${dishToDelete.dishId}`, {
-        headers: getAuthHeaders(),
-      });
-      setShowDeletePopup(false);
-      setDishToDelete(null);
-      setShowSuccessPopup(true);
-      setTimeout(() => setShowSuccessPopup(false), 2000);
-      await fetchDishes();
+      await axios.post(
+        `${API_BASE_URL}/api/admin/inventory`,
+        {
+          ingredientId: parsedIngredientId,
+          quantity: parsedQuantity,
+          unit: finalUnit,
+          lastUpdated: new Date().toISOString().split("T")[0],
+        },
+        { headers: getAuthHeaders() }
+      );
+      await fetchInventories();
+      setShowAddForm(false);
+      setNewItem({ ingredientId: "", quantity: "", unit: "", customUnit: "" });
+      setErrorMessage("");
+      setShowSuccessModal(true);
+      setTimeout(() => setShowSuccessModal(false), 2000);
     } catch (error) {
-      handleApiError(error, "Failed to delete dish.");
+      await handleApiError(error, "Failed to add inventory");
     }
   };
 
-  const styles = {
-    outerContainer: {
-      fontFamily: "Arial, sans-serif",
-      backgroundColor: "rgba(157, 198, 206, 0.33)",
-      minHeight: "auto",
-      width: "100vw",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      padding: "30px",
-      boxSizing: "border-box",
-    },
-    innerContainer: {
-      backgroundColor: "#F0F8FD",
-      borderRadius: "10px",
-      padding: "20px",
-      boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-      border: "3px solid rgba(0, 0, 0, 0.1)",
-      width: "100%",
-      maxWidth: "1200px",
-      display: "flex",
-      flexDirection: "column",
-      boxSizing: "border-box",
-    },
-    title: {
-      textAlign: "center",
-      fontSize: "24px",
-      fontWeight: "bold",
-      marginBottom: "15px",
-    },
-    tableAndControls: {
-      display: "flex",
-      alignItems: "flex-start",
-      gap: "20px",
-      flex: 1,
-    },
-    searchAndButtonContainer: {
-      flex: 1,
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "flex-end",
-      gap: "10px",
-    },
-    searchRow: {
-      display: "flex",
-      flexDirection: "row",
-      alignItems: "center",
-      gap: "10px",
-    },
-    input: {
-      padding: "10px",
-      borderRadius: "5px",
-      border: "1px solid #ddd",
-      width: "200px",
-    },
-    chefMouseImage: {
-      marginTop: "55px",
-      width: "280px",
-      height: "400px",
-    },
-    tableContainer: {
-      flex: 3,
-      backgroundColor: "rgba(157, 198, 206, 0.3)",
-      borderRadius: "10px",
-      overflowY: "auto",
-      maxHeight: "500px",
-      width: "100%",
-    },
-    table: {
-      width: "100%",
-      borderCollapse: "collapse",
-      border: "2px solid #9DC6CE",
-    },
-    thead: {
-      position: "sticky",
-      padding: "0 0 10px ",
-      top: 0,
-      zIndex: 2,
-      backgroundColor: "#9DC6CE",
-      border: "1px solid rgb(0, 0, 0)",
-    },
-    th: {
-      backgroundColor: "#9DC6CE",
-      fontWeight: "bold",
-      border: "1px solid #dddddd",
-      padding: "10px",
-      textAlign: "center",
-    },
-    td: {
-      border: "1px solid #9DC6CE",
-      padding: "10px",
-      textAlign: "center",
-    },
-    price: {
-      color: "#e74c3c",
-      fontWeight: "bold",
-    },
-    oddRow: {
-      backgroundColor: "rgba(157, 198, 206, 0.3)",
-    },
-    evenRow: {
-      backgroundColor: "#FFFFFF",
-    },
-    overlay: {
-      position: "fixed",
-      top: 0,
-      left: 0,
-      width: "100vw",
-      height: "100vh",
-      backgroundColor: "rgba(0, 0, 0, 0.5)",
-      zIndex: 999,
-    },
-    addFormContainer: {
-      position: "fixed",
-      top: "50%",
-      left: "50%",
-      transform: "translate(-50%, -50%)",
-      backgroundColor: "#fff",
-      padding: "20px",
-      borderRadius: "10px",
-      boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
-      zIndex: 1000,
-      width: "650px",
-      maxWidth: "90%",
-      height: "auto",
-      maxHeight: "90vh",
-      overflowY: "auto",
-    },
-    addFormTitle: {
-      fontSize: "24px",
-      fontWeight: "bold",
-      marginBottom: "15px",
-      textAlign: "center",
-    },
-    addForm: {
-      display: "flex",
-      flexDirection: "column",
-      gap: "10px",
-    },
-    addButton: {
-      padding: "10px 20px",
-      backgroundColor: "#4CAF50",
-      color: "white",
-      border: "none",
-      borderRadius: "5px",
-      cursor: "pointer",
-    },
-    cancelButton: {
-      padding: "10px 20px",
-      backgroundColor: "#e74c3c",
-      color: "white",
-      border: "none",
-      borderRadius: "5px",
-      cursor: "pointer",
-    },
-    addFormContent: {
-      display: "flex",
-      gap: "20px",
-    },
-    formFields: {
-      flex: "1",
-      display: "flex",
-      flexDirection: "column",
-      gap: "10px",
-    },
-    actionButtons: {
-      display: "flex",
-      justifyContent: "flex-end",
-      gap: "10px",
-      marginTop: "20px",
-    },
-    imageUploadContainer: {
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      gap: "10px",
-      cursor: "pointer",
-      position: "relative",
-    },
-    imageUploadSection: {
-      flex: "0 0 40%",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: "10px",
-      border: "1px solid #ddd",
-      borderRadius: "10px",
-      padding: "20px",
-      backgroundColor: "#f9f9f9",
-    },
-    imagePreview: {
-      width: "250px",
-      height: "250px",
-      border: "1px solid #ddd",
-      borderRadius: "10px",
-      overflow: "hidden",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      backgroundColor: "#fff",
-    },
-    image: {
-      width: "100%",
-      height: "100%",
-      objectFit: "cover",
-    },
-    placeholderText: {
-      fontSize: "14px",
-      color: "#aaa",
-      textAlign: "center",
-      padding: "10px",
-    },
-    fileInput: {
-      position: "absolute",
-      top: 0,
-      left: 0,
-      width: "100%",
-      height: "100%",
-      opacity: 0,
-      cursor: "pointer",
-    },
-    imageNote: {
-      fontSize: "12px",
-      color: "#555",
-      textAlign: "center",
-      marginTop: "10px",
-    },
-    formLabel: {
-      fontSize: "14px",
-      fontWeight: "bold",
-      display: "flex",
-      gap: "5px",
-    },
-    requiredMark: {
-      color: "#e74c3c",
-      marginLeft: "5px",
-    },
-    inputField: {
-      padding: "10px",
-      borderRadius: "5px",
-      border: "1px solid #ddd",
-      fontSize: "14px",
-      width: "100%",
-      maxWidth: "300px",
-    },
-    selectField: {
-      padding: "10px",
-      borderRadius: "5px",
-      border: "1px solid #ddd",
-      fontSize: "14px",
-      width: "100%",
-      maxWidth: "300px",
-    },
-    textareaField: {
-      padding: "10px",
-      borderRadius: "5px",
-      border: "1px solid #ddd",
-      fontSize: "14px",
-      width: "100%",
-      maxWidth: "300px",
-      height: "80px",
-      resize: "none",
-    },
-    successPopup: {
-      position: "fixed",
-      width: "250px",
-      height: "200px",
-      top: "50%",
-      left: "50%",
-      transform: "translate(-50%, -50%)",
-      backgroundColor: "#fff",
-      padding: "20px",
-      borderRadius: "10px",
-      boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
-      textAlign: "center",
-      zIndex: 1001,
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    successIcon: {
-      fontSize: "24px",
-      color: "#4CAF50",
-      marginTop: "10px",
-    },
-    successImage: {
-      width: "100px",
-      height: "auto",
-    },
-    successText: {
-      fontSize: "18px",
-      fontWeight: "bold",
-      marginBottom: "5px",
-    },
-    errorText: {
-      color: "#e74c3c",
-      fontSize: "14px",
-      marginBottom: "10px",
-      textAlign: "center",
-    },
-  };
+  // Render "Access Denied" message if user is not ADMIN
+  if (userRole !== "ADMIN") {
+    return (
+      <div className="h-screen w-screen flex flex-col bg-gradient-to-br from-blue-50 to-gray-100">
+        <MenuBar
+          title="Inventory Management"
+          icon="https://img.icons8.com/?size=100&id=4NUeu__UwtXf&format=png&color=FFFFFF"
+        />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg shadow-lg text-xl">
+            {errorMessage}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <>
-      <MenuBar title="Menu Management" />
-      <div style={styles.outerContainer}>
-        <div style={styles.innerContainer}>
-          <h1 style={styles.title}>Menu</h1>
-          {isLoading ? (
-            <p>Loading dishes...</p>
+    <div className="h-screen w-screen flex flex-col bg-gradient-to-br from-blue-50 to-gray-100">
+      <MenuBar
+        title="Inventory Management"
+        icon="https://img.icons8.com/?size=100&id=4NUeu__UwtXf&format=png&color=FFFFFF"
+      />
+
+      {/* Main Content */}
+      <div className="flex-1 p-8 bg-transparent overflow-y-auto">
+        {/* Error Message */}
+        {errorMessage && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            <p>{errorMessage}</p>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {isLoading && (
+          <div className="text-center text-gray-600">Loading inventory...</div>
+        )}
+
+        {/* Search and Filter */}
+        <div className="mb-6 flex space-x-4 items-center">
+          <div className="relative flex-1">
+            <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-lg">
+              🔍
+            </div>
+            <input
+              type="text"
+              placeholder="Search by ingredient name..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full h-12 p-3 pl-10 pr-4 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 hover:shadow-md placeholder-gray-400 text-gray-700"
+              disabled={userRole !== "ADMIN"}
+            />
+          </div>
+          <select
+            value={filterUnit}
+            onChange={(e) => setFilterUnit(e.target.value)}
+            className="h-12 px-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 hover:shadow-md text-gray-700"
+            disabled={userRole !== "ADMIN"}
+          >
+            {uniqueUnits.map((unit) => (
+              <option key={unit} value={unit}>
+                {unit}
+              </option>
+            ))}
+          </select>
+          <button
+            className="h-12 px-6 bg-green-500 text-white rounded-xl shadow-md hover:bg-green-600 transition-all duration-200"
+            onClick={() => setShowAddForm(true)}
+            disabled={ingredients.length === 0 || userRole !== "ADMIN"}
+          >
+            Add Item
+          </button>
+        </div>
+
+        {/* Inventory List */}
+        <div className="bg-white rounded-xl shadow-lg p-8">
+          {filteredInventory.length === 0 && !isLoading ? (
+            <div className="text-center text-gray-600">
+              No inventory items found.
+            </div>
           ) : (
-            <div style={styles.tableAndControls}>
-              <div style={styles.tableContainer}>
-                <table style={styles.table}>
-                  <thead style={styles.thead}>
-                    <tr>
-                      <th style={styles.th}>Name</th>
-                      <th style={styles.th}>ID</th>
-                      <th style={styles.th}>Price</th>
-                      <th style={styles.th}>Category</th>
-                      <th style={styles.th}>Description</th>
-                      <th style={styles.th}>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredDishes.map((dish, index) => (
-                      <tr
-                        key={dish.dishId}
-                        style={index % 2 === 0 ? styles.evenRow : styles.oddRow}
-                      >
-                        <td style={styles.td}>
-                          <div style={{ display: "flex", alignItems: "center" }}>
-                            <img
-                              src={dish.imageUrl || "./src/assets/img/placeholder.jpg"}
-                              alt={dish.dishName}
-                              style={{
-                                width: "50px",
-                                height: "50px",
-                                borderRadius: "5px",
-                                marginRight: "10px",
-                              }}
-                            />
-                            {dish.dishName}
-                          </div>
-                        </td>
-                        <td style={styles.td}>{dish.dishId}</td>
-                        <td style={{ ...styles.td, ...styles.price }}>${dish.price}</td>
-                        <td style={styles.td}>{dish.categoryName}</td>
-                        <td style={styles.td}>{dish.description || "No description"}</td>
-                        <td style={styles.td}>
-                          <button
-                            style={{ marginRight: "10px", cursor: "pointer" }}
-                            onClick={() => handleEditDish(dish)}
-                          >
-                            ✏️
-                          </button>
-                          <button
-                            style={{ cursor: "pointer" }}
-                            onClick={() => handleDeleteDish(dish)}
-                          >
-                            🗑️
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            filteredInventory.map((item) => (
+              <div
+                key={item.id}
+                className="relative flex justify-between items-center bg-gradient-to-r from-gray-50 to-white rounded-lg shadow-md p-6 mb-4 hover:shadow-lg transition-shadow duration-300"
+              >
+                {/* Left Section: Ingredient Info */}
+                <div className="flex items-center">
+                  <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-r from-blue-100 to-blue-200 rounded-full mr-4 shadow-sm">
+                    <span className="text-blue-600 font-semibold">
+                      {item.quantity}
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-xl text-gray-800">
+                      {item.ingredientName}
+                    </h3>
+                    <p className="text-gray-600 text-sm mt-1">
+                      Supplier: {item.supplierName}
+                    </p>
+                    <p className="text-gray-600 text-sm">Unit: {item.unit}</p>
+                  </div>
+                </div>
+
+                {/* Right Section: Last Update and Actions */}
+                <div className="flex flex-col items-end">
+                  <span className="text-gray-500 text-sm font-medium mb-2">
+                    {item.lastUpdate}
+                  </span>
+                  <div className="flex justify-end space-x-4">
+                    <button
+                      className="flex items-center px-4 py-2 !bg-yellow-500 text-white rounded-lg shadow-md hover:bg-yellow-600 transition-all duration-200"
+                      onClick={() => handleEditClick(item)}
+                      disabled={userRole !== "ADMIN"}
+                    >
+                      <FaEdit className="mr-2" /> Edit
+                    </button>
+                    <button
+                      className="flex items-center px-4 py-2 !bg-red-500 text-white rounded-lg shadow-md hover:bg-red-600 transition-all duration-200"
+                      onClick={() => handleDeleteClick(item)}
+                      disabled={userRole !== "ADMIN"}
+                    >
+                      <FaTrash className="mr-2" /> Delete
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Add Form Modal */}
+      {showAddForm && !isLoading && ingredients.length > 0 && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8 mx-4 transform transition-all duration-300 scale-100">
+            <div className="flex justify-center mb-6">
+              <img alt="Logo" className="w-24 h-24" src={logoRemoveBg} />
+            </div>
+            <h3 className="text-2xl font-bold mb-6 text-center text-gray-800">
+              Add Inventory Item
+            </h3>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Ingredient <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={newItem.ingredientId}
+                  onChange={(e) =>
+                    setNewItem({ ...newItem, ingredientId: e.target.value })
+                  }
+                  className="w-full h-12 p-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                >
+                  <option value="">Select ingredient</option>
+                  {ingredients.map((ingredient) => (
+                    <option
+                      key={ingredient.ingredientId}
+                      value={ingredient.ingredientId}
+                    >
+                      {ingredient.name}
+                    </option>
+                  ))}
+                </select>
               </div>
               <div style={styles.searchAndButtonContainer}>
                 <div style={styles.searchRow}>
@@ -615,248 +502,180 @@ const InventoryManagement = () => {
                 />
               </div>
             </div>
-          )}
-
-          {showAddForm && !isLoading && (
-            <>
-              <div style={styles.overlay} onClick={() => setShowAddForm(false)}></div>
-              <div style={styles.addFormContainer}>
-                <h2 style={styles.addFormTitle}>Add Dish</h2>
-                <div style={styles.addForm}>
-                  <div style={styles.addFormContent}>
-                    <div style={styles.imageUploadSection}>
-                      <label style={styles.imageUploadContainer}>
-                        <div style={styles.imagePreview}>
-                          {newDish.image ? (
-                            <img
-                              src={URL.createObjectURL(newDish.image)}
-                              alt="Dish Preview"
-                              style={styles.image}
-                            />
-                          ) : (
-                            <div style={styles.placeholderText}>
-                              Select images in the formats (.jpg, .jpeg, .png, .gif)
-                            </div>
-                          )}
-                        </div>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          style={styles.fileInput}
-                          onChange={(e) =>
-                            setNewDish({ ...newDish, image: e.target.files[0] })
-                          }
-                        />
-                      </label>
-                      <p style={styles.imageNote}>
-                        Select images in the formats (.jpg, .jpeg, .png, .gif)
-                      </p>
-                    </div>
-                    <div style={styles.formFields}>
-                      <label style={styles.formLabel}>
-                        Name <span style={styles.requiredMark}>(*)</span>:
-                        <input
-                          type="text"
-                          value={newDish.name}
-                          onChange={(e) =>
-                            setNewDish({ ...newDish, name: e.target.value })
-                          }
-                          style={styles.inputField}
-                        />
-                      </label>
-                      <label style={styles.formLabel}>
-                        Price <span style={styles.requiredMark}>(*)</span>:
-                        <input
-                          type="text"
-                          value={newDish.price}
-                          onChange={(e) =>
-                            setNewDish({ ...newDish, price: e.target.value })
-                          }
-                          style={styles.inputField}
-                        />
-                      </label>
-                      <label style={styles.formLabel}>
-                        Category <span style={styles.requiredMark}>(*)</span>:
-                        <select
-                          value={newDish.category}
-                          onChange={(e) =>
-                            setNewDish({ ...newDish, category: e.target.value })
-                          }
-                          style={styles.selectField}
-                        >
-                          <option value="Appetizers">Appetizers</option>
-                          <option value="Main">Main</option>
-                          <option value="Desserts">Desserts</option>
-                        </select>
-                      </label>
-                      <label style={styles.formLabel}>
-                        Description <span style={styles.requiredMark}>(*)</span>:
-                        <textarea
-                          value={newDish.description}
-                          onChange={(e) =>
-                            setNewDish({ ...newDish, description: e.target.value })
-                          }
-                          style={styles.textareaField}
-                        />
-                      </label>
-                    </div>
-                  </div>
-                  {errorMessage && <p style={styles.errorText}>{errorMessage}</p>}
-                  <div style={styles.actionButtons}>
-                    <button onClick={validateAndAddDish} style={styles.addButton}>
-                      Add
-                    </button>
-                    <button
-                      onClick={() => setShowAddForm(false)}
-                      style={styles.cancelButton}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-
-          {showEditForm && !isLoading && (
-            <>
-              <div style={styles.overlay} onClick={() => setShowEditForm(false)}></div>
-              <div style={styles.addFormContainer}>
-                <h2 style={styles.addFormTitle}>Edit Dish</h2>
-                <div style={styles.addForm}>
-                  <div style={styles.addFormContent}>
-                    <div style={styles.imageUploadSection}>
-                      <label style={styles.imageUploadContainer}>
-                        <div style={styles.imagePreview}>
-                          {newDish.image ? (
-                            <img
-                              src={URL.createObjectURL(newDish.image)}
-                              alt="Dish Preview"
-                              style={styles.image}
-                            />
-                          ) : dishToEdit.imageUrl ? (
-                            <img
-                              src={dishToEdit.imageUrl}
-                              alt="Dish Preview"
-                              style={styles.image}
-                            />
-                          ) : (
-                            <div style={styles.placeholderText}>
-                              Select images in the formats (.jpg, .jpeg, .png, .gif)
-                            </div>
-                          )}
-                        </div>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          style={styles.fileInput}
-                          onChange={(e) =>
-                            setNewDish({ ...newDish, image: e.target.files[0] })
-                          }
-                        />
-                      </label>
-                      <p style={styles.imageNote}>
-                        Select images in the formats (.jpg, .jpeg, .png, .gif)
-                      </p>
-                    </div>
-                    <div style={styles.formFields}>
-                      <label style={styles.formLabel}>
-                        Name <span style={styles.requiredMark}>(*)</span>:
-                        <input
-                          type="text"
-                          value={newDish.name}
-                          onChange={(e) =>
-                            setNewDish({ ...newDish, name: e.target.value })
-                          }
-                          style={styles.inputField}
-                        />
-                      </label>
-                      <label style={styles.formLabel}>
-                        Price <span style={styles.requiredMark}>(*)</span>:
-                        <input
-                          type="text"
-                          value={newDish.price}
-                          onChange={(e) =>
-                            setNewDish({ ...newDish, price: e.target.value })
-                          }
-                          style={styles.inputField}
-                        />
-                      </label>
-                      <label style={styles.formLabel}>
-                        Category <span style={styles.requiredMark}>(*)</span>:
-                        <select
-                          value={newDish.category}
-                          onChange={(e) =>
-                            setNewDish({ ...newDish, category: e.target.value })
-                          }
-                          style={styles.selectField}
-                        >
-                          <option value="Appetizers">Appetizers</option>
-                          <option value="Main">Main</option>
-                          <option value="Desserts">Desserts</option>
-                        </select>
-                      </label>
-                      <label style={styles.formLabel}>
-                        Description <span style={styles.requiredMark}>(*)</span>:
-                        <textarea
-                          value={newDish.description}
-                          onChange={(e) =>
-                            setNewDish({ ...newDish, description: e.target.value })
-                          }
-                          style={styles.textareaField}
-                        />
-                      </label>
-                    </div>
-                  </div>
-                  {errorMessage && <p style={styles.errorText}>{errorMessage}</p>}
-                  <div style={styles.actionButtons}>
-                    <button onClick={confirmEditDish} style={styles.addButton}>
-                      Save
-                    </button>
-                    <button
-                      onClick={() => setShowEditForm(false)}
-                      style={styles.cancelButton}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-
-          {showSuccessPopup && (
-            <div style={styles.successPopup}>
-              <img src={logoRemoveBg} alt="Bon Appétit" style={styles.successImage} />
-              <p>
-                <b>Successful</b>
-              </p>
-              <div style={styles.successIcon}>✔</div>
+            {errorMessage && (
+              <p className="text-red-500 mt-4 text-center">{errorMessage}</p>
+            )}
+            <div className="flex justify-center space-x-4 mt-6">
+              <button
+                className="px-6 py-3 bg-green-500 text-white rounded-lg shadow-md hover:bg-green-600 transition-all duration-200"
+                onClick={validateAndAddItem}
+              >
+                Add
+              </button>
+              <button
+                className="px-6 py-3 bg-gray-500 text-white rounded-lg shadow-md hover:bg-gray-600 transition-all duration-200"
+                onClick={() => setShowAddForm(false)}
+              >
+                Cancel
+              </button>
             </div>
-          )}
+          </div>
+        </div>
+      )}
 
-          {showDeletePopup && (
-            <div style={styles.successPopup}>
-              <img src={logoRemoveBg} alt="Bon Appétit" style={styles.successImage} />
-              <p>
-                <b>Are you sure?</b>
-              </p>
+      {showEditForm && !isLoading && (
+        <>
+          <div
+            style={styles.overlay}
+            onClick={() => setShowEditForm(false)}
+          ></div>
+          <div style={styles.addFormContainer}>
+            <h2 style={styles.addFormTitle}>Edit Dish</h2>
+            <div style={styles.addForm}>
+              <div style={styles.addFormContent}>
+                <div style={styles.imageUploadSection}>
+                  <label style={styles.imageUploadContainer}>
+                    <div style={styles.imagePreview}>
+                      {newDish.image ? (
+                        <img
+                          src={URL.createObjectURL(newDish.image)}
+                          alt="Dish Preview"
+                          style={styles.image}
+                        />
+                      ) : dishToEdit.imageUrl ? (
+                        <img
+                          src={dishToEdit.imageUrl}
+                          alt="Dish Preview"
+                          style={styles.image}
+                        />
+                      ) : (
+                        <div style={styles.placeholderText}>
+                          Select images in the formats (.jpg, .jpeg, .png, .gif)
+                        </div>
+                      )}
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      style={styles.fileInput}
+                      onChange={(e) =>
+                        setNewDish({ ...newDish, image: e.target.files[0] })
+                      }
+                    />
+                  </label>
+                  <p style={styles.imageNote}>
+                    Select images in the formats (.jpg, .jpeg, .png, .gif)
+                  </p>
+                </div>
+                <div style={styles.formFields}>
+                  <label style={styles.formLabel}>
+                    Name <span style={styles.requiredMark}>(*)</span>:
+                    <input
+                      type="text"
+                      value={newDish.name}
+                      onChange={(e) =>
+                        setNewDish({ ...newDish, name: e.target.value })
+                      }
+                      style={styles.inputField}
+                    />
+                  </label>
+                  <label style={styles.formLabel}>
+                    Price <span style={styles.requiredMark}>(*)</span>:
+                    <input
+                      type="text"
+                      value={newDish.price}
+                      onChange={(e) =>
+                        setNewDish({ ...newDish, price: e.target.value })
+                      }
+                      style={styles.inputField}
+                    />
+                  </label>
+                  <label style={styles.formLabel}>
+                    Category <span style={styles.requiredMark}>(*)</span>:
+                    <select
+                      value={newDish.category}
+                      onChange={(e) =>
+                        setNewDish({ ...newDish, category: e.target.value })
+                      }
+                      style={styles.selectField}
+                    >
+                      <option value="Appetizers">Appetizers</option>
+                      <option value="Main">Main</option>
+                      <option value="Desserts">Desserts</option>
+                    </select>
+                  </label>
+                  <label style={styles.formLabel}>
+                    Description <span style={styles.requiredMark}>(*)</span>:
+                    <textarea
+                      value={newDish.description}
+                      onChange={(e) =>
+                        setNewDish({ ...newDish, description: e.target.value })
+                      }
+                      style={styles.textareaField}
+                    />
+                  </label>
+                </div>
+              </div>
+              {errorMessage && <p style={styles.errorText}>{errorMessage}</p>}
               <div style={styles.actionButtons}>
-                <button onClick={confirmDeleteDish} style={styles.addButton}>
-                  Yes
+                <button onClick={confirmEditDish} style={styles.addButton}>
+                  Save
                 </button>
                 <button
-                  onClick={() => setShowDeletePopup(false)}
+                  onClick={() => setShowEditForm(false)}
                   style={styles.cancelButton}
                 >
-                  No
+                  Cancel
                 </button>
               </div>
             </div>
-          )}
+          </div>
+        </>
+      )}
+
+      {showSuccessPopup && (
+        <div style={styles.successPopup}>
+          <img
+            src={logoRemoveBg}
+            alt="Bon Appétit"
+            style={styles.successImage}
+          />
+          <p>
+            <b>Successful</b>
+          </p>
+          <div style={styles.successIcon}>✔</div>
         </div>
-      </div>
-    </>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
+          <div className="relative bg-white rounded-2xl shadow-2xl w-96 p-8 mx-4 transform transition-all duration-300 scale-100">
+            <div className="flex justify-center mb-6">
+              <img alt="Logo" className="w-24 h-24" src={logoRemoveBg} />
+            </div>
+            <h3 className="text-2xl font-bold mb-6 text-center text-gray-800">
+              ARE YOU SURE?
+            </h3>
+            <div className="flex justify-center space-x-4">
+              <button
+                className="px-6 py-3 bg-red-500 text-white rounded-lg shadow-md hover:bg-red-600 transition-all duration-200"
+                onClick={handleConfirmDelete}
+              >
+                YES
+              </button>
+              <button
+                className="px-6 py-3 bg-gray-500 text-white rounded-lg shadow-md hover:bg-gray-600 transition-all duration-200"
+                onClick={handleCancelDelete}
+              >
+                NO
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 
