@@ -3,7 +3,7 @@ import { useQuery, useMutation, gql } from "@apollo/client";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCircleXmark, faRedo } from "@fortawesome/free-solid-svg-icons";
 import { toast } from "react-toastify";
-import MenuBar from "../../../components/layout/MenuBar";
+import MenuBar from "../../../components/layout/menuBar";
 
 // GraphQL Queries and Mutations
 const GET_ORDERS = gql`
