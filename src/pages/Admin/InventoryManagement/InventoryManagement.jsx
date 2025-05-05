@@ -33,7 +33,7 @@ const InventoryManagement = () => {
 
   // Check user role on component mount
   useEffect(() => {
-    const role = localStorage.getItem("userRole");
+    const role = localStorage.getItem("userType"); // Use userType instead of userRole
     setUserRole(role);
     if (role !== "ADMIN") {
       setErrorMessage("Access denied: Administrator privileges required.");
@@ -455,14 +455,14 @@ const InventoryManagement = () => {
                   </span>
                   <div className="flex justify-end space-x-4">
                     <button
-                      className="flex items-center px-4 py-2 bg-yellow-500 text-white rounded-lg shadow-md hover:bg-yellow-600 transition-all duration-200"
+                      className="flex items-center px-4 py-2 !bg-yellow-500 text-white rounded-lg shadow-md hover:bg-yellow-600 transition-all duration-200"
                       onClick={() => handleEditClick(item)}
                       disabled={userRole !== "ADMIN"}
                     >
                       <FaEdit className="mr-2" /> Edit
                     </button>
                     <button
-                      className="flex items-center px-4 py-2 bg-red-500 text-white rounded-lg shadow-md hover:bg-red-600 transition-all duration-200"
+                      className="flex items-center px-4 py-2 !bg-red-500 text-white rounded-lg shadow-md hover:bg-red-600 transition-all duration-200"
                       onClick={() => handleDeleteClick(item)}
                       disabled={userRole !== "ADMIN"}
                     >
@@ -576,7 +576,7 @@ const InventoryManagement = () => {
               </div>
             </div>
             {errorMessage && (
-              <p className="text-red-500  mt-4 text-center">{errorMessage}</p>
+              <p className="text-red-500 mt-4 text-center">{errorMessage}</p>
             )}
             <div className="flex justify-center space-x-4 mt-6">
               <button
