@@ -21,6 +21,7 @@ const EvaluteAdmin = () => {
   const [filterDate, setFilterDate] = useState("All");
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [userRole, setUserRole] = useState(null);
 
   const tabs = [
     "Order Management",
@@ -29,6 +30,12 @@ const EvaluteAdmin = () => {
   ];
   const navigate = useNavigate();
   const API_BASE_URL = "http://localhost:8080";
+
+  // Check user role on component mount
+  useEffect(() => {
+    const role = localStorage.getItem("userRole"); // Adjust based on your auth mechanism
+    setUserRole(role);
+  }, []);
 
   // Lấy danh sách feedback từ backend
   const fetchFeedbacks = async () => {
@@ -51,10 +58,12 @@ const EvaluteAdmin = () => {
     }
   };
 
-  // Gọi API khi component mount hoặc khi search/filter thay đổi
+  // Gọi API khi component mount hoặc khi search/filter thay đổi, chỉ nếu là ADMIN
   useEffect(() => {
-    fetchFeedbacks();
-  }, [searchTerm, filterRating, filterDate]);
+    if (userRole === "ADMIN") {
+      fetchFeedbacks();
+    }
+  }, [searchTerm, filterRating, filterDate, userRole]);
 
   // Get unique dates for the filter dropdown
   const uniqueDates = ["All", ...new Set(reviews.map((review) => review.date))];
@@ -66,6 +75,7 @@ const EvaluteAdmin = () => {
   }, {});
 
   const handleTabClick = (tab) => {
+    if (userRole !== "ADMIN") return; // Prevent tab navigation for non-ADMIN
     if (tab === "Order Management") {
       navigate("/order-management");
     } else if (tab === "Dish Management") {
@@ -77,12 +87,13 @@ const EvaluteAdmin = () => {
 
   // Đánh dấu feedback là đã đọc
   const handleCheckReview = async (id) => {
+    if (userRole !== "ADMIN") return; // Prevent action for non-ADMIN
     try {
-      const response = await axios.put(`${API_BASE_URL}/api/feedback/${id}/mark-as-read`);
+      const response = await axios.put(
+        `${API_BASE_URL}/api/feedback/${id}/mark-as-read`
+      );
       setReviews(
-        reviews.map((rev) =>
-          rev.id === id ? { ...rev, checked: true } : rev
-        )
+        reviews.map((rev) => (rev.id === id ? { ...rev, checked: true } : rev))
       );
     } catch (error) {
       console.error("Error marking feedback as read:", error);
@@ -92,11 +103,13 @@ const EvaluteAdmin = () => {
 
   // Xóa feedback
   const handleDeleteClick = (id) => {
+    if (userRole !== "ADMIN") return; // Prevent action for non-ADMIN
     setReviewToDelete(id);
     setShowDeleteModal(true);
   };
 
   const handleConfirmDelete = async () => {
+    if (userRole !== "ADMIN") return; // Prevent action for non-ADMIN
     if (reviewToDelete) {
       try {
         await axios.delete(`${API_BASE_URL}/api/feedback/${reviewToDelete}`);
@@ -111,6 +124,7 @@ const EvaluteAdmin = () => {
   };
 
   const handleCancelDelete = () => {
+    if (userRole !== "ADMIN") return; // Prevent action for non-ADMIN
     setShowDeleteModal(false);
     setReviewToDelete(null);
   };
@@ -131,20 +145,28 @@ const EvaluteAdmin = () => {
         {[1, 2, 3, 4, 5].map((star) => (
           <button
             key={star}
-            onClick={() => setFilterRating(star.toString())}
+            onClick={() =>
+              userRole === "ADMIN" && setFilterRating(star.toString())
+            }
             className={`flex items-center text-2xl ${
-              filterRating === star.toString() ? "text-yellow-500" : "text-gray-300"
+              filterRating === star.toString()
+                ? "text-yellow-500"
+                : "text-gray-300"
             } hover:text-yellow-500 transition-colors`}
+            disabled={userRole !== "ADMIN"}
           >
             <span className="mr-1 text-sm">{star}</span>⭐
-            <span className="ml-1 text-sm text-gray-600">({starCounts[star]})</span>
+            <span className="ml-1 text-sm text-gray-600">
+              ({starCounts[star]})
+            </span>
           </button>
         ))}
         <button
-          onClick={() => setFilterRating("All")}
+          onClick={() => userRole === "ADMIN" && setFilterRating("All")}
           className={`ml-4 text-sm ${
             filterRating === "All" ? "text-blue-500" : "text-gray-500"
           } hover:text-blue-500 transition-colors`}
+          disabled={userRole !== "ADMIN"}
         >
           All ({reviews.length})
         </button>
@@ -167,6 +189,23 @@ const EvaluteAdmin = () => {
     const dateB = new Date(b.split("/").reverse().join("-"));
     return dateB - dateA;
   });
+
+  // Render "Access Denied" message if user is not ADMIN
+  if (userRole !== "ADMIN") {
+    return (
+      <div className="h-screen w-screen flex flex-col bg-gradient-to-br from-blue-50 to-gray-100">
+        <MenuBar
+          title="Evaluate"
+          icon="https://img.icons8.com/ios-filled/50/FFFFFF/bookmark.png"
+        />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg shadow-lg text-xl">
+            Access denied: Administrator privileges required.
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen w-screen !bg-gradient-to-br from-blue-50 to-gray-100 flex flex-col">
@@ -201,6 +240,7 @@ const EvaluteAdmin = () => {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full h-12 p-3 pl-10 pr-4 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 hover:shadow-md placeholder-gray-400 text-gray-700"
+              disabled={userRole !== "ADMIN"}
             />
           </div>
           {renderStarFilter()}
@@ -208,6 +248,7 @@ const EvaluteAdmin = () => {
             value={filterDate}
             onChange={(e) => setFilterDate(e.target.value)}
             className="h-12 px-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 hover:shadow-md text-gray-700"
+            disabled={userRole !== "ADMIN"}
           >
             {uniqueDates.map((date) => (
               <option key={date} value={date}>
@@ -258,6 +299,7 @@ const EvaluteAdmin = () => {
                               : "!bg-yellow-500 hover:bg-yellow-600"
                           }`}
                           onClick={() => handleCheckReview(review.id)}
+                          disabled={userRole !== "ADMIN"}
                         >
                           <FaCheck className="mr-2" />{" "}
                           {review.checked ? "Checked" : "Check"}
@@ -265,6 +307,7 @@ const EvaluteAdmin = () => {
                         <button
                           className="flex items-center px-4 py-2 !bg-red-500 text-white rounded-lg shadow-md hover:bg-red-600 transition-all duration-200"
                           onClick={() => handleDeleteClick(review.id)}
+                          disabled={userRole !== "ADMIN"}
                         >
                           <FaTrash className="mr-2" /> Delete
                         </button>
@@ -297,12 +340,14 @@ const EvaluteAdmin = () => {
               <button
                 className="px-6 py-3 !bg-red-500 text-white rounded-lg shadow-md hover:bg-red-600 transition-all duration-200"
                 onClick={handleConfirmDelete}
+                disabled={userRole !== "ADMIN"}
               >
                 YES
               </button>
               <button
                 className="px-6 py-3 !bg-gray-500 text-white rounded-lg shadow-md hover:bg-gray-600 transition-all duration-200"
                 onClick={handleCancelDelete}
+                disabled={userRole !== "ADMIN"}
               >
                 NO
               </button>
