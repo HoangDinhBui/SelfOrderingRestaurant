@@ -787,6 +787,7 @@ const TableManagementAdmin = () => {
             {/* Nút lưu */}
             <button
               className="mt-4 w-full bg-blue-500 text-black py-2 px-4 rounded-lg hover:bg-black-600"
+              style={{ backgroundColor: "#BDC4D4" }}
               onClick={handleSaveTableChanges}
             >
               Save Changes
