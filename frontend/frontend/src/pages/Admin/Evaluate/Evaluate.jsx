@@ -161,6 +161,13 @@ const EvaluteAdmin = () => {
     return acc;
   }, {});
 
+  // Sort dates in descending order (newest first)
+  const sortedDates = Object.keys(groupedReviews).sort((a, b) => {
+    const dateA = new Date(a.split("/").reverse().join("-"));
+    const dateB = new Date(b.split("/").reverse().join("-"));
+    return dateB - dateA;
+  });
+
   return (
     <div className="h-screen w-screen !bg-gradient-to-br from-blue-50 to-gray-100 flex flex-col">
       <MenuBar
@@ -212,15 +219,15 @@ const EvaluteAdmin = () => {
 
         {/* Review List */}
         <div className="bg-white rounded-xl shadow-lg p-8">
-          {Object.entries(groupedReviews).length === 0 && !loading ? (
+          {sortedDates.length === 0 && !loading ? (
             <div className="text-center text-gray-600">No feedbacks found.</div>
           ) : (
-            Object.entries(groupedReviews).map(([date, dateReviews]) => (
+            sortedDates.map((date) => (
               <div key={date} className="mb-8">
                 <h2 className="text-2xl font-semibold text-gray-800 mb-4 border-b-2 border-gray-200 pb-2">
                   {date}
                 </h2>
-                {dateReviews.map((review) => (
+                {groupedReviews[date].map((review) => (
                   <div
                     key={review.id}
                     className="relative flex justify-between items-center bg-gradient-to-r from-gray-50 to-white rounded-lg shadow-md p-6 mb-4 hover:shadow-lg transition-shadow duration-300"
