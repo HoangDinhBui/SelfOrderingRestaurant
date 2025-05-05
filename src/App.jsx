@@ -95,7 +95,12 @@ function App() {
                 path="/table-management_staff"
                 element={<TableManagementStaff />}
               />
+              <Route
+                path="/order-history"
+                element={<OrderHistoryStaff />}
+              />
             </Routes>
+
           </Router>
           <ToastContainer
             position="top-right"
