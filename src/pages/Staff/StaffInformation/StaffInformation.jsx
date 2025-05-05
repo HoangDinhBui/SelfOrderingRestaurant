@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import MenuBar from "../../../components/layout/MenuBar";
 
 // Shift models data
 const shiftModels = {
@@ -11,6 +12,13 @@ const shiftModels = {
     hours: "7:00am - 11:00pm",
   },
 };
+
+// Available time slots
+const timeSlots = [
+  "7:30am - 12:30pm",
+  "12:30pm - 17:30pm",
+  "17h30pm - 22h30pm",
+];
 
 const StaffInformation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -33,6 +41,14 @@ const StaffInformation = () => {
   const [passwordData, setPasswordData] = useState({
     oldPassword: "",
     newPassword: "",
+  });
+
+  // State to store registered shifts
+  const [registeredShifts, setRegisteredShifts] = useState([]);
+
+  const [shiftForm, setShiftForm] = useState({
+    day: shiftModels["Full-time"].days[0],
+    timeSlot: timeSlots[0],
   });
 
   const handleScheduleShiftClick = () => {
@@ -63,6 +79,14 @@ const StaffInformation = () => {
     }));
   };
 
+  const handleShiftFormChange = (e) => {
+    const { name, value } = e.target;
+    setShiftForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     setIsEditModalOpen(false);
@@ -74,35 +98,28 @@ const StaffInformation = () => {
     setPasswordData({ oldPassword: "", newPassword: "" });
   };
 
+  const handleShiftSubmit = (e) => {
+    e.preventDefault();
+    setRegisteredShifts((prev) => [
+      ...prev,
+      { day: shiftForm.day, timeSlot: shiftForm.timeSlot },
+    ]);
+    setShiftForm({
+      day: shiftModels[staffData.workShift].days[0],
+      timeSlot: timeSlots[0],
+    });
+    setIsScheduleModalOpen(false);
+  };
+
   const currentShiftModel = shiftModels[staffData.workShift];
 
   return (
     <div className="h-screen w-screen bg-gray-100 flex flex-col relative">
-
-      {/* Header - Reduced size */}
-      <div className="w-full h-60 bg-blue-200 py-2 flex items-center justify-center relative z-20">
-        {/* Logo on the left */}
-        <div className="absolute left-4 flex items-center">
-          <img
-            src="./src/assets/img/logoremovebg.png"
-            alt="Logo"
-            className="w-12 h-12 rounded-full object-cover"
-          />
-        </div>
-
-        {/* PROFILE text */}
-        <h1 className="text-l font-bold text-gray-800">PROFILE</h1>
-
-        {/* Avatar on the right */}
-        <div className="absolute right-4 pr-2">
-          <img
-            src="./src/assets/img/MyDung.jpg"
-            alt="User Avatar"
-            className="w-13 h-13  rounded-full border-2 border-white shadow-md cursor-pointer object-cover"
-            onClick={handleAvatarClick}
-          />
-        </div>
-      </div>
+      {/* Header */}
+      <MenuBar
+        tilte="Profile"
+        icon="https://img.icons8.com/?size=100&id=34105&format=png&color=FFFFFF"
+      />
 
       {/* Avatar Modal */}
       {isAvatarModalOpen && (
@@ -323,7 +340,7 @@ const StaffInformation = () => {
                   <button
                     type="submit"
                     className="px-8 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors shadow-md"
-                    style={{backgroundColor:"#000000"}}
+                    style={{ backgroundColor: "#000000" }}
                   >
                     Save
                   </button>
@@ -397,7 +414,7 @@ const StaffInformation = () => {
                   <button
                     type="submit"
                     className="px-8 py-3 text-white rounded-lg transition-colors shadow-md"
-                    style={{backgroundColor:"#000000"}}
+                    style={{ backgroundColor: "#000000" }}
                   >
                     Save
                   </button>
@@ -443,15 +460,19 @@ const StaffInformation = () => {
                   Staff: {staffData.workShift}
                 </p>
                 <div className="border-t border-gray-200 pt-4">
-                  <p className="font-medium mb-2">Shift:</p>
-                  <ul className="space-y-2">
-                    {currentShiftModel.days.map((day) => (
-                      <li key={day} className="flex justify-between">
-                        <span>{day}:</span>
-                        <span>{currentShiftModel.hours}</span>
-                      </li>
-                    ))}
-                  </ul>
+                  <p className="font-medium mb-2">Registered Shifts:</p>
+                  {registeredShifts.length > 0 ? (
+                    <ul className="space-y-2">
+                      {registeredShifts.map((shift, index) => (
+                        <li key={index} className="flex justify-between">
+                          <span>{shift.day}:</span>
+                          <span>{shift.timeSlot}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-gray-500">No shifts registered.</p>
+                  )}
                 </div>
               </div>
 
@@ -459,7 +480,7 @@ const StaffInformation = () => {
                 <button
                   onClick={() => setIsShiftModalOpen(false)}
                   className="px-8 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors shadow-md"
-                  style={{backgroundColor:"#000000"}}
+                  style={{ backgroundColor: "#000000" }}
                 >
                   Close
                 </button>
@@ -497,42 +518,66 @@ const StaffInformation = () => {
                 <h2 className="text-2xl font-bold mx-auto">Schedule a shift</h2>
               </div>
 
-              <div className="mb-4">
-                <h3 className="font-bold text-lg mb-2">
-                  Staff: {staffData.workShift}
-                </h3>
-                <h4 className="font-medium mb-2">Shift:</h4>
+              <form onSubmit={handleShiftSubmit}>
+                <div className="mb-4">
+                  <h3 className="font-bold text-lg mb-2">
+                    Staff: {staffData.workShift}
+                  </h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Day
+                      </label>
+                      <select
+                        name="day"
+                        value={shiftForm.day}
+                        onChange={handleShiftFormChange}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-md"
+                      >
+                        {currentShiftModel.days.map((day) => (
+                          <option key={day} value={day}>
+                            {day}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Time Slot
+                      </label>
+                      <select
+                        name="subs"
+                        value={shiftForm.timeSlot}
+                        onChange={handleShiftFormChange}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-md"
+                      >
+                        {timeSlots.map((slot) => (
+                          <option key={slot} value={slot}>
+                            {slot}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
 
-                {staffData.workShift === "Full-time" ? (
-                  <ul className="space-y-2">
-                    <li>Monday: 1 (7h–12h)</li>
-                    <li>Tuesday: 1 (7h–12h)</li>
-                    <li>Wednesday: 2 (12h–17h)</li>
-                    <li>Thursday: 2 (12h–17h)</li>
-                    <li>Friday: 3 (17h–22h)</li>
-                    <li>Saturday: 3 (17h–22h)</li>
-                  </ul>
-                ) : (
-                  <ul className="space-y-2">
-                    <li>Monday: 1 (7h–12h)</li>
-                    <li>Tuesday: 1 (7h–12h)</li>
-                    <li>Wednesday: 1 (7h–12h)</li>
-                    <li>Thursday: 1 (7h–12h)</li>
-                    <li>Friday: None</li>
-                    <li>Saturday: None</li>
-                  </ul>
-                )}
-              </div>
-
-              <div className="flex justify-center mt-6">
-                <button
-                  onClick={() => setIsScheduleModalOpen(false)}
-                  className="px-8 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors shadow-md"
-                  style={{backgroundColor:"#000000"}}
-                >
-                  Close
-                </button>
-              </div>
+                <div className="flex justify-center mt-6 space-x-4">
+                  <button
+                    type="submit"
+                    className="px-8 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors shadow-md"
+                    style={{ backgroundColor: "#000000" }}
+                  >
+                    Save
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsScheduleModalOpen(false)}
+                    className="px-8 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors shadow-md"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         </div>
@@ -612,7 +657,7 @@ const StaffInformation = () => {
                       </svg>
                       Language
                     </div>
-                    <span className="text-blue-500">English</span>
+                    <span className="text-blue-Tx500">English</span>
                   </div>
                 </div>
 
