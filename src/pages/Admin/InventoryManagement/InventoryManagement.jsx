@@ -1,54 +1,100 @@
 import React, { useState, useEffect } from "react";
-import { authAPI } from "../../../services/api";
 import MenuBar from "../../../components/layout/MenuBar";
 import logoRemoveBg from "../../../assets/img/logoremovebg.png";
+import { authAPI } from "../../../services/api";
 
-const MenuManagementAdmin = () => {
-  const [dishes, setDishes] = useState([]);
+const InventoryManagement = () => {
+  const [inventory, setInventory] = useState([]);
+  const [suppliers, setSuppliers] = useState([]);
+  const [ingredients, setIngredients] = useState([]);
+  const [filteredInventory, setFilteredInventory] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filteredDishes, setFilteredDishes] = useState([]);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [newDish, setNewDish] = useState({
-    name: "",
-    price: "",
-    category: "Appetizers",
-    description: "",
-    image: null,
+  const [newItem, setNewItem] = useState({
+    ingredientId: "",
+    quantity: "",
+    unit: "",
+    customUnit: "",
   });
   const [errorMessage, setErrorMessage] = useState("");
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [showDeletePopup, setShowDeletePopup] = useState(false);
-  const [dishToDelete, setDishToDelete] = useState(null);
+  const [itemToDelete, setItemToDelete] = useState(null);
   const [showEditForm, setShowEditForm] = useState(false);
-  const [dishToEdit, setDishToEdit] = useState(null);
+  const [itemToEdit, setItemToEdit] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const API_URL = "http://localhost:8080/api";
+  // API base URL
+  const API_BASE_URL = "http://localhost:8080/api/admin";
 
   // Get auth headers with Bearer token
   const getAuthHeaders = () => ({
-    "Content-Type": "multipart/form-data",
+    "Content-Type": "application/json",
     Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
   });
 
-  // Fetch dishes on component mount
+  // Fetch all inventories, suppliers, and ingredients on mount
   useEffect(() => {
-    fetchDishes();
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        await Promise.all([fetchSuppliers(), fetchIngredients()]);
+        await fetchInventories();
+      } catch (error) {
+        setErrorMessage("Lỗi khi tải dữ liệu ban đầu!");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
   }, []);
 
-  const fetchDishes = async () => {
-    setIsLoading(true);
+  const fetchInventories = async () => {
     try {
-      const response = await authAPI.get(`${API_URL}/dishes`, {
+      const response = await authAPI.get(`${API_BASE_URL}/inventory`, {
         headers: getAuthHeaders(),
       });
       const data = response.data || [];
-      setDishes(data);
-      setFilteredDishes(data);
+      console.log("Inventories fetched:", data); // Debug
+      const mappedData = data.map((item) => ({
+        id: item.inventoryId,
+        ingredientId: item.ingredientId,
+        ingredientName: item.ingredientName || "Unknown",
+        supplierName: item.supplierName || "Unknown",
+        quantity: item.quantity,
+        unit: item.unit,
+        lastUpdate: new Date(item.lastUpdated).toLocaleDateString("en-US"),
+      }));
+      setInventory(mappedData);
+      setFilteredInventory(mappedData);
     } catch (error) {
-      handleApiError(error, "Failed to load dishes.");
-    } finally {
-      setIsLoading(false);
+      handleApiError(error, "Lỗi khi lấy danh sách inventory");
+    }
+  };
+
+  const fetchSuppliers = async () => {
+    try {
+      const response = await authAPI.get(`${API_BASE_URL}/suppliers`, {
+        headers: getAuthHeaders(),
+      });
+      const data = response.data || [];
+      console.log("Suppliers fetched:", data); // Debug
+      setSuppliers(data);
+    } catch (error) {
+      handleApiError(error, "Lỗi khi lấy danh sách nhà cung cấp");
+    }
+  };
+
+  const fetchIngredients = async () => {
+    try {
+      const response = await authAPI.get(`${API_BASE_URL}/ingredient`, {
+        headers: getAuthHeaders(),
+      });
+      const data = response.data || [];
+      console.log("Ingredients fetched:", data); // Debug
+      setIngredients(data);
+    } catch (error) {
+      handleApiError(error, "Lỗi khi lấy danh sách nguyên liệu");
     }
   };
 
@@ -61,161 +107,166 @@ const MenuManagementAdmin = () => {
     const status = error.response?.status;
     let message = error.response?.data?.message || defaultMessage;
     if (status === 403 || status === 401) {
-      message = "Session expired. Please log in again.";
+      message = "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.";
       localStorage.clear();
       window.location.href = "/login";
     } else if (status === 404) {
-      message = `Endpoint not found: ${error.config.url}`;
+      message = `Không tìm thấy endpoint: ${error.config.url}`;
     } else if (status === 400) {
-      message = error.response?.data?.message || "Invalid data. Please check again!";
+      message = error.response?.data?.message || "Dữ liệu không hợp lệ. Vui lòng kiểm tra lại!";
     }
     setErrorMessage(message);
   };
 
-  // Handle search by dish name
+  // Handle search by ingredient name
   const handleSearch = (event) => {
     if (event.key === "Enter") {
       if (searchTerm.trim() === "") {
-        setFilteredDishes(dishes);
+        setFilteredInventory(inventory);
       } else {
-        const filtered = dishes.filter((dish) =>
-          dish.dishName.toLowerCase().includes(searchTerm.toLowerCase())
+        const filtered = inventory.filter((item) =>
+          item.ingredientName.toLowerCase().includes(searchTerm.toLowerCase())
         );
-        setFilteredDishes(filtered);
+        setFilteredInventory(filtered);
       }
     }
   };
 
-  // Add new dish
-  const validateAndAddDish = async () => {
-    if (!newDish.name || !newDish.price || !newDish.description || !newDish.image) {
-      setErrorMessage("All fields are required!");
-      return;
-    }
+  // Handle delete inventory
+  const handleDeleteItem = (item) => {
+    setItemToDelete(item);
+    setShowDeletePopup(true);
+  };
 
-    if (isNaN(parseFloat(newDish.price))) {
-      setErrorMessage("Price must be a valid number!");
-      return;
-    }
-
-    const isDuplicate = dishes.some(
-      (dish) => dish.dishName.toLowerCase() === newDish.name.toLowerCase()
-    );
-    if (isDuplicate) {
-      setErrorMessage("Dish name already exists!");
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("name", newDish.name);
-    formData.append("price", parseFloat(newDish.price));
-    formData.append("categoryId", newDish.category === "Appetizers" ? 1 : newDish.category === "Main" ? 2 : 3);
-    formData.append("description", newDish.description);
-    formData.append("image", newDish.image);
-    formData.append("status", "AVAILABLE");
-
+  const confirmDeleteItem = async () => {
     try {
-      await authAPI.post(`${API_URL}/admin/dishes`, formData, {
+      await authAPI.delete(`${API_BASE_URL}/inventory/${itemToDelete.id}`, {
         headers: getAuthHeaders(),
       });
-      setShowAddForm(false);
-      setNewDish({
-        name: "",
-        price: "",
-        category: "Appetizers",
-        description: "",
-        image: null,
-      });
-      setErrorMessage("");
+      const updatedInventory = inventory.filter(
+        (item) => item.id !== itemToDelete.id
+      );
+      setInventory(updatedInventory);
+      setFilteredInventory(updatedInventory);
+      setShowDeletePopup(false);
+      setItemToDelete(null);
       setShowSuccessPopup(true);
       setTimeout(() => setShowSuccessPopup(false), 2000);
-      await fetchDishes();
     } catch (error) {
-      handleApiError(error, "Failed to add dish.");
+      handleApiError(error, "Lỗi khi xóa inventory");
     }
   };
 
-  // Edit dish
-  const handleEditDish = (dish) => {
-    setDishToEdit(dish);
-    setNewDish({
-      name: dish.dishName,
-      price: dish.price,
-      category: dish.categoryName,
-      description: dish.description || "",
-      image: null,
+  // Handle edit inventory
+  const handleEditItem = (item) => {
+    setItemToEdit(item);
+    setNewItem({
+      ingredientId: item.ingredientId,
+      quantity: item.quantity,
+      unit: item.unit,
+      customUnit: "",
     });
     setShowEditForm(true);
   };
 
-  const confirmEditDish = async () => {
-    if (!newDish.name || !newDish.price || !newDish.description) {
-      setErrorMessage("All fields are required!");
+  const confirmEditItem = async () => {
+    if (!newItem.quantity || !newItem.unit) {
+      setErrorMessage("Số lượng và đơn vị là bắt buộc!");
       return;
     }
-
-    if (isNaN(parseFloat(newDish.price))) {
-      setErrorMessage("Price must be a valid number!");
+    const parsedQuantity = parseFloat(newItem.quantity);
+    const finalUnit = newItem.unit === "new" ? newItem.customUnit : newItem.unit;
+    if (isNaN(parsedQuantity) || parsedQuantity <= 0) {
+      setErrorMessage("Số lượng phải là số dương!");
       return;
     }
-
-    const formData = new FormData();
-    formData.append("name", newDish.name);
-    formData.append("price", parseFloat(newDish.price));
-    formData.append("categoryId", newDish.category === "Appetizers" ? 1 : newDish.category === "Main" ? 2 : 3);
-    formData.append("description", newDish.description);
-    if (newDish.image) {
-      formData.append("image", newDish.image);
+    if (!finalUnit) {
+      setErrorMessage("Đơn vị không hợp lệ!");
+      return;
     }
-    formData.append("status", "AVAILABLE");
-
     try {
-      await authAPI.post(`${API_URL}/dishes/${dishToEdit.dishId}`, formData, {
-        headers: getAuthHeaders(),
-      });
+      await authAPI.put(
+        `${API_BASE_URL}/inventory/${itemToEdit.id}`,
+        {
+          quantity: parsedQuantity,
+          unit: finalUnit,
+          lastUpdated: new Date().toISOString().split("T")[0],
+        },
+        { headers: getAuthHeaders() }
+      );
+      await fetchInventories();
       setShowEditForm(false);
-      setNewDish({
-        name: "",
-        price: "",
-        category: "Appetizers",
-        description: "",
-        image: null,
-      });
-      setDishToEdit(null);
+      setItemToEdit(null);
+      setNewItem({ ingredientId: "", quantity: "", unit: "", customUnit: "" });
       setErrorMessage("");
       setShowSuccessPopup(true);
       setTimeout(() => setShowSuccessPopup(false), 2000);
-      await fetchDishes();
     } catch (error) {
-      handleApiError(error, "Failed to update dish.");
+      handleApiError(error, "Lỗi khi cập nhật inventory");
     }
   };
 
-  // Delete dish
-  const handleDeleteDish = (dish) => {
-    setDishToDelete(dish);
-    setShowDeletePopup(true);
-  };
-
-  const confirmDeleteDish = async () => {
+  // Handle add inventory
+  const validateAndAddItem = async () => {
+    console.log("New item:", newItem); // Debug
+    console.log("Ingredients:", ingredients); // Debug
+    if (!newItem.ingredientId || !newItem.quantity || !newItem.unit) {
+      setErrorMessage("Tất cả các trường đều bắt buộc!");
+      return;
+    }
+    const parsedIngredientId = parseInt(newItem.ingredientId);
+    const parsedQuantity = parseFloat(newItem.quantity);
+    const finalUnit = newItem.unit === "new" ? newItem.customUnit : newItem.unit;
+    if (isNaN(parsedIngredientId) || parsedIngredientId <= 0) {
+      setErrorMessage("ID nguyên liệu phải là số dương hợp lệ!");
+      return;
+    }
+    if (ingredients.length === 0) {
+      setErrorMessage("Không thể tải danh sách nguyên liệu. Vui lòng thử lại!");
+      return;
+    }
+    const ingredient = ingredients.find(ing => ing.ingredientId === parsedIngredientId);
+    if (!ingredient) {
+      setErrorMessage(`Nguyên liệu với ID ${parsedIngredientId} không tồn tại!`);
+      return;
+    }
+    if (isNaN(parsedQuantity) || parsedQuantity <= 0) {
+      setErrorMessage("Số lượng phải là số dương!");
+      return;
+    }
+    if (!finalUnit) {
+      setErrorMessage("Đơn vị không hợp lệ!");
+      return;
+    }
     try {
-      await authAPI.delete(`${API_URL}/dishes/${dishToDelete.dishId}`, {
-        headers: getAuthHeaders(),
-      });
-      setShowDeletePopup(false);
-      setDishToDelete(null);
+      await authAPI.post(
+        `${API_BASE_URL}/inventory`,
+        {
+          ingredientId: parsedIngredientId,
+          quantity: parsedQuantity,
+          unit: finalUnit,
+          lastUpdated: new Date().toISOString().split("T")[0],
+        },
+        { headers: getAuthHeaders() }
+      );
+      await fetchInventories();
+      setShowAddForm(false);
+      setNewItem({ ingredientId: "", quantity: "", unit: "", customUnit: "" });
+      setErrorMessage("");
       setShowSuccessPopup(true);
       setTimeout(() => setShowSuccessPopup(false), 2000);
-      await fetchDishes();
     } catch (error) {
-      handleApiError(error, "Failed to delete dish.");
+      handleApiError(error, "Lỗi khi thêm inventory");
     }
   };
+
+  // Unique units for dropdown
+  const uniqueUnits = [...new Set(inventory.map((item) => item.unit))];
 
   const styles = {
     outerContainer: {
-      fontFamily: "Arial, sans-serif",
-      backgroundColor: "rgba(157, 198, 206, 0.33)",
+      fontFamily: "'Poppins', sans-serif",
+      backgroundColor: "rgba(157, 198, 206, 0.3)",
       minHeight: "auto",
       width: "100vw",
       display: "flex",
@@ -226,9 +277,9 @@ const MenuManagementAdmin = () => {
     },
     innerContainer: {
       backgroundColor: "#F0F8FD",
-      borderRadius: "10px",
-      padding: "20px",
-      boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
+      borderRadius: "15px",
+      padding: "25px",
+      boxShadow: "0 6px 12px rgba(0, 0, 0, 0.15)",
       border: "3px solid rgba(0, 0, 0, 0.1)",
       width: "100%",
       maxWidth: "1200px",
@@ -238,56 +289,28 @@ const MenuManagementAdmin = () => {
     },
     title: {
       textAlign: "center",
-      fontSize: "24px",
+      fontSize: "35px",
       fontWeight: "bold",
-      marginBottom: "15px",
-    },
-    tableAndControls: {
-      display: "flex",
-      alignItems: "flex-start",
-      gap: "20px",
-      flex: 1,
-    },
-    searchAndButtonContainer: {
-      flex: 1,
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "flex-end",
-      gap: "10px",
-    },
-    searchRow: {
-      display: "flex",
-      flexDirection: "row",
-      alignItems: "center",
-      gap: "10px",
-    },
-    input: {
-      padding: "10px",
-      borderRadius: "5px",
-      border: "1px solid #ddd",
-      width: "200px",
-    },
-    chefMouseImage: {
-      marginTop: "55px",
-      width: "280px",
-      height: "400px",
+      marginBottom: "20px",
+      color: "#2c3e50",
     },
     tableContainer: {
-      flex: 3,
       backgroundColor: "rgba(157, 198, 206, 0.3)",
       borderRadius: "10px",
+      overflowX: "auto",
       overflowY: "auto",
       maxHeight: "500px",
       width: "100%",
+      position: "relative",
     },
     table: {
       width: "100%",
+      minWidth: "800px",
       borderCollapse: "collapse",
       border: "2px solid #9DC6CE",
     },
     thead: {
       position: "sticky",
-      padding: "0 0 10px ",
       top: 0,
       zIndex: 2,
       backgroundColor: "#9DC6CE",
@@ -297,17 +320,18 @@ const MenuManagementAdmin = () => {
       backgroundColor: "#9DC6CE",
       fontWeight: "bold",
       border: "1px solid #dddddd",
-      padding: "10px",
+      padding: "12px",
       textAlign: "center",
+      color: "#ffffff",
+      width: "150px",
+      minWidth: "150px",
     },
     td: {
       border: "1px solid #9DC6CE",
-      padding: "10px",
+      padding: "12px",
       textAlign: "center",
-    },
-    price: {
-      color: "#e74c3c",
-      fontWeight: "bold",
+      width: "150px",
+      minWidth: "150px",
     },
     oddRow: {
       backgroundColor: "rgba(157, 198, 206, 0.3)",
@@ -321,258 +345,289 @@ const MenuManagementAdmin = () => {
       left: 0,
       width: "100vw",
       height: "100vh",
-      backgroundColor: "rgba(0, 0, 0, 0.5)",
+      backgroundColor: "rgba(0, 0, 0, 0.6)",
       zIndex: 999,
+      backdropFilter: "blur(5px)",
     },
     addFormContainer: {
       position: "fixed",
       top: "50%",
       left: "50%",
       transform: "translate(-50%, -50%)",
-      backgroundColor: "#fff",
-      padding: "20px",
-      borderRadius: "10px",
-      boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
-      zIndex: 1000,
+      background: "linear-gradient(135deg, #ffffff, #f1f8ff)",
+      padding: "30px",
+      borderRadius: "20px",
+      boxShadow: "0 10px 20px rgba(0, 0, 0, 0.25)",
+      zIndex: "1000",
       width: "650px",
-      maxWidth: "90%",
+      maxWidth: "95%",
       height: "auto",
       maxHeight: "90vh",
       overflowY: "auto",
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      border: "2px solid #9DC6CE",
     },
     addFormTitle: {
-      fontSize: "24px",
-      fontWeight: "bold",
-      marginBottom: "15px",
+      fontSize: "30px",
+      fontWeight: "600",
+      marginBottom: "25px",
       textAlign: "center",
+      color: "#2c3e50",
+      textShadow: "1px 1px 2px rgba(0, 0, 0, 0.1)",
     },
     addForm: {
       display: "flex",
       flexDirection: "column",
-      gap: "10px",
+      gap: "20px",
+      width: "100%",
     },
     addButton: {
-      padding: "10px 20px",
-      backgroundColor: "#4CAF50",
+      padding: "12px 25px",
+      background: "linear-gradient(90deg, #2ecc71, #27ae60)",
       color: "white",
       border: "none",
-      borderRadius: "5px",
+      borderRadius: "8px",
       cursor: "pointer",
+      fontSize: "16px",
+      transition: "transform 0.2s, box-shadow 0.3s",
+      boxShadow: "0 4px 10px rgba(46, 204, 113, 0.3)",
     },
     cancelButton: {
-      padding: "10px 20px",
-      backgroundColor: "#e74c3c",
+      padding: "12px 25px",
+      background: "linear-gradient(90deg, #e74c3c, #c0392b)",
       color: "white",
       border: "none",
-      borderRadius: "5px",
+      borderRadius: "8px",
       cursor: "pointer",
-    },
-    addFormContent: {
-      display: "flex",
-      gap: "20px",
-    },
-    formFields: {
-      flex: "1",
-      display: "flex",
-      flexDirection: "column",
-      gap: "10px",
+      fontSize: "16px",
+      transition: "transform 0.2s, box-shadow 0.3s",
+      boxShadow: "0 4px 10px rgba(231, 76, 60, 0.3)",
     },
     actionButtons: {
       display: "flex",
-      justifyContent: "flex-end",
-      gap: "10px",
-      marginTop: "20px",
+      justifyContent: "center",
+      gap: "20px",
+      marginTop: "25px",
+      width: "100%",
     },
-    imageUploadContainer: {
+    formFields: {
       display: "flex",
       flexDirection: "column",
-      alignItems: "center",
-      gap: "10px",
-      cursor: "pointer",
-      position: "relative",
-    },
-    imageUploadSection: {
-      flex: "0 0 40%",
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center",
-      gap: "10px",
-      border: "1px solid #ddd",
-      borderRadius: "10px",
-      padding: "20px",
-      backgroundColor: "#f9f9f9",
-    },
-    imagePreview: {
-      width: "250px",
-      height: "250px",
-      border: "1px solid #ddd",
-      borderRadius: "10px",
-      overflow: "hidden",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      backgroundColor: "#fff",
-    },
-    image: {
+      gap: "20px",
       width: "100%",
-      height: "100%",
-      objectFit: "cover",
-    },
-    placeholderText: {
-      fontSize: "14px",
-      color: "#aaa",
-      textAlign: "center",
-      padding: "10px",
-    },
-    fileInput: {
-      position: "absolute",
-      top: 0,
-      left: 0,
-      width: "100%",
-      height: "100%",
-      opacity: 0,
-      cursor: "pointer",
-    },
-    imageNote: {
-      fontSize: "12px",
-      color: "#555",
-      textAlign: "center",
-      marginTop: "10px",
     },
     formLabel: {
-      fontSize: "14px",
-      fontWeight: "bold",
+      fontSize: "16px",
+      fontWeight: "600",
       display: "flex",
-      gap: "5px",
+      flexDirection: "row",
+      alignItems: "center",
+      gap: "20px",
+      color: "#34495e",
+      width: "100%",
+      transition: "color 0.3s",
+    },
+    labelText: {
+      flex: "0 0 150px",
+      textAlign: "right",
+    },
+    inputContainer: {
+      flex: "1",
+      display: "flex",
+      flexDirection: "column",
+      gap: "8px",
     },
     requiredMark: {
       color: "#e74c3c",
       marginLeft: "5px",
     },
     inputField: {
-      padding: "10px",
-      borderRadius: "5px",
+      padding: "12px",
+      borderRadius: "8px",
       border: "1px solid #ddd",
-      fontSize: "14px",
+      fontSize: "16px",
       width: "100%",
-      maxWidth: "300px",
+      boxSizing: "border-box",
+      backgroundColor: "#f9f9f9",
+      transition: "border-color 0.3s, box-shadow 0.3s",
     },
     selectField: {
-      padding: "10px",
-      borderRadius: "5px",
+      padding: "12px",
+      borderRadius: "8px",
       border: "1px solid #ddd",
-      fontSize: "14px",
+      fontSize: "16px",
       width: "100%",
-      maxWidth: "300px",
-    },
-    textareaField: {
-      padding: "10px",
-      borderRadius: "5px",
-      border: "1px solid #ddd",
-      fontSize: "14px",
-      width: "100%",
-      maxWidth: "300px",
-      height: "80px",
-      resize: "none",
+      boxSizing: "border-box",
+      backgroundColor: "#f9f9f9",
+      transition: "border-color 0.3s, box-shadow 0.3s",
     },
     successPopup: {
       position: "fixed",
-      width: "250px",
-      height: "200px",
+      width: "300px",
+      height: "250px",
       top: "50%",
       left: "50%",
       transform: "translate(-50%, -50%)",
-      backgroundColor: "#fff",
-      padding: "20px",
-      borderRadius: "10px",
-      boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
+      background: "linear-gradient(135deg, #ffffff, #e8f5e9)",
+      padding: "25px",
+      borderRadius: "20px",
+      boxShadow: "0 10px 20px rgba(0, 0, 0, 0.25)",
       textAlign: "center",
-      zIndex: 1001,
+      zIndex: "1001",
       display: "flex",
       flexDirection: "column",
       alignItems: "center",
       justifyContent: "center",
+      border: "2px solid #2ecc71",
     },
     successIcon: {
-      fontSize: "24px",
-      color: "#4CAF50",
-      marginTop: "10px",
+      fontSize: "32px",
+      color: "#2ecc71",
+      marginTop: "15px",
+      animation: "bounce 0.5s ease-in-out",
     },
     successImage: {
-      width: "100px",
+      width: "120px",
       height: "auto",
+      marginBottom: "15px",
+      filter: "drop-shadow(0 4px 8px rgba(0, 0, 0, 0.2))",
     },
     successText: {
-      fontSize: "18px",
-      fontWeight: "bold",
-      marginBottom: "5px",
+      fontSize: "22px",
+      fontWeight: "600",
+      marginBottom: "10px",
+      color: "#2c3e50",
+      textShadow: "1px 1px 2px rgba(0, 0, 0, 0.1)",
     },
     errorText: {
       color: "#e74c3c",
-      fontSize: "14px",
-      marginBottom: "10px",
+      fontSize: "16px",
+      marginBottom: "15px",
       textAlign: "center",
+      width: "100%",
+      fontWeight: "500",
+    },
+    searchRow: {
+      display: "flex",
+      flexDirection: "row",
+      alignItems: "center",
+      gap: "10px",
+      marginBottom: "20px",
+    },
+    input: {
+      padding: "12px",
+      borderRadius: "8px",
+      border: "1px solid #ddd",
+      fontSize: "16px",
+      width: "200px",
+      boxSizing: "border-box",
+      backgroundColor: "#f9f9f9",
+      transition: "border-color 0.3s, box-shadow 0.3s",
     },
   };
 
   return (
     <>
-      <MenuBar title="Menu Management" />
+      <style>
+        {`
+          @keyframes bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+          }
+          button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3);
+          }
+          input:focus, select:focus {
+            border-color: #9DC6CE;
+            box-shadow: 0 0 8px rgba(157, 198, 206, 0.5);
+            outline: none;
+          }
+          label:hover {
+            color: #2c3e50;
+          }
+          div::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+          }
+          div::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+          }
+          div::-webkit-scrollbar-thumb {
+            background: #9DC6CE;
+            border-radius: 10px;
+          }
+          div::-webkit-scrollbar-thumb:hover {
+            background: #7daab3;
+          }
+        `}
+      </style>
+      <MenuBar
+        title="Quản Lý Inventory"
+        icon="https://img.icons8.com/?size=100&id=4NUeu__UwtXf&format=png&color=FFFFFF"
+      />
       <div style={styles.outerContainer}>
         <div style={styles.innerContainer}>
-          <h1 style={styles.title}>Menu</h1>
+          <h1 style={styles.title}>Inventory</h1>
           {isLoading ? (
-            <p>Loading dishes...</p>
+            <p>Đang tải dữ liệu...</p>
           ) : (
-            <div style={styles.tableAndControls}>
+            <>
+              <div style={styles.searchRow}>
+                <input
+                  type="text"
+                  placeholder="Tìm kiếm theo tên nguyên liệu..."
+                  style={styles.input}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onKeyDown={handleSearch}
+                />
+                <button
+                  style={styles.addButton}
+                  onClick={() => setShowAddForm(true)}
+                  disabled={ingredients.length === 0}
+                >
+                  +
+                </button>
+              </div>
               <div style={styles.tableContainer}>
                 <table style={styles.table}>
                   <thead style={styles.thead}>
                     <tr>
-                      <th style={styles.th}>Name</th>
                       <th style={styles.th}>ID</th>
-                      <th style={styles.th}>Price</th>
-                      <th style={styles.th}>Category</th>
-                      <th style={styles.th}>Description</th>
+                      <th style={styles.th}>Ingredient Name</th>
+                      <th style={styles.th}>Supplier Name</th>
+                      <th style={styles.th}>Quality</th>
+                      <th style={styles.th}>Unit</th>
+                      <th style={styles.th}>Last Update</th>
                       <th style={styles.th}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredDishes.map((dish, index) => (
+                    {filteredInventory.map((item, index) => (
                       <tr
-                        key={dish.dishId}
+                        key={item.id}
                         style={index % 2 === 0 ? styles.evenRow : styles.oddRow}
                       >
-                        <td style={styles.td}>
-                          <div style={{ display: "flex", alignItems: "center" }}>
-                            <img
-                              src={dish.imageUrl || "./src/assets/img/placeholder.jpg"}
-                              alt={dish.dishName}
-                              style={{
-                                width: "50px",
-                                height: "50px",
-                                borderRadius: "5px",
-                                marginRight: "10px",
-                              }}
-                            />
-                            {dish.dishName}
-                          </div>
-                        </td>
-                        <td style={styles.td}>{dish.dishId}</td>
-                        <td style={{ ...styles.td, ...styles.price }}>${dish.price}</td>
-                        <td style={styles.td}>{dish.categoryName}</td>
-                        <td style={styles.td}>{dish.description || "No description"}</td>
+                        <td style={styles.td}>{item.id}</td>
+                        <td style={styles.td}>{item.ingredientName}</td>
+                        <td style={styles.td}>{item.supplierName}</td>
+                        <td style={styles.td}>{item.quantity}</td>
+                        <td style={styles.td}>{item.unit}</td>
+                        <td style={styles.td}>{item.lastUpdate}</td>
                         <td style={styles.td}>
                           <button
                             style={{ marginRight: "10px", cursor: "pointer" }}
-                            onClick={() => handleEditDish(dish)}
+                            onClick={() => handleEditItem(item)}
                           >
                             ✏️
                           </button>
                           <button
                             style={{ cursor: "pointer" }}
-                            onClick={() => handleDeleteDish(dish)}
+                            onClick={() => handleDeleteItem(item)}
                           >
                             🗑️
                           </button>
@@ -582,273 +637,253 @@ const MenuManagementAdmin = () => {
                   </tbody>
                 </table>
               </div>
-              <div style={styles.searchAndButtonContainer}>
-                <div style={styles.searchRow}>
-                  <input
-                    type="text"
-                    placeholder="Search..."
-                    style={styles.input}
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    onKeyDown={handleSearch}
-                  />
-                  <button
-                    style={styles.addButton}
-                    onClick={() => setShowAddForm(true)}
-                  >
-                    +
-                  </button>
-                </div>
-                <img
-                  src="./src/assets/img/chefmouse.png"
-                  alt="Chef Mouse"
-                  style={styles.chefMouseImage}
-                />
-              </div>
-            </div>
-          )}
-
-          {showAddForm && !isLoading && (
-            <>
-              <div style={styles.overlay} onClick={() => setShowAddForm(false)}></div>
-              <div style={styles.addFormContainer}>
-                <h2 style={styles.addFormTitle}>Add Dish</h2>
-                <div style={styles.addForm}>
-                  <div style={styles.addFormContent}>
-                    <div style={styles.imageUploadSection}>
-                      <label style={styles.imageUploadContainer}>
-                        <div style={styles.imagePreview}>
-                          {newDish.image ? (
-                            <img
-                              src={URL.createObjectURL(newDish.image)}
-                              alt="Dish Preview"
-                              style={styles.image}
-                            />
-                          ) : (
-                            <div style={styles.placeholderText}>
-                              Select images in the formats (.jpg, .jpeg, .png, .gif)
-                            </div>
-                          )}
-                        </div>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          style={styles.fileInput}
-                          onChange={(e) =>
-                            setNewDish({ ...newDish, image: e.target.files[0] })
-                          }
-                        />
-                      </label>
-                      <p style={styles.imageNote}>
-                        Select images in the formats (.jpg, .jpeg, .png, .gif)
-                      </p>
-                    </div>
-                    <div style={styles.formFields}>
-                      <label style={styles.formLabel}>
-                        Name <span style={styles.requiredMark}>(*)</span>:
-                        <input
-                          type="text"
-                          value={newDish.name}
-                          onChange={(e) =>
-                            setNewDish({ ...newDish, name: e.target.value })
-                          }
-                          style={styles.inputField}
-                        />
-                      </label>
-                      <label style={styles.formLabel}>
-                        Price <span style={styles.requiredMark}>(*)</span>:
-                        <input
-                          type="text"
-                          value={newDish.price}
-                          onChange={(e) =>
-                            setNewDish({ ...newDish, price: e.target.value })
-                          }
-                          style={styles.inputField}
-                        />
-                      </label>
-                      <label style={styles.formLabel}>
-                        Category <span style={styles.requiredMark}>(*)</span>:
-                        <select
-                          value={newDish.category}
-                          onChange={(e) =>
-                            setNewDish({ ...newDish, category: e.target.value })
-                          }
-                          style={styles.selectField}
-                        >
-                          <option value="Appetizers">Appetizers</option>
-                          <option value="Main">Main</option>
-                          <option value="Desserts">Desserts</option>
-                        </select>
-                      </label>
-                      <label style={styles.formLabel}>
-                        Description <span style={styles.requiredMark}>(*)</span>:
-                        <textarea
-                          value={newDish.description}
-                          onChange={(e) =>
-                            setNewDish({ ...newDish, description: e.target.value })
-                          }
-                          style={styles.textareaField}
-                        />
-                      </label>
-                    </div>
-                  </div>
-                  {errorMessage && <p style={styles.errorText}>{errorMessage}</p>}
-                  <div style={styles.actionButtons}>
-                    <button onClick={validateAndAddDish} style={styles.addButton}>
-                      Add
-                    </button>
-                    <button
-                      onClick={() => setShowAddForm(false)}
-                      style={styles.cancelButton}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </div>
             </>
-          )}
-
-          {showEditForm && !isLoading && (
-            <>
-              <div style={styles.overlay} onClick={() => setShowEditForm(false)}></div>
-              <div style={styles.addFormContainer}>
-                <h2 style={styles.addFormTitle}>Edit Dish</h2>
-                <div style={styles.addForm}>
-                  <div style={styles.addFormContent}>
-                    <div style={styles.imageUploadSection}>
-                      <label style={styles.imageUploadContainer}>
-                        <div style={styles.imagePreview}>
-                          {newDish.image ? (
-                            <img
-                              src={URL.createObjectURL(newDish.image)}
-                              alt="Dish Preview"
-                              style={styles.image}
-                            />
-                          ) : dishToEdit.imageUrl ? (
-                            <img
-                              src={dishToEdit.imageUrl}
-                              alt="Dish Preview"
-                              style={styles.image}
-                            />
-                          ) : (
-                            <div style={styles.placeholderText}>
-                              Select images in the formats (.jpg, .jpeg, .png, .gif)
-                            </div>
-                          )}
-                        </div>
-                        <input
-                          type="file"
-                          accept="image/*"
-                          style={styles.fileInput}
-                          onChange={(e) =>
-                            setNewDish({ ...newDish, image: e.target.files[0] })
-                          }
-                        />
-                      </label>
-                      <p style={styles.imageNote}>
-                        Select images in the formats (.jpg, .jpeg, .png, .gif)
-                      </p>
-                    </div>
-                    <div style={styles.formFields}>
-                      <label style={styles.formLabel}>
-                        Name <span style={styles.requiredMark}>(*)</span>:
-                        <input
-                          type="text"
-                          value={newDish.name}
-                          onChange={(e) =>
-                            setNewDish({ ...newDish, name: e.target.value })
-                          }
-                          style={styles.inputField}
-                        />
-                      </label>
-                      <label style={styles.formLabel}>
-                        Price <span style={styles.requiredMark}>(*)</span>:
-                        <input
-                          type="text"
-                          value={newDish.price}
-                          onChange={(e) =>
-                            setNewDish({ ...newDish, price: e.target.value })
-                          }
-                          style={styles.inputField}
-                        />
-                      </label>
-                      <label style={styles.formLabel}>
-                        Category <span style={styles.requiredMark}>(*)</span>:
-                        <select
-                          value={newDish.category}
-                          onChange={(e) =>
-                            setNewDish({ ...newDish, category: e.target.value })
-                          }
-                          style={styles.selectField}
-                        >
-                          <option value="Appetizers">Appetizers</option>
-                          <option value="Main">Main</option>
-                          <option value="Desserts">Desserts</option>
-                        </select>
-                      </label>
-                      <label style={styles.formLabel}>
-                        Description <span style={styles.requiredMark}>(*)</span>:
-                        <textarea
-                          value={newDish.description}
-                          onChange={(e) =>
-                            setNewDish({ ...newDish, description: e.target.value })
-                          }
-                          style={styles.textareaField}
-                        />
-                      </label>
-                    </div>
-                  </div>
-                  {errorMessage && <p style={styles.errorText}>{errorMessage}</p>}
-                  <div style={styles.actionButtons}>
-                    <button onClick={confirmEditDish} style={styles.addButton}>
-                      Save
-                    </button>
-                    <button
-                      onClick={() => setShowEditForm(false)}
-                      style={styles.cancelButton}
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-
-          {showSuccessPopup && (
-            <div style={styles.successPopup}>
-              <img src={logoRemoveBg} alt="Bon Appétit" style={styles.successImage} />
-              <p>
-                <b>Successful</b>
-              </p>
-              <div style={styles.successIcon}>✔</div>
-            </div>
-          )}
-
-          {showDeletePopup && (
-            <div style={styles.successPopup}>
-              <img src={logoRemoveBg} alt="Bon Appétit" style={styles.successImage} />
-              <p>
-                <b>Are you sure?</b>
-              </p>
-              <div style={styles.actionButtons}>
-                <button onClick={confirmDeleteDish} style={styles.addButton}>
-                  Yes
-                </button>
-                <button
-                  onClick={() => setShowDeletePopup(false)}
-                  style={styles.cancelButton}
-                >
-                  No
-                </button>
-              </div>
-            </div>
           )}
         </div>
       </div>
+
+      {showAddForm && !isLoading && ingredients.length > 0 && (
+        <>
+          <div
+            style={styles.overlay}
+            onClick={() => setShowAddForm(false)}
+          ></div>
+          <div style={styles.addFormContainer}>
+            <h2 style={styles.addFormTitle}>Thêm Mục Inventory</h2>
+            <div style={styles.addForm}>
+              <div style={styles.formFields}>
+                <label style={styles.formLabel}>
+                  <span style={styles.labelText}>Nguyên liệu<span style={styles.requiredMark}>(*)</span></span>
+                  <div style={styles.inputContainer}>
+                    <select
+                      value={newItem.ingredientId}
+                      onChange={(e) =>
+                        setNewItem({ ...newItem, ingredientId: e.target.value })
+                      }
+                      style={styles.selectField}
+                    >
+                      <option value="">Chọn nguyên liệu</option>
+                      {ingredients.map((ingredient) => (
+                        <option key={ingredient.ingredientId} value={ingredient.ingredientId}>
+                          {ingredient.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </label>
+                <label style={styles.formLabel}>
+                  <span style={styles.labelText}>Số lượng<span style={styles.requiredMark}>(*)</span></span>
+                  <div style={styles.inputContainer}>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      value={newItem.quantity}
+                      onChange={(e) =>
+                        setNewItem({ ...newItem, quantity: e.target.value })
+                      }
+                      style={styles.inputField}
+                      placeholder="Nhập số lượng (ví dụ: 25.5)"
+                    />
+                  </div>
+                </label>
+                <label style={styles.formLabel}>
+                  <span style={styles.labelText}>Đơn vị<span style={styles.requiredMark}>(*)</span></span>
+                  <div style={styles.inputContainer}>
+                    <select
+                      value={newItem.unit === "new" ? "" : newItem.unit}
+                      onChange={(e) =>
+                        setNewItem({ ...newItem, unit: e.target.value || "new" })
+                      }
+                      style={styles.selectField}
+                    >
+                      <option value="">Chọn đơn vị</option>
+                      {uniqueUnits.map((unit) => (
+                        <option key={unit} value={unit}>
+                          {unit}
+                        </option>
+                      ))}
+                      <option value="new">Thêm đơn vị mới</option>
+                    </select>
+                    {newItem.unit === "new" && (
+                      <input
+                        type="text"
+                        value={newItem.customUnit || ""}
+                        onChange={(e) =>
+                          setNewItem({ ...newItem, customUnit: e.target.value, unit: e.target.value })
+                        }
+                        style={styles.inputField}
+                        placeholder="Nhập đơn vị mới (ví dụ: lít)"
+                      />
+                    )}
+                  </div>
+                </label>
+                <label style={styles.formLabel}>
+                  <span style={styles.labelText}>Ngày cập nhật</span>
+                  <div style={styles.inputContainer}>
+                    <input
+                      type="text"
+                      value={new Date().toLocaleDateString("en-US")}
+                      disabled
+                      style={styles.inputField}
+                    />
+                  </div>
+                </label>
+              </div>
+              {errorMessage && <p style={styles.errorText}>{errorMessage}</p>}
+              <div style={styles.actionButtons}>
+                <button onClick={validateAndAddItem} style={styles.addButton}>
+                  Thêm
+                </button>
+                <button
+                  onClick={() => setShowAddForm(false)}
+                  style={styles.cancelButton}
+                >
+                  Hủy
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {showSuccessPopup && (
+        <div style={styles.successPopup}>
+          <img src={logoRemoveBg} alt="Bon Appétit" style={styles.successImage} />
+          <p style={styles.successText}>
+            <b>Thành công</b>
+          </p>
+          <div style={styles.successIcon}>✔</div>
+        </div>
+      )}
+
+      {showDeletePopup && (
+        <div style={styles.successPopup}>
+          <img src={logoRemoveBg} alt="Bon Appétit" style={styles.successImage} />
+          <p style={styles.successText}>
+            <b>Bạn có chắc chắn?</b>
+          </p>
+          <div style={{ ...styles.actionButtons, justifyContent: "center" }}>
+            <button onClick={confirmDeleteItem} style={styles.addButton}>
+              Có
+            </button>
+            <button
+              onClick={() => setShowDeletePopup(false)}
+              style={styles.cancelButton}
+            >
+              Không
+            </button>
+          </div>
+        </div>
+      )}
+
+      {showEditForm && !isLoading && (
+        <>
+          <div
+            style={styles.overlay}
+            onClick={() => setShowEditForm(false)}
+          ></div>
+          <div style={styles.addFormContainer}>
+            <h2 style={styles.addFormTitle}>Chỉnh Sửa Mục</h2>
+            <div style={styles.addForm}>
+              <div style={styles.formFields}>
+                <label style={styles.formLabel}>
+                  <span style={styles.labelText}>Nguyên liệu<span style={styles.requiredMark}>(*)</span></span>
+                  <div style={styles.inputContainer}>
+                    <select
+                      value={newItem.ingredientId}
+                      onChange={(e) =>
+                        setNewItem({ ...newItem, ingredientId: e.target.value })
+                      }
+                      style={styles.selectField}
+                      disabled
+                    >
+                      <option value="">Chọn nguyên liệu</option>
+                      {ingredients.map((ingredient) => (
+                        <option key={ingredient.ingredientId} value={ingredient.ingredientId}>
+                          {ingredient.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </label>
+                <label style={styles.formLabel}>
+                  <span style={styles.labelText}>Số lượng<span style={styles.requiredMark}>(*)</span></span>
+                  <div style={styles.inputContainer}>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      value={newItem.quantity}
+                      onChange={(e) =>
+                        setNewItem({ ...newItem, quantity: e.target.value })
+                      }
+                      style={styles.inputField}
+                      placeholder="Nhập số lượng (ví dụ: 25.5)"
+                    />
+                  </div>
+                </label>
+                <label style={styles.formLabel}>
+                  <span style={styles.labelText}>Đơn vị<span style={styles.requiredMark}>(*)</span></span>
+                  <div style={styles.inputContainer}>
+                    <select
+                      value={newItem.unit === "new" ? "" : newItem.unit}
+                      onChange={(e) =>
+                        setNewItem({ ...newItem, unit: e.target.value || "new" })
+                      }
+                      style={styles.selectField}
+                    >
+                      <option value="">Chọn đơn vị</option>
+                      {uniqueUnits.map((unit) => (
+                        <option key={unit} value={unit}>
+                          {unit}
+                        </option>
+                      ))}
+                      <option value="new">Thêm đơn vị mới</option>
+                    </select>
+                    {newItem.unit === "new" && (
+                      <input
+                        type="text"
+                        value={newItem.customUnit || ""}
+                        onChange={(e) =>
+                          setNewItem({ ...newItem, customUnit: e.target.value, unit: e.target.value })
+                        }
+                        style={styles.inputField}
+                        placeholder="Nhập đơn vị mới (ví dụ: lít)"
+                      />
+                    )}
+                  </div>
+                </label>
+                <label style={styles.formLabel}>
+                  <span style={styles.labelText}>Ngày cập nhật</span>
+                  <div style={styles.inputContainer}>
+                    <input
+                      type="text"
+                      value={new Date().toLocaleDateString("en-US")}
+                      disabled
+                      style={styles.inputField}
+                    />
+                  </div>
+                </label>
+              </div>
+              {errorMessage && <p style={styles.errorText}>{errorMessage}</p>}
+              <div style={styles.actionButtons}>
+                <button onClick={confirmEditItem} style={styles.addButton}>
+                  Lưu
+                </button>
+                <button
+                  onClick={() => setShowEditForm(false)}
+                  style={styles.cancelButton}
+                >
+                  Hủy
+                </button>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
     </>
   );
 };
 
-export default MenuManagementAdmin;
+export default InventoryManagement;
