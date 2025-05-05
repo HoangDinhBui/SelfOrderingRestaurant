@@ -25,24 +25,20 @@ public class FileStorageService {
         }
 
         String fileName = StringUtils.cleanPath(Objects.requireNonNull(file.getOriginalFilename()));
+        String uniqueFileName = UUID.randomUUID().toString() + "_" + fileName;
 
-        // Tạo thư mục nếu không tồn tại
-        String directory = uploadDir + "/" + subDirectory;
+        // Đường dẫn tuyệt đối để lưu file
+        Path uploadPath = Paths.get(uploadDir, subDirectory);
         try {
-            Path uploadPath = Paths.get(directory);
             if (!Files.exists(uploadPath)) {
                 Files.createDirectories(uploadPath);
             }
 
-            // Tạo tên file duy nhất để tránh ghi đè
-            String uniqueFileName = UUID.randomUUID().toString() + "_" + fileName;
             Path filePath = uploadPath.resolve(uniqueFileName);
-
-            // Lưu file
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
-            // Trả về đường dẫn tương đối
-            return directory + "/" + uniqueFileName;
+            // Trả về đường dẫn tương đối (ví dụ: dishes/abc_xyz.jpg)
+            return Paths.get(subDirectory, uniqueFileName).toString().replace("\\", "/");
         } catch (IOException e) {
             throw new RuntimeException("Không thể lưu file " + fileName + ". Vui lòng thử lại!", e);
         }
@@ -54,7 +50,7 @@ public class FileStorageService {
         }
 
         try {
-            Path filePath = Paths.get(relativePath);
+            Path filePath = Paths.get(uploadDir, relativePath);
             return Files.deleteIfExists(filePath);
         } catch (IOException e) {
             throw new RuntimeException("Không thể xóa file " + relativePath, e);
