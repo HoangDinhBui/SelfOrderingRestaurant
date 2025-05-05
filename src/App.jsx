@@ -69,7 +69,7 @@ function App() {
                 element={<NotificationManagementStaff />}
               />
               <Route
-                path="/admin-infomation_admin"
+                path="/admin-information_admin"
                 element={<AdminInformation />}
               />
               <Route
@@ -77,10 +77,22 @@ function App() {
                 element={<TableManagementAdmin />}
               />
               <Route path="/evaluate_admin" element={<EvaluateAdmin />} />
-              <Route path="/menu-management_admin" element={<MenuManagementAdmin />}/>
-              <Route path="/revenue-management_admin" element={<RevenueManagement />}/>
-              <Route path="/staff-management_admin" element={<StaffManagement />}/>
-              <Route path="/inventory-management_admin" element={<InventoryManagement />}/>
+              <Route
+                path="/menu-management_admin"
+                element={<MenuManagementAdmin />}
+              />
+              <Route
+                path="/revenue-management_admin"
+                element={<RevenueManagement />}
+              />
+              <Route
+                path="/staff-management_admin"
+                element={<StaffManagement />}
+              />
+              <Route
+                path="/inventory-management_admin"
+                element={<InventoryManagement />}
+              />
 
               {/* Staff Routes */}
               <Route
@@ -95,12 +107,8 @@ function App() {
                 path="/table-management_staff"
                 element={<TableManagementStaff />}
               />
-              <Route
-                path="/order-history"
-                element={<OrderHistoryStaff />}
-              />
+              <Route path="/order-history" element={<OrderHistoryStaff />} />
             </Routes>
-
           </Router>
           <ToastContainer
             position="top-right"
