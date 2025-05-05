@@ -45,12 +45,12 @@ public class StaffController {
         }
     }
 
-    // Register for shifts
+    // Register for a single shift
     @PostMapping("/register")
-    public ResponseEntity<?> registerShifts(@RequestBody List<ShiftRegistrationDTO> registrations) {
+    public ResponseEntity<?> registerShift(@RequestBody ShiftRegistrationDTO registration) {
         try {
             Staff currentStaff = staffShiftService.getCurrentStaff();
-            Map<String, Object> result = staffShiftService.registerShifts(currentStaff, registrations);
+            Map<String, Object> result = staffShiftService.registerShift(currentStaff, registration);
             return ResponseEntity.ok(result);
         } catch (UnauthorizedException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(e.getMessage());

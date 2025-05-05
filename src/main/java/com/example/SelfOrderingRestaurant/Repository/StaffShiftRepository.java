@@ -28,4 +28,7 @@ public interface StaffShiftRepository extends JpaRepository<StaffShift, Integer>
     List<StaffShift> findByStaffAndDate(Staff staff, LocalDate date);
 
     List<StaffShift> findByStaffAndDateBetween(Staff staff, LocalDate startDate, LocalDate endDate);
+
+    @Query("SELECT ss FROM StaffShift ss WHERE ss.date = :date")
+    List<StaffShift> findByDate(LocalDate date);
 }

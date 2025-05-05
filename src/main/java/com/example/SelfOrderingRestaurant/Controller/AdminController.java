@@ -11,20 +11,24 @@ import com.example.SelfOrderingRestaurant.Dto.Response.RevenueResponseDTO.Revenu
 import com.example.SelfOrderingRestaurant.Dto.Response.RevenueResponseDTO.YearlyRevenueDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.ShiftResponseDTO.ShiftResponseDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.StaffResponseDTO.GetAllStaffResponseDTO;
-
+import com.example.SelfOrderingRestaurant.Entity.Shift;
 import com.example.SelfOrderingRestaurant.Entity.Staff;
+import com.example.SelfOrderingRestaurant.Entity.StaffShift;
 import com.example.SelfOrderingRestaurant.Enum.UserStatus;
+import com.example.SelfOrderingRestaurant.Exception.BadRequestException;
+import com.example.SelfOrderingRestaurant.Exception.ResourceNotFoundException;
 import com.example.SelfOrderingRestaurant.Repository.StaffRepository;
+import com.example.SelfOrderingRestaurant.Repository.StaffShiftRepository;
 import com.example.SelfOrderingRestaurant.Service.AuthService;
 import com.example.SelfOrderingRestaurant.Service.RevenueService;
 import com.example.SelfOrderingRestaurant.Service.ShiftService;
 import com.example.SelfOrderingRestaurant.Service.StaffService;
+import com.example.SelfOrderingRestaurant.Service.StaffShiftService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -44,173 +48,299 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AdminController {
 
+    private static final Logger logger = LoggerFactory.getLogger(AdminController.class);
+
     private final StaffService staffService;
     private final AuthService authService;
     private final ShiftService shiftService;
     private final RevenueService revenueService;
     private final StaffRepository staffRepository;
+    private final StaffShiftService staffShiftService;
+    private final StaffShiftRepository staffShiftRepository;
 
     // Staff Management Endpoints
     @PostMapping("/staff/register")
     public ResponseEntity<?> registerStaff(@RequestBody RegisterRequestDto request) {
-        authService.registerStaff(request);
-        return ResponseEntity.ok("Staff registered successfully!");
+        try {
+            logger.info("Registering new staff: {}", request.getUsername());
+            authService.registerStaff(request);
+            return ResponseEntity.ok("Staff registered successfully!");
+        } catch (Exception e) {
+            logger.error("Error registering staff: {}", e.getMessage());
+            return ResponseEntity.badRequest().body("Error registering staff: " + e.getMessage());
+        }
     }
 
     @GetMapping("/staff")
-    public List<GetAllStaffResponseDTO> getAllStaff(@RequestParam(required = false) UserStatus status) {
-        List<Staff> staffList = status != null
-                ? staffRepository.findAllByStatus(status)
-                : staffRepository.findAllByStatus(UserStatus.ACTIVE);
-        return staffList.stream()
-                .map(staff -> new GetAllStaffResponseDTO(
-                        staff.getStaffId(),
-                        staff.getFullname(),
-                        staff.getPosition(),
-                        staff.getStatus()
-                ))
-                .collect(Collectors.toList());
+    public ResponseEntity<List<GetAllStaffResponseDTO>> getAllStaff(@RequestParam(required = false) UserStatus status) {
+        try {
+            logger.info("Fetching staff list with status: {}", status);
+            List<Staff> staffList = status != null
+                    ? staffRepository.findAllByStatus(status)
+                    : staffRepository.findAllByStatus(UserStatus.ACTIVE);
+            List<GetAllStaffResponseDTO> response = staffList.stream()
+                    .map(staff -> new GetAllStaffResponseDTO(
+                            staff.getStaffId(),
+                            staff.getFullname(),
+                            staff.getPosition(),
+                            staff.getStatus()
+                    ))
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            logger.error("Error fetching staff list: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
     }
 
     @GetMapping("/staff/{id}")
-    public ResponseEntity<GetAllStaffResponseDTO> getStaffById(@PathVariable("id") Integer id) {
-        GetAllStaffResponseDTO staff = staffService.getStaffById(id);
-        return new ResponseEntity<>(staff, HttpStatus.OK);
+    public ResponseEntity<GetAllStaffResponseDTO> getStaffById(@PathVariable Integer id) {
+        try {
+            logger.info("Fetching staff with ID: {}", id);
+            GetAllStaffResponseDTO staff = staffService.getStaffById(id);
+            return ResponseEntity.ok(staff);
+        } catch (EntityNotFoundException e) {
+            logger.warn("Staff not found with ID: {}", id);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        } catch (Exception e) {
+            logger.error("Error fetching staff with ID {}: {}", id, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
     }
 
     @PutMapping("/staff/{id}")
-    public ResponseEntity<?> updateStaff(@PathVariable("id") Integer id,
+    public ResponseEntity<?> updateStaff(@PathVariable Integer id,
                                          @Valid @RequestBody UpdateStaffDTO staffUpdateDTO) {
         try {
+            logger.info("Updating staff with ID: {}", id);
             staffService.updateStaff(id, staffUpdateDTO);
             return ResponseEntity.ok("Staff updated successfully!");
         } catch (EntityNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body("Staff with ID " + id + " not found");
+            logger.warn("Staff not found with ID: {}", id);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Staff with ID " + id + " not found");
         } catch (IllegalArgumentException e) {
+            logger.warn("Invalid input for staff update: {}", e.getMessage());
             return ResponseEntity.badRequest().body(e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error updating staff: " + e.getMessage());
+            logger.error("Error updating staff with ID {}: {}", id, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error updating staff: " + e.getMessage());
         }
     }
 
     @DeleteMapping("/staff/{id}")
-    public ResponseEntity<?> deleteStaff(@PathVariable("id") Integer id) {
+    public ResponseEntity<?> deleteStaff(@PathVariable Integer id) {
         try {
+            logger.info("Deleting staff with ID: {}", id);
             staffService.deleteStaff(id);
             return ResponseEntity.ok("Staff deleted successfully!");
         } catch (EntityNotFoundException e) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body("Staff with ID " + id + " not found");
+            logger.warn("Staff not found with ID: {}", id);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Staff with ID " + id + " not found");
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error deleting staff: " + e.getMessage());
+            logger.error("Error deleting staff with ID {}: {}", id, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error deleting staff: " + e.getMessage());
         }
-    }
-
-    @PostMapping("/staff")
-    public ResponseEntity<?> assignStaffShift(@RequestBody AssignStaffRequestDTO request) {
-        staffService.assignStaffShift(request.getStaffId(), request.getShiftId(), request.getDate());
-        return ResponseEntity.ok("Staff shift assigned successfully!");
     }
 
     // Shift Management Endpoints
     @GetMapping("/shifts")
     public ResponseEntity<List<ShiftResponseDTO>> getAllShifts() {
-        List<ShiftResponseDTO> shifts = shiftService.getAllShifts();
-        return ResponseEntity.ok(shifts);
+        try {
+            logger.info("Fetching all shifts");
+            List<ShiftResponseDTO> shifts = shiftService.getAllShifts();
+            return ResponseEntity.ok(shifts);
+        } catch (Exception e) {
+            logger.error("Error fetching shifts: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
     }
 
     @GetMapping("/shifts/{id}")
     public ResponseEntity<ShiftResponseDTO> getShiftById(@PathVariable Integer id) {
-        ShiftResponseDTO shift = shiftService.getShiftById(id);
-        return shift != null ? ResponseEntity.ok(shift) : ResponseEntity.notFound().build();
+        try {
+            logger.info("Fetching shift with ID: {}", id);
+            ShiftResponseDTO shift = shiftService.getShiftById(id);
+            return shift != null ? ResponseEntity.ok(shift) : ResponseEntity.notFound().build();
+        } catch (NumberFormatException e) {
+            logger.warn("Invalid shift ID format: {}", id);
+            return ResponseEntity.badRequest().body(null);
+        } catch (Exception e) {
+            logger.error("Error fetching shift with ID {}: {}", id, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
     }
 
     @PostMapping("/shifts")
     public ResponseEntity<ShiftResponseDTO> createShift(@RequestBody ShiftRequestDTO shiftRequestDTO) {
-        return ResponseEntity.ok(shiftService.createShift(shiftRequestDTO));
+        try {
+            logger.info("Creating new shift: {}", shiftRequestDTO.getName());
+            ShiftResponseDTO createdShift = shiftService.createShift(shiftRequestDTO);
+            return ResponseEntity.ok(createdShift);
+        } catch (Exception e) {
+            logger.error("Error creating shift: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
     }
 
     @PutMapping("/shifts/{id}")
     public ResponseEntity<ShiftResponseDTO> updateShift(@PathVariable Integer id, @RequestBody ShiftRequestDTO shiftRequestDTO) {
-        ShiftResponseDTO updatedShift = shiftService.updateShift(id, shiftRequestDTO);
-        return updatedShift != null ? ResponseEntity.ok(updatedShift) : ResponseEntity.notFound().build();
+        try {
+            logger.info("Updating shift with ID: {}", id);
+            ShiftResponseDTO updatedShift = shiftService.updateShift(id, shiftRequestDTO);
+            return updatedShift != null ? ResponseEntity.ok(updatedShift) : ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            logger.error("Error updating shift with ID {}: {}", id, e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+        }
     }
 
     @DeleteMapping("/shifts/{id}")
     public ResponseEntity<Map<String, String>> deleteShift(@PathVariable Integer id) {
-        shiftService.deleteShift(id);
-        return ResponseEntity.ok(Map.of("message", "Shift deleted successfully"));
+        try {
+            logger.info("Deleting shift with ID: {}", id);
+            shiftService.deleteShift(id);
+            return ResponseEntity.ok(Map.of("message", "Shift deleted successfully"));
+        } catch (Exception e) {
+            logger.error("Error deleting shift with ID {}: {}", id, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error deleting shift: " + e.getMessage()));
+        }
     }
 
+    @GetMapping("/shifts/empty")
+    public ResponseEntity<List<ShiftResponseDTO>> getEmptyShifts(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        try {
+            logger.info("Fetching empty shifts for date: {}", date);
+            List<ShiftResponseDTO> allShifts = shiftService.getAllShifts();
+            List<StaffShift> assignedShifts = staffShiftRepository.findByDate(date);
+            List<Integer> assignedShiftIds = assignedShifts.stream()
+                    .map(staffShift -> staffShift.getShift().getShiftId())
+                    .collect(Collectors.toList());
+            List<ShiftResponseDTO> emptyShifts = allShifts.stream()
+                    .filter(shift -> !assignedShiftIds.contains(shift.getShiftId()))
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(emptyShifts);
+        } catch (Exception e) {
+            logger.error("Error fetching empty shifts for date {}: {}", date, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
 
+    @PostMapping("/staff/shift/assign")
+    public ResponseEntity<?> assignStaffShift(@RequestBody AssignStaffRequestDTO request) {
+        try {
+            logger.info("Assigning shift {} to staff {} for date {}", request.getShiftId(), request.getStaffId(), request.getDate());
+            staffShiftService.assignShiftByAdmin(request.getStaffId(), request.getShiftId(), request.getDate());
+            return ResponseEntity.ok("Shift assigned successfully!");
+        } catch (ResourceNotFoundException e) {
+            logger.warn("Resource not found: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (BadRequestException e) {
+            logger.warn("Bad request: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(e.getMessage());
+        } catch (Exception e) {
+            logger.error("Error assigning shift: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error assigning shift: " + e.getMessage());
+        }
+    }
+
+    // Revenue Endpoints
     @GetMapping("/revenue")
     public ResponseEntity<OverviewRevenueDTO> getRevenueOverview() {
-        OverviewRevenueDTO overview = revenueService.getRevenueOverview();
-        return ResponseEntity.ok(overview);
+        try {
+            logger.info("Fetching revenue overview");
+            OverviewRevenueDTO overview = revenueService.getRevenueOverview();
+            return ResponseEntity.ok(overview);
+        } catch (Exception e) {
+            logger.error("Error fetching revenue overview: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
     }
 
     @GetMapping("/revenue/daily")
     public ResponseEntity<List<RevenueDTO>> getDailyRevenue(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-        if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
-            throw new IllegalArgumentException("startDate must be before or equal to endDate");
+        try {
+            logger.info("Fetching daily revenue from {} to {}", startDate, endDate);
+            if (startDate != null && endDate != null && startDate.isAfter(endDate)) {
+                throw new IllegalArgumentException("startDate must be before or equal to endDate");
+            }
+            List<RevenueDTO> revenues = revenueService.getDailyRevenue(startDate, endDate);
+            return ResponseEntity.ok(revenues);
+        } catch (IllegalArgumentException e) {
+            logger.warn("Invalid date range: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(null);
+        } catch (Exception e) {
+            logger.error("Error fetching daily revenue: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
-        List<RevenueDTO> revenues = revenueService.getDailyRevenue(startDate, endDate);
-        return ResponseEntity.ok(revenues);
     }
 
     @GetMapping("/revenue/monthly")
     public ResponseEntity<MonthlyRevenueDTO> getMonthlyRevenue(
             @RequestParam(required = false, defaultValue = "#{T(java.time.LocalDate).now().getYear()}") int year,
             @RequestParam(required = false, defaultValue = "#{T(java.time.LocalDate).now().getMonthValue()}") int month) {
-        // Validate month
-        if (month < 1 || month > 12) {
-            throw new IllegalArgumentException("Month must be between 1 and 12");
+        try {
+            logger.info("Fetching monthly revenue for year {} and month {}", year, month);
+            if (month < 1 || month > 12) {
+                throw new IllegalArgumentException("Month must be between 1 and 12");
+            }
+            if (year < 2000 || year > LocalDate.now().getYear() + 1) {
+                throw new IllegalArgumentException("Year must be between 2000 and " + (LocalDate.now().getYear() + 1));
+            }
+            MonthlyRevenueDTO monthlyRevenue = revenueService.getMonthlyRevenue(year, month);
+            return ResponseEntity.ok(monthlyRevenue);
+        } catch (IllegalArgumentException e) {
+            logger.warn("Invalid input: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(null);
+        } catch (Exception e) {
+            logger.error("Error fetching monthly revenue: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
-        // Validate year (optional, can be adjusted based on requirements)
-        if (year < 2000 || year > LocalDate.now().getYear() + 1) {
-            throw new IllegalArgumentException("Year must be between 2000 and " + (LocalDate.now().getYear() + 1));
-        }
-        MonthlyRevenueDTO monthlyRevenue = revenueService.getMonthlyRevenue(year, month);
-        return ResponseEntity.ok(monthlyRevenue);
     }
 
     @GetMapping("/revenue/yearly")
     public ResponseEntity<YearlyRevenueDTO> getYearlyRevenue(
             @RequestParam(required = false, defaultValue = "#{T(java.time.LocalDate).now().getYear()}") int year) {
-
-        YearlyRevenueDTO yearlyRevenue = revenueService.getYearlyRevenue(year);
-        return ResponseEntity.ok(yearlyRevenue);
+        try {
+            logger.info("Fetching yearly revenue for year {}", year);
+            YearlyRevenueDTO yearlyRevenue = revenueService.getYearlyRevenue(year);
+            return ResponseEntity.ok(yearlyRevenue);
+        } catch (Exception e) {
+            logger.error("Error fetching yearly revenue: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
     }
 
     @PostMapping(value = "/revenue/export", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<byte[]> exportRevenueReport(@RequestBody RevenueExportDTO exportDTO) {
-        byte[] reportBytes = revenueService.exportRevenueReport(exportDTO);
+        try {
+            logger.info("Exporting revenue report: {}", exportDTO.getReportType());
+            byte[] reportBytes = revenueService.exportRevenueReport(exportDTO);
 
-        String fileExtension = "xlsx";
-        if ("pdf".equalsIgnoreCase(exportDTO.getExportFormat())) {
-            fileExtension = "pdf";
+            String fileExtension = "xlsx";
+            if ("pdf".equalsIgnoreCase(exportDTO.getExportFormat())) {
+                fileExtension = "pdf";
+            }
+
+            String filename = "revenue_report_" + exportDTO.getReportType() + "_" +
+                    LocalDate.now() + "." + fileExtension;
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("Content-Disposition", "attachment; filename=\"" + filename + "\"");
+
+            if ("pdf".equalsIgnoreCase(exportDTO.getExportFormat())) {
+                headers.setContentType(MediaType.APPLICATION_PDF);
+            } else if ("excel".equalsIgnoreCase(exportDTO.getExportFormat())) {
+                headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
+            }
+
+            return new ResponseEntity<>(reportBytes, headers, HttpStatus.OK);
+        } catch (Exception e) {
+            logger.error("Error exporting revenue report: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
-
-        String filename = "revenue_report_" + exportDTO.getReportType() + "_" +
-                LocalDate.now() + "." + fileExtension;
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.add("Content-Disposition", "attachment; filename=\"" + filename + "\"");
-
-        if ("pdf".equalsIgnoreCase(exportDTO.getExportFormat())) {
-            headers.setContentType(MediaType.APPLICATION_PDF);
-        } else if ("excel".equalsIgnoreCase(exportDTO.getExportFormat())) {
-            headers.setContentType(MediaType.parseMediaType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"));
-        }
-
-        System.out.println("Exporting revenue report: " + exportDTO);
-        System.out.println("Report size: " + reportBytes.length + " bytes");
-
-        return new ResponseEntity<>(reportBytes, headers, HttpStatus.OK);
     }
 }
