@@ -1,13 +1,14 @@
 import { useEffect, useState, useContext } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import Header from "../../../components/layout/Header";
 import Banner from "../../../components/ui/Banner";
-import { useNavigate } from "react-router-dom";
 import { CartContext } from "../../../context/CartContext";
 import axios from "axios";
 
 const Home = () => {
   const { cartItemCount, loading, fetchCartData } = useContext(CartContext);
   const navigate = useNavigate();
+  const { tableNumber: tableNumberFromUrl } = useParams();
   const [processingPayment, setProcessingPayment] = useState(false);
   const [paymentError, setPaymentError] = useState(null);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
@@ -15,9 +16,8 @@ const Home = () => {
   const [sendingNotification, setSendingNotification] = useState(false);
   const [notificationError, setNotificationError] = useState(null);
   const [notificationSuccess, setNotificationSuccess] = useState(false);
-  const [tableNumber, setTableNumber] = useState("1"); // Default table number
+  const [tableNumber, setTableNumber] = useState("1");
 
-  // Base API URL to ensure consistency
   const API_BASE_URL = "http://localhost:8080";
 
   const specialStaff = [
@@ -36,24 +36,40 @@ const Home = () => {
   ];
 
   useEffect(() => {
-    // Try to load from localStorage first
+    if (tableNumberFromUrl) {
+      if (!isNaN(tableNumberFromUrl) && parseInt(tableNumberFromUrl) > 0) {
+        setTableNumber(tableNumberFromUrl);
+        localStorage.setItem("tableNumber", tableNumberFromUrl);
+      } else {
+        navigate("/table/1", { replace: true });
+      }
+    } else {
+      const savedTableNumber = localStorage.getItem("tableNumber");
+      if (
+        savedTableNumber &&
+        !isNaN(savedTableNumber) &&
+        parseInt(savedTableNumber) > 0
+      ) {
+        setTableNumber(savedTableNumber);
+        navigate(`/table/${savedTableNumber}`, { replace: true });
+      } else {
+        localStorage.setItem("tableNumber", tableNumber);
+        navigate(`/table/${tableNumber}`, { replace: true });
+      }
+    }
+
     const cachedCartData = localStorage.getItem("cartData");
     if (cachedCartData) {
       try {
         const parsedData = JSON.parse(cachedCartData);
-        // Note: We don't need to set cart item count here as it's managed by the context
       } catch (e) {
         console.error("Error parsing cached cart data", e);
       }
     }
 
-    // Load last order info if available
     let orderInfo = localStorage.getItem("latestOrderInfo");
-
-    // If not found in localStorage, try sessionStorage
     if (!orderInfo) {
       orderInfo = sessionStorage.getItem("latestOrderInfo");
-      // If found in sessionStorage, restore to localStorage
       if (orderInfo) {
         localStorage.setItem("latestOrderInfo", orderInfo);
       }
@@ -68,67 +84,62 @@ const Home = () => {
       }
     }
 
-    // Try to get table number from localStorage
-    const savedTableNumber = localStorage.getItem("tableNumber");
-    if (savedTableNumber) {
-      setTableNumber(savedTableNumber);
-    }
-
-    // Then fetch fresh data from the server if fetchCartData is available
     if (typeof fetchCartData === "function") {
       fetchCartData();
     }
-  }, [fetchCartData]);
+  }, [fetchCartData, navigate, tableNumberFromUrl]);
 
-  // Handler for Order Now button
+  const handleTableNumberChange = (newTableNumber) => {
+    if (
+      !newTableNumber ||
+      isNaN(newTableNumber) ||
+      parseInt(newTableNumber) <= 0
+    ) {
+      alert("Please enter a valid table number");
+      return;
+    }
+    setTableNumber(newTableNumber);
+    localStorage.setItem("tableNumber", newTableNumber);
+    localStorage.removeItem("cartData"); // Clear cart on table change
+    navigate(`/table/${newTableNumber}`, { replace: true });
+  };
+
   const handleOrderNow = async () => {
     try {
-      // Refresh cart data before navigating if fetchCartData is available
       if (typeof fetchCartData === "function") {
         await fetchCartData();
       }
-      // Navigate to Order page
-      navigate("/order_cus");
+      navigate("/order_cus", { state: { tableNumber } });
     } catch (err) {
       console.error("Error navigating to order page:", err);
     }
   };
 
-  // The sendNotification function
   const sendNotification = async (type, additionalMessage = "") => {
     setSendingNotification(true);
     setNotificationError(null);
     setNotificationSuccess(false);
 
     try {
-      // Get current customer info
       const customerInfo = JSON.parse(localStorage.getItem("customerInfo")) || {
-        id: 1, // Guest customer ID
+        id: 1,
         fullname: "Guest Customer",
       };
-
-      // Get orderId if available
       const orderId = lastOrderInfo?.orderId || null;
 
-      // Prepare notification request - match exactly what your DTO expects
       const notificationRequest = {
         tableNumber: parseInt(tableNumber) || 1,
         customerId: customerInfo.id,
         orderId: orderId,
-        type: type, // This needs to be one of the allowed enum values
+        type: type,
         additionalMessage:
           additionalMessage || `${type} request from table ${tableNumber}`,
       };
 
-      console.log("Sending notification request:", notificationRequest);
-
-      // Send notification request to API
       const response = await axios.post(
         `${API_BASE_URL}/api/notifications`,
         notificationRequest
       );
-
-      console.log("Notification API response:", response);
 
       if (response.status >= 200 && response.status < 300) {
         setNotificationSuccess(true);
@@ -138,7 +149,6 @@ const Home = () => {
       }
     } catch (error) {
       console.error("Error sending notification:", error);
-      console.error("Error details:", error.response?.data);
       setNotificationError(
         error.response?.data?.message ||
           error.response?.data?.error ||
@@ -150,25 +160,21 @@ const Home = () => {
     }
   };
 
-  // Call staff handler
   const handleCallStaff = async () => {
     const success = await sendNotification(
       "CALL_STAFF",
       "Customer needs assistance"
     );
     if (success) {
-      // Show a success message
       alert("Staff has been notified and will assist you shortly.");
     }
   };
 
-  // Payment handler - UPDATED to navigate to payment page
   const handleCallPayment = async () => {
     try {
       setProcessingPayment(true);
       setPaymentError(null);
 
-      // Check for existing order information
       let orderInfo = localStorage.getItem("latestOrderInfo");
       if (!orderInfo) {
         orderInfo = sessionStorage.getItem("latestOrderInfo");
@@ -177,7 +183,6 @@ const Home = () => {
         }
       }
 
-      // Parse the order info to get orderId
       let orderId = null;
       if (orderInfo) {
         const parsedOrderInfo = JSON.parse(orderInfo);
@@ -190,7 +195,6 @@ const Home = () => {
         return;
       }
 
-      // Navigate to payment page with order ID
       navigate(`/payment_cus?orderId=${orderId}`);
     } catch (err) {
       console.error("Error in payment flow:", err);
@@ -204,7 +208,6 @@ const Home = () => {
   };
 
   const handleViewMenu = () => {
-    // Navigate to menu page
     navigate("/menu_cus");
   };
 
@@ -214,32 +217,26 @@ const Home = () => {
         <Header />
         <Banner />
 
-        {/* Payment error message if any */}
         {paymentError && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
             <p>{paymentError}</p>
           </div>
         )}
 
-        {/* Notification error message if any */}
         {notificationError && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
             <p>{notificationError}</p>
           </div>
         )}
 
-        {/* Notification success message */}
         {notificationSuccess && (
           <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
             <p>Notification sent successfully!</p>
           </div>
         )}
 
-        {/* 2-column layout */}
         <section className="mt-4 grid grid-cols-2 gap-4">
-          {/* Left column */}
           <div>
-            {/* Customer information */}
             <div className="text-center mb-4">
               <p className="text-lg">
                 Good Morning{" "}
@@ -249,10 +246,16 @@ const Home = () => {
                 We will deliver your food to your table:{" "}
                 <strong>{tableNumber}</strong>
               </p>
+              <input
+                type="text"
+                value={tableNumber}
+                onChange={(e) => handleTableNumberChange(e.target.value)}
+                className="mt-2 border rounded p-1 w-24 text-center"
+                placeholder="Table number"
+              />
             </div>
           </div>
 
-          {/* Right column */}
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col items-center space-y-2">
               <button
@@ -266,14 +269,13 @@ const Home = () => {
                 }}
               ></button>
               <span
-                className="text-sm font-medium "
+                className="text-sm font-medium"
                 style={{ color: "#747474" }}
               >
                 {sendingNotification ? "Calling..." : "Call Staff"}
               </span>
             </div>
 
-            {/* Call Payment button */}
             <div className="flex flex-col items-center space-y-2">
               <button
                 onClick={handleCallPayment}
@@ -286,7 +288,7 @@ const Home = () => {
                 }}
               ></button>
               <span
-                className="text-sm font-semibold "
+                className="text-sm font-semibold"
                 style={{ color: "#747474" }}
               >
                 {processingPayment || sendingNotification
@@ -297,7 +299,6 @@ const Home = () => {
           </div>
         </section>
 
-        {/* View Menu - Order button */}
         <div className="w-full h-20 mt-1 relative col-span-2">
           <button
             onClick={handleViewMenu}
@@ -308,10 +309,7 @@ const Home = () => {
               backgroundPosition: "center",
             }}
           >
-            {/* Overlay with 20% opacity */}
             <div className="absolute inset-0 bg-[#D9D9D9] opacity-20 z-0" />
-
-            {/* Main content: icon + text */}
             <span
               className="text-xl relative z-10 flex items-center gap-2"
               style={{ color: "#747474" }}
@@ -326,9 +324,7 @@ const Home = () => {
           </button>
         </div>
 
-        {/* Today's special Staff */}
         <section className="mt-4">
-          {/* Title and arrow button */}
           <div className="flex items-center space-x-2 mb-3">
             <h2 className="text-xl font-bold">Today's Special</h2>
             <button
@@ -352,7 +348,6 @@ const Home = () => {
             </button>
           </div>
 
-          {/* Dish list */}
           <div className="grid grid-cols-2 gap-4">
             {specialStaff.map((dish, index) => (
               <div
@@ -362,24 +357,19 @@ const Home = () => {
                   navigate(
                     `/menu/item/${dish.name.toLowerCase().replace(/\s+/g, "-")}`
                   );
-                  // Optionally send notification when a special item is viewed
                   sendNotification(
                     "VIEW_SPECIAL",
                     `Customer at table ${tableNumber} is viewing ${dish.name}`
                   );
                 }}
               >
-                {/* Dish image */}
                 <img
                   src={dish.image}
                   alt={dish.name}
                   className="w-full h-[150px] object-cover rounded-lg mb-2"
                 />
-                {/* Dish type */}
                 <p className="text-sm text-gray-500">{dish.type}</p>
-                {/* Dish name */}
                 <p className="text-lg font-semibold">{dish.name}</p>
-                {/* Dish price */}
                 <p className="text-sm font-bold text-gray-800">${dish.price}</p>
               </div>
             ))}

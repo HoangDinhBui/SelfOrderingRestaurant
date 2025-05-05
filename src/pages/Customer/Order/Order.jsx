@@ -1,19 +1,21 @@
 import { useState, useEffect, useContext, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
-import { CartContext } from "../../../context/CartContext"; // Adjust path as needed
+import { useNavigate, useLocation } from "react-router-dom";
+import { CartContext } from "../../../context/CartContext";
 import axios from "axios";
 
 const Order = () => {
   const navigate = useNavigate();
+  const { state } = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [tableId, setTableId] = useState(1); // Default table ID
+  const [tableId, setTableId] = useState(
+    state?.tableNumber || localStorage.getItem("tableNumber") || "1"
+  );
   const [processingOrder, setProcessingOrder] = useState(false);
 
-  // Get cart context with all methods
   const {
     cartItems,
     setCartItems,
@@ -23,22 +25,37 @@ const Order = () => {
     updateItemNotes,
   } = useContext(CartContext);
 
-  // Base API URL to ensure consistency
   const API_BASE_URL = "http://localhost:8080";
 
-  // Function to get image URL using the new API endpoint
   const getImageUrl = (imageName) => {
     if (!imageName) return "/src/assets/img/placeholder.jpg";
     return `${API_BASE_URL}/api/images/${imageName}`;
   };
 
-  // Enhanced fetch cart items with GraphQL approach
+  // Sync tableId with localStorage and navigation state
+  useEffect(() => {
+    const savedTableNumber = localStorage.getItem("tableNumber");
+    const newTableNumber = state?.tableNumber || savedTableNumber || "1";
+
+    if (newTableNumber !== tableId) {
+      if (!isNaN(newTableNumber) && parseInt(newTableNumber) > 0) {
+        setTableId(newTableNumber);
+        localStorage.setItem("tableNumber", newTableNumber);
+        console.log("Updated tableId:", newTableNumber);
+      } else {
+        // Invalid table number, set default
+        localStorage.setItem("tableNumber", "1");
+        setTableId("1");
+        navigate("/table/1", { replace: true });
+      }
+    }
+  }, [state?.tableNumber, tableId, navigate]);
+
   const fetchCartItems = useCallback(async () => {
     try {
       setLoading(true);
       console.log("Fetching cart items...");
 
-      // Try to load from localStorage first as a fallback
       const cachedCartData = localStorage.getItem("cartData");
       let localItems = [];
 
@@ -47,7 +64,6 @@ const Order = () => {
           const parsedData = JSON.parse(cachedCartData);
           if (parsedData && Array.isArray(parsedData.items)) {
             localItems = parsedData.items;
-            // Use cached data immediately to avoid empty state flash
             setCartItems(localItems);
             console.log("Using cached cart data initially", localItems);
           }
@@ -56,7 +72,6 @@ const Order = () => {
         }
       }
 
-      // Use GraphQL to fetch cart data
       try {
         const graphqlQuery = {
           query: `
@@ -81,7 +96,7 @@ const Order = () => {
           headers: {
             "Content-Type": "application/json",
           },
-          credentials: "include", // Important for session-based carts
+          credentials: "include",
           body: JSON.stringify(graphqlQuery),
         });
 
@@ -98,16 +113,12 @@ const Order = () => {
             JSON.stringify(result.data.orderCart)
           );
         } else if (localItems.length > 0) {
-          // Keep using localStorage data if API returns empty
           console.log("API returned no items, using cached data");
         } else {
-          // Set empty cart items array
           setCartItems([]);
         }
       } catch (graphqlError) {
         console.error("GraphQL cart fetch failed:", graphqlError);
-
-        // If we have localStorage data and API call failed, keep using that
         if (localItems.length > 0) {
           console.log("Using cached data as fallback after API failures");
         } else {
@@ -123,28 +134,23 @@ const Order = () => {
     }
   }, [setCartItems]);
 
-  // On component mount, fetch the cart items ONCE
   useEffect(() => {
     console.log("Order component mounted, fetching cart items");
+    console.log("Initial tableId:", tableId);
     fetchCartItems();
 
-    // Set up an interval to refresh cart data every 30 seconds
-    // This is more efficient than constant refreshing
     const intervalId = setInterval(() => {
       fetchCartItems();
     }, 30000);
 
-    // Cleanup the interval on unmount
     return () => clearInterval(intervalId);
-  }, [fetchCartItems]); // Remove cartItems from dependency array
+  }, [fetchCartItems]);
 
-  // Call proper fetchCartData from context when component mounts
   useEffect(() => {
     console.log("Calling fetchCartData from context");
     fetchCartData();
   }, [fetchCartData]);
 
-  // Update quantity via GraphQL with proper error handling
   const updateQuantity = async (id, delta) => {
     const item = cartItems.find((item) => item.dishId === id);
     if (!item) return;
@@ -157,31 +163,26 @@ const Order = () => {
       } else {
         await updateItemQuantity(id, newQuantity);
       }
-      // The context functions already update the state and localStorage
     } catch (err) {
       setError("Failed to update quantity. Please try again.");
     }
   };
 
-  // Calculate total price
   const totalPrice = cartItems.reduce(
     (total, item) => total + parseFloat(item.price) * item.quantity,
     0
   );
 
-  // Updated createOrder function using GraphQL
   const createOrder = async () => {
     try {
       setProcessingOrder(true);
 
-      // Prepare items for GraphQL input
       const items = cartItems.map((item) => ({
-        dishId: item.dishId.toString(), // GraphQL expects string
+        dishId: item.dishId.toString(),
         quantity: item.quantity,
         notes: item.notes || "",
       }));
 
-      // Create the GraphQL mutation
       const orderMutation = {
         query: `
           mutation CreateOrder($input: OrderInput!) {
@@ -190,7 +191,7 @@ const Order = () => {
         `,
         variables: {
           input: {
-            tableId: tableId.toString(), // GraphQL expects string
+            tableId: tableId.toString(),
             customerName: "Guest",
             items: items,
             notes: "",
@@ -198,15 +199,15 @@ const Order = () => {
         },
       };
 
-      console.log("Sending GraphQL mutation:", orderMutation);
+      console.log("Creating order with tableId:", tableId);
+      console.log("Full mutation:", JSON.stringify(orderMutation, null, 2));
 
-      // Execute the GraphQL mutation
       const response = await fetch(`${API_BASE_URL}/graphql`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: "include", // Important for session cookies
+        credentials: "include",
         body: JSON.stringify(orderMutation),
       });
 
@@ -217,41 +218,25 @@ const Order = () => {
         throw new Error(result.errors[0].message || "Error creating order");
       }
 
-      // Get the orderId from the response (result.data.createOrder returns the orderId as Integer)
       const orderId = result.data.createOrder;
 
       if (orderId) {
-        // Store the order information in localStorage for payment processing
         const paymentInfo = {
           orderId: orderId,
           amount: totalPrice,
-          customerId: 1, // Default to Guest ID
+          customerId: 1,
           createdAt: new Date().toISOString(),
           isPaid: false,
         };
         localStorage.setItem("latestOrderInfo", JSON.stringify(paymentInfo));
         sessionStorage.setItem("latestOrderInfo", JSON.stringify(paymentInfo));
 
-        // Create notification for staff about the new order
         try {
-          // Debug info to console
-          console.log("Backend NotificationRequestDTO expects:", {
-            tableNumber: "Integer",
-            customerId: "Integer",
-            orderId: "Integer",
-            type: "NotificationType enum",
-            additionalMessage: "String",
-          });
-
-          // Make sure customerId is an integer, not a string
-          const customerId = 1; // Default to 1 for Guest
-
-          // Create notification using REST API (keep this part if GraphQL doesn't support notifications yet)
           const notificationData = {
             tableNumber: Number(tableId),
-            customerId: Number(customerId),
+            customerId: 1,
             orderId: Number(orderId),
-            type: "NEW_ORDER", // Backend will convert this string to enum
+            type: "NEW_ORDER",
             additionalMessage: `New order placed for Table ${tableId}`,
           };
 
@@ -267,25 +252,22 @@ const Order = () => {
             "Failed to send order notification:",
             notificationError
           );
-          // We don't want to fail the entire order process if notification fails
         }
+
+        setShowModal(false);
+        setShowConfirmation(true);
+
+        setCartItems([]);
+        localStorage.removeItem("cartData");
+
+        setTimeout(() => {
+          setShowConfirmation(false);
+          navigate(`/table/${tableId}`);
+        }, 3000);
       } else {
         console.error("Order created but no orderId returned");
         throw new Error("Could not get orderId from response");
       }
-
-      setShowModal(false);
-      setShowConfirmation(true);
-
-      // Clear local cart after order is created
-      setCartItems([]);
-      localStorage.removeItem("cartData");
-
-      // After a few seconds, navigate to home page instead of payment page
-      setTimeout(() => {
-        setShowConfirmation(false);
-        navigate("/"); // Navigate to home page
-      }, 3000);
     } catch (err) {
       console.error("Error in order/payment flow:", err);
       setError(`Failed to process your order: ${err.message}`);
@@ -346,7 +328,7 @@ const Order = () => {
           </button>
 
           <button
-            onClick={() => navigate("/")}
+            onClick={() => navigate(`/table/${tableId}`)}
             className="p-2 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center font-bold"
           >
             Home

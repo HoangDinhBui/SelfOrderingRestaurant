@@ -1,8 +1,13 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import { ApolloProvider } from "@apollo/client";
 import { MenuProvider } from "./context/MenuContext";
 import { CartProvider } from "./context/CartContext";
-import client from "./apollo-client"; // Import the Apollo Client from apollo-client.js
+import client from "./apollo-client";
 import "./axiosConfig";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import { ToastContainer } from "react-toastify";
@@ -43,9 +48,9 @@ function App() {
         <MenuProvider>
           <Router>
             <Routes>
-
               {/* Customer Routes */}
-              <Route path="/" element={<Home />} />
+              <Route path="/" element={<Navigate to="/table/1" replace />} />
+              <Route path="/table/:tableNumber" element={<Home />} />
               <Route path="/menu_cus" element={<Menu />} />
               <Route path="/order_cus" element={<Order />} />
               <Route path="/viewitem/:id" element={<ViewItem />} />
@@ -55,27 +60,63 @@ function App() {
 
               {/* Admin Routes */}
               <Route path="/login" element={<Login />} />
-              <Route path="/dish-management" element={<DishManagementAdmin />}/>
-              <Route path="/notification-management" element={<NotificationManagementStaff />}/>
-              <Route path="/admin-infomation_admin" element={<AdminInformation />}/>
-              <Route path="/table-management_admin" element={<TableManagementAdmin />}/>
+              <Route
+                path="/dish-management"
+                element={<DishManagementAdmin />}
+              />
+              <Route
+                path="/notification-management"
+                element={<NotificationManagementStaff />}
+              />
+              <Route
+                path="/admin-infomation_admin"
+                element={<AdminInformation />}
+              />
+              <Route
+                path="/table-management_admin"
+                element={<TableManagementAdmin />}
+              />
               <Route path="/evaluate_admin" element={<EvaluateAdmin />} />
-              <Route path="/menu-management_admin" element={<MenuManagementAdmin />}/>
-              <Route path="/revenue-management_admin" element={<RevenueManagement />}/>
-              <Route path="/staff-management_admin" element={<StaffManagement />}/>
-              <Route path="/inventory-management_admin" element={<InventoryManagement />}/>
+              <Route
+                path="/menu-management_admin"
+                element={<MenuManagementAdmin />}
+              />
+              <Route
+                path="/revenue-management_admin"
+                element={<RevenueManagement />}
+              />
+              <Route
+                path="/staff-management_admin"
+                element={<StaffManagement />}
+              />
+              <Route
+                path="/inventory-management_admin"
+                element={<InventoryManagement />}
+              />
+              <Route
+                path="/order-history_admin"
+                element={<OrderHistoryAdmin />}
+              />
 
               {/* Staff Routes */}
-              <Route path="/login" element={<Login />} />
-              <Route path="/dish-management" element={<DishManagementStaff />} />
-              <Route path="/notification-management" element={<NotificationManagementStaff />} />
-              <Route path="/order-history" element={<OrderHistoryStaff />} />
-              <Route path="/staff-information_staff" element={<StaffInformation />} />
-              <Route path="/table-management_staff" element={<TableManagementStaff />} />
-
+              <Route
+                path="/dish-management_staff"
+                element={<DishManagementStaff />}
+              />
+              <Route
+                path="/order-history_staff"
+                element={<OrderHistoryStaff />}
+              />
+              <Route
+                path="/staff-information_staff"
+                element={<StaffInformation />}
+              />
+              <Route
+                path="/table-management_staff"
+                element={<TableManagementStaff />}
+              />
             </Routes>
           </Router>
-          {/* Toast Container for notifications */}
           <ToastContainer
             position="top-right"
             autoClose={3000}
