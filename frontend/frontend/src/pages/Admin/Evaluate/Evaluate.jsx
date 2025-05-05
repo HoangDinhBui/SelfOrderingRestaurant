@@ -33,7 +33,7 @@ const EvaluteAdmin = () => {
 
   // Check user role on component mount
   useEffect(() => {
-    const role = localStorage.getItem("userRole"); // Adjust based on your auth mechanism
+    const role = localStorage.getItem("userType"); // Use userType instead of userRole
     setUserRole(role);
   }, []);
 
@@ -213,7 +213,6 @@ const EvaluteAdmin = () => {
         title="Evaluate"
         icon="https://img.icons8.com/ios-filled/50/FFFFFF/bookmark.png"
       />
-
       {/* Main Content */}
       <div className="flex-1 p-8 bg-transparent overflow-y-auto">
         {/* Error Message */}
@@ -277,12 +276,14 @@ const EvaluteAdmin = () => {
                     <div className="flex items-center">
                       {renderStars(review.rating)}
                       <div>
-                        <h3 className="font-bold text-xl text-gray-800">
-                          {review.customerName}
-                        </h3>
-                        <p className="text-gray-600 text-sm mt-1">
-                          {review.comment}
-                        </p>
+                        <div>
+                          <h3 className="font-bold text-xl text-gray-800">
+                            {review.customerName}
+                          </h3>
+                          <p className="text-gray-600 text-sm mt-1">
+                            {review.comment}
+                          </p>
+                        </div>
                       </div>
                     </div>
 
@@ -320,8 +321,8 @@ const EvaluteAdmin = () => {
           )}
         </div>
       </div>
-
       {/* Delete Confirmation Modal */}
+      oportunidades
       {showDeleteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
