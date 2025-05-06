@@ -85,11 +85,11 @@ const StaffManagementAdmin = () => {
       });
       const status = error.response?.status;
       let message =
-        error.response?.data?.message || "Lỗi khi lấy danh sách nhân viên";
+        error.response?.data?.message || "Error while getting employee list";
       if (status === 403 || status === 401) {
         message = "Access denied: Administrator privileges required.";
       } else if (status === 404) {
-        message = "Không tìm thấy endpoint /api/admin/staff.";
+        message = "Not found endpoint /api/admin/staff.";
       }
       setErrorMessage(message);
     }
@@ -120,11 +120,11 @@ const StaffManagementAdmin = () => {
       });
       await fetchStaff();
       const status = error.response?.status;
-      let message = error.response?.data?.message || "Lỗi khi xóa nhân viên";
+      let message = error.response?.data?.message || "Error while deleting employee";
       if (status === 403 || status === 401) {
         message = "Access denied: Administrator privileges required.";
       } else if (status === 404) {
-        message = "Không tìm thấy endpoint /api/admin/staff.";
+        message = "Not found endpoint /api/admin/staff.";
       }
       setErrorMessage(message);
     }
@@ -174,28 +174,28 @@ const StaffManagementAdmin = () => {
       !newStaff.username ||
       !newStaff.password
     ) {
-      setErrorMessage("Vui lòng điền đầy đủ các trường bắt buộc!");
+      setErrorMessage("Please fill in all required fields!");
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(newStaff.email)) {
-      setErrorMessage("Email không đúng định dạng!");
+      setErrorMessage("Email is not in correct format!");
       return;
     }
 
     if (newStaff.username.length < 3 || newStaff.username.length > 50) {
-      setErrorMessage("Tên đăng nhập phải từ 3 đến 50 ký tự!");
+      setErrorMessage("Username must be between 3 and 50 characters!");
       return;
     }
 
     if (newStaff.password.length < 8) {
-      setErrorMessage("Mật khẩu phải có ít nhất 8 ký tự!");
+      setErrorMessage("Password must be at least 8 characters!");
       return;
     }
 
     if (newStaff.salary && isNaN(parseFloat(newStaff.salary))) {
-      setErrorMessage("Lương phải là số hợp lệ!");
+      setErrorMessage("Salary must be a valid number!");
       return;
     }
 
@@ -231,7 +231,7 @@ const StaffManagementAdmin = () => {
     } catch (error) {
       console.error("Error adding staff:", error);
       const status = error.response?.status;
-      let message = error.response?.data?.message || "Lỗi khi thêm nhân viên!";
+      let message = error.response?.data?.message || "Error adding employee!";
       if (status === 403 || status === 401) {
         message = "Access denied: Administrator privileges required.";
       }
@@ -243,16 +243,16 @@ const StaffManagementAdmin = () => {
     if (userRole !== "ADMIN") return;
     console.log("Editing staff:", staffToEdit.id, newStaff);
     if (!newStaff.position || !newStaff.salary) {
-      setErrorMessage("Vui lòng điền vị trí và lương!");
+      setErrorMessage("Please fill in position and salary!");
       return;
     }
     const salaryValue = parseFloat(newStaff.salary);
     if (isNaN(salaryValue) || salaryValue <= 0) {
-      setErrorMessage("Lương phải là số dương!");
+      setErrorMessage("Salary must be positive!");
       return;
     }
     if (!["ACTIVE", "INACTIVE"].includes(newStaff.status)) {
-      setErrorMessage("Trạng thái không hợp lệ!");
+      setErrorMessage("Invalid status!");
       return;
     }
     try {
@@ -285,7 +285,7 @@ const StaffManagementAdmin = () => {
       console.error("Error editing staff:", error);
       const status = error.response?.status;
       let message =
-        error.response?.data?.message || "Lỗi khi cập nhật nhân viên";
+        error.response?.data?.message || "Error while updating employee";
       if (status === 403 || status === 401) {
         message = "Access denied: Administrator privileges required.";
       }
@@ -635,9 +635,9 @@ const StaffManagementAdmin = () => {
                 <thead style={styles.thead}>
                   <tr>
                     <th style={styles.th}>ID</th>
-                    <th style={styles.th}>Tên</th>
-                    <th style={styles.th}>Ca làm</th>
-                    <th style={styles.th}>Vị trí</th>
+                    <th style={styles.th}>Name</th>
+                    <th style={styles.th}>Shifts</th>
+                    <th style={styles.th}>Position</th>
                     <th style={styles.th}></th>
                   </tr>
                 </thead>
@@ -678,7 +678,7 @@ const StaffManagementAdmin = () => {
               <div style={styles.searchRow}>
                 <input
                   type="text"
-                  placeholder="Tìm kiếm..."
+                  placeholder="Search..."
                   style={styles.input}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -704,13 +704,13 @@ const StaffManagementAdmin = () => {
                 onClick={() => setShowAddForm(false)}
               ></div>
               <div style={styles.addFormContainer}>
-                <h2 style={styles.addFormTitle}>Thêm Nhân viên</h2>
+                <h2 style={styles.addFormTitle}>Add Staff</h2>
                 <div style={styles.addForm}>
                   <div style={styles.addFormContent}>
                     <div style={styles.formFields}>
                       <label style={styles.formLabel}>
                         <span style={styles.labelText}>
-                          Họ tên <span style={styles.requiredMark}>(*)</span>:
+                          Name<span style={styles.requiredMark}>(*)</span>:
                         </span>
                         <input
                           type="text"
@@ -725,7 +725,7 @@ const StaffManagementAdmin = () => {
                         />
                       </label>
                       <label style={styles.formLabel}>
-                        <span style={styles.labelText}>Ngày bắt đầu:</span>
+                        <span style={styles.labelText}>Start date:</span>
                         <input
                           type="date"
                           value={newStaff.startDate}
@@ -739,7 +739,7 @@ const StaffManagementAdmin = () => {
                         />
                       </label>
                       <label style={styles.formLabel}>
-                        <span style={styles.labelText}>Ca làm:</span>
+                        <span style={styles.labelText}>Shifts:</span>
                         <select
                           value={newStaff.workShift}
                           onChange={(e) =>
@@ -750,14 +750,14 @@ const StaffManagementAdmin = () => {
                           }
                           style={styles.selectField}
                         >
-                          <option value="">Chọn ca</option>
-                          <option value="Full-time">Toàn thời gian</option>
-                          <option value="Part-time">Bán thời gian</option>
+                          <option value="">Select a shift</option>
+                          <option value="Full-time">Full-time</option>
+                          <option value="Part-time">Part-time</option>
                         </select>
                       </label>
                       <label style={styles.formLabel}>
                         <span style={styles.labelText}>
-                          Vị trí <span style={styles.requiredMark}>(*)</span>:
+                          Position <span style={styles.requiredMark}>(*)</span>:
                         </span>
                         <input
                           type="text"
@@ -772,7 +772,7 @@ const StaffManagementAdmin = () => {
                         />
                       </label>
                       <label style={styles.formLabel}>
-                        <span style={styles.labelText}>Số điện thoại:</span>
+                        <span style={styles.labelText}>Phone Number:</span>
                         <input
                           type="text"
                           value={newStaff.phoneNumber}
@@ -786,7 +786,7 @@ const StaffManagementAdmin = () => {
                         />
                       </label>
                       <label style={styles.formLabel}>
-                        <span style={styles.labelText}>Địa chỉ:</span>
+                        <span style={styles.labelText}>Address:</span>
                         <input
                           type="text"
                           value={newStaff.address}
@@ -816,7 +816,7 @@ const StaffManagementAdmin = () => {
                         />
                       </label>
                       <label style={styles.formLabel}>
-                        <span style={styles.labelText}>Lương:</span>
+                        <span style={styles.labelText}>Salary:</span>
                         <input
                           type="number"
                           value={newStaff.salary}
@@ -831,7 +831,7 @@ const StaffManagementAdmin = () => {
                       </label>
                       <label style={styles.formLabel}>
                         <span style={styles.labelText}>
-                          Tên đăng nhập{" "}
+                          Username{" "}
                           <span style={styles.requiredMark}>(*)</span>:
                         </span>
                         <input
@@ -848,7 +848,7 @@ const StaffManagementAdmin = () => {
                       </label>
                       <label style={styles.formLabel}>
                         <span style={styles.labelText}>
-                          Mật khẩu <span style={styles.requiredMark}>(*)</span>:
+                          Password <span style={styles.requiredMark}>(*)</span>:
                         </span>
                         <input
                           type="password"
@@ -872,13 +872,13 @@ const StaffManagementAdmin = () => {
                       onClick={validateAndAddStaff}
                       style={styles.addButton}
                     >
-                      Thêm
+                      Add
                     </button>
                     <button
                       onClick={() => setShowAddForm(false)}
                       style={styles.cancelButton}
                     >
-                      Hủy
+                      Cancel
                     </button>
                   </div>
                 </div>
@@ -893,7 +893,7 @@ const StaffManagementAdmin = () => {
                 alt="Bon Appétit"
                 style={styles.successImage}
               />
-              <p style={styles.successText}>Thành công</p>
+              <p style={styles.successText}>Successfull</p>
               <div style={styles.successIcon}>✔</div>
             </div>
           )}
@@ -905,16 +905,16 @@ const StaffManagementAdmin = () => {
                 alt="Bon Appétit"
                 style={styles.successImage}
               />
-              <p style={styles.successText}>Bạn có chắc chắn?</p>
+              <p style={styles.successText}>Are you sure?</p>
               <div style={styles.actionButtons}>
                 <button onClick={confirmDeleteStaff} style={styles.addButton}>
-                  Có
+                  Yes
                 </button>
                 <button
                   onClick={() => setShowDeletePopup(false)}
                   style={styles.cancelButton}
                 >
-                  Không
+                  No
                 </button>
               </div>
             </div>
@@ -927,13 +927,13 @@ const StaffManagementAdmin = () => {
                 onClick={() => setShowEditForm(false)}
               ></div>
               <div style={styles.addFormContainer}>
-                <h2 style={styles.addFormTitle}>Sửa Nhân viên</h2>
+                <h2 style={styles.addFormTitle}>Edit Staff</h2>
                 <div style={styles.addForm}>
                   <div style={styles.addFormContent}>
                     <div style={styles.formFields}>
                       <label style={styles.formLabel}>
                         <span style={styles.labelText}>
-                          Vị trí <span style={styles.requiredMark}>(*)</span>:
+                          Position <span style={styles.requiredMark}>(*)</span>:
                         </span>
                         <input
                           type="text"
@@ -949,7 +949,7 @@ const StaffManagementAdmin = () => {
                       </label>
                       <label style={styles.formLabel}>
                         <span style={styles.labelText}>
-                          Lương <span style={styles.requiredMark}>(*)</span>:
+                          Salary <span style={styles.requiredMark}>(*)</span>:
                         </span>
                         <input
                           type="number"
@@ -965,7 +965,7 @@ const StaffManagementAdmin = () => {
                       </label>
                       <label style={styles.formLabel}>
                         <span style={styles.labelText}>
-                          Trạng thái{" "}
+                          Status{" "}
                           <span style={styles.requiredMark}>(*)</span>:
                         </span>
                         <select
@@ -978,8 +978,8 @@ const StaffManagementAdmin = () => {
                           }
                           style={styles.selectField}
                         >
-                          <option value="ACTIVE">Hoạt động</option>
-                          <option value="INACTIVE">Không hoạt động</option>
+                          <option value="ACTIVE">Active</option>
+                          <option value="INACTIVE">Inactive</option>
                         </select>
                       </label>
                     </div>
@@ -989,13 +989,13 @@ const StaffManagementAdmin = () => {
                   )}
                   <div style={styles.actionButtons}>
                     <button onClick={confirmEditStaff} style={styles.addButton}>
-                      Lưu
+                      Save
                     </button>
                     <button
                       onClick={() => setShowEditForm(false)}
                       style={styles.cancelButton}
                     >
-                      Hủy
+                      Cancel
                     </button>
                   </div>
                 </div>
