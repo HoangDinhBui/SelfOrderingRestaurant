@@ -134,7 +134,8 @@ public class AdminController {
                             staff.getStaffId(),
                             staff.getFullname(),
                             staff.getPosition(),
-                            staff.getStatus()
+                            staff.getStatus(),
+                            staff.getPosition()
                     ))
                     .collect(Collectors.toList());
             return ResponseEntity.ok(response);
