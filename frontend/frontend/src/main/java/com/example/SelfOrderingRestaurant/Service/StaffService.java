@@ -44,7 +44,8 @@ public class StaffService implements IStaffService {
                         staff.getStaffId(),
                         staff.getFullname(),
                         staff.getPosition(),
-                        staff.getStatus()
+                        staff.getStatus(),
+                        staff.getPosition()
                 ))
                 .collect(Collectors.toList());
     }
@@ -84,7 +85,8 @@ public class StaffService implements IStaffService {
                 staff.getStaffId(),
                 staff.getFullname(),
                 staff.getPosition(),
-                staff.getStatus()
+                staff.getStatus(),
+                staff.getPosition()
         );
     }
 
