@@ -14,7 +14,7 @@ const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("token");
+    const token = localStorage.getItem("accessToken");
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -42,14 +42,40 @@ const MenuManagementAdmin = () => {
   const [dishToDelete, setDishToDelete] = useState(null);
   const [showEditForm, setShowEditForm] = useState(false);
   const [dishToEdit, setDishToEdit] = useState(null);
+  const [hasAdminAccess, setHasAdminAccess] = useState(true);
 
-  // Kiểm tra quyền ADMIN khi component mount
   useEffect(() => {
     const userType = localStorage.getItem("userType");
-    if (userType !== "ADMIN") {
-      setErrorMessage("Bạn cần quyền ADMIN để truy cập trang này.");
+    const accessToken = localStorage.getItem("accessToken");
+
+    if (accessToken) {
+      try {
+        const payload = JSON.parse(atob(accessToken.split(".")[1]));
+        const currentTime = Math.floor(Date.now() / 1000);
+        if (payload.exp < currentTime) {
+          setErrorMessage("Session expired. Please log in again.");
+          setHasAdminAccess(false);
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("userType");
+          window.location.href = "/login";
+          return;
+        }
+      } catch (e) {
+        console.error("Error decoding token:", e);
+        setErrorMessage("Invalid token. Please log in again.");
+        setHasAdminAccess(false);
+        return;
+      }
+    }
+
+    if (!userType || userType.toUpperCase() !== "ADMIN") {
+      setHasAdminAccess(false);
+      setErrorMessage(
+        "Access Denied: You need ADMIN privileges to access this page."
+      );
       return;
     }
+
     fetchDishes();
     fetchCategories();
   }, []);
@@ -61,13 +87,7 @@ const MenuManagementAdmin = () => {
       setFilteredDishes(response.data);
     } catch (error) {
       console.error("Error fetching dishes:", error.response?.data);
-      let errorMessage = "Không thể tải danh sách món ăn. Vui lòng thử lại.";
-      if (error.response?.status === 401) {
-        errorMessage = "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.";
-      } else if (error.response?.status === 403) {
-        errorMessage = "Bạn không có quyền truy cập. Vui lòng đăng nhập với tài khoản ADMIN.";
-      }
-      setErrorMessage(errorMessage);
+      handleApiError(error);
     }
   };
 
@@ -77,17 +97,39 @@ const MenuManagementAdmin = () => {
       setCategories(response.data);
     } catch (error) {
       console.error("Error fetching categories:", error.response?.data);
-      let errorMessage = "Không thể tải danh sách danh mục. Vui lòng thử lại.";
-      if (error.response?.status === 401) {
-        errorMessage = "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.";
-      } else if (error.response?.status === 403) {
-        errorMessage = "Bạn không có quyền truy cập. Vui lòng đăng nhập với tài khoản ADMIN.";
-      }
-      setErrorMessage(errorMessage);
+      handleApiError(error);
     }
   };
 
-  // Handle search in frontend
+  const handleApiError = (error) => {
+    let errorMessage = "An error occurred. Please try again.";
+    if (error.response) {
+      console.error("API Error:", {
+        status: error.response.status,
+        data: error.response.data,
+        headers: error.response.headers,
+      });
+      if (error.response.status === 401) {
+        errorMessage = "Session expired. Please log in again.";
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("userType");
+        window.location.href = "/login";
+      } else if (error.response.status === 403) {
+        errorMessage = "Access Denied: You need ADMIN privileges.";
+        setHasAdminAccess(false);
+      } else if (error.response.status === 500) {
+        errorMessage =
+          error.response.data.message ||
+          "Internal server error. Please try again.";
+      } else {
+        errorMessage = error.response.data?.message || errorMessage;
+      }
+    } else {
+      console.error("Network Error:", error.message);
+    }
+    setErrorMessage(errorMessage);
+  };
+
   const handleSearch = (event) => {
     if (event.key === "Enter") {
       if (searchTerm.trim() === "") {
@@ -101,20 +143,24 @@ const MenuManagementAdmin = () => {
     }
   };
 
-  // Add new dish
   const validateAndAddDish = async () => {
-    if (!newDish.name || !newDish.price || !newDish.description || !newDish.image) {
-      setErrorMessage("Tất cả các trường là bắt buộc!");
+    if (
+      !newDish.name ||
+      !newDish.price ||
+      !newDish.description ||
+      !newDish.image
+    ) {
+      setErrorMessage("All fields are required!");
       return;
     }
 
     if (isNaN(parseFloat(newDish.price))) {
-      setErrorMessage("Giá phải là số hợp lệ!");
+      setErrorMessage("Price must be a valid number!");
       return;
     }
 
     if (newDish.name.length > 100) {
-      setErrorMessage("Tên món ăn phải dưới 100 ký tự!");
+      setErrorMessage("Dish name must be under 100 characters!");
       return;
     }
 
@@ -122,13 +168,13 @@ const MenuManagementAdmin = () => {
       (dish) => dish.dishName.toLowerCase() === newDish.name.toLowerCase()
     );
     if (isDuplicate) {
-      setErrorMessage("Tên món ăn đã tồn tại!");
+      setErrorMessage("Dish name already exists!");
       return;
     }
 
     const category = categories.find((cat) => cat.name === newDish.category);
     if (!category) {
-      setErrorMessage("Danh mục không hợp lệ!");
+      setErrorMessage("Invalid category!");
       return;
     }
 
@@ -138,7 +184,7 @@ const MenuManagementAdmin = () => {
     formData.append("categoryId", category.id);
     formData.append("description", newDish.description);
     formData.append("image", newDish.image);
-    formData.append("status", newDish.status?.toUpperCase() || "AVAILABLE");
+    formData.append("status", "AVAILABLE");
 
     try {
       await api.post("/api/admin/dishes", formData, {
@@ -160,19 +206,10 @@ const MenuManagementAdmin = () => {
       fetchDishes();
     } catch (error) {
       console.error("Error adding dish:", error.response?.data);
-      let errorMessage = "Không thể thêm món ăn. Vui lòng thử lại.";
-      if (error.response?.status === 401) {
-        errorMessage = "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.";
-      } else if (error.response?.status === 403) {
-        errorMessage = "Bạn không có quyền thêm món ăn. Vui lòng đăng nhập với tài khoản ADMIN.";
-      } else if (error.response?.status === 400) {
-        errorMessage = error.response.data?.message || "Dữ liệu đầu vào không hợp lệ.";
-      }
-      setErrorMessage(errorMessage);
+      handleApiError(error);
     }
   };
 
-  // Edit dish
   const handleEditDish = (dish) => {
     setDishToEdit(dish);
     setNewDish({
@@ -187,23 +224,23 @@ const MenuManagementAdmin = () => {
 
   const confirmEditDish = async () => {
     if (!newDish.name || !newDish.price || !newDish.description) {
-      setErrorMessage("Tên, giá và mô tả là bắt buộc!");
+      setErrorMessage("Name, price, and description are required!");
       return;
     }
 
     if (isNaN(parseFloat(newDish.price))) {
-      setErrorMessage("Giá phải là số hợp lệ!");
+      setErrorMessage("Price must be a valid number!");
       return;
     }
 
     if (newDish.name.length > 100) {
-      setErrorMessage("Tên món ăn phải dưới 100 ký tự!");
+      setErrorMessage("Dish name must be under 100 characters!");
       return;
     }
 
     const category = categories.find((cat) => cat.name === newDish.category);
-    if (!category) {
-      setErrorMessage("Danh mục không hợp lệ!");
+    if (!category || !category.id) {
+      setErrorMessage("Please select a valid category!");
       return;
     }
 
@@ -215,23 +252,18 @@ const MenuManagementAdmin = () => {
     formData.append("status", "AVAILABLE");
     if (newDish.image) {
       formData.append("image", newDish.image);
-      console.log("Image file:", newDish.image.name, newDish.image.type, newDish.image.size);
-    } else {
-      console.log("No new image provided, using existing image (if any).");
-    }
-
-    console.log("FormData contents:");
-    for (let [key, value] of formData.entries()) {
-      console.log(`${key}: ${value}`);
     }
 
     try {
-      const response = await api.post(`/api/admin/dishes/${dishToEdit.dishId}`, formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      });
-      console.log("Update response:", response.data);
+      const response = await api.post(
+        `/api/admin/dishes/${dishToEdit.dishId}`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+          },
+        }
+      );
       setShowEditForm(false);
       setNewDish({
         name: "",
@@ -246,20 +278,16 @@ const MenuManagementAdmin = () => {
       setTimeout(() => setShowSuccessPopup(false), 2000);
       fetchDishes();
     } catch (error) {
-      console.error("Full error response:", error.response?.data);
-      let errorMessage = "Không thể cập nhật món ăn. Vui lòng thử lại.";
-      if (error.response?.status === 401) {
-        errorMessage = "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.";
-      } else if (error.response?.status === 403) {
-        errorMessage = "Bạn không có quyền cập nhật món ăn. Vui lòng đăng nhập với tài khoản ADMIN.";
-      } else if (error.response?.status === 400) {
-        errorMessage = error.response.data?.message || "Dữ liệu đầu vào không hợp lệ.";
-      }
-      setErrorMessage(errorMessage);
+      console.error("Error updating dish:", error.response?.data);
+      handleApiError(error);
     }
   };
 
-  // Delete dish
+  const handleDeleteDish = (dish) => {
+    setDishToDelete(dish);
+    setShowDeletePopup(true);
+  };
+
   const confirmDeleteDish = async () => {
     try {
       await api.delete(`/api/dishes/${dishToDelete.dishId}`);
@@ -270,13 +298,7 @@ const MenuManagementAdmin = () => {
       fetchDishes();
     } catch (error) {
       console.error("Error deleting dish:", error.response?.data);
-      let errorMessage = "Không thể xóa món ăn. Vui lòng thử lại.";
-      if (error.response?.status === 401) {
-        errorMessage = "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.";
-      } else if (error.response?.status === 403) {
-        errorMessage = "Bạn không có quyền xóa món ăn. Vui lòng đăng nhập với tài khoản ADMIN.";
-      }
-      setErrorMessage(errorMessage);
+      handleApiError(error);
     }
   };
 
@@ -591,9 +613,9 @@ const MenuManagementAdmin = () => {
     },
     actionButtonContainer: {
       display: "flex",
-      flexDirection: "row", // sắp xếp theo chiều ngang
+      flexDirection: "row",
       justifyContent: "center",
-      gap: "10px", // khoảng cách giữa các nút
+      gap: "10px",
     },
     actionButton: {
       padding: "6px 12px",
@@ -612,17 +634,6 @@ const MenuManagementAdmin = () => {
     },
   };
 
-  // Nếu không có quyền ADMIN, chỉ hiển thị thông báo lỗi
-  if (errorMessage && errorMessage.includes("Bạn cần quyền ADMIN")) {
-    return (
-      <div style={styles.outerContainer}>
-        <div style={styles.innerContainer}>
-          <div style={styles.errorContainer}>{errorMessage}</div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <>
       <MenuBar title="Menu Management" />
@@ -630,95 +641,127 @@ const MenuManagementAdmin = () => {
         <div style={styles.innerContainer}>
           <h1 style={styles.title}>Menu</h1>
           {errorMessage && (
-            <div style={styles.errorContainer}>{errorMessage}</div>
+            <div style={styles.errorContainer}>
+              {errorMessage}
+              <button
+                style={{ ...styles.cancelButton, marginTop: "10px" }}
+                onClick={() => {
+                  localStorage.removeItem("accessToken");
+                  localStorage.removeItem("userType");
+                  window.location.href = "/login";
+                }}
+              >
+                Log Out
+              </button>
+            </div>
           )}
-          <div style={styles.tableAndControls}>
-            <div style={styles.tableContainer}>
-              <table style={styles.table}>
-                <thead style={styles.thead}>
-                  <tr>
-                    <th style={styles.th}>Name</th>
-                    <th style={styles.th}>ID</th>
-                    <th style={styles.th}>Price</th>
-                    <th style={styles.th}>Category</th>
-                    <th style={styles.th}>Description</th>
-                    <th style={styles.th}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredDishes.map((dish, index) => (
-                    <tr
-                      key={dish.dishId}
-                      style={index % 2 === 0 ? styles.evenRow : styles.oddRow}
-                    >
-                      <td style={styles.td}>
-                        <div style={{ display: "flex", alignItems: "center" }}>
-                          <img
-                            src={dish.imageUrl || "./src/assets/img/placeholder.jpg"}
-                            alt={dish.dishName}
-                            style={{
-                              width: "50px",
-                              height: "50px",
-                              borderRadius: "5px",
-                              marginRight: "10px",
-                            }}
-                          />
-                          {dish.dishName}
-                        </div>
-                      </td>
-                      <td style={styles.td}>{dish.dishId}</td>
-                      <td style={{ ...styles.td, ...styles.price }}>${dish.price}</td>
-                      <td style={styles.td}>{dish.categoryName}</td>
-                      <td style={styles.td}>{dish.description || "No description"}</td>
-                      <td style={styles.td}>
-                        <div style={styles.actionButtonContainer}>
-                          <button
-                            style={{ ...styles.actionButton, ...styles.editButton }}
-                            onClick={() => handleEditDish(dish)}
-                          >
-                            ✏️
-                          </button>
-                          <button
-                            style={{ ...styles.actionButton, ...styles.deleteButton }}
-                            onClick={() => handleDeleteDish(dish)}
-                          >
-                            🗑️
-                          </button>
-                        </div>
-                      </td>
+          {hasAdminAccess && !errorMessage && (
+            <div style={styles.tableAndControls}>
+              <div style={styles.tableContainer}>
+                <table style={styles.table}>
+                  <thead style={styles.thead}>
+                    <tr>
+                      <th style={styles.th}>Name</th>
+                      <th style={styles.th}>ID</th>
+                      <th style={styles.th}>Price</th>
+                      <th style={styles.th}>Category</th>
+                      <th style={styles.th}>Description</th>
+                      <th style={styles.th}>Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <div style={styles.searchAndButtonContainer}>
-              <div style={styles.searchRow}>
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  style={styles.input}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  onKeyDown={handleSearch}
-                />
-                <button
-                  style={styles.addButton}
-                  onClick={() => setShowAddForm(true)}
-                >
-                  +
-                </button>
+                  </thead>
+                  <tbody>
+                    {filteredDishes.map((dish, index) => (
+                      <tr
+                        key={dish.dishId}
+                        style={index % 2 === 0 ? styles.evenRow : styles.oddRow}
+                      >
+                        <td style={styles.td}>
+                          <div
+                            style={{ display: "flex", alignItems: "center" }}
+                          >
+                            <img
+                              src={
+                                dish.imageUrl ||
+                                "./src/assets/img/placeholder.jpg"
+                              }
+                              alt={dish.dishName}
+                              style={{
+                                width: "50px",
+                                height: "50px",
+                                borderRadius: "5px",
+                                marginRight: "10px",
+                              }}
+                            />
+                            {dish.dishName}
+                          </div>
+                        </td>
+                        <td style={styles.td}>{dish.dishId}</td>
+                        <td style={{ ...styles.td, ...styles.price }}>
+                          ${dish.price}
+                        </td>
+                        <td style={styles.td}>{dish.categoryName}</td>
+                        <td style={styles.td}>
+                          {dish.description || "No description"}
+                        </td>
+                        <td style={styles.td}>
+                          <div style={styles.actionButtonContainer}>
+                            <button
+                              style={{
+                                ...styles.actionButton,
+                                ...styles.editButton,
+                              }}
+                              onClick={() => handleEditDish(dish)}
+                            >
+                              ✏️
+                            </button>
+                            <button
+                              style={{
+                                ...styles.actionButton,
+                                ...styles.deleteButton,
+                              }}
+                              onClick={() => handleDeleteDish(dish)}
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-              <img
-                src="./src/assets/img/chefmouse.png"
-                alt="Chef Mouse"
-                style={styles.chefMouseImage}
-              />
+              <div style={styles.searchAndButtonContainer}>
+                <div style={styles.searchRow}>
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    style={styles.input}
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onKeyDown={handleSearch}
+                  />
+                  <button
+                    style={styles.addButton}
+                    onClick={() => setShowAddForm(true)}
+                  >
+                    +
+                  </button>
+                </div>
+                <img
+                  src="./src/assets/img/chefmouse.png"
+                  alt="Chef Mouse"
+                  style={styles.chefMouseImage}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
-          {showAddForm && (
+          {showAddForm && hasAdminAccess && (
             <>
-              <div style={styles.overlay} onClick={() => setShowAddForm(false)}></div>
+              <div
+                style={styles.overlay}
+                onClick={() => setShowAddForm(false)}
+              ></div>
               <div style={styles.addFormContainer}>
                 <h2 style={styles.addFormTitle}>Add Dish</h2>
                 <div style={styles.addForm}>
@@ -734,7 +777,8 @@ const MenuManagementAdmin = () => {
                             />
                           ) : (
                             <div style={styles.placeholderText}>
-                              Select images in the formats (.jpg, .jpeg, .png, .gif)
+                              Select images in the formats (.jpg, .jpeg, .png,
+                              .gif)
                             </div>
                           )}
                         </div>
@@ -791,20 +835,29 @@ const MenuManagementAdmin = () => {
                         </select>
                       </label>
                       <label style={styles.formLabel}>
-                        Description <span style={styles.requiredMark}>(*)</span>:
+                        Description <span style={styles.requiredMark}>(*)</span>
+                        :
                         <textarea
                           value={newDish.description}
                           onChange={(e) =>
-                            setNewDish({ ...newDish, description: e.target.value })
+                            setNewDish({
+                              ...newDish,
+                              description: e.target.value,
+                            })
                           }
                           style={styles.textareaField}
                         />
                       </label>
                     </div>
                   </div>
-                  {errorMessage && <p style={styles.errorText}>{errorMessage}</p>}
+                  {errorMessage && (
+                    <p style={styles.errorText}>{errorMessage}</p>
+                  )}
                   <div style={styles.actionButtons}>
-                    <button onClick={validateAndAddDish} style={styles.addButton}>
+                    <button
+                      onClick={validateAndAddDish}
+                      style={styles.addButton}
+                    >
                       Add
                     </button>
                     <button
@@ -819,9 +872,12 @@ const MenuManagementAdmin = () => {
             </>
           )}
 
-          {showEditForm && (
+          {showEditForm && hasAdminAccess && (
             <>
-              <div style={styles.overlay} onClick={() => setShowEditForm(false)}></div>
+              <div
+                style={styles.overlay}
+                onClick={() => setShowEditForm(false)}
+              ></div>
               <div style={styles.addFormContainer}>
                 <h2 style={styles.addFormTitle}>Edit Dish</h2>
                 <div style={styles.addForm}>
@@ -843,7 +899,8 @@ const MenuManagementAdmin = () => {
                             />
                           ) : (
                             <div style={styles.placeholderText}>
-                              Select images in the formats (.jpg, .jpeg, .png, .gif)
+                              Select images in the formats (.jpg, .jpeg, .png,
+                              .gif)
                             </div>
                           )}
                         </div>
@@ -900,18 +957,24 @@ const MenuManagementAdmin = () => {
                         </select>
                       </label>
                       <label style={styles.formLabel}>
-                        Description <span style={styles.requiredMark}>(*)</span>:
+                        Description <span style={styles.requiredMark}>(*)</span>
+                        :
                         <textarea
                           value={newDish.description}
                           onChange={(e) =>
-                            setNewDish({ ...newDish, description: e.target.value })
+                            setNewDish({
+                              ...newDish,
+                              description: e.target.value,
+                            })
                           }
                           style={styles.textareaField}
                         />
                       </label>
                     </div>
                   </div>
-                  {errorMessage && <p style={styles.errorText}>{errorMessage}</p>}
+                  {errorMessage && (
+                    <p style={styles.errorText}>{errorMessage}</p>
+                  )}
                   <div style={styles.actionButtons}>
                     <button onClick={confirmEditDish} style={styles.addButton}>
                       Save
@@ -930,7 +993,11 @@ const MenuManagementAdmin = () => {
 
           {showSuccessPopup && (
             <div style={styles.successPopup}>
-              <img src={logoRemoveBg} alt="Bon Appétit" style={styles.successImage} />
+              <img
+                src={logoRemoveBg}
+                alt="Bon Appétit"
+                style={styles.successImage}
+              />
               <p>
                 <b>Successful</b>
               </p>
@@ -938,9 +1005,13 @@ const MenuManagementAdmin = () => {
             </div>
           )}
 
-          {showDeletePopup && (
+          {showDeletePopup && hasAdminAccess && (
             <div style={styles.successPopup}>
-              <img src={logoRemoveBg} alt="Bon Appétit" style={styles.successImage} />
+              <img
+                src={logoRemoveBg}
+                alt="Bon Appétit"
+                style={styles.successImage}
+              />
               <p>
                 <b>Are you sure?</b>
               </p>
