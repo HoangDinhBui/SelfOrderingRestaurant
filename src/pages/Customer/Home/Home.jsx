@@ -211,6 +211,10 @@ const Home = () => {
     navigate("/menu_cus");
   };
 
+  const handleGenerateQr = () => {
+    navigate("/create-table");
+  };
+
   return (
     <div className="flex justify-center items-center min-h-screen">
       <div className="w-full max-w-md px-4">
@@ -253,6 +257,12 @@ const Home = () => {
                 className="mt-2 border rounded p-1 w-24 text-center"
                 placeholder="Table number"
               />
+              <button
+                onClick={handleGenerateQr}
+                className="mt-2 !bg-blue-500 text-white font-bold py-2 px-4 rounded hover:bg-blue-600"
+              >
+                Tạo Mã QR
+              </button>
             </div>
           </div>
 
