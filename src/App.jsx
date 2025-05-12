@@ -21,6 +21,7 @@ import ViewItem from "./pages/Customer/ViewItem/ViewItem";
 import Note from "./pages/Customer/Note/Note";
 import Payment from "./pages/Customer/PayMent/Payment";
 import Evaluate from "./pages/Customer/Evaluate/Evaluate";
+import CreateTable from "./components/CreateTable";
 
 // Admin Pages
 import AdminInformation from "./pages/Admin/AdminInformation/AdminInformation";
@@ -51,6 +52,8 @@ function App() {
               {/* Customer Routes */}
               <Route path="/" element={<Navigate to="/table/1" replace />} />
               <Route path="/table/:tableNumber" element={<Home />} />
+              <Route path="/create-table" element={<CreateTable />} />
+              <Route path="/create-table/:tableNumber" element={<CreateTable />} />
               <Route path="/menu_cus" element={<Menu />} />
               <Route path="/order_cus" element={<Order />} />
               <Route path="/viewitem/:id" element={<ViewItem />} />
