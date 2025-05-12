@@ -70,6 +70,7 @@ public class SecurityConfig {
                                 "/graphiql/**",
                                 "/graphql/**",
                                 "/ws/**",
+                                "/api/qr/**",
                                 "/error").permitAll()
                         .requestMatchers("/api/staff/**").hasAnyRole("STAFF", "ADMIN")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
