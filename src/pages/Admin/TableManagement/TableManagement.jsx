@@ -31,6 +31,11 @@ const TableManagementAdmin = () => {
   const [orderError, setOrderError] = useState(null);
   const [socket, setSocket] = useState(null);
   const [socketError, setSocketError] = useState(null);
+  const [newTableId, setNewTableId] = useState(null); // Lưu id của bàn vừa tạo
+  const [qrUrl, setQrUrl] = useState(""); // Lưu URL mã QR
+  const [qrError, setQrError] = useState(null); // Lưu lỗi khi tạo QR
+  const [qrUploading, setQrUploading] = useState(false); // Trạng thái lưu QR
+
 
   const userId = localStorage.getItem("userId") || "1";
 
@@ -503,26 +508,32 @@ const TableManagementAdmin = () => {
   const handleAddTableSuccess = async (e) => {
     e.preventDefault();
     setErrorMessage("");
+    setQrError(null);
     try {
       const response = await API.post("/api/admin/tables", {
         tableNumber: parseInt(newTableNumber),
         capacity: parseInt(newTableCapacity),
-        status: "AVAILABLE",
+        tableStatus: "AVAILABLE",
       });
-      setTables((prevTables) => [
-        ...prevTables,
-        {
-          id: response.data.table_id,
-          status: response.data.status?.toLowerCase() || "available",
-          capacity: response.data.capacity,
-          orders: [],
-          location: response.data.location,
-          qrCode: response.data.qrCode,
-        },
-      ]);
-      setIsAddTableModalOpen(false);
+      const newTable = {
+        id: response.data.table_id,
+        status: response.data.status?.toLowerCase() || "available",
+        capacity: response.data.capacity,
+        orders: [],
+        location: response.data.location,
+        qrCode: response.data.qrCode,
+      };
+      setTables((prevTables) => [...prevTables, newTable]);
+      setNewTableId(response.data.table_id); // Lưu id bàn vừa tạo
       setNewTableNumber("");
       setNewTableCapacity("");
+      
+      // Tạo URL mã QR
+      const tableUrl = `http://192.168.1.100:5173/table/${response.data.table_id}`; // Thay bằng IP của bạn
+      const qrApiUrl = `http://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(tableUrl)}&size=200x200`;
+      setQrUrl(qrApiUrl);
+  
+      // Không đóng modal ngay để hiển thị nút tạo QR
       await fetchAllNotifications();
     } catch (err) {
       console.error("Error creating table:", err);
@@ -531,6 +542,76 @@ const TableManagementAdmin = () => {
           "Failed to create table. Please check the input and try again."
       );
     }
+  };
+
+  const handleGenerateQr = async () => {
+    if (!newTableId) {
+      setQrError("Không có số bàn để tạo mã QR!");
+      return;
+    }
+    setQrError(null);
+    setQrUploading(true);
+    try {
+      const tableUrl = `http://192.168.1.100:5173/table/${newTableId}`; // Thay bằng IP của bạn
+      const qrApiUrl = `http://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(tableUrl)}&size=200x200`;
+      
+      // Tải hình ảnh QR
+      const response = await fetch(qrApiUrl);
+      if (!response.ok) throw new Error("Không tải được mã QR!");
+      const blob = await response.blob();
+      const formData = new FormData();
+      formData.append("file", blob, `table_${newTableId}_qr.png`);
+      formData.append("tableNumber", newTableId.toString());
+  
+      // Gửi đến backend
+      const res = await axios.post("http://localhost:8080/api/qr/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+  
+      if (res.status >= 200 && res.status < 300) {
+        alert("Mã QR đã được lưu thành công!");
+        setIsAddTableModalOpen(false); // Đóng modal sau khi lưu
+        setNewTableId(null);
+        setQrUrl("");
+      } else {
+        throw new Error("Lỗi khi lưu mã QR!");
+      }
+    } catch (err) {
+      console.error("Lỗi khi tạo mã QR:", err);
+      setQrError("Không thể lưu mã QR. Vui lòng thử lại!");
+    } finally {
+      setQrUploading(false);
+    }
+  };
+
+  const handleDownloadQr = async () => {
+    try {
+      const response = await fetch(qrUrl);
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const downloadLink = document.createElement("a");
+      downloadLink.href = url;
+      downloadLink.download = `table_${newTableId}_qr.png`;
+      document.body.appendChild(downloadLink);
+      downloadLink.click();
+      document.body.removeChild(downloadLink);
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("Lỗi khi tải mã QR:", err);
+      setQrError("Không thể tải mã QR. Vui lòng thử lại!");
+    }
+  };
+  
+  const handlePrintQr = () => {
+    const printWindow = window.open("", "_blank");
+    printWindow.document.write(`
+      <html>
+        <body onload="window.print()">
+          <img src="${qrUrl}" />
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
   };
 
   // Update Table
@@ -826,6 +907,10 @@ const TableManagementAdmin = () => {
     setNewTableNumber("");
     setNewTableCapacity("");
     setErrorMessage("");
+    setNewTableId(null);
+    setQrUrl("");
+    setQrError(null);
+    setQrUploading(false);
   };
 
   const handleEditTableModal = () => {
@@ -1572,28 +1657,29 @@ const TableManagementAdmin = () => {
 
   // Render Add Table Modal
   const renderAddTableModal = () => {
-    if (!isAddTableModalOpen) return null;
+  if (!isAddTableModalOpen) return null;
 
-    return (
-      <div className="fixed inset-0 flex items-center justify-center z-50">
-        <div
-          className="absolute inset-0"
-          style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
+  return (
+    <div className="fixed inset-0 flex items-center justify-center z-50">
+      <div
+        className="absolute inset-0"
+        style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
+        onClick={handleCloseAddTableModal}
+      ></div>
+      <div className="bg-[#F0F8FD] rounded-lg shadow-lg p-6 w-[400px] relative z-50">
+        <button
+          className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
           onClick={handleCloseAddTableModal}
-        ></div>
-        <div className="bg-[#F0F8FD] rounded-lg shadow-lg p-6 w-[400px] relative z-50">
-          <button
-            className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
-            onClick={handleCloseAddTableModal}
-          >
-            ✕
-          </button>
-          <h2
-            style={{ fontSize: "24px" }}
-            className="text-center text-xl font-bold mb-4"
-          >
-            Add Table
-          </h2>
+        >
+          ✕
+        </button>
+        <h2
+          style={{ fontSize: "24px" }}
+          className="text-center text-xl font-bold mb-4"
+        >
+          Add Table
+        </h2>
+        {!newTableId ? (
           <form onSubmit={handleAddTableSuccess}>
             <div className="mb-4">
               <label className="block text-sm font-medium mb-1">
@@ -1632,10 +1718,73 @@ const TableManagementAdmin = () => {
               Add
             </button>
           </form>
-        </div>
+        ) : (
+          <div className="text-center">
+            <p className="text-green-600 mb-4">
+              Bàn {newTableId} đã được tạo thành công!
+            </p>
+            {qrUrl && (
+              <>
+                <h3 className="text-lg font-semibold mb-2">
+                  Mã QR cho bàn {newTableId}
+                </h3>
+                <img
+                  src={qrUrl}
+                  alt={`QR Code for table ${newTableId}`}
+                  style={{ width: "200px", height: "200px", margin: "0 auto" }}
+                />
+                <p className="mt-2 text-gray-600">
+                  URL:{" "}
+                  <a
+                    href={`http://192.168.1.100:5173/table/${newTableId}`}
+                    target="_blank"
+                    className="text-blue-500"
+                  >
+                    http://192.168.1.100:5173/table/{newTableId}
+                  </a>
+                </p>
+              </>
+            )}
+            {qrError && (
+              <p className="text-red-500 text-sm mt-2">{qrError}</p>
+            )}
+            <div className="mt-4 flex flex-col gap-2">
+              <button
+                onClick={handleGenerateQr}
+                disabled={qrUploading}
+                className="w-full !bg-blue-500 text-white font-medium py-2 rounded hover:bg-blue-600 disabled:bg-gray-400"
+              >
+                {qrUploading ? "Đang lưu..." : "Tạo và Lưu Mã QR"}
+              </button>
+              {qrUrl && (
+                <div className="flex justify-center gap-4">
+                  <button
+                    onClick={handleDownloadQr}
+                    className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600"
+                  >
+                    Tải Mã QR
+                  </button>
+                  <button
+                    onClick={handlePrintQr}
+                    className="bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600"
+                  >
+                    In Mã QR
+                  </button>
+                </div>
+              )}
+              <button
+                onClick={handleCloseAddTableModal}
+                className="w-full bg-gray-300 text-gray-800 font-medium py-2 rounded hover:bg-gray-400 mt-2"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        )}
       </div>
-    );
-  };
+    </div>
+  );
+};
 
   // Render Edit Table Modal
   const renderEditTableModal = () => {
