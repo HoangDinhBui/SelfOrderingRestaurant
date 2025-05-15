@@ -86,7 +86,8 @@ const Evaluate = () => {
   };
 
   const handleDone = () => {
-    navigate("/");
+    const savedTableNumber = localStorage.getItem("tableNumber") || "1";
+    navigate(`/table/${savedTableNumber}`);
   };
 
   const handleBack = () => {

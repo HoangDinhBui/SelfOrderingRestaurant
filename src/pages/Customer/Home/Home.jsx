@@ -16,7 +16,12 @@ const Home = () => {
   const [sendingNotification, setSendingNotification] = useState(false);
   const [notificationError, setNotificationError] = useState(null);
   const [notificationSuccess, setNotificationSuccess] = useState(false);
-  const [tableNumber, setTableNumber] = useState("1");
+  const [tableNumber, setTableNumber] = useState(() => {
+    const savedTableNumber = localStorage.getItem("tableNumber");
+    return savedTableNumber && !isNaN(savedTableNumber) && parseInt(savedTableNumber) > 0
+      ? savedTableNumber
+      : "1";
+  });
 
   const API_BASE_URL = "http://localhost:8080";
 
@@ -36,15 +41,19 @@ const Home = () => {
   ];
 
   useEffect(() => {
+    const savedTableNumber = localStorage.getItem("tableNumber");
+
     if (tableNumberFromUrl) {
       if (!isNaN(tableNumberFromUrl) && parseInt(tableNumberFromUrl) > 0) {
         setTableNumber(tableNumberFromUrl);
         localStorage.setItem("tableNumber", tableNumberFromUrl);
       } else {
-        navigate("/table/1", { replace: true });
+        const fallbackTableNumber = savedTableNumber || "1";
+        setTableNumber(fallbackTableNumber);
+        localStorage.setItem("tableNumber", fallbackTableNumber);
+        navigate(`/table/${fallbackTableNumber}`, { replace: true });
       }
     } else {
-      const savedTableNumber = localStorage.getItem("tableNumber");
       if (
         savedTableNumber &&
         !isNaN(savedTableNumber) &&
@@ -53,8 +62,9 @@ const Home = () => {
         setTableNumber(savedTableNumber);
         navigate(`/table/${savedTableNumber}`, { replace: true });
       } else {
-        localStorage.setItem("tableNumber", tableNumber);
-        navigate(`/table/${tableNumber}`, { replace: true });
+        localStorage.setItem("tableNumber", "1");
+        setTableNumber("1");
+        navigate(`/table/1`, { replace: true });
       }
     }
 
@@ -100,7 +110,6 @@ const Home = () => {
     }
     setTableNumber(newTableNumber);
     localStorage.setItem("tableNumber", newTableNumber);
-    localStorage.removeItem("cartData"); // Clear cart on table change
     navigate(`/table/${newTableNumber}`, { replace: true });
   };
 
@@ -208,7 +217,7 @@ const Home = () => {
   };
 
   const handleViewMenu = () => {
-    navigate("/menu_cus");
+    navigate(`/menu_cus?tableNumber=${tableNumber}`);
   };
 
   return (
@@ -249,6 +258,7 @@ const Home = () => {
               <input
                 type="text"
                 value={tableNumber}
+                disabled
                 onChange={(e) => handleTableNumberChange(e.target.value)}
                 className="mt-2 border rounded p-1 w-24 text-center"
                 placeholder="Table number"
