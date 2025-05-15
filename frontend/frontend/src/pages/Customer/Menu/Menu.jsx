@@ -1,6 +1,6 @@
 import { useState, useEffect, useContext } from "react";
-import { useNavigate } from "react-router-dom";
-import { CartContext } from "../../../context/CartContext"; // Adjust path as needed
+import { useNavigate, useLocation } from "react-router-dom";
+import { CartContext } from "../../../context/CartContext";
 
 const Menu = () => {
   const [dishes, setDishes] = useState([]);
@@ -9,18 +9,21 @@ const Menu = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const navigate = useNavigate();
-  // Add orderFeedback state for showing messages to user
   const [orderFeedback, setOrderFeedback] = useState({
     show: false,
     message: "",
     type: "",
   });
-
-  // Get cart context - THIS IS THE KEY ADDITION
   const { addToCartGraphQL, updateCartWithGraphQLData, fetchCartData } =
     useContext(CartContext);
 
-  // Categories with icons
+  // Lấy tableNumber từ query params hoặc localStorage
+  const { search } = useLocation();
+  const queryParams = new URLSearchParams(search);
+  const tableNumberFromUrl = queryParams.get("tableNumber");
+  const savedTableNumber = localStorage.getItem("tableNumber");
+  const tableNumber = tableNumberFromUrl || savedTableNumber || "1";
+
   const categories = [
     { id: 0, name: "All", icon: "🍽️" },
     { id: 1, name: "Main Course", icon: "🍽️" },
@@ -29,14 +32,10 @@ const Menu = () => {
     { id: 4, name: "Dessert", icon: "🍰" },
   ];
 
-  // State to manage quantity for each dish
   const [quantities, setQuantities] = useState({});
-  // State to manage notes for each dish
   const [notes, setNotes] = useState({});
-
   const [loadingDish, setLoadingDish] = useState(null);
 
-  // Fetch all dishes from the API
   useEffect(() => {
     const fetchDishes = async () => {
       try {
@@ -50,16 +49,14 @@ const Menu = () => {
         const data = await response.json();
         setDishes(data);
 
-        // Initialize quantities state with all dishes
         const initialQuantities = data.reduce((acc, dish) => {
-          acc[dish.dishId] = 1; // Default quantity is 1 for each dish
+          acc[dish.dishId] = 1;
           return acc;
         }, {});
         setQuantities(initialQuantities);
 
-        // Initialize notes state with all dishes
         const initialNotes = data.reduce((acc, dish) => {
-          acc[dish.dishId] = ""; // Default empty note for each dish
+          acc[dish.dishId] = "";
           return acc;
         }, {});
         setNotes(initialNotes);
@@ -74,9 +71,27 @@ const Menu = () => {
 
     fetchDishes();
     fetchCartData();
-  }, [fetchCartData]); // Fixed: Don't call fetchCartData in the dependency array
 
-  // Filter items based on search term and selected category
+    // Đồng bộ tableNumber
+    if (
+      tableNumberFromUrl &&
+      !isNaN(tableNumberFromUrl) &&
+      parseInt(tableNumberFromUrl) > 0
+    ) {
+      localStorage.setItem("tableNumber", tableNumberFromUrl);
+    } else if (
+      !savedTableNumber ||
+      isNaN(savedTableNumber) ||
+      parseInt(savedTableNumber) <= 0
+    ) {
+      localStorage.setItem("tableNumber", "1");
+    }
+
+    console.log("Menu - tableNumberFromUrl:", tableNumberFromUrl);
+    console.log("Menu - savedTableNumber:", savedTableNumber);
+    console.log("Menu - tableNumber:", tableNumber);
+  }, [fetchCartData, tableNumberFromUrl]);
+
   const filteredItems = dishes.filter((item) => {
     const itemName = item.dishName || "";
     const matchesSearch = itemName
@@ -89,7 +104,6 @@ const Menu = () => {
     return matchesSearch && matchesCategory;
   });
 
-  // Handlers for quantity adjustments
   const handleIncreaseQuantity = (dishId) => {
     setQuantities((prev) => ({
       ...prev,
@@ -100,21 +114,18 @@ const Menu = () => {
   const handleDecreaseQuantity = (dishId) => {
     setQuantities((prev) => ({
       ...prev,
-      [dishId]: prev[dishId] > 1 ? prev[dishId] - 1 : 1, // Minimum quantity is 1
+      [dishId]: prev[dishId] > 1 ? prev[dishId] - 1 : 1,
     }));
   };
 
   const handleViewDish = (dishId) => {
     console.log(`View dish with ID: ${dishId}`);
-    navigate(`/viewitem/${dishId}`); // đường dẫn đến ViewItem.jsx
+    navigate(`/viewitem/${dishId}`);
   };
 
-  // Updated order dish function to call GraphQL API
   const handleOrderDish = async (dishId) => {
     try {
-      // Show loading state if needed
-      // setLoadingDish(dishId);
-      setLoadingDish(dishId); // Show loading state for this dish
+      setLoadingDish(dishId);
 
       const currentDish = dishes.find((d) => d.dishId === dishId);
       if (!currentDish) {
@@ -125,19 +136,16 @@ const Menu = () => {
         dishId: dishId,
         quantity: quantities[dishId],
         notes: notes[dishId] || "",
-        dishName: currentDish.dishName, // Include name for better feedback
-        price: currentDish.price, // Include price for cart calculations
+        dishName: currentDish.dishName,
+        price: currentDish.price,
       };
 
       let result;
 
-      // First try using the Cart Context if available (best option)
       if (typeof addToCartGraphQL === "function") {
         console.log("Using CartContext.addToCartGraphQL");
         result = await addToCartGraphQL(itemToAdd);
-      }
-      // Fallback to direct GraphQL call
-      else {
+      } else {
         console.log("Using direct GraphQL call");
         const graphqlQuery = {
           query: `
@@ -168,7 +176,7 @@ const Menu = () => {
           headers: {
             "Content-Type": "application/json",
           },
-          credentials: "include", // Important for session-based carts
+          credentials: "include",
           body: JSON.stringify(graphqlQuery),
         });
 
@@ -182,25 +190,21 @@ const Menu = () => {
 
         result = responseData.data.addDishToOrderCart;
 
-        // Update CartContext if possible
         if (typeof updateCartWithGraphQLData === "function") {
           updateCartWithGraphQLData(result);
         }
 
-        // Also update localStorage as backup
         localStorage.setItem("cartData", JSON.stringify(result));
       }
 
       console.log("Added to cart:", result);
 
-      // Show success feedback
       setOrderFeedback({
         show: true,
         message: `Added ${quantities[dishId]} x ${currentDish.dishName} to cart`,
         type: "success",
       });
 
-      // Hide feedback after 3 seconds
       setTimeout(() => {
         setOrderFeedback({ show: false, message: "", type: "" });
       }, 3000);
@@ -209,33 +213,27 @@ const Menu = () => {
     } catch (error) {
       console.error("Error adding dish to cart:", error);
 
-      // Show error feedback
       setOrderFeedback({
         show: true,
         message: `Failed to add to cart: ${error.message}`,
         type: "error",
       });
 
-      // Hide feedback after 3 seconds
       setTimeout(() => {
         setOrderFeedback({ show: false, message: "", type: "" });
       }, 3000);
 
       throw error;
     } finally {
-      setLoadingDish(null); // Clear loading state
+      setLoadingDish(null);
     }
   };
 
   const handleNote = (dishId) => {
-    // Get current note for this dish
     const currentNote = notes[dishId] || "";
-
-    // Simple prompt for note (in a real app, you'd use a modal or better UI)
     const newNote = prompt("Add a note for this dish:", currentNote);
 
     if (newNote !== null) {
-      // Only update if user didn't cancel
       setNotes((prev) => ({
         ...prev,
         [dishId]: newNote,
@@ -274,11 +272,10 @@ const Menu = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Header - Optimized for mobile */}
       <div className="bg-white py-2 shadow-md sticky top-0 z-10">
         <div className="max-w-md mx-auto flex items-center px-3">
           <button
-            onClick={() => navigate("/")}
+            onClick={() => navigate(`/table/${tableNumber}`)}
             className="p-1.5 rounded-full bg-gray-200 hover:bg-gray-300"
           >
             <svg
@@ -313,9 +310,7 @@ const Menu = () => {
         </div>
       </div>
 
-      {/* Content - Mobile optimized width */}
       <div className="max-w-md mx-auto px-3 py-3 bg-gray-100">
-        {/* Feedback toast notification */}
         {orderFeedback.show && (
           <div
             className={`fixed top-16 left-1/2 transform -translate-x-1/2 z-50 px-4 py-2 rounded-lg shadow-lg text-sm ${
@@ -328,7 +323,6 @@ const Menu = () => {
           </div>
         )}
 
-        {/* Search Bar - Made slightly smaller for mobile */}
         <div className="mb-4">
           <input
             type="text"
@@ -339,7 +333,6 @@ const Menu = () => {
           />
         </div>
 
-        {/* Category Selection - Optimized for mobile scrolling */}
         <div className="bg-white p-3 rounded-lg shadow-sm mb-4">
           <div className="flex items-center mb-2">
             <span className="text-yellow-500 text-lg mr-2">⭐</span>
@@ -368,7 +361,6 @@ const Menu = () => {
           </div>
         </div>
 
-        {/* Menu Items List - Optimized for mobile viewing */}
         <div className="space-y-3">
           {filteredItems.length > 0 ? (
             filteredItems.map((item) => (
@@ -376,9 +368,7 @@ const Menu = () => {
                 key={item.dishId}
                 className="bg-white rounded-lg shadow-sm p-3"
               >
-                {/* Dish Image and Details - Vertical layout on mobile */}
                 <div className="flex w-full mb-2">
-                  {/* Dish Image - Made smaller for mobile */}
                   <div className="w-16 h-16 flex-shrink-0">
                     <img
                       src={item.imageUrl}
@@ -391,7 +381,6 @@ const Menu = () => {
                     />
                   </div>
 
-                  {/* Dish Details */}
                   <div className="flex-1 ml-3">
                     <h3 className="font-bold text-sm">{item.dishName}</h3>
                     <div className="flex items-center text-xs text-gray-500 mt-0.5">
@@ -411,7 +400,6 @@ const Menu = () => {
                   </div>
                 </div>
 
-                {/* Notes indicator if there's a note */}
                 {notes[item.dishId] && (
                   <div className="text-xs text-gray-500 mb-1 px-2 py-1 bg-gray-50 rounded">
                     <span className="font-medium">Note:</span>{" "}
@@ -419,9 +407,7 @@ const Menu = () => {
                   </div>
                 )}
 
-                {/* Actions - Reorganized for better mobile layout */}
                 <div className="flex justify-between items-center mt-2">
-                  {/* Note button and Quantity Selector in one row */}
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={() => handleNote(item.dishId)}
@@ -451,7 +437,6 @@ const Menu = () => {
                     </div>
                   </div>
 
-                  {/* View and Order buttons in one row */}
                   <div className="flex items-center space-x-2">
                     <button
                       onClick={() => handleViewDish(item.dishId)}
