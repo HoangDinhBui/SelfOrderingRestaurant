@@ -1752,7 +1752,8 @@ const TableManagementAdmin = () => {
               <button
                 onClick={handleGenerateQr}
                 disabled={qrUploading}
-                className="w-full !bg-blue-500 text-white font-medium py-2 rounded hover:bg-blue-600 disabled:bg-gray-400"
+                className="w-full text-white font-medium py-2 rounded hover:bg-blue-600 disabled:bg-gray-400"
+                style={{ backgroundColor: "#4CAF50" }}
               >
                 {qrUploading ? "Đang lưu..." : "Tạo và Lưu Mã QR"}
               </button>
@@ -1760,13 +1761,15 @@ const TableManagementAdmin = () => {
                 <div className="flex justify-center gap-4">
                   <button
                     onClick={handleDownloadQr}
-                    className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600"
+                    className="text-white py-2 px-4 rounded hover:bg-green-600"
+                    style={{ backgroundColor: "#4E71FF" }}
                   >
                     Tải Mã QR
                   </button>
                   <button
                     onClick={handlePrintQr}
-                    className="bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600"
+                    className="text-white py-2 px-4 rounded hover:bg-gray-600"
+                    style={{ backgroundColor: "#4E71FF" }}
                   >
                     In Mã QR
                   </button>
@@ -1775,6 +1778,7 @@ const TableManagementAdmin = () => {
               <button
                 onClick={handleCloseAddTableModal}
                 className="w-full bg-gray-300 text-gray-800 font-medium py-2 rounded hover:bg-gray-400 mt-2"
+                style={{ backgroundColor: "#F7374F" }}
               >
                 Đóng
               </button>
