@@ -22,6 +22,7 @@ import Note from "./pages/Customer/Note/Note";
 import Payment from "./pages/Customer/PayMent/Payment";
 import Evaluate from "./pages/Customer/Evaluate/Evaluate";
 import CreateTable from "./components/CreateTable";
+import CaptivePortal from "./pages/Customer/CaptivePortal/CaptivePortal";
 
 // Admin Pages
 import AdminInformation from "./pages/Admin/AdminInformation/AdminInformation";
@@ -60,7 +61,7 @@ function App() {
               <Route path="/note_cus/:id" element={<Note />} />
               <Route path="/payment_cus" element={<Payment />} />
               <Route path="/evaluate_cus" element={<Evaluate />} />
-
+              <Route path="/captive-portal" element={<CaptivePortal />} />
               {/* Admin Routes */}
               <Route path="/login" element={<Login />} />
               <Route
