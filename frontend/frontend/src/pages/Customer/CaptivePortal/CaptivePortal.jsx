@@ -5,6 +5,9 @@ import logoCap from "../../../assets/img/CaptiveLogo.png";
 
 const CaptivePortal = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const [dotCount, setDotCount] = useState(0);
+
   const touchStartX = useRef(null);
   const touchEndX = useRef(null);
 
@@ -23,6 +26,19 @@ const CaptivePortal = () => {
     return () => clearInterval(interval);
   }, [slides.length]);
 
+  // Loading dot animation
+  useEffect(() => {
+    if (!isLoading) return;
+
+    const interval = setInterval(() => {
+      setDotCount((prev) => (prev + 1) % 4);
+    }, 500);
+
+    return () => clearInterval(interval);
+  }, [isLoading]);
+
+  const loadingText = `Loading${".".repeat(dotCount)}`;
+
   // Swipe detection
   const handleTouchStart = (e) => {
     touchStartX.current = e.touches[0].clientX;
@@ -36,14 +52,23 @@ const CaptivePortal = () => {
     if (!touchStartX.current || !touchEndX.current) return;
     const deltaX = touchStartX.current - touchEndX.current;
     if (deltaX > 50) {
-      // swipe left
       setCurrentSlide((prev) => (prev + 1) % slides.length);
     } else if (deltaX < -50) {
-      // swipe right
       setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
     }
     touchStartX.current = null;
     touchEndX.current = null;
+  };
+
+  const handleInternetConnect = (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    setTimeout(() => {
+      setIsLoading(false);
+      // Chuyển trang hoặc xử lý khác tại đây nếu cần
+      // window.location.href = "https://your-redirect-url.com";
+    }, 3000);
   };
 
   const CarouselSlide = ({ image, altText }) => (
@@ -67,6 +92,7 @@ const CaptivePortal = () => {
         </p>
         <a
           href="#"
+          onClick={handleInternetConnect}
           className="block mb-7 px-6 py-2 rounded-lg text-center text-[25px] font-[Baskervville] font-normal"
           style={{
             backgroundColor: "rgba(255, 255, 255, 0.2)",
@@ -88,7 +114,7 @@ const CaptivePortal = () => {
   );
 
   return (
-    <div className="min-h-screen w-100 bg-[#DCE5EB]/44 flex flex-col items-center justify-start">
+    <div className="min-h-screen w-100 bg-[#DCE5EB]/44 flex flex-col items-center justify-start relative">
       <div
         className="w-full h-screen relative overflow-hidden"
         onTouchStart={handleTouchStart}
@@ -118,6 +144,20 @@ const CaptivePortal = () => {
           ))}
         </div>
       </div>
+
+      {/* Loading Overlay */}
+      {isLoading && (
+        <div className="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center z-50">
+          <div className="flex flex-col items-center gap-4">
+            <img
+              src="https://media0.giphy.com/media/3o7buhIQho4RsDOf8Q/giphy.gif"
+              alt="Loading GIF"
+              className="w-20 h-20"
+            />
+            <p className="text-[30px] italic font-[Baskervville] text-black-200">{loadingText}</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
