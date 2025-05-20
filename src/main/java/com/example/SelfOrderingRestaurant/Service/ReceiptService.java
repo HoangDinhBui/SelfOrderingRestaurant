@@ -18,7 +18,7 @@ import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
 @Service
-public class ReceiptService {
+public class  ReceiptService {
     private final Logger log = LoggerFactory.getLogger(ReceiptService.class);
 
     private final OrderRepository orderRepository;
