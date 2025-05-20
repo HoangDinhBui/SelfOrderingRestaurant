@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import axios from "axios";
 import Bg1 from "../../../assets/img/CaptiveBg.jpg";
 import Bg2 from "../../../assets/img/CaptiveBg2.jpg";
 import logoCap from "../../../assets/img/CaptiveLogo.png";
@@ -7,18 +9,39 @@ const CaptivePortal = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [dotCount, setDotCount] = useState(0);
-
+  const [clientIp, setClientIp] = useState("");
   const touchStartX = useRef(null);
   const touchEndX = useRef(null);
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const slides = [
-    { id: 1, image: Bg1, altText: "Food Dish" },
-    { id: 2, image: Bg2, altText: "Restaurant Scene" },
+    { id: 1, image: Bg1, altText: "Món ăn" },
+    { id: 2, image: Bg2, altText: "Cảnh nhà hàng" },
   ];
 
   const logoSrc = logoCap;
 
-  // Auto slide every 3s
+  // Lấy tableNumber từ query parameter
+  const queryParams = new URLSearchParams(location.search);
+  const tableNumber = queryParams.get("tableNumber") || "1";
+
+  // Kiểm tra IP khi component được tải
+  useEffect(() => {
+    axios
+      .get(`/api/captive/check-ip?tableNumber=${tableNumber}`)
+      .then((response) => {
+        setClientIp(response.data.ip);
+        if (response.data.redirect.startsWith("/table/")) {
+          navigate(response.data.redirect);
+        }
+      })
+      .catch((error) => {
+        console.error("Lỗi khi kiểm tra IP:", error);
+      });
+  }, [navigate, tableNumber]);
+
+  // Tự động chuyển slide
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
@@ -26,20 +49,17 @@ const CaptivePortal = () => {
     return () => clearInterval(interval);
   }, [slides.length]);
 
-  // Loading dot animation
+  // Hiệu ứng dấu chấm khi loading
   useEffect(() => {
     if (!isLoading) return;
-
     const interval = setInterval(() => {
       setDotCount((prev) => (prev + 1) % 4);
     }, 500);
-
     return () => clearInterval(interval);
   }, [isLoading]);
 
-  const loadingText = `Loading${".".repeat(dotCount)}`;
+  const loadingText = `Đang tải${".".repeat(dotCount)}`;
 
-  // Swipe detection
   const handleTouchStart = (e) => {
     touchStartX.current = e.touches[0].clientX;
   };
@@ -64,11 +84,18 @@ const CaptivePortal = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    setTimeout(() => {
-      setIsLoading(false);
-      // Chuyển trang hoặc xử lý khác tại đây nếu cần
-      // window.location.href = "https://your-redirect-url.com";
-    }, 3000);
+    axios
+      .post(`/api/captive/connect?tableNumber=${tableNumber}`)
+      .then((response) => {
+        setIsLoading(false);
+        if (response.data.status === "connected") {
+          navigate(response.data.redirect);
+        }
+      })
+      .catch((error) => {
+        setIsLoading(false);
+        console.error("Lỗi khi kết nối mạng:", error);
+      });
   };
 
   const CarouselSlide = ({ image, altText }) => (
@@ -79,13 +106,9 @@ const CaptivePortal = () => {
         className="absolute inset-0 w-full h-full object-cover"
       />
       <div className="absolute inset-0 bg-[linear-gradient(to_bottom,#66666600_50%,#2A2A2A80_70%,#101010DD_80%,#000000_100%)]" />
-
-      {/* Top Section: Logo */}
       <div className="relative z-10 text-center pt-10">
         <img src={logoSrc} alt="Bon Appétit Logo" className="w-[350px] h-auto mx-auto" />
       </div>
-
-      {/* Bottom Section: Text and Button */}
       <div className="relative z-10 text-center pb-10 mt-auto">
         <p className="text-[25px] italic font-[Baskervville] text-gray-200 mb-8">
           Connect to the restaurant's<br /> network to order.
@@ -121,7 +144,7 @@ const CaptivePortal = () => {
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        {slides.map((slide, index) => (
+        {slides.map(( slide, index ) => (
           <div
             key={slide.id}
             className={`transition-opacity duration-500 ${
@@ -131,8 +154,6 @@ const CaptivePortal = () => {
             <CarouselSlide image={slide.image} altText={slide.altText} />
           </div>
         ))}
-
-        {/* Slide Dots */}
         <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 z-20">
           {slides.map((_, index) => (
             <div
@@ -144,8 +165,6 @@ const CaptivePortal = () => {
           ))}
         </div>
       </div>
-
-      {/* Loading Overlay */}
       {isLoading && (
         <div className="absolute inset-0 bg-white bg-opacity-80 flex items-center justify-center z-50">
           <div className="flex flex-col items-center gap-4">
