@@ -71,6 +71,7 @@ public class SecurityConfig {
                                 "/graphql/**",
                                 "/ws/**",
                                 "/api/qr/**",
+                                "/api/captive/**",
                                 "/error").permitAll()
                         .requestMatchers("/api/staff/**").hasAnyRole("STAFF", "ADMIN")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
