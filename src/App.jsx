@@ -12,6 +12,7 @@ import "./axiosConfig";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 // Customer Pages
 import Home from "./pages/Customer/Home/Home";
@@ -51,7 +52,9 @@ function App() {
           <Router>
             <Routes>
               {/* Customer Routes */}
-              <Route path="/" element={<Navigate to="/table/1" replace />} />
+              <Route path="/" element={ <ProtectedRoute>
+                    <Navigate to="/table/1" replace />
+                  </ProtectedRoute>} />
               <Route path="/table/:tableNumber" element={<Home />} />
               <Route path="/create-table" element={<CreateTable />} />
               <Route path="/create-table/:tableNumber" element={<CreateTable />} />
