@@ -195,7 +195,7 @@ const Payment = () => {
             orderId: parseInt(orderId),
             total: Math.round(orderTotal),
             orderInfo: `Payment for Order: ${orderId}`,
-            returnUrl: `${window.location.origin}/payment?orderId=${orderId}`,
+            returnUrl: `${window.location.origin}/payment_cus?orderId=${orderId}`,
           });
 
           if (vnpayResponse.data?.paymentUrl) {
@@ -513,7 +513,7 @@ const Payment = () => {
               "Thanh toán VNPay thất bại: " + verifyResponse.data.message
             );
           }
-          navigate(`/payment?orderId=${orderId}`, { replace: true });
+          navigate(`/payment_cus?orderId=${orderId}`, { replace: true });
         } catch (err) {
           console.error("Lỗi khi xác minh thanh toán VNPay:", err);
           if (err.response?.status === 401) {
@@ -530,7 +530,7 @@ const Payment = () => {
                 (err.response?.data?.message || err.message)
             );
           }
-          navigate(`/payment?orderId=${orderId}`, { replace: true });
+          navigate(`/payment_cus?orderId=${orderId}`, { replace: true });
         }
       }
     };
@@ -603,9 +603,9 @@ const Payment = () => {
   const momoQrUrl = `https://nhantien.momo.vn/${momoPhoneNumber}`;
 
   return (
-<div className="min-h-screen w-full bg-gray-100 flex flex-col">
-  {/* Header Container - Changed from fixed to container style */}
-  <div className="max-w-lg mx-auto w-full bg-white py-2 shadow-md z-10">
+    <div className="min-h-screen w-full bg-gray-100 flex flex-col">
+      {/* Header Container - Changed from fixed to container style */}
+      <div className="max-w-lg mx-auto w-full bg-white py-2 shadow-md z-10">
         <div className="flex items-center px-4 w-full">
           <button
             onClick={() => navigate(-1)}
