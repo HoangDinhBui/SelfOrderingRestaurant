@@ -19,7 +19,7 @@ public class CaptivePortalController {
 
     private static final Logger logger = LoggerFactory.getLogger(CaptivePortalController.class);
 
-    @Value("${restaurant.network.cidr:192.168.154.0/24}")
+    @Value("${restaurant.network.cidr}")
     private String restaurantCidr;
 
     // Endpoint kiểm tra IP hiện tại của client
