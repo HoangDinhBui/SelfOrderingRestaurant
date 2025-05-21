@@ -52,12 +52,20 @@ function App() {
           <Router>
             <Routes>
               {/* Customer Routes */}
-              <Route path="/" element={ <ProtectedRoute>
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
                     <Navigate to="/table/1" replace />
-                  </ProtectedRoute>} />
+                  </ProtectedRoute>
+                }
+              />
               <Route path="/table/:tableNumber" element={<Home />} />
               <Route path="/create-table" element={<CreateTable />} />
-              <Route path="/create-table/:tableNumber" element={<CreateTable />} />
+              <Route
+                path="/create-table/:tableNumber"
+                element={<CreateTable />}
+              />
               <Route path="/menu_cus" element={<Menu />} />
               <Route path="/order_cus" element={<Order />} />
               <Route path="/viewitem/:id" element={<ViewItem />} />
