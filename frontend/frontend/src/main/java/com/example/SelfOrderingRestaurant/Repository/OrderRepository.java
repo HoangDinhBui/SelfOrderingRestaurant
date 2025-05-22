@@ -16,4 +16,6 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     @Query("SELECT o FROM Order o WHERE o.tables.tableNumber = :tableNumber")
     List<Order> findByTableNumber(@Param("tableNumber") Integer tableNumber);
     List<Order> findByPaymentStatus(PaymentStatus paymentStatus);
+    @Query("SELECT o FROM Order o WHERE o.tables.tableNumber = :tableNumber AND o.paymentStatus = :paymentStatus")
+    List<Order> findByTableNumberAndPaymentStatus(@Param("tableNumber") Integer tableNumber, @Param("paymentStatus") PaymentStatus paymentStatus);
 }
