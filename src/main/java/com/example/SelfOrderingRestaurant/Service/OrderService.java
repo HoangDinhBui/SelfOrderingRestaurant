@@ -70,36 +70,54 @@ public class OrderService implements IOrderService {
         DinningTable dinningTable = dinningTableRepository.findById(request.getTableId())
                 .orElseThrow(() -> new ResourceNotFoundException("Table not found with ID: " + request.getTableId()));
 
-        if (TableStatus.OCCUPIED.equals(dinningTable.getTableStatus())) {
-            throw new ValidationException("Table is already occupied");
+        // Kiểm tra xem bàn đã có order chưa thanh toán hay chưa
+        List<Order> existingOrders = orderRepository.findByTableNumberAndPaymentStatus(
+                dinningTable.getTableNumber(), PaymentStatus.UNPAID);
+
+        Order order;
+        if (!existingOrders.isEmpty()) {
+            // Nếu có order chưa thanh toán, sử dụng order đầu tiên
+            order = existingOrders.get(0);
+            log.info("Found existing unpaid order with ID: {} for table {}", order.getOrderId(), dinningTable.getTableNumber());
+
+            // Cập nhật ghi chú nếu có
+            if (request.getNotes() != null && !request.getNotes().isEmpty()) {
+                order.setNotes(request.getNotes());
+            }
+        } else {
+            // Nếu không có order chưa thanh toán, tạo order mới
+            if (TableStatus.OCCUPIED.equals(dinningTable.getTableStatus())) {
+                throw new ValidationException("Table is already occupied");
+            }
+
+            Customer customer = getOrCreateCustomer(request);
+
+            order = new Order();
+            order.setCustomer(customer);
+            order.setTables(dinningTable);
+            order.setStatus(OrderStatus.PENDING);
+            order.setPaymentStatus(PaymentStatus.UNPAID);
+            order.setNotes(request.getNotes());
+            order.setOrderDate(new Date());
+
+            order = orderRepository.save(order);
+            dinningTable.setTableStatus(TableStatus.OCCUPIED);
+            dinningTableRepository.save(dinningTable);
+            log.info("Created new order with ID: {} for table {}", order.getOrderId(), dinningTable.getTableNumber());
         }
 
-        Customer customer = getOrCreateCustomer(request);
+        // Xử lý các món trong order
+        BigDecimal additionalAmount = processOrderItems(order, request.getItems());
+        BigDecimal newTotalAmount = order.getTotalAmount() != null
+                ? order.getTotalAmount().add(additionalAmount)
+                : additionalAmount;
 
-        Order order = new Order();
-        order.setCustomer(customer);
-        order.setTables(dinningTable);
-        order.setStatus(OrderStatus.PENDING);
-        order.setPaymentStatus(PaymentStatus.UNPAID);
-        order.setNotes(request.getNotes());
-        order.setOrderDate(new Date());
-
-        order = orderRepository.save(order);
-        Integer orderId = order.getOrderId();
-        log.info("Created new order with ID: {}", orderId);
-
-        BigDecimal totalAmount = processOrderItems(order, request.getItems());
-
-        order.setTotalAmount(totalAmount);
+        order.setTotalAmount(newTotalAmount);
         orderRepository.save(order);
-
-        dinningTable.setTableStatus(TableStatus.OCCUPIED);
-        dinningTableRepository.save(dinningTable);
-        log.info("Updated table {} status to OCCUPIED", dinningTable.getTableNumber());
 
         orderCartService.clearCart();
 
-        return orderId;
+        return order.getOrderId();
     }
 
     private void validateOrderRequest(OrderRequestDTO request) {
