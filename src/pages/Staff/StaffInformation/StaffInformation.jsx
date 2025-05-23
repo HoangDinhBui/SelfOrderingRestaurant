@@ -33,13 +33,14 @@ const StaffInformation = () => {
   const [loading, setLoading] = useState(false);
 
   const [staffData, setStaffData] = useState({
-    fullName: "Tran Thi My Dung",
-    startDate: "01/02/2024",
+    staff_id: "",
+    fullname: "",
+    startDate: "",
     workShift: "Full-time",
-    position: "Service staff",
-    phone: "0987654321",
-    address: "448 Le Van Viet Street, District 9",
-    email: "MDXD1234@gmail.com",
+    position: "",
+    phone: "",
+    email: "",
+    salary: "",
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -98,9 +99,82 @@ const StaffInformation = () => {
       return newAccessToken;
     } catch (error) {
       toast.error("Session expired. Please log in again.");
-      // Có thể chuyển hướng đến trang đăng nhập
-      // window.location.href = "/login";
       throw error;
+    }
+  };
+
+  // Lấy thông tin nhân viên
+  const fetchStaffInfo = async () => {
+    setLoading(true);
+    let accessToken = localStorage.getItem("accessToken");
+    if (!accessToken) {
+      toast.error("Please log in to view your profile");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const staffId = 1; // Giả sử staffId được lấy từ context hoặc token, thay đổi theo logic thực tế
+      const response = await axios.get(
+        `http://localhost:8080/api/staff/${staffId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+      const data = response.data;
+      setStaffData({
+        staffId: data.staff_id,
+        fullName: data.fullname,
+        startDate: data.hireDate || "01/02/2024", // Nếu API không trả về hireDate, giữ giá trị mặc định
+        workShift: data.workShift || "Full-time", // Cần thêm logic nếu backend trả về workShift
+        position: data.position,
+        phone: data.phone,
+        email: data.email,
+        salary: data.salary,
+      });
+      toast.success("Staff information loaded successfully!");
+    } catch (error) {
+      if (error.response?.status === 401) {
+        try {
+          accessToken = await refreshAccessToken();
+          const staffId = 1; // Giả sử staffId
+          const retryResponse = await axios.get(
+            `http://localhost:8080/api/staff/${staffId}`,
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+              },
+            }
+          );
+          const data = retryResponse.data;
+          setStaffData({
+            staffId: data.staff_id,
+            fullName: data.fullname,
+            startDate: data.hireDate || "01/02/2024",
+            workShift: data.workShift || "Full-time",
+            position: data.position,
+            phone: data.phone,
+            email: data.email,
+            salary: data.salary,
+          });
+          toast.success("Staff information loaded successfully!");
+        } catch (retryError) {
+          console.error("Retry failed:", retryError);
+          toast.error("Failed to load staff information");
+        }
+      } else if (error.response?.status === 403) {
+        toast.error(
+          "Access denied: Please check your account permissions or contact admin"
+        );
+      } else {
+        toast.error(
+          error.response?.data?.message || "Failed to load staff information"
+        );
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -156,9 +230,11 @@ const StaffInformation = () => {
 
   // Gọi API khi component mount
   useEffect(() => {
-    fetchSchedule();
+    fetchStaffInfo(); // Gọi API lấy thông tin nhân viên
+    fetchSchedule(); // Gọi API lấy lịch làm việc
   }, []);
 
+  // Các hàm còn lại giữ nguyên
   const handleAvatarClick = () => {
     setIsMenuOpen(!isMenuOpen);
   };
@@ -231,7 +307,7 @@ const StaffInformation = () => {
         }
       );
       toast.success("Shift registered successfully!");
-      fetchSchedule(); // Làm mới lịch
+      fetchSchedule();
       setShiftForm({
         day: shiftModels[staffData.workShift].days[0],
         timeSlot: timeSlots[0],
@@ -537,6 +613,21 @@ const StaffInformation = () => {
                         />
                       </td>
                     </tr>
+                    <tr className="border border-gray-300">
+                      <td className="py-3 px-6 font-medium border-r border-gray-300 text-center">
+                        Salary
+                      </td>
+                      <td className="py-3 px-6">
+                        <input
+                          type="text"
+                          name="salary"
+                          value={staffData.salary}
+                          onChange={handleInputChange}
+                          className="w-full border-none outline-none bg-transparent"
+                          placeholder="Enter salary"
+                        />
+                      </td>
+                    </tr>
                   </tbody>
                 </table>
                 <div className="flex justify-end">
@@ -814,8 +905,8 @@ const StaffInformation = () => {
             }}
           >
             <div className="absolute bottom-0 left-64 text-white pb-1">
-              <h2 className="text-lg font-bold">Tran Thi My Dung</h2>
-              <p className="text-sm">Position: Staff</p>
+              <h2 className="text-lg font-bold">{staffData.fullName}</h2>
+              <p className="text-sm">Position: {staffData.position}</p>
             </div>
           </div>
           <div className="bg-gray-100 p-8 relative">
@@ -962,7 +1053,7 @@ const StaffInformation = () => {
                       <strong>Full Name:</strong> {staffData.fullName}
                     </p>
                     <p className="text-sm">
-                      <strong>Staff Id:</strong> 1
+                      <strong>Staff Id:</strong> {staffData.staffId || "N/A"}
                     </p>
                     <p className="text-sm">
                       <strong>Email:</strong> {staffData.email}
@@ -975,10 +1066,7 @@ const StaffInformation = () => {
                       {staffData.phone}
                     </p>
                     <p className="text-sm">
-                      <strong>Salary:</strong> $390.08
-                    </p>
-                    <p className="text-sm">
-                      <strong>Address:</strong> {staffData.address}
+                      <strong>Salary:</strong> ${staffData.salary}
                     </p>
                   </div>
                 </div>
