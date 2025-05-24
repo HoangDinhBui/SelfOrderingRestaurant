@@ -34,10 +34,7 @@ import java.math.BigDecimal;
 import java.security.GeneralSecurityException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Collections;
-import java.util.Date;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -250,6 +247,10 @@ public class AuthService {
             throw new IllegalArgumentException("Email must not be empty");
         }
 
+        if (request.getUsername() == null || request.getUsername().trim().isEmpty()) {
+            throw new IllegalArgumentException("Username must not be empty");
+        }
+
         // Optional: Add email format validation
         if (!isValidEmail(request.getEmail())) {
             throw new IllegalArgumentException("Invalid email format");
@@ -259,15 +260,15 @@ public class AuthService {
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + request.getEmail()));
 
         // Generate reset token
-        String resetToken = UUID.randomUUID().toString();
+        String otp = String.format("%06d", new Random().nextInt(999999));
 
         // Set reset token with explicit null checks
-        user.setResetPasswordToken(resetToken);
-        user.setResetPasswordExpiry(LocalDateTime.now().plusHours(1));
+        user.setResetPasswordToken(otp);
+        user.setResetPasswordExpiry(LocalDateTime.now().plusHours(10));
 
         try {
             userRepository.save(user);
-            emailService.sendPasswordResetEmail(user.getEmail(), resetToken);
+            emailService.sendPasswordResetEmail(user.getEmail(), otp);
         } catch (Exception e) {
             // Log the actual exception
             throw new RuntimeException("Failed to process password reset", e);
@@ -282,12 +283,12 @@ public class AuthService {
 
     @Transactional
     public void resetPassword(ResetPasswordRequestDto request) {
-        User user = userRepository.findByResetPasswordToken(request.getResetToken())
+        User user = userRepository.findByResetPasswordToken(request.getOtp())
                 .orElseThrow(() -> new RuntimeException("Invalid reset token"));
 
         // Check token expiry
         if (user.getResetPasswordExpiry().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Reset token has expired");
+            throw new RuntimeException("OTP has expired");
         }
 
         // Update password
