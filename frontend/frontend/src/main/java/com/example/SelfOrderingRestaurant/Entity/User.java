@@ -53,7 +53,6 @@ public class User {
     @Temporal(TemporalType.TIMESTAMP)
     private Date lastLogin;
 
-    // Add these new columns for password reset
     @Column(name = "reset_password_token")
     private String resetPasswordToken;
 
