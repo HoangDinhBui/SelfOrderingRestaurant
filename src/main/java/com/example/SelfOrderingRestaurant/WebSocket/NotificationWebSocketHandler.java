@@ -27,10 +27,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 @Component
 public class NotificationWebSocketHandler extends TextWebSocketHandler {
-
     // Store active WebSocket sessions mapped to staff user IDs who are currently on shift
     private static final Map<Integer, Set<WebSocketSession>> staffSessions = new ConcurrentHashMap<>();
-
     // Store admin sessions
     private static final Set<WebSocketSession> adminSessions = ConcurrentHashMap.newKeySet();
 
@@ -133,10 +131,9 @@ public class NotificationWebSocketHandler extends TextWebSocketHandler {
      */
     public void sendNotificationToStaff(NotificationResponseDTO notification) {
         try {
-            String jsonNotification = objectMapper.writeValueAsString(notification);
+            String jsonNotification = notification.toJson(); // Use toJson
             log.info("Broadcasting notification to {} staff sessions: {}", staffSessions.size(), jsonNotification);
 
-            // Send to staff on shift
             for (Map.Entry<Integer, Set<WebSocketSession>> entry : staffSessions.entrySet()) {
                 for (WebSocketSession session : entry.getValue()) {
                     if (session.isOpen()) {
@@ -146,7 +143,6 @@ public class NotificationWebSocketHandler extends TextWebSocketHandler {
                 }
             }
 
-            // Also send to admins
             for (WebSocketSession session : adminSessions) {
                 if (session.isOpen()) {
                     session.sendMessage(new TextMessage(jsonNotification));
@@ -154,7 +150,7 @@ public class NotificationWebSocketHandler extends TextWebSocketHandler {
                 }
             }
 
-            log.info("Notification broadcast to all active staff: {}", notification.getTitle());
+            log.info("Notification broadcast to all active staff: {}", notification.getTitle() != null ? notification.getTitle() : "Custom message");
         } catch (IOException e) {
             log.error("Error broadcasting notification to staff: {}", e.getMessage());
         }

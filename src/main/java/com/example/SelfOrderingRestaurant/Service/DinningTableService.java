@@ -45,6 +45,14 @@ public class DinningTableService implements IDinningTableService {
 
     @Transactional
     @Override
+    public DinningTableResponseDTO getTableById(Integer tableNumber) {
+        DinningTable table = dinningTableRepository.findById(tableNumber)
+                .orElseThrow(() -> new ResourceNotFoundException("Table with number " + tableNumber + " not found"));
+        return convertToResponseDTO(table);
+    }
+
+    @Transactional
+    @Override
     public DinningTableResponseDTO updateTable(Integer tableNumber, UpdateTableRequestDTO request) {
         DinningTable table = dinningTableRepository.findById(tableNumber)
                 .orElseThrow(() -> new ResourceNotFoundException("Table with number " + tableNumber + " not found"));

@@ -9,23 +9,13 @@ import com.example.SelfOrderingRestaurant.Dto.Response.OrderResponseDTO.OrderCar
 import java.util.List;
 
 public interface IOrderService {
-
     Integer createOrder(OrderRequestDTO request);
-
     List<GetAllOrdersResponseDTO> getAllOrders();
-
     OrderResponseDTO getOrderById(Integer orderId);
-
     void updateOrderStatus(Integer orderId, String status);
-
-    // Cart management methods
     OrderCartResponseDTO addDishToOrderCart(OrderItemDTO orderItemDTO);
-
     OrderCartResponseDTO getCurrentOrderCart();
-
     OrderCartResponseDTO removeItemFromCart(Integer dishId);
-
     OrderCartResponseDTO updateItemQuantity(Integer dishId, int quantity);
-
     OrderCartResponseDTO updateItemNotes(Integer dishId, String notes);
 }

@@ -2,6 +2,7 @@ package com.example.SelfOrderingRestaurant.Service;
 
 import com.example.SelfOrderingRestaurant.Config.VNPayConfig;
 import com.example.SelfOrderingRestaurant.Dto.Request.PaymentRequestDTO.ProcessPaymentRequestDTO;
+import com.example.SelfOrderingRestaurant.Dto.Response.NotificationResponseDTO.NotificationResponseDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.PaymentResponseDTO.OrderPaymentDetailsDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.PaymentResponseDTO.PaymentItemDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.PaymentResponseDTO.PaymentNotificationStatusDTO;
@@ -15,6 +16,7 @@ import com.example.SelfOrderingRestaurant.Enum.PaymentMethod;
 import com.example.SelfOrderingRestaurant.Enum.PaymentStatus;
 import com.example.SelfOrderingRestaurant.Enum.TableStatus;
 import com.example.SelfOrderingRestaurant.Repository.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -41,6 +43,7 @@ public class PaymentService {
     final PaymentRepository paymentRepository;
     final NotificationRepository notificationRepository;
     final DinningTableRepository tableRepository;
+    final WebSocketService webSocketService;
 
     @Transactional
     public PaymentResponseDTO processPayment(ProcessPaymentRequestDTO request) {
@@ -92,7 +95,8 @@ public class PaymentService {
         }
     }
 
-    private PaymentResponseDTO processCashPaymentInternal(Order order, BigDecimal amount) {
+    @Transactional
+    public PaymentResponseDTO processCashPaymentInternal(Order order, BigDecimal amount) {
         String transactionId = generateTransactionId();
 
         Payment payment = new Payment();
@@ -113,27 +117,35 @@ public class PaymentService {
         if (table != null) {
             log.info("Before update: Table {} status is {} for order {}",
                     table.getTableNumber(), table.getTableStatus(), order.getOrderId());
-            table.setTableStatus(TableStatus.AVAILABLE);
+            boolean hasUnpaidOrders = hasUnpaidOrdersForTable(table.getTableNumber());
+            table.setTableStatus(hasUnpaidOrders ? TableStatus.OCCUPIED : TableStatus.AVAILABLE);
             tableRepository.saveAndFlush(table);
-            log.info("After update: Table {} status updated to AVAILABLE for order {}",
-                    table.getTableNumber(), order.getOrderId());
+            log.info("After update: Table {} status updated to {} for order {}",
+                    table.getTableNumber(), table.getTableStatus(), order.getOrderId());
         } else {
             log.warn("No table associated with order {}", order.getOrderId());
         }
 
+        // Send PAYMENT_STATUS_UPDATED WebSocket message
+        sendPaymentStatusUpdatedMessage(order);
+
         PaymentResponseDTO response = new PaymentResponseDTO();
-        // [rest of the existing method]
+        response.setPaymentId(payment.getPaymentId());
+        response.setOrderId(order.getOrderId());
+        response.setAmount(amount);
+        response.setPaymentMethod(PaymentMethod.CASH.name());
+        response.setPaymentDate(payment.getPaymentDate().toString());
+        response.setStatus(PaymentStatus.PAID.name());
+        response.setTransactionId(transactionId);
+        response.setMessage("Cash payment processed successfully");
+
         return response;
     }
 
     private PaymentResponseDTO processCardPaymentInternal(Order order, BigDecimal amount) {
         String transactionId = generateTransactionId();
 
-        // Here you would integrate with a card processing gateway
-        // For now, we'll simulate a successful transaction
-
         try {
-            // Simulating card processing time
             Thread.sleep(1000);
 
             Payment payment = new Payment();
@@ -147,18 +159,20 @@ public class PaymentService {
 
             paymentRepository.save(payment);
 
-            // Update order status
             order.setPaymentStatus(PaymentStatus.PAID);
             orderRepository.save(order);
 
-            // Update table status to AVAILABLE
             DinningTable table = order.getTables();
             if (table != null) {
-                table.setTableStatus(TableStatus.AVAILABLE);
+                boolean hasUnpaidOrders = hasUnpaidOrdersForTable(table.getTableNumber());
+                table.setTableStatus(hasUnpaidOrders ? TableStatus.OCCUPIED : TableStatus.AVAILABLE);
                 tableRepository.save(table);
-                log.info("Table {} status updated to AVAILABLE after card payment for order {}",
-                        table.getTableNumber(), order.getOrderId());
+                log.info("Table {} status updated to {} after card payment for order {}",
+                        table.getTableNumber(), table.getTableStatus(), order.getOrderId());
             }
+
+            // Send PAYMENT_STATUS_UPDATED WebSocket message
+            sendPaymentStatusUpdatedMessage(order);
 
             PaymentResponseDTO response = new PaymentResponseDTO();
             response.setPaymentId(payment.getPaymentId());
@@ -354,102 +368,65 @@ public class PaymentService {
         result.put("message", "Giao dịch thất bại!");
 
         try {
-            // Extensive logging for all parameters
-            log.info("Raw VNPay Callback Params: {}",
-                    queryParams.entrySet().stream()
-                            .map(e -> e.getKey() + "=" + e.getValue())
-                            .collect(Collectors.joining(", ")));
-
-            // Create a copy of parameters for hash verification
             Map<String, String> fields = new HashMap<>(queryParams);
-
-            // Extract and remove secure hash for verification
             String vnp_SecureHash = fields.remove("vnp_SecureHash");
             fields.remove("vnp_SecureHashType");
 
-            // Prepare parameters for hash calculation
             List<String> fieldNames = new ArrayList<>(fields.keySet());
             Collections.sort(fieldNames);
 
             StringBuilder hashData = new StringBuilder();
-            for (int i = 0; i < fieldNames.size(); i++) {
-                String fieldName = fieldNames.get(i);
+            for (String fieldName : fieldNames) {
                 String fieldValue = fields.get(fieldName);
                 if (fieldValue != null && !fieldValue.isEmpty()) {
-                    hashData.append(fieldName)
-                            .append("=")
-                            .append(fieldValue);
-                    if (i < fieldNames.size() - 1) {
+                    hashData.append(fieldName).append("=").append(fieldValue);
+                    if (fieldNames.indexOf(fieldName) < fieldNames.size() - 1) {
                         hashData.append("&");
                     }
                 }
             }
 
-            // Logging hash calculation details
-            log.info("Hash Calculation String: {}", hashData.toString());
-
-            // Calculate hash - CRITICAL PART
-            String calculatedHash = VNPayConfig.hmacSHA512(
-                    VNPayConfig.vnp_HashSecret,
-                    hashData.toString()
-            );
-
-            log.info("Original SecureHash: {}", vnp_SecureHash);
-            log.info("Calculated SecureHash: {}", calculatedHash);
-            log.info("Hash Comparison: {}", calculatedHash.equalsIgnoreCase(vnp_SecureHash));
-
-            // Signature verification
+            String calculatedHash = VNPayConfig.hmacSHA512(VNPayConfig.vnp_HashSecret, hashData.toString());
             if (calculatedHash.equalsIgnoreCase(vnp_SecureHash)) {
                 String txnRef = queryParams.get("vnp_TxnRef");
                 String amount = queryParams.get("vnp_Amount");
                 String responseCode = queryParams.get("vnp_ResponseCode");
 
-                // Find payment record
                 Payment payment = paymentRepository.findByTransactionId(txnRef);
-
                 if (payment == null) {
                     log.error("No payment found for transaction ID: {}", txnRef);
                     return result;
                 }
 
-                // Verify transaction details
-                boolean isSuccessful =
-                        payment.getAmount().multiply(BigDecimal.valueOf(100)).compareTo(new BigDecimal(amount)) == 0 &&
-                                txnRef.equals(payment.getTransactionId()) &&
-                                "00".equals(responseCode);
+                boolean isSuccessful = payment.getAmount().multiply(BigDecimal.valueOf(100))
+                        .compareTo(new BigDecimal(amount)) == 0 &&
+                        txnRef.equals(payment.getTransactionId()) &&
+                        "00".equals(responseCode);
 
-                // Update payment status
                 payment.setStatus(isSuccessful ? PaymentStatus.PAID : PaymentStatus.UNPAID);
                 paymentRepository.save(payment);
 
-                // Update order if payment is successful
                 if (isSuccessful && payment.getOrder() != null) {
                     Order order = payment.getOrder();
                     order.setPaymentStatus(PaymentStatus.PAID);
                     orderRepository.save(order);
 
-                    // Update table status to AVAILABLE
                     DinningTable table = order.getTables();
                     if (table != null) {
-                        table.setTableStatus(TableStatus.AVAILABLE);
+                        boolean hasUnpaidOrders = hasUnpaidOrdersForTable(table.getTableNumber());
+                        table.setTableStatus(hasUnpaidOrders ? TableStatus.OCCUPIED : TableStatus.AVAILABLE);
                         tableRepository.save(table);
-                        log.info("Table {} status updated to AVAILABLE after online payment for order {}",
-                                table.getTableNumber(), order.getOrderId());
+                        log.info("Table {} status updated to {} after online payment for order {}",
+                                table.getTableNumber(), table.getTableStatus(), order.getOrderId());
                     }
 
-                    log.info("Order {} payment status updated to PAID", order.getOrderId());
+                    sendPaymentStatusUpdatedMessage(order);
                 }
 
-                // Prepare result
                 result.put("status", isSuccessful ? 1 : 0);
                 result.put("transactionStatus", isSuccessful ? "SUCCESS" : "FAILED");
                 result.put("responseCode", responseCode);
-                result.put("message", isSuccessful
-                        ? "Thanh toán thành công!"
-                        : "Giao dịch thất bại!");
-
-                log.info("Final Payment Status for transaction {}: {}",
-                        txnRef, result.get("transactionStatus"));
+                result.put("message", isSuccessful ? "Thanh toán thành công!" : "Giao dịch thất bại!");
             } else {
                 log.error("Signature verification FAILED for transaction");
             }
@@ -459,6 +436,42 @@ public class PaymentService {
             log.error("Comprehensive Error in VNPay Response Processing", e);
             return result;
         }
+    }
+
+    private void sendPaymentStatusUpdatedMessage(Order order) {
+        Map<String, Object> message = new HashMap<>();
+        message.put("type", "PAYMENT_STATUS_UPDATED");
+        message.put("orderId", order.getOrderId());
+        message.put("paymentStatus", order.getPaymentStatus().name());
+
+        DinningTable table = order.getTables();
+        if (table != null) {
+            message.put("tableNumber", table.getTableNumber());
+            message.put("tableStatus", table.getTableStatus().name());
+        } else {
+            log.warn("No table associated with order {}", order.getOrderId());
+        }
+
+        NotificationResponseDTO notification = NotificationResponseDTO.builder()
+                .orderId(order.getOrderId())
+                .tableNumber(table != null ? table.getTableNumber() : null)
+                .customPayload(message)
+                .build();
+
+        try {
+            log.info("Sending WebSocket message: {}", new ObjectMapper().writeValueAsString(notification));
+            webSocketService.sendNotificationToActiveStaff(notification);
+            log.info("Sent PAYMENT_STATUS_UPDATED for orderId: {}, tableNumber: {}, tableStatus: {}",
+                    order.getOrderId(),
+                    table != null ? table.getTableNumber() : "N/A",
+                    table != null ? table.getTableStatus().name() : "N/A");
+        } catch (Exception e) {
+            log.error("Failed to send PAYMENT_STATUS_UPDATED for orderId: {}: {}", order.getOrderId(), e.getMessage(), e);
+        }
+    }
+
+    private boolean hasUnpaidOrdersForTable(Integer tableNumber) {
+        return orderRepository.existsByTablesTableNumberAndPaymentStatus(tableNumber, PaymentStatus.UNPAID);
     }
 
     public OrderPaymentDetailsDTO getOrderPaymentDetails(Integer orderId) {

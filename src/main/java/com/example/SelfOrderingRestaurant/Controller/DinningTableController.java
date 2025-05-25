@@ -24,6 +24,12 @@ public class DinningTableController {
         return ResponseEntity.ok(tables);
     }
 
+    @GetMapping("/{table_id}")
+    public ResponseEntity<DinningTableResponseDTO> getTableById(@PathVariable("table_id") Integer tableId) {
+        DinningTableResponseDTO table = dinningTableService.getTableById(tableId);
+        return ResponseEntity.ok(table);
+    }
+
     @PutMapping("/{table_id}")
     public ResponseEntity<String> updateTableStatus(
             @PathVariable("table_id") Integer tableId,
