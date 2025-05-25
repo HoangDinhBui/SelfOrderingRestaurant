@@ -1,23 +1,24 @@
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { login, googleLogin, forgotPassword } from "../../../services/api";
-import axios from "axios"; // Make sure axios is installed
+import axios from "axios";
 
 const Login = () => {
   const navigate = useNavigate();
   const [userId, setUserId] = useState("");
   const [password, setPassword] = useState("");
+  const [email, setEmail] = useState(""); // Separate state for email in forgot password mode
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isForgotPassword, setIsForgotPassword] = useState(false); // State to toggle form mode
-  const [showOtpModal, setShowOtpModal] = useState(false); // State for OTP modal
-  const [showNewPasswordModal, setShowNewPasswordModal] = useState(false); // State for New Password modal
-  const [otp, setOtp] = useState(["", "", "", "", "", ""]); // State for 6-digit OTP
-  const [newPassword, setNewPassword] = useState(""); // State for new password
-  const [confirmPassword, setConfirmPassword] = useState(""); // State for confirm password
-  const [newPasswordError, setNewPasswordError] = useState(""); // State for new password error
-  const otpInputs = useRef([]); // Ref for OTP input elements
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [showNewPasswordModal, setShowNewPasswordModal] = useState(false);
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [newPasswordError, setNewPasswordError] = useState("");
+  const otpInputs = useRef([]);
 
   const handleLogin = async () => {
     try {
@@ -51,11 +52,10 @@ const Login = () => {
       }
     } catch (error) {
       console.error("Login failed:", error);
-      if (error.response?.data?.message) {
-        setError(error.response.data.message);
-      } else {
-        setError("Invalid username or password. Please try again.");
-      }
+      setError(
+        error.response?.data?.message ||
+          "Invalid username or password. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -67,7 +67,6 @@ const Login = () => {
       setLoading(true);
 
       const tokenId = "google-oauth-token";
-
       const response = await googleLogin(tokenId);
 
       localStorage.setItem("accessToken", response.accessToken);
@@ -94,19 +93,23 @@ const Login = () => {
   };
 
   const handleForgotPassword = async () => {
-    setShowOtpModal(true); // Show OTP modal immediately on click
-
-    if (!userId || !password) {
+    if (!userId || !email) {
       setError("Please enter both Username and Email to reset password");
       return;
     }
 
     try {
       setLoading(true);
-      const response = await forgotPassword({ username: userId, email: password });
-      console.log("OTP sent successfully:", response);
+      await forgotPassword({ username: userId, email });
+      setShowOtpModal(true); // Show OTP modal after successful API call
+      setError("");
+      console.log("OTP sent successfully");
     } catch (error) {
       console.error("Forgot password request failed:", error);
+      setError(
+        error.response?.data?.message ||
+          "Failed to send OTP. Please check your username and email."
+      );
     } finally {
       setLoading(false);
     }
@@ -114,10 +117,9 @@ const Login = () => {
 
   const handleOtpChange = (index, value) => {
     const newOtp = [...otp];
-    newOtp[index] = value.replace(/\D/, ""); // Allow only digits
+    newOtp[index] = value.replace(/\D/, "");
     setOtp(newOtp);
 
-    // Move focus to next input
     if (value && index < 5 && otpInputs.current[index + 1]) {
       otpInputs.current[index + 1].focus();
     }
@@ -126,10 +128,9 @@ const Login = () => {
   const handleOtpSubmit = () => {
     const otpCode = otp.join("");
     if (otpCode.length === 6 && /^\d{6}$/.test(otpCode)) {
-      console.log("OTP submitted:", otpCode);
-      setShowOtpModal(false); // Close OTP modal
-      setShowNewPasswordModal(true); // Open New Password modal
-      setOtp(["", "", "", "", "", ""]); // Reset OTP
+      setShowOtpModal(false);
+      setShowNewPasswordModal(true);
+      setError("");
     } else {
       setError("Please enter a valid 6-digit OTP");
     }
@@ -138,12 +139,15 @@ const Login = () => {
   const handleResendOtp = async () => {
     try {
       setLoading(true);
-      const response = await forgotPassword({ username: userId, email: password });
-      console.log("OTP resent successfully:", response);
+      await forgotPassword({ username: userId, email });
+      console.log("OTP resent successfully");
       alert("OTP resent to your email.");
     } catch (error) {
       console.error("Failed to resend OTP:", error);
-      setError("Failed to resend OTP. Please try again.");
+      setError(
+        error.response?.data?.message ||
+          "Failed to resend OTP. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -152,7 +156,6 @@ const Login = () => {
   const handleNewPasswordSubmit = async () => {
     setNewPasswordError("");
 
-    // Basic validation
     if (!newPassword || !confirmPassword) {
       setNewPasswordError("Please enter and confirm your new password");
       return;
@@ -170,21 +173,28 @@ const Login = () => {
 
     try {
       setLoading(true);
-      // Replace this with your actual API call to reset the password
-      await axios.post("/api/reset-password", {
-        username: userId,
-        newPassword: newPassword,
+      const otpCode = otp.join(""); // Get OTP from previous step
+      await axios.post("/api/auth/reset-password", {
+        otp: otpCode,
+        newPassword,
       });
       console.log("Password reset successfully");
       setShowNewPasswordModal(false);
-      setIsForgotPassword(false); // Return to login mode
-      setError(""); // Clear any errors
+      setIsForgotPassword(false);
       setNewPassword("");
       setConfirmPassword("");
-      alert("Password reset successfully. Please log in with your new password.");
+      setOtp(["", "", "", "", "", ""]);
+      setEmail("");
+      setError("");
+      alert(
+        "Password reset successfully. Please log in with your new password."
+      );
     } catch (error) {
       console.error("Failed to reset password:", error);
-      setNewPasswordError("Failed to reset password. Please try again.");
+      setNewPasswordError(
+        error.response?.data?.message ||
+          "Failed to reset password. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -221,7 +231,9 @@ const Login = () => {
             {isForgotPassword ? "" : "Sign In"}
           </h1>
           <p className="text-center text-gray-600 text-l mb-6">
-            {isForgotPassword ? "Enter your username and email to reset your password." : "Have a great day!"}
+            {isForgotPassword
+              ? "Enter your username and email to reset your password."
+              : "Have a great day!"}
           </p>
 
           {error && (
@@ -232,7 +244,7 @@ const Login = () => {
 
           <div className="mb-4">
             <label className="block text-gray-800 mb-1 text-l">
-              <i>{isForgotPassword ? "Username" : "Username"}</i>
+              <i>Username</i>
             </label>
             <input
               type="text"
@@ -240,7 +252,7 @@ const Login = () => {
               onChange={(e) => setUserId(e.target.value)}
               className="w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
               style={{ backgroundColor: "#D9D9D9" }}
-              placeholder={isForgotPassword ? "Bonappetit1.." : "BonAppetit1..."}
+              placeholder="BonAppetit1..."
             />
           </div>
 
@@ -253,8 +265,8 @@ const Login = () => {
                 {isForgotPassword ? (
                   <input
                     type="email"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     className="w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
                     style={{ backgroundColor: "#D9D9D9" }}
                     placeholder="Bonappetit@email.com"
@@ -309,7 +321,9 @@ const Login = () => {
                   onClick={(e) => {
                     e.preventDefault();
                     setIsForgotPassword(!isForgotPassword);
-                    setError(""); // Clear any existing errors
+                    setError("");
+                    setEmail("");
+                    setPassword("");
                   }}
                 >
                   {isForgotPassword ? "Back to Sign In" : "Forgot Password?"}
@@ -325,7 +339,13 @@ const Login = () => {
                 loading ? "opacity-70 cursor-not-allowed" : ""
               }`}
             >
-              {loading ? (isForgotPassword ? "Sending..." : "Signing in...") : (isForgotPassword ? "Send OTP" : "Sign in")}
+              {loading
+                ? isForgotPassword
+                  ? "Sending..."
+                  : "Signing in..."
+                : isForgotPassword
+                ? "Send OTP"
+                : "Sign in"}
             </button>
 
             {!isForgotPassword && (
@@ -343,7 +363,11 @@ const Login = () => {
                   onClick={handleGoogleLogin}
                   disabled={loading}
                 >
-                  <img src="./src/assets/img/gg.webp" alt="Google" className="w-4 h-4 mr-2" />
+                  <img
+                    src="./src/assets/img/gg.webp"
+                    alt="Google"
+                    className="w-4 h-4 mr-2"
+                  />
                   <span>Login with Google</span>
                 </button>
               </>
@@ -356,7 +380,9 @@ const Login = () => {
           style={{ backgroundImage: "url('./src/assets/img/Login.png')" }}
         >
           <div className="absolute top-6 text-center text-white">
-            <h2 className="text-xl font-bold p-6">Top Quality - Dedicated Service!</h2>
+            <h2 className="text-xl font-bold p-6">
+              Top Quality - Dedicated Service!
+            </h2>
           </div>
         </div>
 
@@ -365,11 +391,11 @@ const Login = () => {
           <div className="fixed inset-0 flex items-center justify-center z-20">
             <div className="bg-white p-6 rounded-lg shadow-lg w-96">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="flex justify-between text-lg font-semibold">Let's verify account</h2>
+                <h2 className="text-lg font-semibold">Let's verify account</h2>
                 <button
                   onClick={() => {
                     setShowOtpModal(false);
-                    setOtp(["", "", "", "", "", ""]); // Reset OTP
+                    setOtp(["", "", "", "", "", ""]);
                   }}
                   className="text-gray-500 hover:text-gray-700"
                 >
@@ -389,7 +415,9 @@ const Login = () => {
                   </svg>
                 </button>
               </div>
-              <p className="text-gray-600 mb-4">We sent a code to your email to verify account</p>
+              <p className="text-gray-600 mb-4">
+                We sent a code to your email to verify account
+              </p>
               <div className="flex justify-center space-x-2 mb-4">
                 {otp.map((digit, index) => (
                   <input
@@ -419,8 +447,10 @@ const Login = () => {
                 </button>
               </div>
               <div className="text-center mt-4 text-sm text-gray-500">
-                Didn't receive code?
-                <a href="#" onClick={handleResendOtp}> Resend code</a>
+                Didn't receive code?{" "}
+                <a href="#" onClick={handleResendOtp}>
+                  Resend code
+                </a>
               </div>
             </div>
           </div>
@@ -465,7 +495,9 @@ const Login = () => {
               )}
 
               <div className="mb-4">
-                <label className="block text-gray-800 mb-1 text-sm">New Password</label>
+                <label className="block text-gray-800 mb-1 text-sm">
+                  New Password
+                </label>
                 <input
                   type="password"
                   value={newPassword}
@@ -476,7 +508,9 @@ const Login = () => {
               </div>
 
               <div className="mb-4">
-                <label className="block text-gray-800 mb-1 text-sm">Confirm Password</label>
+                <label className="block text-gray-800 mb-1 text-sm">
+                  Confirm Password
+                </label>
                 <input
                   type="password"
                   value={confirmPassword}
