@@ -36,7 +36,6 @@ const TableManagementAdmin = () => {
   const [qrError, setQrError] = useState(null); // Lưu lỗi khi tạo QR
   const [qrUploading, setQrUploading] = useState(false); // Trạng thái lưu QR
 
-
   const userId = localStorage.getItem("userId") || "1";
 
   // WebSocket Setup
@@ -51,22 +50,26 @@ const TableManagementAdmin = () => {
     const connectWebSocket = () => {
       if (!isMounted || reconnectAttempts >= maxReconnectAttempts) {
         console.log("Max reconnect attempts reached or component unmounted");
+        setSocketError("Max reconnect attempts reached or component unmounted");
         return;
       }
 
       console.log(
-        `Attempting WebSocket connection (Attempt ${reconnectAttempts + 1})`
+        `Attempting WebSocket connection for ADMIN (Attempt ${
+          reconnectAttempts + 1
+        })`
       );
       ws = new WebSocket(
         `ws://localhost:8080/ws/notifications?userType=ADMIN&userId=${userId}`
       );
 
       ws.onopen = () => {
-        console.log("WebSocket connected successfully");
+        console.log("WebSocket connected successfully for ADMIN");
         setSocket(ws);
         setSocketError(null);
         reconnectAttempts = 0;
         clearTimeout(reconnectTimeout);
+        // Fetch initial notifications via REST since server doesn't handle INIT_NOTIFICATIONS
         fetchAllNotifications();
       };
 
@@ -76,10 +79,12 @@ const TableManagementAdmin = () => {
             throw new Error("Received non-string WebSocket message");
           }
           const message = JSON.parse(event.data);
-          console.log("Received WebSocket message:", message);
+          console.log("Received WebSocket message for ADMIN:", message);
 
+          // Server sends NotificationResponseDTO directly
           if (message.notificationId && message.tableNumber !== undefined) {
             setTableNotifications((prev) => {
+              // Check if notification already exists
               const exists = prev.some(
                 (n) => n.notificationId === message.notificationId
               );
@@ -87,7 +92,7 @@ const TableManagementAdmin = () => {
                 console.log(`Updating notification ${message.notificationId}`);
                 return prev.map((n) =>
                   n.notificationId === message.notificationId
-                    ? { ...n, ...message }
+                    ? { ...n, ...message } // Merge to preserve fields
                     : n
                 );
               } else {
@@ -98,23 +103,23 @@ const TableManagementAdmin = () => {
               }
             });
           } else if (message === "PONG") {
-            console.log("Received PONG from server");
+            console.log("Received PONG from server for ADMIN");
           } else {
-            console.warn("Unrecognized WebSocket message:", message);
+            console.warn("Unrecognized WebSocket message for ADMIN:", message);
           }
         } catch (err) {
-          console.error("Error processing WebSocket message:", err);
+          console.error("Error processing WebSocket message for ADMIN:", err);
           setSocketError("Failed to process notification");
         }
       };
 
       ws.onerror = (error) => {
-        console.error("WebSocket error:", error);
+        console.error("WebSocket error for ADMIN:", error);
         setSocketError("Failed to connect to notifications server");
       };
 
       ws.onclose = () => {
-        console.log("WebSocket disconnected");
+        console.log("WebSocket disconnected for ADMIN");
         setSocket(null);
         if (isMounted && reconnectAttempts < maxReconnectAttempts) {
           const delay = baseReconnectDelay * Math.pow(2, reconnectAttempts);
@@ -126,33 +131,38 @@ const TableManagementAdmin = () => {
         }
       };
 
+      // Send periodic PING to keep connection alive
       const pingInterval = setInterval(() => {
         if (ws && ws.readyState === WebSocket.OPEN) {
-          console.log("Sending PING");
+          console.log("Sending PING for ADMIN");
           ws.send(JSON.stringify({ type: "PING" }));
         }
       }, 30000);
+
+      // Store pingInterval for cleanup
+      return () => clearInterval(pingInterval);
     };
 
     connectWebSocket();
 
+    // Periodic sync for unread notifications
     const syncInterval = setInterval(() => {
       if (isMounted && tables.length > 0) {
-        console.log("Performing periodic notification sync");
+        console.log("Performing periodic notification sync for ADMIN");
         fetchUnreadNotifications();
       }
-    }, 120000);
+    }, 120000); // Sync every 2 minutes
 
     return () => {
       isMounted = false;
       clearTimeout(reconnectTimeout);
       clearInterval(syncInterval);
       if (ws) {
-        console.log("Closing WebSocket during cleanup");
+        console.log("Closing WebSocket during cleanup for ADMIN");
         ws.close();
       }
     };
-  }, [tables, userId]);
+  }, [tables, userId, fetchAllNotifications, fetchUnreadNotifications]);
 
   // Axios Interceptors for Authentication
   useEffect(() => {
@@ -527,12 +537,14 @@ const TableManagementAdmin = () => {
       setNewTableId(response.data.table_id); // Lưu id bàn vừa tạo
       setNewTableNumber("");
       setNewTableCapacity("");
-      
+
       // Tạo URL mã QR
       const tableUrl = `http://192.168.1.100:5173/table/${response.data.table_id}`; // Thay bằng IP của bạn
-      const qrApiUrl = `http://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(tableUrl)}&size=200x200`;
+      const qrApiUrl = `http://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(
+        tableUrl
+      )}&size=200x200`;
       setQrUrl(qrApiUrl);
-  
+
       // Không đóng modal ngay để hiển thị nút tạo QR
       await fetchAllNotifications();
     } catch (err) {
@@ -553,8 +565,10 @@ const TableManagementAdmin = () => {
     setQrUploading(true);
     try {
       const tableUrl = `http://192.168.1.100:5173/table/${newTableId}`; // Thay bằng IP của bạn
-      const qrApiUrl = `http://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(tableUrl)}&size=200x200`;
-      
+      const qrApiUrl = `http://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(
+        tableUrl
+      )}&size=200x200`;
+
       // Tải hình ảnh QR
       const response = await fetch(qrApiUrl);
       if (!response.ok) throw new Error("Không tải được mã QR!");
@@ -562,12 +576,16 @@ const TableManagementAdmin = () => {
       const formData = new FormData();
       formData.append("file", blob, `table_${newTableId}_qr.png`);
       formData.append("tableNumber", newTableId.toString());
-  
+
       // Gửi đến backend
-      const res = await axios.post("http://localhost:8080/api/qr/upload", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-  
+      const res = await axios.post(
+        "http://localhost:8080/api/qr/upload",
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
+
       if (res.status >= 200 && res.status < 300) {
         alert("Mã QR đã được lưu thành công!");
         setIsAddTableModalOpen(false); // Đóng modal sau khi lưu
@@ -601,7 +619,7 @@ const TableManagementAdmin = () => {
       setQrError("Không thể tải mã QR. Vui lòng thử lại!");
     }
   };
-  
+
   const handlePrintQr = () => {
     const printWindow = window.open("", "_blank");
     printWindow.document.write(`
@@ -1193,266 +1211,285 @@ const TableManagementAdmin = () => {
     );
   };
 
-// Render Dish Modal
-const renderDishModal = () => {
-  if (!isDishModalOpen || !selectedTable) return null;
+  // Render Dish Modal
+  const renderDishModal = () => {
+    if (!isDishModalOpen || !selectedTable) return null;
 
-  const orders = selectedTable.orders || [];
+    const orders = selectedTable.orders || [];
 
-  const handleUpdateStatus = (orderId, newStatus) => {
-    // Logic to update order status (placeholder, replace with API call if needed)
-    console.log(`Order ${orderId} updated to status: ${newStatus}`);
-    setSelectedTable((prev) => ({
-      ...prev,
-      orders: prev.orders.map((order) =>
-        order.orderId === orderId ? { ...order, status: newStatus } : order
-      ),
-    }));
-  };
+    const handleUpdateStatus = (orderId, newStatus) => {
+      // Logic to update order status (placeholder, replace with API call if needed)
+      console.log(`Order ${orderId} updated to status: ${newStatus}`);
+      setSelectedTable((prev) => ({
+        ...prev,
+        orders: prev.orders.map((order) =>
+          order.orderId === orderId ? { ...order, status: newStatus } : order
+        ),
+      }));
+    };
 
-  const handleUpdateQuantity = (orderId, itemIndex, newQuantity) => {
-    // Logic to update quantity (placeholder, replace with API call if needed)
-    console.log(`Updated quantity for Item ${itemIndex} in Order ${orderId} to ${newQuantity}`);
-    setSelectedTable((prev) => ({
-      ...prev,
-      orders: prev.orders.map((order) =>
-        order.orderId === orderId
-          ? {
-              ...order,
-              items: order.items.map((item, idx) =>
-                idx === itemIndex ? { ...item, quantity: newQuantity } : item
-              ),
-            }
-          : order
-      ),
-    }));
-  };
+    const handleUpdateQuantity = (orderId, itemIndex, newQuantity) => {
+      // Logic to update quantity (placeholder, replace with API call if needed)
+      console.log(
+        `Updated quantity for Item ${itemIndex} in Order ${orderId} to ${newQuantity}`
+      );
+      setSelectedTable((prev) => ({
+        ...prev,
+        orders: prev.orders.map((order) =>
+          order.orderId === orderId
+            ? {
+                ...order,
+                items: order.items.map((item, idx) =>
+                  idx === itemIndex ? { ...item, quantity: newQuantity } : item
+                ),
+              }
+            : order
+        ),
+      }));
+    };
 
-  const handleDeleteItem = (orderId, itemIndex) => {
-    // Logic to delete item (placeholder, replace with API call if needed)
-    console.log(`Deleted Item ${itemIndex} in Order ${orderId}`);
-    setSelectedTable((prev) => ({
-      ...prev,
-      orders: prev.orders.map((order) =>
-        order.orderId === orderId
-          ? {
-              ...order,
-              items: order.items.filter((_, idx) => idx !== itemIndex),
-            }
-          : order
-      ),
-    }));
-  };
+    const handleDeleteItem = (orderId, itemIndex) => {
+      // Logic to delete item (placeholder, replace with API call if needed)
+      console.log(`Deleted Item ${itemIndex} in Order ${orderId}`);
+      setSelectedTable((prev) => ({
+        ...prev,
+        orders: prev.orders.map((order) =>
+          order.orderId === orderId
+            ? {
+                ...order,
+                items: order.items.filter((_, idx) => idx !== itemIndex),
+              }
+            : order
+        ),
+      }));
+    };
 
-  const getStatusButton = (orderId, status) => {
-    const statusLower = status?.toLowerCase();
-    let bgColor, text;
+    const getStatusButton = (orderId, status) => {
+      const statusLower = status?.toLowerCase();
+      let bgColor, text;
 
-    switch (statusLower) {
-      case "complete":
-        bgColor = "bg-green-500";
-        text = "Complete";
-        break;
-      case "processing":
-        bgColor = "bg-yellow-500";
-        text = "Processing";
-        break;
-      case "pending":
-        bgColor = "bg-blue-500";
-        text = "Pending";
-        break;
-      case "cancel":
-        bgColor = "bg-red-500";
-        text = "Cancel";
-        break;
-      default:
-        bgColor = "bg-gray-500";
-        text = "Unknown";
-    }
+      switch (statusLower) {
+        case "complete":
+          bgColor = "bg-green-500";
+          text = "Complete";
+          break;
+        case "processing":
+          bgColor = "bg-yellow-500";
+          text = "Processing";
+          break;
+        case "pending":
+          bgColor = "bg-blue-500";
+          text = "Pending";
+          break;
+        case "cancel":
+          bgColor = "bg-red-500";
+          text = "Cancel";
+          break;
+        default:
+          bgColor = "bg-gray-500";
+          text = "Unknown";
+      }
 
-    const statusOptions = ["pending", "processing", "complete", "cancel"].filter(
-      (s) => s !== statusLower
-    );
+      const statusOptions = [
+        "pending",
+        "processing",
+        "complete",
+        "cancel",
+      ].filter((s) => s !== statusLower);
+
+      return (
+        <div className="relative inline-block">
+          <button
+            className={`${bgColor} text-white py-1 px-2 rounded`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {text}
+          </button>
+          {statusLower === "pending" && (
+            <div className="absolute left-0 mt-1 w-32 bg-white border border-gray-300 rounded shadow-lg z-10">
+              {statusOptions.map((option) => (
+                <button
+                  key={option}
+                  className="block w-full text-left px-2 py-1 hover:bg-gray-100"
+                  onClick={() => handleUpdateStatus(orderId, option)}
+                >
+                  {option.charAt(0).toUpperCase() + option.slice(1)}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    };
 
     return (
-      <div className="relative inline-block">
-        <button
-          className={`${bgColor} text-white py-1 px-2 rounded`}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {text}
-        </button>
-        {statusLower === "pending" && (
-          <div className="absolute left-0 mt-1 w-32 bg-white border border-gray-300 rounded shadow-lg z-10">
-            {statusOptions.map((option) => (
-              <button
-                key={option}
-                className="block w-full text-left px-2 py-1 hover:bg-gray-100"
-                onClick={() => handleUpdateStatus(orderId, option)}
-              >
-                {option.charAt(0).toUpperCase() + option.slice(1)}
-              </button>
-            ))}
+      <div className="fixed inset-0 flex items-center justify-center z-50">
+        <div
+          className="absolute inset-0"
+          style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
+          onClick={() => setIsDishModalOpen(false)}
+        ></div>
+        <div className="bg-white rounded-lg shadow-lg p-6 w-1/2 max-h-[80vh] overflow-y-auto relative z-50">
+          <div className="flex justify-between items-center mb-4 border-b pb-2">
+            <h2 className="text-xl font-bold">
+              Table {selectedTable.id || "Unknown"} - Unpaid Orders
+            </h2>
+            <button
+              className="text-gray-500 hover:text-gray-700"
+              onClick={() => setIsDishModalOpen(false)}
+            >
+              ✕
+            </button>
           </div>
-        )}
+          <div className="space-y-4">
+            {orderLoading && (
+              <div className="flex justify-center items-center h-64">
+                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+                <span className="ml-2 text-gray-600">Loading orders...</span>
+              </div>
+            )}
+            {orderError && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+                {orderError}
+              </div>
+            )}
+            {!orderLoading && !orderError && (
+              <>
+                {orders.length === 0 ? (
+                  <div className="text-center py-10 text-gray-500">
+                    No unpaid orders for this table
+                  </div>
+                ) : (
+                  <div>
+                    {orders.map((order) => (
+                      <div key={order.orderId} className="mb-6">
+                        <h3 className="font-semibold text-lg mb-2">
+                          Order #{order.orderId}
+                        </h3>
+                        <table className="w-full border-collapse">
+                          <thead>
+                            <tr className="bg-gray-100">
+                              <th className="text-left py-2 px-4">Dish Name</th>
+                              <th className="text-left py-2 px-4">Quantity</th>
+                              <th className="text-left py-2 px-4">Price</th>
+                              <th className="text-left py-2 px-4">Notes</th>
+                              <th className="text-left py-2 px-4">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {order.items && order.items.length > 0 ? (
+                              order.items.map((item, index) => (
+                                <tr
+                                  key={`${order.orderId}-item-${index}`}
+                                  className="border-b hover:bg-gray-50"
+                                >
+                                  <td className="py-2 px-4">
+                                    {item.dishName || "—"}
+                                  </td>
+                                  <td className="py-2 px-4">
+                                    {order.status?.toLowerCase() ===
+                                    "pending" ? (
+                                      <input
+                                        type="number"
+                                        value={item.quantity || 0}
+                                        onChange={(e) =>
+                                          handleUpdateQuantity(
+                                            order.orderId,
+                                            index,
+                                            parseInt(e.target.value) || 0
+                                          )
+                                        }
+                                        className="w-16 border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        min="0"
+                                      />
+                                    ) : (
+                                      item.quantity || "—"
+                                    )}
+                                  </td>
+                                  <td className="py-2 px-4">
+                                    {item.price
+                                      ? `${parseFloat(
+                                          item.price
+                                        ).toLocaleString("vi-VN")} VND`
+                                      : "—"}
+                                  </td>
+                                  <td className="py-2 px-4">
+                                    {item.notes || "—"}
+                                  </td>
+                                  <td className="py-2 px-4">
+                                    <div className="flex items-center space-x-2">
+                                      {getStatusButton(
+                                        order.orderId,
+                                        order.status || "pending"
+                                      )}
+                                      {order.status?.toLowerCase() ===
+                                        "pending" && (
+                                        <button
+                                          className="bg-red-500 hover:bg-red-600 text-white py-1 px-2 rounded"
+                                          onClick={() =>
+                                            handleDeleteItem(
+                                              order.orderId,
+                                              index
+                                            )
+                                          }
+                                        >
+                                          Delete
+                                        </button>
+                                      )}
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))
+                            ) : (
+                              <tr>
+                                <td
+                                  colSpan="5"
+                                  className="py-2 px-4 text-center text-gray-500"
+                                >
+                                  No items in this order
+                                </td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                        <p className="mt-2 text-right font-semibold">
+                          Order Total:{" "}
+                          {order.totalAmount
+                            ? parseFloat(order.totalAmount).toLocaleString(
+                                "vi-VN"
+                              ) + " VND"
+                            : "0 VND"}
+                        </p>
+                      </div>
+                    ))}
+                    <p className="text-right font-bold text-lg mt-4">
+                      Table Total: {totalAmount.toLocaleString("vi-VN")} VND
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+          {!orderLoading && !orderError && orders.length > 0 && (
+            <div className="mt-4 flex justify-end space-x-4">
+              <button
+                className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded"
+                onClick={() => setIsDishModalOpen(false)}
+              >
+                Close
+              </button>
+              <button
+                className="!bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded"
+                onClick={handleShowPaymentModal}
+              >
+                Process Payment
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     );
   };
-
-  return (
-    <div className="fixed inset-0 flex items-center justify-center z-50">
-      <div
-        className="absolute inset-0"
-        style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
-        onClick={() => setIsDishModalOpen(false)}
-      ></div>
-      <div className="bg-white rounded-lg shadow-lg p-6 w-1/2 max-h-[80vh] overflow-y-auto relative z-50">
-        <div className="flex justify-between items-center mb-4 border-b pb-2">
-          <h2 className="text-xl font-bold">
-            Table {selectedTable.id || "Unknown"} - Unpaid Orders
-          </h2>
-          <button
-            className="text-gray-500 hover:text-gray-700"
-            onClick={() => setIsDishModalOpen(false)}
-          >
-            ✕
-          </button>
-        </div>
-        <div className="space-y-4">
-          {orderLoading && (
-            <div className="flex justify-center items-center h-64">
-              <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
-              <span className="ml-2 text-gray-600">Loading orders...</span>
-            </div>
-          )}
-          {orderError && (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
-              {orderError}
-            </div>
-          )}
-          {!orderLoading && !orderError && (
-            <>
-              {orders.length === 0 ? (
-                <div className="text-center py-10 text-gray-500">
-                  No unpaid orders for this table
-                </div>
-              ) : (
-                <div>
-                  {orders.map((order) => (
-                    <div key={order.orderId} className="mb-6">
-                      <h3 className="font-semibold text-lg mb-2">
-                        Order #{order.orderId}
-                      </h3>
-                      <table className="w-full border-collapse">
-                        <thead>
-                          <tr className="bg-gray-100">
-                            <th className="text-left py-2 px-4">Dish Name</th>
-                            <th className="text-left py-2 px-4">Quantity</th>
-                            <th className="text-left py-2 px-4">Price</th>
-                            <th className="text-left py-2 px-4">Notes</th>
-                            <th className="text-left py-2 px-4">Action</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {order.items && order.items.length > 0 ? (
-                            order.items.map((item, index) => (
-                              <tr
-                                key={`${order.orderId}-item-${index}`}
-                                className="border-b hover:bg-gray-50"
-                              >
-                                <td className="py-2 px-4">
-                                  {item.dishName || "—"}
-                                </td>
-                                <td className="py-2 px-4">
-                                  {order.status?.toLowerCase() === "pending" ? (
-                                    <input
-                                      type="number"
-                                      value={item.quantity || 0}
-                                      onChange={(e) =>
-                                        handleUpdateQuantity(
-                                          order.orderId,
-                                          index,
-                                          parseInt(e.target.value) || 0
-                                        )
-                                      }
-                                      className="w-16 border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                      min="0"
-                                    />
-                                  ) : (
-                                    item.quantity || "—"
-                                  )}
-                                </td>
-                                <td className="py-2 px-4">
-                                  {item.price
-                                    ? `${parseFloat(item.price).toLocaleString("vi-VN")} VND`
-                                    : "—"}
-                                </td>
-                                <td className="py-2 px-4">
-                                  {item.notes || "—"}
-                                </td>
-                                <td className="py-2 px-4">
-                                  <div className="flex items-center space-x-2">
-                                    {getStatusButton(order.orderId, order.status || "pending")}
-                                    {order.status?.toLowerCase() === "pending" && (
-                                      <button
-                                        className="bg-red-500 hover:bg-red-600 text-white py-1 px-2 rounded"
-                                        onClick={() => handleDeleteItem(order.orderId, index)}
-                                      >
-                                        Delete
-                                      </button>
-                                    )}
-                                  </div>
-                                </td>
-                              </tr>
-                            ))
-                          ) : (
-                            <tr>
-                              <td
-                                colSpan="5"
-                                className="py-2 px-4 text-center text-gray-500"
-                              >
-                                No items in this order
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                      <p className="mt-2 text-right font-semibold">
-                        Order Total:{" "}
-                        {order.totalAmount
-                          ? parseFloat(order.totalAmount).toLocaleString("vi-VN") + " VND"
-                          : "0 VND"}
-                      </p>
-                    </div>
-                  ))}
-                  <p className="text-right font-bold text-lg mt-4">
-                    Table Total: {totalAmount.toLocaleString("vi-VN")} VND
-                  </p>
-                </div>
-              )}
-            </>
-          )}
-        </div>
-        {!orderLoading && !orderError && orders.length > 0 && (
-          <div className="mt-4 flex justify-end space-x-4">
-            <button
-              className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded"
-              onClick={() => setIsDishModalOpen(false)}
-            >
-              Close
-            </button>
-            <button
-              className="!bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded"
-              onClick={handleShowPaymentModal}
-            >
-              Process Payment
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
 
   // Render Payment Modal
   const renderPaymentModal = () => {
@@ -1783,138 +1820,144 @@ const renderDishModal = () => {
 
   // Render Add Table Modal
   const renderAddTableModal = () => {
-  if (!isAddTableModalOpen) return null;
+    if (!isAddTableModalOpen) return null;
 
-  return (
-    <div className="fixed inset-0 flex items-center justify-center z-50">
-      <div
-        className="absolute inset-0"
-        style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
-        onClick={handleCloseAddTableModal}
-      ></div>
-      <div className="bg-[#F0F8FD] rounded-lg shadow-lg p-6 w-[400px] relative z-50">
-        <button
-          className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+    return (
+      <div className="fixed inset-0 flex items-center justify-center z-50">
+        <div
+          className="absolute inset-0"
+          style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
           onClick={handleCloseAddTableModal}
-        >
-          ✕
-        </button>
-        <h2
-          style={{ fontSize: "24px" }}
-          className="text-center text-xl font-bold mb-4"
-        >
-          Add Table
-        </h2>
-        {!newTableId ? (
-          <form onSubmit={handleAddTableSuccess}>
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-1">
-                Table Number
-              </label>
-              <input
-                type="number"
-                value={newTableNumber}
-                onChange={(e) => setNewTableNumber(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                placeholder="Enter table number"
-                required
-                min="1"
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium mb-1">Capacity</label>
-              <input
-                type="number"
-                value={newTableCapacity}
-                onChange={(e) => setNewTableCapacity(e.target.value)}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                placeholder="Enter table capacity"
-                required
-                min="1"
-              />
-            </div>
-            {errorMessage && (
-              <p className="text-red-500 text-sm mb-4">{errorMessage}</p>
-            )}
-            <button
-              style={{ backgroundColor: "black", marginTop: "10px" }}
-              type="submit"
-              className="w-full text-white font-medium py-2 px-4 rounded-lg hover:bg-gray-800"
-            >
-              Add
-            </button>
-          </form>
-        ) : (
-          <div className="text-center">
-            <p className="text-green-600 mb-4">
-              Bàn {newTableId} đã được tạo thành công!
-            </p>
-            {qrUrl && (
-              <>
-                <h3 className="text-lg font-semibold mb-2">
-                  Mã QR cho bàn {newTableId}
-                </h3>
-                <img
-                  src={qrUrl}
-                  alt={`QR Code for table ${newTableId}`}
-                  style={{ width: "200px", height: "200px", margin: "0 auto" }}
+        ></div>
+        <div className="bg-[#F0F8FD] rounded-lg shadow-lg p-6 w-[400px] relative z-50">
+          <button
+            className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+            onClick={handleCloseAddTableModal}
+          >
+            ✕
+          </button>
+          <h2
+            style={{ fontSize: "24px" }}
+            className="text-center text-xl font-bold mb-4"
+          >
+            Add Table
+          </h2>
+          {!newTableId ? (
+            <form onSubmit={handleAddTableSuccess}>
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">
+                  Table Number
+                </label>
+                <input
+                  type="number"
+                  value={newTableNumber}
+                  onChange={(e) => setNewTableNumber(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  placeholder="Enter table number"
+                  required
+                  min="1"
                 />
-                <p className="mt-2 text-gray-600">
-                  URL:{" "}
-                  <a
-                    href={`http://192.168.1.100:5173/table/${newTableId}`}
-                    target="_blank"
-                    className="text-blue-500"
-                  >
-                    http://192.168.1.100:5173/table/{newTableId}
-                  </a>
-                </p>
-              </>
-            )}
-            {qrError && (
-              <p className="text-red-500 text-sm mt-2">{qrError}</p>
-            )}
-            <div className="mt-4 flex flex-col gap-2">
-              <button
-                onClick={handleGenerateQr}
-                disabled={qrUploading}
-                className="w-full text-white font-medium py-2 rounded hover:bg-blue-600 disabled:bg-gray-400"
-                style={{ backgroundColor: "#4CAF50" }}
-              >
-                {qrUploading ? "Đang lưu..." : "Tạo và Lưu Mã QR"}
-              </button>
-              {qrUrl && (
-                <div className="flex justify-center gap-4">
-                  <button
-                    onClick={handleDownloadQr}
-                    className="text-white py-2 px-4 rounded hover:bg-green-600"
-                    style={{ backgroundColor: "#4E71FF" }}
-                  >
-                    Tải Mã QR
-                  </button>
-                  <button
-                    onClick={handlePrintQr}
-                    className="text-white py-2 px-4 rounded hover:bg-gray-600"
-                    style={{ backgroundColor: "#4E71FF" }}
-                  >
-                    In Mã QR
-                  </button>
-                </div>
+              </div>
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-1">
+                  Capacity
+                </label>
+                <input
+                  type="number"
+                  value={newTableCapacity}
+                  onChange={(e) => setNewTableCapacity(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  placeholder="Enter table capacity"
+                  required
+                  min="1"
+                />
+              </div>
+              {errorMessage && (
+                <p className="text-red-500 text-sm mb-4">{errorMessage}</p>
               )}
               <button
-                onClick={handleCloseAddTableModal}
-                className="w-full bg-gray-300 text-gray-800 font-medium py-2 rounded hover:bg-gray-400 mt-2"
-                style={{ backgroundColor: "#F7374F" }}
+                style={{ backgroundColor: "black", marginTop: "10px" }}
+                type="submit"
+                className="w-full text-white font-medium py-2 px-4 rounded-lg hover:bg-gray-800"
               >
-                Đóng
+                Add
               </button>
+            </form>
+          ) : (
+            <div className="text-center">
+              <p className="text-green-600 mb-4">
+                Bàn {newTableId} đã được tạo thành công!
+              </p>
+              {qrUrl && (
+                <>
+                  <h3 className="text-lg font-semibold mb-2">
+                    Mã QR cho bàn {newTableId}
+                  </h3>
+                  <img
+                    src={qrUrl}
+                    alt={`QR Code for table ${newTableId}`}
+                    style={{
+                      width: "200px",
+                      height: "200px",
+                      margin: "0 auto",
+                    }}
+                  />
+                  <p className="mt-2 text-gray-600">
+                    URL:{" "}
+                    <a
+                      href={`http://192.168.1.100:5173/table/${newTableId}`}
+                      target="_blank"
+                      className="text-blue-500"
+                    >
+                      http://192.168.1.100:5173/table/{newTableId}
+                    </a>
+                  </p>
+                </>
+              )}
+              {qrError && (
+                <p className="text-red-500 text-sm mt-2">{qrError}</p>
+              )}
+              <div className="mt-4 flex flex-col gap-2">
+                <button
+                  onClick={handleGenerateQr}
+                  disabled={qrUploading}
+                  className="w-full text-white font-medium py-2 rounded hover:bg-blue-600 disabled:bg-gray-400"
+                  style={{ backgroundColor: "#4CAF50" }}
+                >
+                  {qrUploading ? "Đang lưu..." : "Tạo và Lưu Mã QR"}
+                </button>
+                {qrUrl && (
+                  <div className="flex justify-center gap-4">
+                    <button
+                      onClick={handleDownloadQr}
+                      className="text-white py-2 px-4 rounded hover:bg-green-600"
+                      style={{ backgroundColor: "#4E71FF" }}
+                    >
+                      Tải Mã QR
+                    </button>
+                    <button
+                      onClick={handlePrintQr}
+                      className="text-white py-2 px-4 rounded hover:bg-gray-600"
+                      style={{ backgroundColor: "#4E71FF" }}
+                    >
+                      In Mã QR
+                    </button>
+                  </div>
+                )}
+                <button
+                  onClick={handleCloseAddTableModal}
+                  className="w-full bg-gray-300 text-gray-800 font-medium py-2 rounded hover:bg-gray-400 mt-2"
+                  style={{ backgroundColor: "#F7374F" }}
+                >
+                  Đóng
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
   // Render Edit Table Modal
   const renderEditTableModal = () => {

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import MenuBarStaff from "../../../components/layout/MenuBar_Staff.jsx";
 import MenuBar from "../../../components/layout/MenuBar.jsx";
 import axios from "axios";
+import { debounce } from "lodash";
 import { useMemo } from "react";
 
 const TableManagementStaff = () => {
@@ -58,49 +59,94 @@ const TableManagementStaff = () => {
         setSocketError(null);
         reconnectAttempts = 0;
         clearTimeout(reconnectTimeout);
-        // Fetch initial notifications via REST since server doesn't handle INIT_NOTIFICATIONS
         fetchAllNotifications();
       };
 
+      // Trong useEffect của WebSocket
       ws.onmessage = (event) => {
         try {
           if (typeof event.data !== "string") {
             throw new Error("Received non-string WebSocket message");
           }
-          const message = JSON.parse(event.data);
-          console.log("Received WebSocket message:", message);
-
-          // Server sends NotificationResponseDTO directly
-          if (message.notificationId && message.tableNumber !== undefined) {
-            setTableNotifications((prev) => {
-              // Check if notification already exists
-              const exists = prev.some(
-                (n) => n.notificationId === message.notificationId
-              );
-              if (exists) {
-                // Update existing notification (e.g., for mark-as-read)
-                console.log(`Updating notification ${message.notificationId}`);
-                return prev.map((n) =>
-                  n.notificationId === message.notificationId
-                    ? { ...n, ...message } // Merge to preserve fields
-                    : n
-                );
-              } else {
-                // Add new notification
-                console.log(
-                  `Adding new notification ${message.notificationId}`
-                );
-                return [...prev, message];
-              }
-            });
-          } else if (message === "PONG") {
+          if (event.data === "PONG") {
             console.log("Received PONG from server");
+            return;
+          }
+          const message = JSON.parse(event.data);
+          console.log(
+            "Received WebSocket message:",
+            JSON.stringify(message, null, 2)
+          );
+
+          if (message.type === "PAYMENT_STATUS_UPDATED" && message.orderId) {
+            // Cập nhật orders
+            setOrders((prev) => {
+              const updatedOrders = prev.map((order) =>
+                Number(order.orderId) === Number(message.orderId)
+                  ? {
+                      ...order,
+                      paymentStatus: message.paymentStatus?.toUpperCase(),
+                    }
+                  : order
+              );
+              console.log("Updated orders via WebSocket:", updatedOrders);
+              return updatedOrders;
+            });
+
+            // Cập nhật table status
+            if (message.tableNumber && message.tableStatus) {
+              setTables((prevTables) => {
+                const updatedTables = prevTables.map((table) =>
+                  Number(table.id) === Number(message.tableNumber)
+                    ? {
+                        ...table,
+                        status: message.tableStatus.toLowerCase(),
+                        orders: table.orders.map((order) =>
+                          Number(order.orderId) === Number(message.orderId)
+                            ? {
+                                ...order,
+                                paymentStatus:
+                                  message.paymentStatus?.toUpperCase(),
+                              }
+                            : order
+                        ),
+                      }
+                    : table
+                );
+                console.log(
+                  `Updated table ${message.tableNumber} status to ${message.tableStatus} for order ${message.orderId} via WebSocket`
+                );
+                return updatedTables;
+              });
+              setLastWebSocketUpdate(Date.now());
+            } else {
+              console.warn(
+                "Table info missing in PAYMENT_STATUS_UPDATED message, fetching tables"
+              );
+              fetchTables();
+            }
+          } else if (message.type === "NEW_ORDER" && message.order) {
+            setOrders((prev) => {
+              const orderExists = prev.some(
+                (o) => Number(o.orderId) === Number(message.order.orderId)
+              );
+              if (!orderExists) {
+                console.log("Added new order via WebSocket:", message.order);
+                return [...prev, message.order];
+              }
+              return prev;
+            });
+            fetchTables();
           } else {
             console.warn("Unrecognized WebSocket message:", message);
+            fetchOrders();
           }
         } catch (err) {
           console.error("Error processing WebSocket message:", err);
-          setSocketError("Failed to process notification");
+          setSocketError(
+            "Failed to process notification. Please check your connection."
+          );
+          fetchOrders();
         }
       };
 
@@ -124,24 +170,32 @@ const TableManagementStaff = () => {
         }
       };
 
-      // Send periodic PING to keep connection alive
       const pingInterval = setInterval(() => {
         if (ws && ws.readyState === WebSocket.OPEN) {
           console.log("Sending PING");
           ws.send(JSON.stringify({ type: "PING" }));
         }
       }, 30000);
+
+      return () => {
+        isMounted = false;
+        clearTimeout(reconnectTimeout);
+        clearInterval(pingInterval);
+        if (ws) {
+          console.log("Closing WebSocket during cleanup");
+          ws.close();
+        }
+      };
     };
 
     connectWebSocket();
 
-    // Periodic sync for unread notifications
     const syncInterval = setInterval(() => {
       if (isMounted && tables.length > 0) {
         console.log("Performing periodic notification sync");
         fetchUnreadNotifications();
       }
-    }, 120000); // Sync every 2 minutes
+    }, 120000);
 
     return () => {
       isMounted = false;
@@ -532,7 +586,6 @@ const TableManagementStaff = () => {
     const fetchTables = async () => {
       try {
         setLoading(true);
-
         const response = await API.get("/api/staff/tables");
         if (!response.data) {
           throw new Error("No tables data returned from API");
@@ -546,7 +599,6 @@ const TableManagementStaff = () => {
         }));
 
         setTables((prev) => {
-          // Only update if the data has changed to avoid infinite loops
           if (JSON.stringify(prev) !== JSON.stringify(mappedTables)) {
             return mappedTables;
           }
@@ -568,6 +620,14 @@ const TableManagementStaff = () => {
     };
 
     fetchTables();
+
+    // Periodic polling for table status
+    const pollInterval = setInterval(() => {
+      console.log("Polling for table status updates");
+      fetchTables();
+    }, 300000); // Poll every 5 minutes
+
+    return () => clearInterval(pollInterval);
   }, [fetchOrders]);
 
   const ordersByTable = useMemo(() => {
@@ -583,45 +643,45 @@ const TableManagementStaff = () => {
     }, {});
   }, [orders]);
 
+  // Thêm state để theo dõi cập nhật từ WebSocket
+  const [lastWebSocketUpdate, setLastWebSocketUpdate] = useState(null);
+
   useEffect(() => {
     if (orders.length === 0 || tables.length === 0) return;
+
+    const now = Date.now();
+    if (lastWebSocketUpdate && now - lastWebSocketUpdate < 1000) {
+      console.log("Skipping useEffect sync due to recent WebSocket update");
+      return;
+    }
 
     const updatedTables = tables.map((table) => {
       const tableId = table.id.toString();
       const tableOrders = ordersByTable[tableId] || [];
-      let updatedStatus = table.status;
-
-      console.log(`Table ${tableId}:`, {
-        orders: tableOrders,
-        currentStatus: table.status,
-      });
-
-      if (tableOrders.length === 0) {
-        updatedStatus = "available";
-      } else {
-        const hasUnpaidOrders = tableOrders.some(
-          (order) => order.paymentStatus?.toUpperCase() !== "PAID"
-        );
-        updatedStatus = hasUnpaidOrders ? "occupied" : "available";
-      }
+      const hasUnpaidOrders = tableOrders.some(
+        (order) => order.paymentStatus?.toUpperCase() !== "PAID"
+      );
+      const updatedStatus =
+        tableOrders.length === 0 || !hasUnpaidOrders ? "available" : "occupied";
 
       if (
         updatedStatus !== table.status ||
         JSON.stringify(table.orders) !== JSON.stringify(tableOrders)
       ) {
-        return {
-          ...table,
-          status: updatedStatus,
-          orders: tableOrders,
-        };
+        console.log(
+          `Syncing table ${tableId} via useEffect: status=${updatedStatus}, orders=`,
+          tableOrders
+        );
+        return { ...table, status: updatedStatus, orders: tableOrders };
       }
       return table;
     });
 
     if (JSON.stringify(updatedTables) !== JSON.stringify(tables)) {
+      console.log("Updating tables state via useEffect sync:", updatedTables);
       setTables(updatedTables);
     }
-  }, [ordersByTable, tables]);
+  }, [ordersByTable, tables, lastWebSocketUpdate]);
 
   const fetchTableNotifications = async (tableId) => {
     if (!tableId) {
@@ -882,47 +942,70 @@ const TableManagementStaff = () => {
     setIsPaymentModalOpen(true);
   };
 
-  const handlePaymentSuccess = async () => {
+  const handlePaymentSuccess = async (paymentMethod = "CASH") => {
     if (!selectedTable || !selectedTable.id) {
-      console.error("Cannot update status for undefined table");
+      setOrderError("Invalid table selected");
       return;
     }
 
-    console.log(`Processing payment success for table ${selectedTable.id}`);
+    console.log(
+      `Processing ${paymentMethod} payment for table ${selectedTable.id}`
+    );
     try {
-      await API.put(`/api/staff/tables/${selectedTable.id}`, {
-        status: "AVAILABLE",
-      });
-
+      const failedOrders = [];
       if (selectedTable.orders && selectedTable.orders.length > 0) {
         for (const order of selectedTable.orders) {
           try {
-            await API.put(`/api/orders/${order.orderId}/payment`, {
-              paymentStatus: "PAID",
+            const response = await API.post("/api/payment/process", {
+              orderId: order.orderId,
+              paymentMethod,
+              amount: order.totalAmount,
+              confirmPayment:
+                paymentMethod === "CASH" || paymentMethod === "CARD",
             });
+            if (paymentMethod === "ONLINE" && response.data.paymentUrl) {
+              window.location.href = response.data.paymentUrl; // Redirect to VNPay
+              return;
+            }
           } catch (err) {
             console.error(
-              `Error updating payment for order ${order.orderId}:`,
+              `Error processing payment for order ${order.orderId}:`,
               err
             );
+            failedOrders.push(order.orderId);
           }
         }
       }
 
-      setTables((prevTables) =>
-        prevTables.map((table) =>
-          table.id === selectedTable.id
-            ? { ...table, status: "available", orders: [] }
-            : table
-        )
-      );
+      if (failedOrders.length > 0) {
+        setOrderError(
+          `Failed to process payments for orders: ${failedOrders.join(", ")}`
+        );
+        return;
+      }
+
+      // Fetch latest orders and tables
+      await fetchOrders();
+      const response = await API.get("/api/staff/tables");
+      if (response.data) {
+        const mappedTables = response.data.map((table) => ({
+          id: table.table_id,
+          status: table.status?.toLowerCase() || "available",
+          capacity: table.capacity,
+          orders: orders.filter(
+            (order) =>
+              order.tableNumber?.toString() === table.table_id.toString()
+          ),
+        }));
+        setTables(mappedTables);
+      }
 
       setIsPaymentModalOpen(false);
       setIsSuccessModalOpen(true);
     } catch (err) {
-      console.error("Error updating table status:", err);
+      console.error("Error processing payment:", err);
+      setOrderError("Failed to process payment");
       setIsPaymentModalOpen(false);
-      setIsSuccessModalOpen(true);
     }
   };
 
@@ -1652,7 +1735,11 @@ const TableManagementStaff = () => {
           title="Table Management"
           icon="https://img.icons8.com/ios-filled/50/FFFFFF/table.png"
         />
-
+        {socketError && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mx-auto w-[90%] mt-2">
+            {socketError}
+          </div>
+        )}
         <div
           style={{ marginTop: "30px" }}
           className="flex-1 flex justify-center items-center"
