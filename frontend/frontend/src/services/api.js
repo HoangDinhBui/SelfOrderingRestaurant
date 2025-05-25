@@ -188,14 +188,20 @@ export const logout = async () => {
   }
 };
 
-export const forgotPassword = async (login) => {
+export const forgotPassword = async ({ username, email }) => {
+  console.log("Sending forgotPassword request:", { username, email });
   try {
     const response = await publicAPI.post("/auth/forgot-password", {
-      login,
+      username,
+      email,
     });
     return response.data;
   } catch (error) {
-    handleApiError(error);
+    console.error(
+      "Forgot password error:",
+      error.response?.data,
+      error.response?.status
+    );
     throw error;
   }
 };
