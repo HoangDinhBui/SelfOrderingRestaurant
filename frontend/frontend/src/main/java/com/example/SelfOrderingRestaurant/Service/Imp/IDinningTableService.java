@@ -10,6 +10,7 @@ import java.util.List;
 
 public interface IDinningTableService {
     List<DinningTableResponseDTO> getAllTables();
+    DinningTableResponseDTO getTableById(Integer tableNumber);
     void updateTableStatus(Integer tableNumber, TableStatus status);
     DinningTableResponseDTO convertToResponseDTO(DinningTable dinningTable);
     DinningTableResponseDTO createTable(CreateTableRequestDTO request);

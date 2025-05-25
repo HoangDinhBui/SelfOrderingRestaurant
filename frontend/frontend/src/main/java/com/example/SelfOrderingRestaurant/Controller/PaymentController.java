@@ -2,12 +2,14 @@ package com.example.SelfOrderingRestaurant.Controller;
 
 import com.example.SelfOrderingRestaurant.Dto.Request.PaymentRequestDTO.PaymentVNPayRequestDTO;
 import com.example.SelfOrderingRestaurant.Dto.Request.PaymentRequestDTO.ProcessPaymentRequestDTO;
+import com.example.SelfOrderingRestaurant.Dto.Response.NotificationResponseDTO.NotificationResponseDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.PaymentResponseDTO.OrderPaymentDetailsDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.PaymentResponseDTO.PaymentResponseDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.PaymentResponseDTO.PaymentVNPayResponseDTO;
 import com.example.SelfOrderingRestaurant.Entity.DinningTable;
 import com.example.SelfOrderingRestaurant.Entity.Order;
 import com.example.SelfOrderingRestaurant.Entity.Payment;
+import com.example.SelfOrderingRestaurant.Enum.NotificationType;
 import com.example.SelfOrderingRestaurant.Enum.PaymentMethod;
 import com.example.SelfOrderingRestaurant.Enum.PaymentStatus;
 import com.example.SelfOrderingRestaurant.Enum.TableStatus;
@@ -15,6 +17,8 @@ import com.example.SelfOrderingRestaurant.Repository.DinningTableRepository;
 import com.example.SelfOrderingRestaurant.Repository.OrderRepository;
 import com.example.SelfOrderingRestaurant.Repository.PaymentRepository;
 import com.example.SelfOrderingRestaurant.Service.PaymentService;
+import com.example.SelfOrderingRestaurant.Service.WebSocketService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,6 +40,8 @@ public class PaymentController {
     private final PaymentRepository paymentRepository;
     private final OrderRepository orderRepository;
     private final DinningTableRepository tableRepository;
+    private final WebSocketService webSocketService;
+    private final ObjectMapper objectMapper;
 
     @PostMapping("/vnpay")
     public ResponseEntity<?> createPayment(@RequestBody PaymentVNPayRequestDTO request, HttpServletRequest httpRequest) {
@@ -268,38 +274,83 @@ public class PaymentController {
     }
 
     @PostMapping("/confirm")
-    public ResponseEntity<?> confirmPayment(@RequestBody Map<String, Object> request) {
+    public ResponseEntity<Map<String, Object>> confirmPayment(@RequestBody Map<String, Integer> request) {
+        Integer orderId = request.get("orderId");
+        log.info("Confirming payment for order ID: {}", orderId);
+
+        Payment payment = paymentRepository.findByOrder_OrderId(orderId);
+        if (payment == null) {
+            throw new IllegalArgumentException("Payment not found for order ID: " + orderId);
+        }
+        log.info("Found payment for order {}: transactionId={}, status={}, method={}",
+                orderId, payment.getTransactionId(), payment.getStatus(), payment.getPaymentMethod());
+
+        payment.setStatus(PaymentStatus.PAID);
+        paymentRepository.save(payment);
+
+        Order order = payment.getOrder();
+        order.setPaymentStatus(PaymentStatus.PAID);
+        orderRepository.save(order);
+
+        DinningTable table = order.getTables();
+        if (table != null) {
+            log.info("Before update: Table {} status is {} for order {}",
+                    table.getTableNumber(), table.getTableStatus(), orderId);
+            boolean hasUnpaidOrders = orderRepository.existsByTablesTableNumberAndPaymentStatus(
+                    table.getTableNumber(), PaymentStatus.UNPAID);
+            table.setTableStatus(hasUnpaidOrders ? TableStatus.OCCUPIED : TableStatus.AVAILABLE);
+            tableRepository.save(table);
+            log.info("After update: Table {} status updated to {} for order {}",
+                    table.getTableNumber(), table.getTableStatus(), orderId);
+        }
+
+        // Send WebSocket notification
+        sendPaymentStatusUpdatedMessage(order);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", "Payment confirmed successfully");
+        response.put("transactionId", payment.getTransactionId());
+        log.info("Payment confirmed successfully for order ID: {}", orderId);
+        return ResponseEntity.ok(response);
+    }
+
+    private void sendPaymentStatusUpdatedMessage(Order order) {
+        Map<String, Object> message = new HashMap<>();
+        message.put("type", "PAYMENT_STATUS_UPDATED");
+        message.put("orderId", order.getOrderId());
+        message.put("paymentStatus", order.getPaymentStatus().name());
+
+        DinningTable table = order.getTables();
+        if (table != null) {
+            message.put("tableNumber", table.getTableNumber());
+            message.put("tableStatus", table.getTableStatus().name());
+        } else {
+            log.warn("No table associated with order {}", order.getOrderId());
+        }
+
+        NotificationResponseDTO notification = NotificationResponseDTO.builder()
+                .orderId(order.getOrderId())
+                .tableNumber(table != null ? table.getTableNumber() : null)
+                .title("Payment Update")
+                .content("Payment status updated for order " + order.getOrderId())
+                .isRead(false)
+                .type(NotificationType.PAYMENT_REQUEST) // Ensure NotificationType.PAYMENT exists
+                .createAt(LocalDateTime.now())
+                .customPayload(message)
+                .build();
+
         try {
-            Integer orderId = (Integer) request.get("orderId");
-
-            if (orderId == null) {
-                return ResponseEntity.badRequest().body(Map.of(
-                        "success", false,
-                        "message", "Order ID cannot be null"
-                ));
-            }
-
-            confirmPayment(orderId);
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", true);
-            response.put("message", "Payment confirmed successfully");
-
-            Optional<Payment> paymentOptional = paymentRepository.findTopByOrder_OrderIdAndStatusOrderByPaymentDateDesc(orderId, PaymentStatus.PAID);
-
-            Payment planning = paymentOptional.orElse(null);
-
-            if (planning != null) {
-                response.put("transactionId", planning.getTransactionId());
-            }
-
-            return ResponseEntity.ok(response);
+            String messageJson = objectMapper.writeValueAsString(notification);
+            log.info("Sending WebSocket message: {}", messageJson);
+            webSocketService.sendNotificationToActiveStaff(notification);
+            log.info("Sent PAYMENT_STATUS_UPDATED for orderId: {}, tableNumber: {}, tableStatus: {}",
+                    order.getOrderId(),
+                    table != null ? table.getTableNumber() : "N/A",
+                    table != null ? table.getTableStatus().name() : "N/A");
         } catch (Exception e) {
-            log.error("Error confirming payment: {}", e.getMessage(), e);
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", false);
-            response.put("message", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+            log.error("Failed to send PAYMENT_STATUS_UPDATED for orderId: {}: {}",
+                    order.getOrderId(), e.getMessage(), e);
         }
     }
 

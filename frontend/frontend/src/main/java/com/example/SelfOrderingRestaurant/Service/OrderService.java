@@ -2,10 +2,12 @@ package com.example.SelfOrderingRestaurant.Service;
 
 import com.example.SelfOrderingRestaurant.Dto.Request.OrderRequestDTO.OrderItemDTO;
 import com.example.SelfOrderingRestaurant.Dto.Request.OrderRequestDTO.OrderRequestDTO;
+import com.example.SelfOrderingRestaurant.Dto.Response.NotificationResponseDTO.NotificationResponseDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.OrderResponseDTO.GetAllOrdersResponseDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.OrderResponseDTO.OrderResponseDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.OrderResponseDTO.OrderCartResponseDTO;
 import com.example.SelfOrderingRestaurant.Entity.*;
+import com.example.SelfOrderingRestaurant.Enum.NotificationType;
 import com.example.SelfOrderingRestaurant.Enum.OrderStatus;
 import com.example.SelfOrderingRestaurant.Enum.PaymentStatus;
 import com.example.SelfOrderingRestaurant.Entity.Key.OrderItemKey;
@@ -16,6 +18,7 @@ import com.example.SelfOrderingRestaurant.Exception.ValidationException;
 import com.example.SelfOrderingRestaurant.Repository.*;
 import com.example.SelfOrderingRestaurant.Security.SecurityUtils;
 import com.example.SelfOrderingRestaurant.Service.Imp.IOrderService;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -39,6 +43,7 @@ public class OrderService implements IOrderService {
     private final OrderCartService orderCartService;
     private final HttpServletRequest httpServletRequest;
     private final SecurityUtils securityUtils;
+    private final WebSocketService webSocketService;
 
     private static final Logger log = LoggerFactory.getLogger(OrderService.class);
 
@@ -51,7 +56,8 @@ public class OrderService implements IOrderService {
             CustomerRepository customerRepository,
             OrderCartService orderCartService,
             HttpServletRequest httpServletRequest,
-            SecurityUtils securityUtils) {
+            SecurityUtils securityUtils,
+            WebSocketService webSocketService) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.dishRepository = dishRepository;
@@ -60,6 +66,7 @@ public class OrderService implements IOrderService {
         this.orderCartService = orderCartService;
         this.httpServletRequest = httpServletRequest;
         this.securityUtils = securityUtils;
+        this.webSocketService = webSocketService;
     }
 
     @Transactional
@@ -70,43 +77,37 @@ public class OrderService implements IOrderService {
         DinningTable dinningTable = dinningTableRepository.findById(request.getTableId())
                 .orElseThrow(() -> new ResourceNotFoundException("Table not found with ID: " + request.getTableId()));
 
-        // Kiểm tra xem bàn đã có order chưa thanh toán hay chưa
         List<Order> existingOrders = orderRepository.findByTableNumberAndPaymentStatus(
                 dinningTable.getTableNumber(), PaymentStatus.UNPAID);
 
-        Order order;
+        final Order order;
         if (!existingOrders.isEmpty()) {
-            // Nếu có order chưa thanh toán, sử dụng order đầu tiên
             order = existingOrders.get(0);
             log.info("Found existing unpaid order with ID: {} for table {}", order.getOrderId(), dinningTable.getTableNumber());
-
-            // Cập nhật ghi chú nếu có
             if (request.getNotes() != null && !request.getNotes().isEmpty()) {
                 order.setNotes(request.getNotes());
             }
         } else {
-            // Nếu không có order chưa thanh toán, tạo order mới
             if (TableStatus.OCCUPIED.equals(dinningTable.getTableStatus())) {
                 throw new ValidationException("Table is already occupied");
             }
 
             Customer customer = getOrCreateCustomer(request);
 
-            order = new Order();
-            order.setCustomer(customer);
-            order.setTables(dinningTable);
-            order.setStatus(OrderStatus.PENDING);
-            order.setPaymentStatus(PaymentStatus.UNPAID);
-            order.setNotes(request.getNotes());
-            order.setOrderDate(new Date());
+            Order newOrder = new Order();
+            newOrder.setCustomer(customer);
+            newOrder.setTables(dinningTable);
+            newOrder.setStatus(OrderStatus.PENDING);
+            newOrder.setPaymentStatus(PaymentStatus.UNPAID);
+            newOrder.setNotes(request.getNotes());
+            newOrder.setOrderDate(new Date());
 
-            order = orderRepository.save(order);
+            order = orderRepository.save(newOrder);
             dinningTable.setTableStatus(TableStatus.OCCUPIED);
             dinningTableRepository.save(dinningTable);
             log.info("Created new order with ID: {} for table {}", order.getOrderId(), dinningTable.getTableNumber());
         }
 
-        // Xử lý các món trong order
         BigDecimal additionalAmount = processOrderItems(order, request.getItems());
         BigDecimal newTotalAmount = order.getTotalAmount() != null
                 ? order.getTotalAmount().add(additionalAmount)
@@ -116,6 +117,47 @@ public class OrderService implements IOrderService {
         orderRepository.save(order);
 
         orderCartService.clearCart();
+
+        // Send WebSocket message for new order
+        Map<String, Object> message = new HashMap<>();
+        message.put("type", "NEW_ORDER");
+        Map<String, Object> orderDetails = new HashMap<>();
+        orderDetails.put("orderId", order.getOrderId());
+        orderDetails.put("tableNumber", dinningTable.getTableNumber());
+        orderDetails.put("paymentStatus", order.getPaymentStatus().name());
+        orderDetails.put("totalAmount", order.getTotalAmount());
+        orderDetails.put("status", order.getStatus().name());
+        orderDetails.put("customerName", order.getCustomer().getFullname());
+        message.put("order", orderDetails);
+
+        webSocketService.sendNotificationToActiveStaff(new NotificationResponseDTO() {
+            @Override
+            public Integer getNotificationId() { return null; }
+            @Override
+            public String getTitle() { return null; }
+            @Override
+            public String getContent() { return null; }
+            @Override
+            public Boolean getIsRead() { return null; }
+            @Override
+            public NotificationType getType() { return null; }
+            @Override
+            public LocalDateTime getCreateAt() { return null; }
+            @Override
+            public Integer getTableNumber() { return dinningTable.getTableNumber(); }
+            @Override
+            public Integer getOrderId() { return order.getOrderId(); }
+
+            @Override
+            public String toJson() {
+                try {
+                    return new ObjectMapper().writeValueAsString(message);
+                } catch (Exception e) {
+                    log.error("Error serializing order message: {}", e.getMessage());
+                    return "{}";
+                }
+            }
+        });
 
         return order.getOrderId();
     }
