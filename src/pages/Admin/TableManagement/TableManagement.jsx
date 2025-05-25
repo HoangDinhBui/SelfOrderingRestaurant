@@ -1193,140 +1193,266 @@ const TableManagementAdmin = () => {
     );
   };
 
-  // Render Dish Modal
-  const renderDishModal = () => {
-    if (!isDishModalOpen || !selectedTable) return null;
+// Render Dish Modal
+const renderDishModal = () => {
+  if (!isDishModalOpen || !selectedTable) return null;
 
-    const orders = selectedTable.orders || [];
+  const orders = selectedTable.orders || [];
+
+  const handleUpdateStatus = (orderId, newStatus) => {
+    // Logic to update order status (placeholder, replace with API call if needed)
+    console.log(`Order ${orderId} updated to status: ${newStatus}`);
+    setSelectedTable((prev) => ({
+      ...prev,
+      orders: prev.orders.map((order) =>
+        order.orderId === orderId ? { ...order, status: newStatus } : order
+      ),
+    }));
+  };
+
+  const handleUpdateQuantity = (orderId, itemIndex, newQuantity) => {
+    // Logic to update quantity (placeholder, replace with API call if needed)
+    console.log(`Updated quantity for Item ${itemIndex} in Order ${orderId} to ${newQuantity}`);
+    setSelectedTable((prev) => ({
+      ...prev,
+      orders: prev.orders.map((order) =>
+        order.orderId === orderId
+          ? {
+              ...order,
+              items: order.items.map((item, idx) =>
+                idx === itemIndex ? { ...item, quantity: newQuantity } : item
+              ),
+            }
+          : order
+      ),
+    }));
+  };
+
+  const handleDeleteItem = (orderId, itemIndex) => {
+    // Logic to delete item (placeholder, replace with API call if needed)
+    console.log(`Deleted Item ${itemIndex} in Order ${orderId}`);
+    setSelectedTable((prev) => ({
+      ...prev,
+      orders: prev.orders.map((order) =>
+        order.orderId === orderId
+          ? {
+              ...order,
+              items: order.items.filter((_, idx) => idx !== itemIndex),
+            }
+          : order
+      ),
+    }));
+  };
+
+  const getStatusButton = (orderId, status) => {
+    const statusLower = status?.toLowerCase();
+    let bgColor, text;
+
+    switch (statusLower) {
+      case "complete":
+        bgColor = "bg-green-500";
+        text = "Complete";
+        break;
+      case "processing":
+        bgColor = "bg-yellow-500";
+        text = "Processing";
+        break;
+      case "pending":
+        bgColor = "bg-blue-500";
+        text = "Pending";
+        break;
+      case "cancel":
+        bgColor = "bg-red-500";
+        text = "Cancel";
+        break;
+      default:
+        bgColor = "bg-gray-500";
+        text = "Unknown";
+    }
+
+    const statusOptions = ["pending", "processing", "complete", "cancel"].filter(
+      (s) => s !== statusLower
+    );
 
     return (
-      <div className="fixed inset-0 flex items-center justify-center z-50">
-        <div
-          className="absolute inset-0"
-          style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
-          onClick={() => setIsDishModalOpen(false)}
-        ></div>
-        <div className="bg-white rounded-lg shadow-lg p-6 w-1/2 max-h-[80vh] overflow-y-auto relative z-50">
-          <div className="flex justify-between items-center mb-4 border-b pb-2">
-            <h2 className="text-xl font-bold">
-              Table {selectedTable.id || "Unknown"} - Unpaid Orders
-            </h2>
-            <button
-              className="text-gray-500 hover:text-gray-700"
-              onClick={() => setIsDishModalOpen(false)}
-            >
-              ✕
-            </button>
-          </div>
-          <div className="space-y-4">
-            {orderLoading && (
-              <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
-                <span className="ml-2 text-gray-600">Loading orders...</span>
-              </div>
-            )}
-            {orderError && (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
-                {orderError}
-              </div>
-            )}
-            {!orderLoading && !orderError && (
-              <>
-                {orders.length === 0 ? (
-                  <div className="text-center py-10 text-gray-500">
-                    No unpaid orders for this table
-                  </div>
-                ) : (
-                  <div>
-                    {orders.map((order) => (
-                      <div key={order.orderId} className="mb-6">
-                        <h3 className="font-semibold text-lg mb-2">
-                          Order #{order.orderId}
-                        </h3>
-                        <table className="w-full border-collapse">
-                          <thead>
-                            <tr className="bg-gray-100">
-                              <th className="text-left py-2 px-4">Dish Name</th>
-                              <th className="text-left py-2 px-4">Quantity</th>
-                              <th className="text-left py-2 px-4">Price</th>
-                              <th className="text-left py-2 px-4">Notes</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {order.items && order.items.length > 0 ? (
-                              order.items.map((item, index) => (
-                                <tr
-                                  key={`${order.orderId}-item-${index}`}
-                                  className="border-b hover:bg-gray-50"
-                                >
-                                  <td className="py-2 px-4">
-                                    {item.dishName || "—"}
-                                  </td>
-                                  <td className="py-2 px-4">
-                                    {item.quantity || "—"}
-                                  </td>
-                                  <td className="py-2 px-4">
-                                    {item.price
-                                      ? `${parseFloat(
-                                          item.price
-                                        ).toLocaleString("vi-VN")} VND`
-                                      : "—"}
-                                  </td>
-                                  <td className="py-2 px-4">
-                                    {item.notes || "—"}
-                                  </td>
-                                </tr>
-                              ))
-                            ) : (
-                              <tr>
-                                <td
-                                  colSpan="4"
-                                  className="py-2 px-4 text-center text-gray-500"
-                                >
-                                  No items in this order
-                                </td>
-                              </tr>
-                            )}
-                          </tbody>
-                        </table>
-                        <p className="mt-2 text-right font-semibold">
-                          Order Total:{" "}
-                          {order.totalAmount
-                            ? parseFloat(order.totalAmount).toLocaleString(
-                                "vi-VN"
-                              ) + " VND"
-                            : "0 VND"}
-                        </p>
-                      </div>
-                    ))}
-                    <p className="text-right font-bold text-lg mt-4">
-                      Table Total: {totalAmount.toLocaleString("vi-VN")} VND
-                    </p>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-          {!orderLoading && !orderError && orders.length > 0 && (
-            <div className="mt-4 flex justify-end space-x-4">
+      <div className="relative inline-block">
+        <button
+          className={`${bgColor} text-white py-1 px-2 rounded`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {text}
+        </button>
+        {statusLower === "pending" && (
+          <div className="absolute left-0 mt-1 w-32 bg-white border border-gray-300 rounded shadow-lg z-10">
+            {statusOptions.map((option) => (
               <button
-                className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded"
-                onClick={() => setIsDishModalOpen(false)}
+                key={option}
+                className="block w-full text-left px-2 py-1 hover:bg-gray-100"
+                onClick={() => handleUpdateStatus(orderId, option)}
               >
-                Close
+                {option.charAt(0).toUpperCase() + option.slice(1)}
               </button>
-              <button
-                className="!bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded"
-                onClick={handleShowPaymentModal}
-              >
-                Process Payment
-              </button>
-            </div>
-          )}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     );
   };
+
+  return (
+    <div className="fixed inset-0 flex items-center justify-center z-50">
+      <div
+        className="absolute inset-0"
+        style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
+        onClick={() => setIsDishModalOpen(false)}
+      ></div>
+      <div className="bg-white rounded-lg shadow-lg p-6 w-1/2 max-h-[80vh] overflow-y-auto relative z-50">
+        <div className="flex justify-between items-center mb-4 border-b pb-2">
+          <h2 className="text-xl font-bold">
+            Table {selectedTable.id || "Unknown"} - Unpaid Orders
+          </h2>
+          <button
+            className="text-gray-500 hover:text-gray-700"
+            onClick={() => setIsDishModalOpen(false)}
+          >
+            ✕
+          </button>
+        </div>
+        <div className="space-y-4">
+          {orderLoading && (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+              <span className="ml-2 text-gray-600">Loading orders...</span>
+            </div>
+          )}
+          {orderError && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
+              {orderError}
+            </div>
+          )}
+          {!orderLoading && !orderError && (
+            <>
+              {orders.length === 0 ? (
+                <div className="text-center py-10 text-gray-500">
+                  No unpaid orders for this table
+                </div>
+              ) : (
+                <div>
+                  {orders.map((order) => (
+                    <div key={order.orderId} className="mb-6">
+                      <h3 className="font-semibold text-lg mb-2">
+                        Order #{order.orderId}
+                      </h3>
+                      <table className="w-full border-collapse">
+                        <thead>
+                          <tr className="bg-gray-100">
+                            <th className="text-left py-2 px-4">Dish Name</th>
+                            <th className="text-left py-2 px-4">Quantity</th>
+                            <th className="text-left py-2 px-4">Price</th>
+                            <th className="text-left py-2 px-4">Notes</th>
+                            <th className="text-left py-2 px-4">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {order.items && order.items.length > 0 ? (
+                            order.items.map((item, index) => (
+                              <tr
+                                key={`${order.orderId}-item-${index}`}
+                                className="border-b hover:bg-gray-50"
+                              >
+                                <td className="py-2 px-4">
+                                  {item.dishName || "—"}
+                                </td>
+                                <td className="py-2 px-4">
+                                  {order.status?.toLowerCase() === "pending" ? (
+                                    <input
+                                      type="number"
+                                      value={item.quantity || 0}
+                                      onChange={(e) =>
+                                        handleUpdateQuantity(
+                                          order.orderId,
+                                          index,
+                                          parseInt(e.target.value) || 0
+                                        )
+                                      }
+                                      className="w-16 border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      min="0"
+                                    />
+                                  ) : (
+                                    item.quantity || "—"
+                                  )}
+                                </td>
+                                <td className="py-2 px-4">
+                                  {item.price
+                                    ? `${parseFloat(item.price).toLocaleString("vi-VN")} VND`
+                                    : "—"}
+                                </td>
+                                <td className="py-2 px-4">
+                                  {item.notes || "—"}
+                                </td>
+                                <td className="py-2 px-4">
+                                  <div className="flex items-center space-x-2">
+                                    {getStatusButton(order.orderId, order.status || "pending")}
+                                    {order.status?.toLowerCase() === "pending" && (
+                                      <button
+                                        className="bg-red-500 hover:bg-red-600 text-white py-1 px-2 rounded"
+                                        onClick={() => handleDeleteItem(order.orderId, index)}
+                                      >
+                                        Delete
+                                      </button>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            ))
+                          ) : (
+                            <tr>
+                              <td
+                                colSpan="5"
+                                className="py-2 px-4 text-center text-gray-500"
+                              >
+                                No items in this order
+                              </td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                      <p className="mt-2 text-right font-semibold">
+                        Order Total:{" "}
+                        {order.totalAmount
+                          ? parseFloat(order.totalAmount).toLocaleString("vi-VN") + " VND"
+                          : "0 VND"}
+                      </p>
+                    </div>
+                  ))}
+                  <p className="text-right font-bold text-lg mt-4">
+                    Table Total: {totalAmount.toLocaleString("vi-VN")} VND
+                  </p>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+        {!orderLoading && !orderError && orders.length > 0 && (
+          <div className="mt-4 flex justify-end space-x-4">
+            <button
+              className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded"
+              onClick={() => setIsDishModalOpen(false)}
+            >
+              Close
+            </button>
+            <button
+              className="!bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded"
+              onClick={handleShowPaymentModal}
+            >
+              Process Payment
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
 
   // Render Payment Modal
   const renderPaymentModal = () => {
