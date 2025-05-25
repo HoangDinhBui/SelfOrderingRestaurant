@@ -77,7 +77,7 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route
                 path="/dish-management"
-                element={<DishManagementAdmin />}
+                element={<DishManagementStaff />}
               />
               <Route
                 path="/notification-management"
@@ -111,7 +111,7 @@ function App() {
 
               {/* Staff Routes */}
               <Route
-                path="/dish-management_staff"
+                path="/dish-management"
                 element={<DishManagementStaff />}
               />
               <Route
