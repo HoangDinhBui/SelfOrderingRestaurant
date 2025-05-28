@@ -3,17 +3,19 @@ package com.example.SelfOrderingRestaurant.Service;
 import com.example.SelfOrderingRestaurant.Dto.Request.InventoryRequestDTO.CreateInventoryRequestDTO;
 import com.example.SelfOrderingRestaurant.Dto.Request.InventoryRequestDTO.UpdateInventoryRequestDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.InventoryResponseDTO.GetInventoryResponseDTO;
+import com.example.SelfOrderingRestaurant.Dto.Response.InventoryResponseDTO.RemainingInventoryResponseDTO;
 import com.example.SelfOrderingRestaurant.Entity.Ingredient;
 import com.example.SelfOrderingRestaurant.Entity.Inventory;
 import com.example.SelfOrderingRestaurant.Entity.Supplier;
 import com.example.SelfOrderingRestaurant.Repository.IngredientRepository;
 import com.example.SelfOrderingRestaurant.Repository.InventoryRepository;
+import com.example.SelfOrderingRestaurant.Repository.DishIngredientRepository;
 import com.example.SelfOrderingRestaurant.Repository.SupplierRepository;
 import com.example.SelfOrderingRestaurant.Service.Imp.IInventoryService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -29,8 +31,11 @@ public class InventoryService implements IInventoryService {
 
     private final IngredientRepository ingredientRepository;
 
+    private final DishIngredientRepository dishIngredientRepository;
 
     private final SupplierRepository supplierRepository;
+
+
 
     @Transactional
     @Override
@@ -110,5 +115,81 @@ public class InventoryService implements IInventoryService {
             return true;
         }
         return false;
+    }
+
+    @Transactional
+    @Override
+    public RemainingInventoryResponseDTO getRemainingInventoryByIngredientId(Integer ingredientId) {
+        // Tìm inventory theo ingredientId
+        Inventory inventory = inventoryRepository.findByIngredientIngredientId(ingredientId)
+                .orElseThrow(() -> new RuntimeException("Inventory not found for ingredient ID: " + ingredientId));
+
+        // Tính tổng số lượng đã sử dụng từ dish_ingredients
+        BigDecimal totalUsedQuantity = dishIngredientRepository.getTotalQuantityUsedByIngredientId(ingredientId);
+        if (totalUsedQuantity == null) {
+            totalUsedQuantity = BigDecimal.ZERO;
+        }
+
+        // Tính số lượng còn lại
+        Double remainingQuantity = inventory.getQuantity() - totalUsedQuantity.doubleValue();
+
+        // Kiểm tra số lượng còn lại không âm
+        if (remainingQuantity < 0) {
+            throw new RuntimeException("Remaining quantity cannot be negative for ingredient ID: " + ingredientId);
+        }
+
+        // Cập nhật quantity trong inventory
+        inventory.setQuantity(remainingQuantity);
+        inventory.setLastUpdated(new Date());
+        inventoryRepository.save(inventory);
+
+        // Lấy thông tin ingredient
+        Ingredient ingredient = inventory.getIngredient();
+
+        // Trả về DTO
+        return new RemainingInventoryResponseDTO(
+                ingredient.getIngredientId(),
+                inventory.getInventoryId(),
+                ingredient.getName(),
+                ingredient.getSupplier() != null ? ingredient.getSupplier().getName() : "N/A",
+                remainingQuantity,
+                inventory.getUnit(),
+                inventory.getLastUpdated()
+        );
+    }
+
+    @Transactional
+    @Override
+    public List<RemainingInventoryResponseDTO> getAllRemainingInventories() {
+        List<Inventory> inventories = inventoryRepository.findAll();
+
+        return inventories.stream().map(inventory -> {
+            Integer ingredientId = inventory.getIngredient().getIngredientId();
+            BigDecimal totalUsedQuantity = dishIngredientRepository.getTotalQuantityUsedByIngredientId(ingredientId);
+            if (totalUsedQuantity == null) {
+                totalUsedQuantity = BigDecimal.ZERO;
+            }
+            Double remainingQuantity = inventory.getQuantity() - totalUsedQuantity.doubleValue();
+
+            // Kiểm tra số lượng còn lại không âm
+            if (remainingQuantity < 0) {
+                throw new RuntimeException("Remaining quantity cannot be negative for ingredient ID: " + ingredientId);
+            }
+
+            // Cập nhật quantity trong inventory
+            inventory.setQuantity(remainingQuantity);
+            inventory.setLastUpdated(new Date());
+            inventoryRepository.save(inventory);
+
+            return new RemainingInventoryResponseDTO(
+                    inventory.getIngredient().getIngredientId(),
+                    inventory.getInventoryId(),
+                    inventory.getIngredient().getName(),
+                    inventory.getIngredient().getSupplier() != null ? inventory.getIngredient().getSupplier().getName() : "N/A",
+                    remainingQuantity,
+                    inventory.getUnit(),
+                    inventory.getLastUpdated()
+            );
+        }).collect(Collectors.toList());
     }
 }

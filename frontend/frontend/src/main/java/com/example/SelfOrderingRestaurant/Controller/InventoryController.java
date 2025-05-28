@@ -15,6 +15,7 @@ public class InventoryController {
 
     private final InventoryService inventoryService;
 
+
     @GetMapping
     public ResponseEntity<?> getAllInventories() {
         return ResponseEntity.ok(inventoryService.getAllInventories());
@@ -43,5 +44,19 @@ public class InventoryController {
             return ResponseEntity.ok("Inventory deleted");
         }
         return ResponseEntity.notFound().build();
+    }
+
+    @GetMapping("/remaining/{ingredientId}")
+    public ResponseEntity<?> getRemainingInventoryByIngredientId(@PathVariable Integer ingredientId) {
+        try {
+            return ResponseEntity.ok(inventoryService.getRemainingInventoryByIngredientId(ingredientId));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    @GetMapping("/remaining")
+    public ResponseEntity<?> getAllRemainingInventories() {
+        return ResponseEntity.ok(inventoryService.getAllRemainingInventories());
     }
 }
