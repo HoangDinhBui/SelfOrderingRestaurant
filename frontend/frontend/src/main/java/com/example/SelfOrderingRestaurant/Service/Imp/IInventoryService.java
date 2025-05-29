@@ -21,4 +21,7 @@ public interface IInventoryService {
 
     @Transactional
     List<RemainingInventoryResponseDTO> getAllRemainingInventories();
+
+    @Transactional(readOnly = true)
+    List<RemainingInventoryResponseDTO> getAvailableInventories();
 }
