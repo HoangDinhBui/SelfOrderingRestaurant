@@ -76,7 +76,7 @@ function App() {
               {/* Admin Routes */}
               <Route path="/login" element={<Login />} />
               <Route
-                path="/dish-management"
+                path="/dish-management_staff"
                 element={<DishManagementStaff />}
               />
               <Route

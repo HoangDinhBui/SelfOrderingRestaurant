@@ -11,48 +11,38 @@ const GET_ORDERS = gql`
       tableNumber
       status
       paymentStatus
+      totalAmount
       items {
         dishId
         dishName
         quantity
         notes
         price
-      }
-    }
-  }
-`;
-
-const REMOVE_ORDER_ITEM = gql`
-  mutation RemoveOrderItem($orderId: ID!, $dishId: ID!) {
-    removeOrderItem(orderId: $orderId, dishId: $dishId) {
-      orderId
-      tableNumber
-      status
-      paymentStatus
-      items {
-        dishId
-        dishName
-        quantity
-        notes
-        price
+        status
       }
     }
   }
 `;
 
 const UPDATE_ORDER_ITEM_STATUS = gql`
-  mutation UpdateOrderItemStatus($orderId: ID!, $dishId: ID!, $status: String!) {
+  mutation UpdateOrderItemStatus(
+    $orderId: ID!
+    $dishId: ID!
+    $status: String!
+  ) {
     updateOrderItemStatus(orderId: $orderId, dishId: $dishId, status: $status) {
       orderId
       tableNumber
       status
       paymentStatus
+      totalAmount
       items {
         dishId
         dishName
         quantity
         notes
         price
+        status
       }
     }
   }
@@ -62,10 +52,8 @@ const DishManagementStaff = () => {
   const [selectedOrderId, setSelectedOrderId] = useState("");
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
-  // Local state to track item statuses
   const [itemStatuses, setItemStatuses] = useState({});
 
-  // Fetch unpaid orders
   const { loading, error, data, refetch } = useQuery(GET_ORDERS, {
     onCompleted: (data) => {
       console.log("Query completed with data:", data);
@@ -79,56 +67,6 @@ const DishManagementStaff = () => {
     },
   });
 
-  // Log query state
-  console.log("Query state:", { loading, error, data });
-
-  // Filter items for the selected order
-  const selectedOrder = data?.orders?.find(
-    (order) => order.orderId === selectedOrderId
-  );
-  const orderItems = selectedOrder
-    ? selectedOrder.items.map((item, index) => {
-        const itemId = `${selectedOrder.orderId}-${item.dishId}-${index}`;
-        return {
-          id: itemId,
-          orderId: selectedOrder.orderId,
-          dishId: item.dishId,
-          table: selectedOrder.tableNumber,
-          name: item.dishName,
-          quantity: item.quantity,
-          note: item.notes || "",
-          status: itemStatuses[itemId] || "PENDING", // Use local status
-        };
-      })
-    : [];
-
-  // Log orderItems
-  console.log("Selected order:", selectedOrder);
-  console.log("Transformed orderItems:", orderItems);
-
-  // Delete order item
-  const [removeOrderItem] = useMutation(REMOVE_ORDER_ITEM, {
-    update(cache, { data: { removeOrderItem } }) {
-      const { orders } = cache.readQuery({ query: GET_ORDERS });
-      cache.writeQuery({
-        query: GET_ORDERS,
-        data: {
-          orders: orders.map((order) =>
-            order.orderId === removeOrderItem.orderId ? removeOrderItem : order
-          ),
-        },
-      });
-    },
-    onCompleted: () => {
-      toast.success("Item deleted successfully");
-    },
-    onError: (error) => {
-      console.log("Mutation error:", error);
-      toast.error("Failed to delete item: " + error.message);
-    },
-  });
-
-  // Update order item status
   const [updateOrderItemStatus] = useMutation(UPDATE_ORDER_ITEM_STATUS, {
     update(cache, { data: { updateOrderItemStatus } }) {
       const { orders } = cache.readQuery({ query: GET_ORDERS });
@@ -145,6 +83,7 @@ const DishManagementStaff = () => {
     },
     onCompleted: () => {
       toast.success("Item status updated successfully");
+      refetch(); // Force refetch to ensure latest data
     },
     onError: (error) => {
       console.log("Mutation error:", error);
@@ -152,57 +91,36 @@ const DishManagementStaff = () => {
     },
   });
 
-  // Handle delete click
-  const handleDeleteClick = (id) => {
-    setItemToDelete(id);
-    setShowConfirmation(true);
-  };
+  const selectedOrder = data?.orders?.find(
+    (order) => order.orderId === selectedOrderId
+  );
+  const orderItems = selectedOrder
+    ? selectedOrder.items.map((item, index) => ({
+        id: `${selectedOrder.orderId}-${item.dishId}-${index}`,
+        orderId: selectedOrder.orderId,
+        dishId: item.dishId,
+        table: selectedOrder.tableNumber,
+        name: item.dishName,
+        quantity: item.quantity,
+        note: item.notes || "",
+        status: item.status || "PENDING",
+      }))
+    : [];
 
-  // Confirm deletion
-  const confirmDelete = async () => {
-    if (itemToDelete) {
-      const item = orderItems.find((i) => i.id === itemToDelete);
-      if (item) {
-        try {
-          await removeOrderItem({
-            variables: {
-              orderId: item.orderId.toString(),
-              dishId: item.dishId.toString(),
-            },
-          });
-          // Remove local status
-          setItemStatuses((prev) => {
-            const newStatuses = { ...prev };
-            delete newStatuses[item.id];
-            return newStatuses;
-          });
-        } catch (err) {
-          console.error("Error deleting item:", err);
-        }
-      }
-      setShowConfirmation(false);
-      setItemToDelete(null);
-    }
-  };
-
-  // Cancel deletion
-  const cancelDelete = () => {
-    setShowConfirmation(false);
-    setItemToDelete(null);
-  };
-
-  // Handle retry
-  const handleRetry = async () => {
-    try {
-      await refetch();
-      toast.info("Retrying query...");
-    } catch (err) {
-      toast.error("Retry failed: " + err.message);
-    }
-  };
-
-  // Handle status change (Nhận, Xong, Hủy)
   const handleStatusChange = async (item, newStatus) => {
+    const validTransitions = {
+      PENDING: ["PROCESSING", "CANCELLED"],
+      PROCESSING: ["COMPLETED", "CANCELLED"],
+    };
+    if (!validTransitions[item.status]?.includes(newStatus)) {
+      toast.error(
+        `Invalid status transition from ${item.status} to ${newStatus}`
+      );
+      return;
+    }
+    console.log(
+      `Updating item ${item.dishId} in order ${item.orderId} from ${item.status} to ${newStatus}`
+    );
     try {
       await updateOrderItemStatus({
         variables: {
@@ -211,11 +129,6 @@ const DishManagementStaff = () => {
           status: newStatus,
         },
       });
-      // Update local status
-      setItemStatuses((prev) => ({
-        ...prev,
-        [item.id]: newStatus,
-      }));
     } catch (err) {
       console.error("Error updating status:", err);
     }
@@ -301,29 +214,36 @@ const DishManagementStaff = () => {
                           {item.status === "PENDING" ? (
                             <button
                               className="px-4 py-1 bg-green-500 text-white rounded hover:bg-green-600"
-                              onClick={() => handleStatusChange(item, "ACCEPTED")}
-                              style={({ backgroundColor: "#8DD8FF" })} 
+                              onClick={() =>
+                                handleStatusChange(item, "PROCESSING")
+                              } // Correct
+                              style={{ backgroundColor: "#8DD8FF" }}
                             >
-                              Accepted
+                              Nhận
                             </button>
-                          ) : item.status === "ACCEPTED" ? (
+                          ) : item.status === "PROCESSING" ? (
                             <button
                               className="px-4 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
-                              onClick={() => handleStatusChange(item, "COMPLETE")}
-                              style={({ backgroundColor: "#4CAF50" })} 
+                              onClick={() =>
+                                handleStatusChange(item, "COMPLETED")
+                              } // Correct
+                              style={{ backgroundColor: "#4CAF50" }}
                             >
-                              Done
+                              Xong
                             </button>
                           ) : null}
-                          {item.status !== "CANCEL" && item.status !== "COMPLETE" && (
-                            <button
-                              className="px-4 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-                              onClick={() => handleStatusChange(item, "CANCEL")}
-                              style={({ backgroundColor: "#F44336" })}
-                            >
-                              Cancel
-                            </button>
-                          )}
+                          {item.status !== "CANCEL" &&
+                            item.status !== "COMPLETE" && (
+                              <button
+                                className="px-4 py-1 bg-red-500 text-white rounded hover:bg-red-600"
+                                onClick={() =>
+                                  handleStatusChange(item, "CANCEL")
+                                }
+                                style={{ backgroundColor: "#F44336" }}
+                              >
+                                Cancel
+                              </button>
+                            )}
                         </td>
                       </tr>
                     ))}
