@@ -17,7 +17,7 @@ const Menu = () => {
   const { addToCartGraphQL, updateCartWithGraphQLData, fetchCartData } =
     useContext(CartContext);
 
-  // Lấy tableNumber từ query params hoặc localStorage
+  // Retrieve tableNumber from query params or localStorage
   const { search } = useLocation();
   const queryParams = new URLSearchParams(search);
   const tableNumberFromUrl = queryParams.get("tableNumber");
@@ -35,44 +35,64 @@ const Menu = () => {
   const [quantities, setQuantities] = useState({});
   const [notes, setNotes] = useState({});
   const [loadingDish, setLoadingDish] = useState(null);
+  const [inventory, setInventory] = useState([]);
+  const [dishIngredients, setDishIngredients] = useState([]);
 
   useEffect(() => {
-    const fetchDishes = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const response = await fetch("http://localhost:8080/api/dishes");
 
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
+        // Fetch dishes
+        const dishesResponse = await fetch("http://localhost:8080/api/dishes");
+        if (!dishesResponse.ok) {
+          throw new Error(`HTTP error! Status: ${dishesResponse.status}`);
         }
+        const dishesData = await dishesResponse.json();
 
-        const data = await response.json();
-        setDishes(data);
+        // Fetch available inventory
+        const inventoryResponse = await fetch("http://localhost:8080/api/inventory/available");
+        if (!inventoryResponse.ok) {
+          throw new Error(`HTTP error! Status: ${inventoryResponse.status}`);
+        }
+        const inventoryData = await inventoryResponse.json();
 
-        const initialQuantities = data.reduce((acc, dish) => {
+        // Fetch dish-ingredients
+        const dishIngredientsResponse = await fetch("http://localhost:8080/api/dish_ingredients");
+        if (!dishIngredientsResponse.ok) {
+          throw new Error(`HTTP error! Status: ${dishIngredientsResponse.status}`);
+        }
+        const dishIngredientsData = await dishIngredientsResponse.json();
+
+        // Initialize quantities and notes
+        const initialQuantities = dishesData.reduce((acc, dish) => {
           acc[dish.dishId] = 1;
           return acc;
         }, {});
         setQuantities(initialQuantities);
 
-        const initialNotes = data.reduce((acc, dish) => {
+        const initialNotes = dishesData.reduce((acc, dish) => {
           acc[dish.dishId] = "";
           return acc;
         }, {});
         setNotes(initialNotes);
 
+        // Set state
+        setDishes(dishesData);
+        setInventory(inventoryData);
+        setDishIngredients(dishIngredientsData);
         setLoading(false);
       } catch (err) {
-        setError("Failed to fetch menu items");
+        setError("Failed to load dish list or inventory data");
         setLoading(false);
-        console.error("Error fetching dishes:", err);
+        console.error("Error loading data:", err);
       }
     };
 
-    fetchDishes();
+    fetchData();
     fetchCartData();
 
-    // Đồng bộ tableNumber
+    // Synchronize tableNumber
     if (
       tableNumberFromUrl &&
       !isNaN(tableNumberFromUrl) &&
@@ -92,6 +112,31 @@ const Menu = () => {
     console.log("Menu - tableNumber:", tableNumber);
   }, [fetchCartData, tableNumberFromUrl]);
 
+  // Function to check if a dish has sufficient ingredients
+  const hasSufficientIngredients = (dishId) => {
+    // Retrieve the list of ingredients required for the dish
+    const requiredIngredients = dishIngredients.filter(
+      (di) => di.dishId === dishId
+    );
+
+    // If no ingredients are found, return false
+    if (requiredIngredients.length === 0) {
+      return false; // Dish has no ingredient information, do not display
+    }
+
+    // Check each ingredient
+    for (const req of requiredIngredients) {
+      const inventoryItem = inventory.find(
+        (inv) => inv.ingredientId === req.ingredientId
+      );
+      if (!inventoryItem || inventoryItem.remainingQuantity < req.quantity) {
+        return false; // Insufficient ingredients or ingredient does not exist
+      }
+    }
+    return true; // Sufficient ingredients
+  };
+
+  // Filter dishes based on search, category, and ingredients
   const filteredItems = dishes.filter((item) => {
     const itemName = item.dishName || "";
     const matchesSearch = itemName
@@ -101,7 +146,8 @@ const Menu = () => {
       selectedCategory === "All" ||
       (item.categoryName &&
         item.categoryName.toLowerCase() === selectedCategory.toLowerCase());
-    return matchesSearch && matchesCategory;
+    const hasIngredients = hasSufficientIngredients(item.dishId);
+    return matchesSearch && matchesCategory && hasIngredients;
   });
 
   const handleIncreaseQuantity = (dishId) => {
@@ -119,7 +165,7 @@ const Menu = () => {
   };
 
   const handleViewDish = (dishId) => {
-    console.log(`View dish with ID: ${dishId}`);
+    console.log(`Viewing dish with ID: ${dishId}`);
     navigate(`/viewitem/${dishId}`);
   };
 
@@ -231,7 +277,7 @@ const Menu = () => {
 
   const handleNote = (dishId) => {
     const currentNote = notes[dishId] || "";
-    const newNote = prompt("Add a note for this dish:", currentNote);
+    const newNote = prompt("Add note for the dish:", currentNote);
 
     if (newNote !== null) {
       setNotes((prev) => ({
@@ -326,7 +372,7 @@ const Menu = () => {
         <div className="mb-4">
           <input
             type="text"
-            placeholder="Search in menu"
+            placeholder="Search"
             className="w-full py-2.5 px-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -343,7 +389,7 @@ const Menu = () => {
               <button
                 key={category.id}
                 onClick={() => {
-                  console.log("Selecting category:", category.name);
+                  console.log("Selected category:", category.name);
                   setSelectedCategory(category.name);
                 }}
                 style={{
@@ -390,7 +436,7 @@ const Menu = () => {
                       <span>{item.categoryName}</span>
                     </div>
                     <div className="font-semibold text-sm mt-0.5">
-                      {Number(item.price).toLocaleString("vi-VN")} VNĐ
+                      {Number(item.price).toLocaleString("en-US")} VNĐ
                     </div>
                     {item.description && (
                       <div className="text-xs text-gray-600 mt-0.5 line-clamp-1">
@@ -472,7 +518,7 @@ const Menu = () => {
             ))
           ) : (
             <p className="text-center text-gray-500 py-6 text-sm">
-              No dishes match your search or filter criteria.
+              No dishes match the search criteria or category.
             </p>
           )}
         </div>
