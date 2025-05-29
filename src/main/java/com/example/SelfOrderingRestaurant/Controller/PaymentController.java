@@ -27,6 +27,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -183,6 +184,9 @@ public class PaymentController {
             Payment payment = new Payment();
             payment.setOrder(order);
             payment.setCustomer(order.getCustomer());
+            if (order.getTotalAmount() == null || order.getTotalAmount().compareTo(BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException("Order total amount must be greater than zero");
+            }
             payment.setAmount(order.getTotalAmount());
             payment.setPaymentMethod(method);
             payment.setStatus(confirmPayment ? PaymentStatus.PAID : PaymentStatus.UNPAID);

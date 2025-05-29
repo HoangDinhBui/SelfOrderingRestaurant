@@ -23,26 +23,20 @@ public class SecurityUtils {
     @Autowired
     private JwtTokenService jwtTokenService;
 
-    /**
-     * Check if the current user is authenticated
-     * @return true if the user is authenticated, false otherwise
-     */
     public boolean isAuthenticated() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
+        log.info("Authentication: {}", authentication);
         if (authentication == null || !authentication.isAuthenticated() ||
                 authentication.getPrincipal().equals("anonymousUser")) {
+            log.warn("Authentication check failed: null={}, isAuthenticated={}, principal={}",
+                    authentication == null,
+                    authentication != null ? authentication.isAuthenticated() : false,
+                    authentication != null ? authentication.getPrincipal() : null);
             return false;
         }
-
         return true;
     }
 
-    /**
-     * Check if the current user has the specified role
-     * @param role The role to check (without the "ROLE_" prefix)
-     * @return true if the user has the role, false otherwise
-     */
     public boolean hasRole(String role) {
         if (!isAuthenticated()) {
             return false;
@@ -55,10 +49,6 @@ public class SecurityUtils {
                 .anyMatch(authority -> authority.getAuthority().equals(roleWithPrefix));
     }
 
-    /**
-     * Get the current authenticated user's username
-     * @return the username of the authenticated user, or null if not authenticated
-     */
     public String getCurrentUsername() {
         if (!isAuthenticated()) {
             return null;
@@ -72,10 +62,6 @@ public class SecurityUtils {
         return authentication.getName();
     }
 
-    /**
-     * Get the roles of the current authenticated user
-     * @return List of role names (without the "ROLE_" prefix)
-     */
     public List<String> getCurrentUserRoles() {
         if (!isAuthenticated()) {
             return List.of();
@@ -89,35 +75,18 @@ public class SecurityUtils {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Check if the current user is an admin
-     * @return true if the user has the ADMIN role, false otherwise
-     */
     public boolean isAdmin() {
         return hasRole("ADMIN");
     }
 
-    /**
-     * Check if the current user is a staff member (including admins)
-     * @return true if the user has the STAFF or ADMIN role, false otherwise
-     */
     public boolean isStaff() {
         return hasRole("STAFF") || hasRole("ADMIN");
     }
 
-    /**
-     * Check if the current user is a customer
-     * @return true if the user has the CUSTOMER role, false otherwise
-     */
     public boolean isCustomer() {
         return hasRole("CUSTOMER");
     }
 
-    /**
-     * Validate a JWT token string
-     * @param token The JWT token to validate
-     * @return true if the token is valid and not expired, false otherwise
-     */
     public boolean validateToken(String token) {
         try {
             return !jwtTokenService.isTokenExpired(token);

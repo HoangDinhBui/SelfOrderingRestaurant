@@ -18,4 +18,5 @@ public interface IOrderService {
     OrderCartResponseDTO removeItemFromCart(Integer dishId);
     OrderCartResponseDTO updateItemQuantity(Integer dishId, int quantity);
     OrderCartResponseDTO updateItemNotes(Integer dishId, String notes);
+    OrderResponseDTO updateOrderItemStatus(Integer orderId, Integer dishId, String status);
 }
