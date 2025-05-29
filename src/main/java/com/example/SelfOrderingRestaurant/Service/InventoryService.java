@@ -192,4 +192,30 @@ public class InventoryService implements IInventoryService {
             );
         }).collect(Collectors.toList());
     }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<RemainingInventoryResponseDTO> getAvailableInventories() {
+        List<Inventory> inventories = inventoryRepository.findAll();
+
+        return inventories.stream().map(inventory -> {
+            Integer ingredientId = inventory.getIngredient().getIngredientId();
+            BigDecimal totalUsedQuantity = dishIngredientRepository.getTotalQuantityUsedByIngredientId(ingredientId);
+            if (totalUsedQuantity == null) {
+                totalUsedQuantity = BigDecimal.ZERO;
+            }
+            Double remainingQuantity = inventory.getQuantity() - totalUsedQuantity.doubleValue();
+
+            // Không cập nhật database, chỉ trả về dữ liệu
+            return new RemainingInventoryResponseDTO(
+                    inventory.getIngredient().getIngredientId(),
+                    inventory.getInventoryId(),
+                    inventory.getIngredient().getName(),
+                    inventory.getIngredient().getSupplier() != null ? inventory.getIngredient().getSupplier().getName() : "N/A",
+                    remainingQuantity,
+                    inventory.getUnit(),
+                    inventory.getLastUpdated()
+            );
+        }).collect(Collectors.toList());
+    }
 }

@@ -2,26 +2,33 @@ package com.example.SelfOrderingRestaurant.Controller;
 
 import com.example.SelfOrderingRestaurant.Dto.Request.InventoryRequestDTO.CreateInventoryRequestDTO;
 import com.example.SelfOrderingRestaurant.Dto.Request.InventoryRequestDTO.UpdateInventoryRequestDTO;
+import com.example.SelfOrderingRestaurant.Dto.Response.InventoryResponseDTO.RemainingInventoryResponseDTO;
 import com.example.SelfOrderingRestaurant.Service.InventoryService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import lombok.AllArgsConstructor;
 
+import java.util.List;
+
 @AllArgsConstructor
 @RestController
-@RequestMapping("/api/admin/inventory")
+@RequestMapping("/api")
 public class InventoryController {
 
     private final InventoryService inventoryService;
 
+    @GetMapping("/inventory/available")
+    public List<RemainingInventoryResponseDTO> getAvailableInventories() {
+        return inventoryService.getAvailableInventories();
+    }
 
-    @GetMapping
+    @GetMapping("/inventory")
     public ResponseEntity<?> getAllInventories() {
         return ResponseEntity.ok(inventoryService.getAllInventories());
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/admin/inventory/{id}")
     public ResponseEntity<?> getInventoryById(@PathVariable Integer id) {
         return ResponseEntity.ok(inventoryService.getInventoryById(id));
     }
@@ -32,13 +39,13 @@ public class InventoryController {
         return ResponseEntity.ok("Inventory created successfully");
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/admin/inventory/{id}")
     public ResponseEntity<?> updateInventory(@PathVariable Integer id, @RequestBody UpdateInventoryRequestDTO requestDTO) {
         inventoryService.updateInventory(id, requestDTO);
         return ResponseEntity.ok("Inventory updated successfully");
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/admin/inventory/{id}")
     public ResponseEntity<?> deleteInventory(@PathVariable Integer id) {
         if(inventoryService.deleteInventory(id)) {
             return ResponseEntity.ok("Inventory deleted");
@@ -46,7 +53,7 @@ public class InventoryController {
         return ResponseEntity.notFound().build();
     }
 
-    @GetMapping("/remaining/{ingredientId}")
+    @GetMapping("/admin/inventory/remaining/{ingredientId}")
     public ResponseEntity<?> getRemainingInventoryByIngredientId(@PathVariable Integer ingredientId) {
         try {
             return ResponseEntity.ok(inventoryService.getRemainingInventoryByIngredientId(ingredientId));
@@ -55,7 +62,7 @@ public class InventoryController {
         }
     }
 
-    @GetMapping("/remaining")
+    @GetMapping("/admin/inventory/remaining")
     public ResponseEntity<?> getAllRemainingInventories() {
         return ResponseEntity.ok(inventoryService.getAllRemainingInventories());
     }
