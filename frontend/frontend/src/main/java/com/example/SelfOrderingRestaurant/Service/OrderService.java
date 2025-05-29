@@ -7,11 +7,8 @@ import com.example.SelfOrderingRestaurant.Dto.Response.OrderResponseDTO.GetAllOr
 import com.example.SelfOrderingRestaurant.Dto.Response.OrderResponseDTO.OrderResponseDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.OrderResponseDTO.OrderCartResponseDTO;
 import com.example.SelfOrderingRestaurant.Entity.*;
-import com.example.SelfOrderingRestaurant.Enum.NotificationType;
-import com.example.SelfOrderingRestaurant.Enum.OrderStatus;
-import com.example.SelfOrderingRestaurant.Enum.PaymentStatus;
+import com.example.SelfOrderingRestaurant.Enum.*;
 import com.example.SelfOrderingRestaurant.Entity.Key.OrderItemKey;
-import com.example.SelfOrderingRestaurant.Enum.TableStatus;
 import com.example.SelfOrderingRestaurant.Exception.AuthorizationException;
 import com.example.SelfOrderingRestaurant.Exception.ResourceNotFoundException;
 import com.example.SelfOrderingRestaurant.Exception.ValidationException;
@@ -267,6 +264,8 @@ public class OrderService implements IOrderService {
                             dto.setNotes(item.getNotes());
                             dto.setDishName(item.getDish().getName());
                             dto.setPrice(item.getDish().getPrice());
+                            // Ensure status is never null
+                            dto.setStatus(item.getStatus() != null ? item.getStatus().name() : OrderItemStatus.PENDING.name());
                             return dto;
                         }).collect(Collectors.toList());
 
@@ -305,6 +304,8 @@ public class OrderService implements IOrderService {
                     dto.setNotes(item.getNotes());
                     dto.setDishName(item.getDish().getName());
                     dto.setPrice(item.getDish().getPrice());
+                    // Ensure status is never null
+                    dto.setStatus(item.getStatus() != null ? item.getStatus().name() : OrderItemStatus.PENDING.name());
                     return dto;
                 }).collect(Collectors.toList());
 
@@ -365,7 +366,7 @@ public class OrderService implements IOrderService {
 
     @Transactional
     public OrderResponseDTO removeOrderItem(Integer orderId, Integer dishId) {
-        if (!securityUtils.isAuthenticated() && securityUtils.hasRole("STAFF")) {
+        if (!securityUtils.isAuthenticated() || !securityUtils.hasRole("STAFF")) {
             throw new AuthorizationException("Only staff members can remove order items");
         }
 
@@ -387,17 +388,42 @@ public class OrderService implements IOrderService {
         OrderItem orderItem = orderItemRepository.findById(key)
                 .orElseThrow(() -> new ResourceNotFoundException("Order item not found for order ID: " + orderId + " and dish ID: " + dishId));
 
-        orderItemRepository.delete(orderItem);
-        log.info("Removed item with dish ID {} from order {}", dishId, orderId);
+        if (orderItem.getStatus() != OrderItemStatus.PENDING) {
+            throw new ValidationException("Can only cancel PENDING items");
+        }
 
-        // Recalculate total amount
+        orderItem.setStatus(OrderItemStatus.CANCELLED);
+        orderItemRepository.save(orderItem);
+        log.info("Cancelled item with dish ID {} from order {}", dishId, orderId);
+
+        // Recalculate total amount (exclude CANCELLED items)
         List<OrderItem> remainingItems = orderItemRepository.findByOrder(order);
         BigDecimal totalAmount = remainingItems.stream()
+                .filter(item -> item.getStatus() != OrderItemStatus.CANCELLED)
                 .map(item -> item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        order.setTotalAmount(totalAmount);
-        orderRepository.save(order);
+        // Only update totalAmount if there are non-cancelled items
+        if (!remainingItems.stream().allMatch(item -> item.getStatus() == OrderItemStatus.CANCELLED)) {
+            order.setTotalAmount(totalAmount);
+            orderRepository.save(order);
+            log.info("Updated total amount for order {} to {}", orderId, totalAmount);
+        } else {
+            log.info("All items cancelled for order {}; retaining original totalAmount {}", orderId, order.getTotalAmount());
+        }
+
+        // Check if all items are CANCELLED or COMPLETED
+        boolean allItemsDone = remainingItems.stream()
+                .allMatch(item -> item.getStatus() == OrderItemStatus.COMPLETED || item.getStatus() == OrderItemStatus.CANCELLED);
+
+        if (allItemsDone) {
+            DinningTable table = order.getTables();
+            if (TableStatus.OCCUPIED.equals(table.getTableStatus())) {
+                table.setTableStatus(TableStatus.AVAILABLE);
+                dinningTableRepository.save(table);
+                log.info("Updated table {} status to AVAILABLE", table.getTableNumber());
+            }
+        }
 
         // Return updated order
         List<OrderItemDTO> items = remainingItems.stream()
@@ -408,6 +434,7 @@ public class OrderService implements IOrderService {
                     dto.setNotes(item.getNotes());
                     dto.setDishName(item.getDish().getName());
                     dto.setPrice(item.getDish().getPrice());
+                    dto.setStatus(item.getStatus() != null ? item.getStatus().name() : OrderItemStatus.PENDING.name());
                     return dto;
                 }).collect(Collectors.toList());
 
@@ -464,6 +491,26 @@ public class OrderService implements IOrderService {
             throw new ValidationException("Quantity must be a positive integer");
         }
 
+        HttpSession session = httpServletRequest.getSession();
+        Integer orderId = (Integer) session.getAttribute("currentOrderId");
+
+        if (orderId != null) {
+            OrderItemKey key = new OrderItemKey();
+            key.setOrderId(orderId);
+            key.setDishId(dishId);
+
+            OrderItem orderItem = orderItemRepository.findById(key)
+                    .orElseThrow(() -> new ResourceNotFoundException("Order item not found for dish ID: " + dishId));
+
+            if (orderItem.getStatus() != OrderItemStatus.PENDING) {
+                throw new ValidationException("Can only modify quantity for PENDING items");
+            }
+
+            orderItem.setQuantity(quantity);
+            orderItemRepository.save(orderItem);
+            log.info("Updated quantity for dish {} in order {} to {}", dishId, orderId, quantity);
+        }
+
         return orderCartService.updateItemQuantity(dishId, quantity);
     }
 
@@ -513,5 +560,123 @@ public class OrderService implements IOrderService {
         } else {
             log.warn("Cannot update notes in database: No current order ID found in session");
         }
+    }
+
+    @Transactional
+    @Override
+    public OrderResponseDTO updateOrderItemStatus(Integer orderId, Integer dishId, String status) {
+        if (!securityUtils.isAuthenticated() || !securityUtils.hasRole("STAFF")) {
+            throw new AuthorizationException("Only staff members can update order item status");
+        }
+
+        if (orderId == null || orderId <= 0) {
+            throw new ValidationException("Order ID must be a positive integer");
+        }
+
+        if (dishId == null || dishId <= 0) {
+            throw new ValidationException("Dish ID must be a positive integer");
+        }
+
+        if (status == null || status.trim().isEmpty()) {
+            throw new ValidationException("Status cannot be empty");
+        }
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + orderId));
+
+        OrderItemKey key = new OrderItemKey();
+        key.setOrderId(orderId);
+        key.setDishId(dishId);
+
+        OrderItem orderItem = orderItemRepository.findById(key)
+                .orElseThrow(() -> new ResourceNotFoundException("Order item not found for order ID: " + orderId + " and dish ID: " + dishId));
+
+        try {
+            OrderItemStatus newStatus = OrderItemStatus.valueOf(status.toUpperCase());
+            if (!isValidStatusTransition(orderItem.getStatus(), newStatus)) {
+                throw new ValidationException("Invalid status transition from " + orderItem.getStatus() + " to " + newStatus);
+            }
+
+            // Log current state
+            log.info("Before updating item status for order {}, dish {}: status={}, totalAmount={}",
+                    orderId, dishId, orderItem.getStatus(), order.getTotalAmount());
+
+            orderItem.setStatus(newStatus);
+            orderItemRepository.save(orderItem);
+            log.info("Updated order item status for order {}, dish {} to {}", orderId, dishId, newStatus);
+
+            // Recalculate total amount (include PENDING, PROCESSING, and COMPLETED items)
+            List<OrderItem> orderItems = orderItemRepository.findByOrder(order);
+            log.info("Order {} items: {}", orderId, orderItems.size());
+            orderItems.forEach(item -> log.info("Item: dishId={}, status={}, price={}, quantity={}",
+                    item.getId().getDishId(), item.getStatus(), item.getUnitPrice(), item.getQuantity()));
+
+            BigDecimal totalAmount = orderItems.stream()
+                    .filter(item -> item.getStatus() != OrderItemStatus.CANCELLED)
+                    .filter(item -> item.getUnitPrice() != null && item.getQuantity() > 0)
+                    .map(item -> {
+                        BigDecimal price = item.getUnitPrice();
+                        int quantity = item.getQuantity();
+                        log.debug("Calculating for item: dishId={}, price={}, quantity={}",
+                                item.getId().getDishId(), price, quantity);
+                        return price.multiply(BigDecimal.valueOf(quantity));
+                    })
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+            log.info("Calculated totalAmount for order {}: {}", orderId, totalAmount);
+
+            // Always update totalAmount, even if it's zero (to handle edge cases)
+            order.setTotalAmount(totalAmount);
+            orderRepository.save(order);
+            log.info("Updated total amount for order {} to {}", orderId, totalAmount);
+
+            // Update table status if all items are COMPLETED or CANCELLED
+            boolean allItemsDone = orderItems.stream()
+                    .allMatch(item -> item.getStatus() == OrderItemStatus.COMPLETED || item.getStatus() == OrderItemStatus.CANCELLED);
+            log.info("All items done for order {}: {}", orderId, allItemsDone);
+
+            if (allItemsDone) {
+                DinningTable table = order.getTables();
+                if (TableStatus.OCCUPIED.equals(table.getTableStatus())) {
+                    table.setTableStatus(TableStatus.AVAILABLE);
+                    dinningTableRepository.save(table);
+                    log.info("Updated table {} status to AVAILABLE", table.getTableNumber());
+                }
+            }
+
+            // Return updated order
+            List<OrderItemDTO> items = orderItems.stream()
+                    .map(item -> {
+                        OrderItemDTO dto = new OrderItemDTO();
+                        dto.setDishId(item.getId().getDishId());
+                        dto.setQuantity(item.getQuantity());
+                        dto.setNotes(item.getNotes());
+                        dto.setDishName(item.getDish().getName());
+                        dto.setPrice(item.getDish().getPrice());
+                        dto.setStatus(item.getStatus() != null ? item.getStatus().name() : OrderItemStatus.PENDING.name());
+                        return dto;
+                    }).collect(Collectors.toList());
+
+            return new OrderResponseDTO(
+                    order.getOrderId(),
+                    order.getCustomer().getFullname(),
+                    order.getTables().getTableNumber(),
+                    order.getStatus().name(),
+                    order.getTotalAmount(),
+                    order.getPaymentStatus().name(),
+                    items
+            );
+        } catch (IllegalArgumentException e) {
+            throw new ValidationException("Invalid order item status: " + status);
+        }
+    }
+
+    private boolean isValidStatusTransition(OrderItemStatus currentStatus, OrderItemStatus newStatus) {
+        if (currentStatus == OrderItemStatus.PENDING) {
+            return newStatus == OrderItemStatus.PROCESSING || newStatus == OrderItemStatus.CANCELLED;
+        } else if (currentStatus == OrderItemStatus.PROCESSING) {
+            return newStatus == OrderItemStatus.COMPLETED || newStatus == OrderItemStatus.CANCELLED;
+        }
+        return false;
     }
 }

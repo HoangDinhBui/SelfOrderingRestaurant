@@ -195,6 +195,19 @@ public class OrderGraphQLController {
         }
     }
 
+    @MutationMapping
+    public OrderResponseDTO updateOrderItemStatus(@Argument String orderId, @Argument String dishId, @Argument String status) {
+        try {
+            log.info("Updating status for order item: order {}, dish {}, status {}", orderId, dishId, status);
+            OrderResponseDTO result = orderService.updateOrderItemStatus(Integer.valueOf(orderId), Integer.valueOf(dishId), status);
+            log.info("Updated order item status for order {}, dish {}", orderId, dishId);
+            return result;
+        } catch (Exception e) {
+            log.error("Error updating order item status for order {}, dish {}: {}", orderId, dishId, e.getMessage(), e);
+            throw new RuntimeException("Failed to update order item status: " + e.getMessage());
+        }
+    }
+
     // Helper methods
     private OrderRequestDTO convertOrderInputToDTO(OrderInput input) {
         OrderRequestDTO orderDTO = new OrderRequestDTO();

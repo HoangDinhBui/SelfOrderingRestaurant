@@ -15,4 +15,5 @@ public class OrderItemDTO {
     private String notes;
     private String dishName;
     private BigDecimal price;
+    private String status;
 }

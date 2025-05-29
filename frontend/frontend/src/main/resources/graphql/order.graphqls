@@ -5,6 +5,7 @@ type OrderItem {
   notes: String
   dishName: String
   price: Float
+  status: String!
 }
 
 type CartItem {
@@ -88,4 +89,5 @@ type Mutation {
   updateItemNotes(dishId: ID!, input: UpdateItemNotesInput!): OrderCart!
   deleteOrder(orderId: String!): String!
   removeOrderItem(orderId: ID!, dishId: ID!): Order!
+  updateOrderItemStatus(orderId: ID!, dishId: ID!, status: String!): Order!
 }

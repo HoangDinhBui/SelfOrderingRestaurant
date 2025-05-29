@@ -41,7 +41,7 @@ public class OrderItem {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
-    private OrderItemStatus status = OrderItemStatus.ORDERED;
+    private OrderItemStatus status = OrderItemStatus.PENDING;
 
     @Column(name = "sub_total", insertable = false, updatable = false)
     private Long subTotal;

@@ -240,6 +240,9 @@ public class PaymentService {
 
     @Transactional
     public String createVNPayOrder(int total, String orderInfo, String urlReturn) throws Exception {
+        if (total <= 0) {
+            throw new IllegalArgumentException("Payment amount must be greater than zero");
+        }
         // Parse the order ID from orderInfo
         Integer orderId = extractOrderIdFromOrderInfo(orderInfo);
 

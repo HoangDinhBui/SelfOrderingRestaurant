@@ -1,8 +1,8 @@
 package com.example.SelfOrderingRestaurant.Enum;
 
 public enum OrderItemStatus {
-    ORDERED,
+    PENDING,
     PROCESSING,
-    SERVED,
+    COMPLETED,
     CANCELLED
 }

@@ -106,35 +106,69 @@ public class StaffShiftService implements IStaffShiftService {
             throw new UnauthorizedException("Staff not found");
         }
 
-        // Check 7-day restriction
+        // Check 7-day restriction only for the first registration date
         LocalDate today = LocalDate.now();
         LocalDate restrictionStart = today.minusDays(7);
         List<StaffShift> recentShifts = staffShiftRepository.findByStaffAndDateBetween(staff, restrictionStart, today);
-        if (!recentShifts.isEmpty()) {
+        if (!recentShifts.isEmpty() && registration.getDate().isEqual(today)) {
             throw new BadRequestException("Cannot register new shift. You must wait 7 days since your last shift registration.");
         }
 
-        // Check maximum staff per shift
+        // Validate the shift exists
         Shift shift = shiftRepository.findById(registration.getShiftId())
                 .orElseThrow(() -> new ResourceNotFoundException("Shift with ID " + registration.getShiftId() + " not found"));
-        List<StaffShift> shiftRegistrations = staffShiftRepository.findByDate(registration.getDate()).stream()
-                .filter(ss -> ss.getShift().getShiftId().equals(registration.getShiftId()))
-                .collect(Collectors.toList());
-        if (shiftRegistrations.size() >= MAX_STAFF_PER_SHIFT) {
-            throw new BadRequestException("Shift " + shift.getName() + " on " + registration.getDate() + " is already full (maximum " + MAX_STAFF_PER_SHIFT + " staff).");
-        }
 
-        StaffShift newShift;
-        try {
-            newShift = registerSingleShift(staff, registration);
-        } catch (Exception e) {
-            throw new BadRequestException(e.getMessage());
-        }
-
-        staffShiftRepository.save(newShift);
-
+        // Prepare response
         Map<String, Object> response = new HashMap<>();
-        response.put("registeredShift", newShift.getStaffShiftKey());
+        List<Integer> registeredShiftIds = new ArrayList<>();
+
+        // Register shifts for the specified date and the next 6 days (total 7 days)
+        LocalDate startDate = registration.getDate();
+        for (int i = 0; i < 7; i++) {
+            LocalDate currentDate = startDate.plusDays(i);
+
+            // Check if staff is already registered for this shift on the current date
+            StaffShift existingShift = staffShiftRepository.findByStaffAndShiftAndDate(staff, shift, currentDate);
+            if (existingShift != null) {
+                continue; // Skip if already registered
+            }
+
+            // Check maximum staff per shift for the current date
+            List<StaffShift> shiftRegistrations = staffShiftRepository.findByDate(currentDate).stream()
+                    .filter(ss -> ss.getShift().getShiftId().equals(registration.getShiftId()))
+                    .collect(Collectors.toList());
+            if (shiftRegistrations.size() >= MAX_STAFF_PER_SHIFT) {
+                continue; // Skip if shift is full
+            }
+
+            // Check for overlapping shifts on the current date
+            List<StaffShift> shiftsOnSameDay = staffShiftRepository.findByStaffAndDate(staff, currentDate);
+            boolean hasOverlap = shiftsOnSameDay.stream().anyMatch(ss -> {
+                Shift existingShiftObj = ss.getShift();
+                return (shift.getStartTime().isBefore(existingShiftObj.getEndTime()) &&
+                        shift.getEndTime().isAfter(existingShiftObj.getStartTime()));
+            });
+
+            if (hasOverlap) {
+                continue; // Skip if there is an overlap
+            }
+
+            // Register the shift for the current date
+            StaffShift staffShift = new StaffShift();
+            staffShift.setStaff(staff);
+            staffShift.setShift(shift);
+            staffShift.setDate(currentDate);
+            staffShift.setStatus(StaffShiftStatus.ASSIGNED);
+
+            staffShift = staffShiftRepository.save(staffShift);
+            registeredShiftIds.add(staffShift.getStaffShiftKey());
+        }
+
+        if (registeredShiftIds.isEmpty()) {
+            throw new BadRequestException("No shifts were registered due to conflicts or existing registrations.");
+        }
+
+        response.put("registeredShiftIds", registeredShiftIds);
         return response;
     }
 
