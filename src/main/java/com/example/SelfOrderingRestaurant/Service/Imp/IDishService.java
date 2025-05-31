@@ -1,6 +1,7 @@
 package com.example.SelfOrderingRestaurant.Service.Imp;
 
 import com.example.SelfOrderingRestaurant.Dto.Request.DishRequestDTO.DishRequestDTO;
+import com.example.SelfOrderingRestaurant.Dto.Response.DinningTableResponseDTO.DishDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.DishResponseDTO.DishResponseDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.DishResponseDTO.GetAllDishesResponseDTO;
 import com.example.SelfOrderingRestaurant.Enum.DishStatus;
@@ -20,4 +21,6 @@ public interface IDishService {
     void updateDish(Integer dishId, DishRequestDTO request, Authentication authentication);
 
     void deleteDish(Integer dishId);
+
+     void applyPendingDishUpdates();
 }
