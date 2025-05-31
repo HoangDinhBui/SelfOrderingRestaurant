@@ -51,16 +51,22 @@ const Menu = () => {
         const dishesData = await dishesResponse.json();
 
         // Fetch available inventory
-        const inventoryResponse = await fetch("http://localhost:8080/api/inventory/available");
+        const inventoryResponse = await fetch(
+          "http://localhost:8080/api/inventory/available"
+        );
         if (!inventoryResponse.ok) {
           throw new Error(`HTTP error! Status: ${inventoryResponse.status}`);
         }
         const inventoryData = await inventoryResponse.json();
 
         // Fetch dish-ingredients
-        const dishIngredientsResponse = await fetch("http://localhost:8080/api/dish_ingredients");
+        const dishIngredientsResponse = await fetch(
+          "http://localhost:8080/api/dish_ingredients"
+        );
         if (!dishIngredientsResponse.ok) {
-          throw new Error(`HTTP error! Status: ${dishIngredientsResponse.status}`);
+          throw new Error(
+            `HTTP error! Status: ${dishIngredientsResponse.status}`
+          );
         }
         const dishIngredientsData = await dishIngredientsResponse.json();
 

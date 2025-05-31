@@ -666,7 +666,7 @@ const MenuManagementAdmin = () => {
                       <th style={styles.th}>Price</th>
                       <th style={styles.th}>Category</th>
                       <th style={styles.th}>Description</th>
-                      <th style={styles.th}>Status</th> {/* Thêm cột Status */}
+                      <th style={styles.th}>Status</th>
                       <th style={styles.th}>Actions</th>
                     </tr>
                   </thead>
