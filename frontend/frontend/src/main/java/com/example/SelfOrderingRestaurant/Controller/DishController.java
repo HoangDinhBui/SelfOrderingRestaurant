@@ -15,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -80,7 +81,13 @@ public class DishController {
         try {
             dishService.updateDish(id, request, authentication);
             Map<String, String> response = new HashMap<>();
-            response.put("message", "Cập nhật món ăn thành công!");
+            LocalTime currentTime = LocalTime.now();
+            LocalTime startBusinessHour = LocalTime.of(8, 0);
+            LocalTime endBusinessHour = LocalTime.of(17, 0);
+            String message = currentTime.isAfter(startBusinessHour) && currentTime.isBefore(endBusinessHour)
+                    ? "Cập nhật món ăn đã được lưu và sẽ có hiệu lực từ 0h ngày mai!"
+                    : "Cập nhật món ăn thành công!";
+            response.put("message", message);
             return ResponseEntity.ok(response);
         } catch (ValidationException e) {
             logger.error("Validation error updating dish {}: {}", id, e.getMessage());
