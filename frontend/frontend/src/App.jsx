@@ -84,10 +84,6 @@ function App() {
                 element={<NotificationManagementStaff />}
               />
               <Route
-                path="/admin-information_admin"
-                element={<AdminInformation />}
-              />
-              <Route
                 path="/table-management_admin"
                 element={<TableManagementAdmin />}
               />

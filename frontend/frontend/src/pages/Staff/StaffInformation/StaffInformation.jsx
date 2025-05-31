@@ -550,23 +550,6 @@ const StaffInformation = () => {
                     </tr>
                     <tr className="border border-gray-300">
                       <td className="py-3 px-6 font-medium border-r border-gray-300 text-center">
-                        Employee position
-                      </td>
-                      <td className="py-3 px-6">
-                        <select
-                          name="position"
-                          value={staffData.position}
-                          onChange={handleInputChange}
-                          className="w-full border-none outline-none bg-transparent"
-                        >
-                          <option value="Service staff">Service staff</option>
-                          <option value="Manager">Manager</option>
-                          <option value="Supervisor">Supervisor</option>
-                        </select>
-                      </td>
-                    </tr>
-                    <tr className="border border-gray-300">
-                      <td className="py-3 px-6 font-medium border-r border-gray-300 text-center">
                         Phone number
                       </td>
                       <td className="py-3 px-6">
@@ -610,21 +593,6 @@ const StaffInformation = () => {
                           onChange={handleInputChange}
                           className="w-full border-none outline-none bg-transparent"
                           placeholder="Enter email"
-                        />
-                      </td>
-                    </tr>
-                    <tr className="border border-gray-300">
-                      <td className="py-3 px-6 font-medium border-r border-gray-300 text-center">
-                        Salary
-                      </td>
-                      <td className="py-3 px-6">
-                        <input
-                          type="text"
-                          name="salary"
-                          value={staffData.salary}
-                          onChange={handleInputChange}
-                          className="w-full border-none outline-none bg-transparent"
-                          placeholder="Enter salary"
                         />
                       </td>
                     </tr>
