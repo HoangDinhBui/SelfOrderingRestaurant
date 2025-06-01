@@ -46,21 +46,18 @@ const OrderHistory = () => {
   // Fetch orders using Apollo Client
   const { loading, error, data } = useQuery(GET_ORDERS);
 
-  // Transform orders to match the notification structure
+  // Transform orders to match the notification structure, only include PENDING orders
   const notifications = data?.orders
-    ? data.orders.map((order) => ({
-        id: order.orderId,
-        customer: order.customerName,
-        table: `Table ${order.tableNumber}`,
-        paymentSlip: order.orderId,
-        total: order.totalAmount,
-        time: new Date().toLocaleTimeString(), // You can adjust to use order date
-        date: new Date().toLocaleDateString("en-US", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        }),
-      }))
+    ? data.orders
+        .filter((order) => order.status === "PENDING")
+        .map((order) => ({
+          id: order.orderId,
+          customer: order.customerName,
+          table: order.tableNumber, // Chỉ hiển thị số bàn
+          paymentSlip: order.orderId,
+          total: order.totalAmount,
+          time: new Date().toLocaleTimeString(),
+        }))
     : [];
 
   // Transform orders to dishes for modal display
@@ -78,7 +75,7 @@ const OrderHistory = () => {
 
   const handleViewBill = (notification) => {
     const tableData = {
-      id: notification.table,
+      id: notification.table.toString(), // Chuyển số bàn thành chuỗi
       dishes: orderItems[notification.id] || [],
     };
     setSelectedTable(tableData);
@@ -88,7 +85,6 @@ const OrderHistory = () => {
 
   const handlePrintBill = async (orderId) => {
     try {
-      // Call the backend API to generate PDF
       const response = await fetch(`/api/receipts/generate/${orderId}`, {
         method: "GET",
         headers: {
@@ -100,7 +96,6 @@ const OrderHistory = () => {
         throw new Error("Failed to generate PDF");
       }
 
-      // Convert response to blob and trigger download
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -111,7 +106,6 @@ const OrderHistory = () => {
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
 
-      // Show success modal or confirmation
       setIsPrintModalOpen(false);
     } catch (error) {
       console.error("Error generating PDF:", error);
@@ -132,7 +126,7 @@ const OrderHistory = () => {
   const handleConfirmPrint = () => {
     if (selectedTable) {
       const orderId = notifications.find(
-        (noti) => noti.table === selectedTable.id
+        (noti) => noti.table.toString() === selectedTable.id
       )?.id;
       if (orderId) {
         handlePrintBill(orderId);
@@ -147,37 +141,11 @@ const OrderHistory = () => {
 
   const tabs = ["Order Management", "Notification Management", "Dish Management"];
 
-  const groupedNotifications = notifications.reduce((acc, notification) => {
-    if (!acc[notification.date]) {
-      acc[notification.date] = [];
-    }
-    acc[notification.date].push(notification);
-    return acc;
-  }, {});
-
   const handleTabClick = (tab) => {
     if (tab === "Order Management") {
       navigate("/order-management");
     } else if (tab === "Dish Management") {
       navigate("/dish-management");
-    }
-  };
-
-  const handleCheckNotification = (id) => {
-    // Optionally update notification status in backend
-    console.log("Check notification:", id);
-  };
-
-  const getNotificationIcon = (type) => {
-    switch (type) {
-      case "Payment request":
-        return <FaMoneyBillWave className="text-green-500 mr-2" />;
-      case "Call staff":
-        return <FaBell className="text-blue-500 mr-2" />;
-      case "Other":
-        return <FaUtensils className="text-orange-500 mr-2" />;
-      default:
-        return <FaBell className="text-gray-500 mr-2" />;
     }
   };
 
@@ -195,7 +163,7 @@ const OrderHistory = () => {
         />
       </div>
 
-      {/* Main  Main Content */}
+      {/* Main Content */}
       <div
         className={`flex-1 p-6 bg-gray-100 overflow-y-auto ${
           isModalOpen ? "blur-sm" : ""
@@ -203,58 +171,56 @@ const OrderHistory = () => {
       >
         {/* Notification List */}
         <div className="bg-white rounded-lg shadow-md p-6">
-          {Object.entries(groupedNotifications).map(
-            ([date, dateNotifications]) => (
-              <div key={date} className="mb-8">
-                <h2 className="text-xl font-bold mb-4 border-b pb-2">{date}</h2>
-                {dateNotifications.map((notification) => (
-                  <div
-                    key={notification.id}
-                    className="relative flex justify-between items-center bg-white rounded-lg shadow-md p-4 mb-4"
-                  >
-                    <div className="flex items-center">
-                      <div className="flex items-center justify-center w-15 h-15 bg-gray-200 rounded-full mr-4">
-                        Table {notification.paymentSlip}
-                      </div>
-                      <div>
-                        <h3 className="font-bold text-lg">
-                          Customer {notification.customer}
-                        </h3>
-                        <p className="text-gray-600 text-sm">
-                          - Payment slip: {notification.paymentSlip} <br />
-                          - Total: {notification.total.toLocaleString()} VND
-                        </p>
-                      </div>
-                    </div>
-
-                    <span className="absolute top-2 right-4 text-gray-500 text-sm">
-                      {notification.time}
-                    </span>
-
-                    <div className="flex justify-end space-x-4">
-                      <button
-                        className="flex items-center px-3 py-1 !bg-[#49B02D] text-white rounded hover:bg-green-600"
-                        onClick={() => handleViewBill(notification)}
-                      >
-                        View
-                      </button>
-                      <button
-                        className="flex items-center px-3 py-1 !bg-[#3F26B9] text-white rounded hover:bg-blue-700"
-                        onClick={() => {
-                          setSelectedTable({
-                            id: notification.table,
-                            dishes: orderItems[notification.id] || [],
-                          });
-                          setIsPrintModalOpen(true);
-                        }}
-                      >
-                        <FaTrash className="mr-1" /> Print
-                      </button>
-                    </div>
+          <h2 className="text-xl font-bold mb-4 border-b pb-2">Pending Orders</h2>
+          {notifications.length === 0 ? (
+            <p>No pending orders found.</p>
+          ) : (
+            notifications.map((notification) => (
+              <div
+                key={notification.id}
+                className="relative flex justify-between items-center bg-white rounded-lg shadow-md p-4 mb-4"
+              >
+                <div className="flex items-center">
+                  <div className="flex items-center justify-center w-15 h-15 bg-gray-200 rounded-full mr-4">
+                    Table:{notification.table}
                   </div>
-                ))}
+                  <div>
+                    <h3 className="font-bold text-lg">
+                      Customer {notification.customer}
+                    </h3>
+                    <p className="text-gray-600 text-sm">
+                      - Payment slip: {notification.paymentSlip} <br />
+                      - Total: {notification.total.toLocaleString()} VND
+                    </p>
+                  </div>
+                </div>
+
+                <span className="absolute top-2 right-4 text-gray-500 text-sm">
+                  {notification.time}
+                </span>
+
+                <div className="flex justify-end space-x-4">
+                  <button
+                    className="flex items-center px-3 py-1 !bg-[#49B02D] text-white rounded hover:bg-green-600"
+                    onClick={() => handleViewBill(notification)}
+                  >
+                    View
+                  </button>
+                  <button
+                    className="flex items-center px-3 py-1 !bg-[#3F26B9] text-white rounded hover:bg-blue-700"
+                    onClick={() => {
+                      setSelectedTable({
+                        id: notification.table.toString(),
+                        dishes: orderItems[notification.id] || [],
+                      });
+                      setIsPrintModalOpen(true);
+                    }}
+                  >
+                    <FaTrash className="mr-1" /> Print
+                  </button>
+                </div>
               </div>
-            )
+            ))
           )}
         </div>
       </div>
@@ -273,14 +239,14 @@ const OrderHistory = () => {
               </p>
               <p className="text-sm text-gray-600">Phone: 0987654321</p>
               <h3 className="font-bold mt-2 text-xl text-blue-800">
-                Payment Slip {selectedTable.id.split(" ")[1].padStart(3, "0")}
+                Payment Slip {selectedTable.id.padStart(3, "0")}
               </h3>
             </div>
 
             <div className="flex justify-between border-b pb-2 mb-4">
-              <span className="font-bold text-gray-700">{selectedTable.id}</span>
+              <span className="font-bold text-gray-700">Table {selectedTable.id}</span>
               <span className="font-bold text-gray-700">
-                Payment Slip {selectedTable.id.split(" ")[1].padStart(3, "0")}
+                Payment Slip {selectedTable.id.padStart(3, "0")}
               </span>
             </div>
 
