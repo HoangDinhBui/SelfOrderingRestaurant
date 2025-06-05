@@ -28,6 +28,15 @@ const CaptivePortal = () => {
 
   // Kiểm tra IP khi component được tải
   useEffect(() => {
+    const token = localStorage.getItem("accessToken");
+    if (token) {
+      const userType = localStorage.getItem("userType");
+      navigate(
+        userType === "ADMIN" ? "/table-management_admin" : "/attendance"
+      );
+      return;
+    }
+
     axios
       .get(`/api/captive/check-ip?tableNumber=${tableNumber}`)
       .then((response) => {
@@ -107,11 +116,16 @@ const CaptivePortal = () => {
       />
       <div className="absolute inset-0 bg-[linear-gradient(to_bottom,#66666600_50%,#2A2A2A80_70%,#101010DD_80%,#000000_100%)]" />
       <div className="relative z-10 text-center pt-10">
-        <img src={logoSrc} alt="Bon Appétit Logo" className="w-[350px] h-auto mx-auto" />
+        <img
+          src={logoSrc}
+          alt="Bon Appétit Logo"
+          className="w-[350px] h-auto mx-auto"
+        />
       </div>
       <div className="relative z-10 text-center pb-10 mt-auto">
         <p className="text-[25px] italic font-[Baskervville] text-gray-200 mb-8">
-          Connect to the restaurant's<br /> network to order.
+          Connect to the restaurant's
+          <br /> network to order.
         </p>
         <a
           href="#"
@@ -144,7 +158,7 @@ const CaptivePortal = () => {
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        {slides.map(( slide, index ) => (
+        {slides.map((slide, index) => (
           <div
             key={slide.id}
             className={`transition-opacity duration-500 ${
@@ -173,7 +187,9 @@ const CaptivePortal = () => {
               alt="Loading GIF"
               className="w-20 h-20"
             />
-            <p className="text-[30px] italic font-[Baskervville] text-black-200">{loadingText}</p>
+            <p className="text-[30px] italic font-[Baskervville] text-black-200">
+              {loadingText}
+            </p>
           </div>
         </div>
       )}

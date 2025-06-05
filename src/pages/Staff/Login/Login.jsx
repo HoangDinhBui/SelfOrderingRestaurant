@@ -33,22 +33,29 @@ const Login = () => {
 
       const response = await login(userId, password);
 
+      // Lưu token và thông tin người dùng
       localStorage.setItem("accessToken", response.accessToken);
       localStorage.setItem("refreshToken", response.refreshToken);
       localStorage.setItem("username", response.username);
       localStorage.setItem("userType", response.userType);
 
+      // Cấu hình axios để gửi token trong các yêu cầu sau
+      axios.defaults.headers.common[
+        "Authorization"
+      ] = `Bearer ${response.accessToken}`;
+
       console.log("Login successful");
 
+      // Điều hướng đến /attendance cho STAFF (và tùy chọn ADMIN)
       switch (response.userType) {
         case "ADMIN":
           navigate("/table-management_admin");
           break;
         case "STAFF":
-          navigate("/table-management_staff");
+          navigate("/attendance");
           break;
         default:
-          navigate("/table-management_staff");
+          navigate("/attendance");
       }
     } catch (error) {
       console.error("Login failed:", error);
@@ -61,6 +68,7 @@ const Login = () => {
     }
   };
 
+  // Hàm handleGoogleLogin cũng cần được cập nhật tương tự
   const handleGoogleLogin = async () => {
     try {
       setError("");
@@ -74,15 +82,21 @@ const Login = () => {
       localStorage.setItem("username", response.username);
       localStorage.setItem("userType", response.userType);
 
+      axios.defaults.headers.common[
+        "Authorization"
+      ] = `Bearer ${response.accessToken}`;
+
+      console.log("Google login successful");
+
       switch (response.userType) {
         case "ADMIN":
-          navigate("/admin-dashboard");
+          navigate("/table-management_admin");
           break;
         case "STAFF":
-          navigate("/staff-dashboard");
+          navigate("/attendance");
           break;
         default:
-          navigate("/table-management");
+          navigate("/attendance");
       }
     } catch (error) {
       console.error("Google login failed:", error);

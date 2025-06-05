@@ -44,6 +44,9 @@ import OrderHistoryStaff from "./pages/Staff/OrderHistory/OrderHistory";
 import TableManagementStaff from "./pages/Staff/TableManagement/TableManagement";
 import StaffInformation from "./pages/Staff/StaffInformation/StaffInformation";
 
+// Attendance Page
+import Attendance from "./pages/Staff/Attendance/Attendance";
+
 function App() {
   return (
     <ApolloProvider client={client}>
@@ -73,7 +76,8 @@ function App() {
               <Route path="/payment_cus" element={<Payment />} />
               <Route path="/evaluate_cus" element={<Evaluate />} />
               <Route path="/captive-portal" element={<CaptivePortal />} />
-              {/* Admin Routes */}
+
+              {/* Admin and Staff Routes */}
               <Route path="/login" element={<Login />} />
               <Route
                 path="/dish-management_staff"
@@ -104,8 +108,6 @@ function App() {
                 path="/inventory-management_admin"
                 element={<InventoryManagement />}
               />
-
-              {/* Staff Routes */}
               <Route
                 path="/dish-management"
                 element={<DishManagementStaff />}
@@ -119,6 +121,16 @@ function App() {
                 element={<TableManagementStaff />}
               />
               <Route path="/order-history" element={<OrderHistoryStaff />} />
+
+              {/* Attendance Route */}
+              <Route
+                path="/attendance"
+                element={
+                  <ProtectedRoute>
+                    <Attendance />
+                  </ProtectedRoute>
+                }
+              />
             </Routes>
           </Router>
           <ToastContainer
