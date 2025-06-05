@@ -43,4 +43,7 @@ public class Staff {
     @Enumerated(EnumType.STRING)
     @Column(name = "Status")
     private UserStatus status;
+
+    @Column(name = "face_image_path")
+    private String faceImagePath;
 }
