@@ -28,6 +28,16 @@ public class CaptivePortalController {
                                      @RequestParam(value = "tableNumber", required = false) String tableNumber,
                                      HttpSession session) {
         try {
+            // Kiểm tra xem người dùng đã đăng nhập chưa
+            String authHeader = request.getHeader("Authorization");
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                logger.info("Người dùng đã đăng nhập, bỏ qua kiểm tra IP.");
+                String redirectUrl = "/table/" + (tableNumber != null ? tableNumber : "1");
+                return ResponseEntity.ok().body(
+                        "{\"redirect\": \"" + redirectUrl + "\", \"ip\": \"\", \"tableNumber\": \"" + (tableNumber != null ? tableNumber : "1") + "\"}"
+                );
+            }
+
             String clientIp = getClientIp(request);
             logger.info("Kiểm tra IP: {} (X-Forwarded-For: {}, RemoteAddr: {}, Table: {})",
                     clientIp, request.getHeader("X-Forwarded-For"), request.getRemoteAddr(), tableNumber);
@@ -37,6 +47,7 @@ public class CaptivePortalController {
             if (isConnected != null && isConnected) {
                 String savedTableNumber = (String) session.getAttribute("tableNumber");
                 String redirectUrl = "/table/" + (savedTableNumber != null ? savedTableNumber : "1");
+                logger.info("Người dùng đã kết nối, chuyển hướng đến: {}", redirectUrl);
                 return ResponseEntity.ok().body(
                         "{\"redirect\": \"" + redirectUrl + "\", \"ip\": \"" + clientIp + "\", \"tableNumber\": \"" + (savedTableNumber != null ? savedTableNumber : "1") + "\"}"
                 );
@@ -85,6 +96,7 @@ public class CaptivePortalController {
             session.setAttribute("tableNumber", tableNumber != null ? tableNumber : "1");
 
             String redirectUrl = "/table/" + (tableNumber != null ? tableNumber : "1");
+            logger.info("Kết nối mạng thành công, chuyển hướng đến: {}", redirectUrl);
             return ResponseEntity.ok().body(
                     "{\"status\": \"connected\", \"redirect\": \"" + redirectUrl + "\", \"ip\": \"" + clientIp + "\", \"tableNumber\": \"" + (tableNumber != null ? tableNumber : "1") + "\"}"
             );
@@ -103,7 +115,7 @@ public class CaptivePortalController {
         String ip = request.getRemoteAddr();
         if (ip == null || ip.isEmpty() || "0:0:0:0:0:0:0:1".equals(ip)) {
             logger.warn("IP localhost được phát hiện, giả lập IP trong dải mạng cho phát triển");
-            return "192.168.15.10"; // Giả lập IP trong dải mạng
+            return "192.168.1.100"; // Đảm bảo IP này thuộc restaurantCidr
         }
         return ip;
     }
