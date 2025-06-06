@@ -250,7 +250,7 @@ public class OrderService implements IOrderService {
         try {
             log.info("Fetching all unpaid orders");
 
-            List<Order> orders = orderRepository.findByPaymentStatus(PaymentStatus.UNPAID);
+            List<Order> orders = orderRepository.findAll();
             log.info("Retrieved {} unpaid orders", orders.size());
 
             return orders.stream().map(order -> {
