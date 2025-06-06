@@ -204,17 +204,24 @@ const Login = () => {
     <div
       className="h-screen w-screen flex items-center justify-center bg-cover bg-center"
       style={{
-        backgroundImage: "url('./src/assets/img/Login.png')",
+        backgroundImage: "url('./src/assets/img/loginBGNew.jpg')",
         backgroundSize: "cover",
         backgroundPosition: "center",
         filter: "none",
       }}
     >
-      <div className="absolute inset-0 bg-opacity-30 backdrop-blur-sm"></div>
+      <div
+        className="absolute inset-0"
+        style={{ background: "rgba(0, 0, 0, 0.4)" }}
+      ></div>
+      <div
+        className="absolute inset-0 bg-opacity-30 "
+        style={{ backdropFilter: "blur(3px)" }}
+      ></div>
 
       <div
         className="relative z-10 rounded-3xl overflow-hidden flex w-full max-w-4xl mx-4"
-        style={{ background: "linear-gradient(to bottom, #B1DCE0, #C08E8C)" }}
+        style={{ background: "rgba(255, 255, 255, 0.5)" }}
       >
         <div className="w-1/2 p-8">
           <div className="flex justify-center mb-4">
@@ -227,10 +234,16 @@ const Login = () => {
             </div>
           </div>
 
-          <h1 className="text-l font-bold text-center mb-1">
+          <h1
+            className="text-m font-bold text-black text-center mb-1"
+            style={{ fontFamily: "'Baskervville', serif" }}
+          >
             {isForgotPassword ? "" : "Sign In"}
           </h1>
-          <p className="text-center text-gray-600 text-l mb-6">
+          <p
+            className="text-center text-black text-l mb-6"
+            style={{ fontFamily: "'Baskervville', serif", fontStyle: "italic" }}
+          >
             {isForgotPassword
               ? "Enter your username and email to reset your password."
               : "Have a great day!"}
@@ -251,7 +264,7 @@ const Login = () => {
               value={userId}
               onChange={(e) => setUserId(e.target.value)}
               className="w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
-              style={{ backgroundColor: "#D9D9D9" }}
+              style={{ backgroundColor: "#D9D9D9", color: "#000000" }}
               placeholder="BonAppetit1..."
             />
           </div>
@@ -268,7 +281,7 @@ const Login = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     className="w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    style={{ backgroundColor: "#D9D9D9" }}
+                    style={{ backgroundColor: "#D9D9D9", color: "#000000" }}
                     placeholder="Bonappetit@email.com"
                   />
                 ) : (
@@ -278,7 +291,7 @@ const Login = () => {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       className="w-full px-3 py-2 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      style={{ backgroundColor: "#D9D9D9" }}
+                      style={{ backgroundColor: "#D9D9D9", color: "#000000" }}
                       placeholder="BonAppetit1234..."
                       onKeyDown={(e) => e.key === "Enter" && handleLogin()}
                     />
@@ -286,7 +299,7 @@ const Login = () => {
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       className="text-gray-400 hover:text-gray-600 px-2 py-1 rounded"
-                      style={{ backgroundColor: "#D9D9D9" }}
+                      style={{ backgroundColor: "#D9D9D9", color: "#000000" }}
                     >
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
@@ -377,7 +390,7 @@ const Login = () => {
 
         <div
           className="w-1/2 border-white border-1 bg-cover bg-center relative flex items-start justify-center rounded-3xl overflow-hidden shadow-md"
-          style={{ backgroundImage: "url('./src/assets/img/Login.png')" }}
+          style={{ backgroundImage: "url('./src/assets/img/loginBGNew.jpg')" }}
         >
           <div className="absolute top-6 text-center text-white">
             <h2 className="text-xl font-bold p-6">
