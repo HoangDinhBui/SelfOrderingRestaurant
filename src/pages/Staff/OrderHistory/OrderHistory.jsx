@@ -49,7 +49,7 @@ const OrderHistory = () => {
   // Transform orders to match the notification structure, only include PENDING orders
   const notifications = data?.orders
     ? data.orders
-        .filter((order) => order.status === "PENDING")
+        .filter((order) => order.paymentStatus === "PAID")
         .map((order) => ({
           id: order.orderId,
           customer: order.customerName,
