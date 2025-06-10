@@ -115,7 +115,7 @@ public class CaptivePortalController {
         String ip = request.getRemoteAddr();
         if (ip == null || ip.isEmpty() || "0:0:0:0:0:0:0:1".equals(ip)) {
             logger.warn("IP localhost được phát hiện, giả lập IP trong dải mạng cho phát triển");
-            return "192.168.1.100"; // Đảm bảo IP này thuộc restaurantCidr
+            return "192.168.137.172"; // Đảm bảo IP này thuộc restaurantCidr
         }
         return ip;
     }
