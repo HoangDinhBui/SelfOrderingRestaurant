@@ -15,6 +15,7 @@ import com.example.SelfOrderingRestaurant.Dto.Response.RevenueResponseDTO.Revenu
 import com.example.SelfOrderingRestaurant.Dto.Response.RevenueResponseDTO.YearlyRevenueDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.ShiftResponseDTO.ShiftResponseDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.StaffResponseDTO.GetAllStaffResponseDTO;
+import com.example.SelfOrderingRestaurant.Dto.Response.UserResponseDTO.AuthResponseDto;
 import com.example.SelfOrderingRestaurant.Entity.Shift;
 import com.example.SelfOrderingRestaurant.Entity.Staff;
 import com.example.SelfOrderingRestaurant.Entity.StaffShift;
@@ -36,8 +37,10 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -110,12 +113,18 @@ public class AdminController {
     }
 
     // Staff Management Endpoints
-    @PostMapping("/staff/register")
-    public ResponseEntity<?> registerStaff(@RequestBody RegisterRequestDto request) {
+    @PostMapping(value = "/staff/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> registerStaff(
+            @RequestPart("request") RegisterRequestDto request,
+            @RequestPart(value = "image", required = false) MultipartFile image) {
         try {
             logger.info("Registering new staff: {}", request.getUsername());
-            authService.registerStaff(request);
-            return ResponseEntity.ok("Staff registered successfully!");
+            AuthResponseDto authResponse = authService.registerStaff(request, image);
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Staff registered successfully!");
+            response.put("auth", authResponse);
+            response.put("staffId", authResponse.getStaffId());
+            return ResponseEntity.ok(response);
         } catch (Exception e) {
             logger.error("Error registering staff: {}", e.getMessage());
             return ResponseEntity.badRequest().body("Error registering staff: " + e.getMessage());
