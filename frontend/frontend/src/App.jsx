@@ -58,9 +58,9 @@ function App() {
               <Route
                 path="/"
                 element={
-                  <ProtectedRoute>
-                    <Navigate to="/table/1" replace />
-                  </ProtectedRoute>
+                  // <ProtectedRoute>
+                  <Navigate to="/captive-portal" replace />
+                  // </ProtectedRoute>
                 }
               />
               <Route path="/table/:tableNumber" element={<Home />} />

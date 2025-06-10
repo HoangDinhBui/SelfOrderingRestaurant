@@ -31,6 +31,8 @@ authAPI.interceptors.request.use(
       "/api/dishes",
       "/api/notifications",
       "/api/category",
+      "/api/captive/check-ip",
+      "/api/captive/connect",
     ];
     const isPublicEndpoint = publicEndpoints.some((endpoint) =>
       config.url.includes(endpoint)

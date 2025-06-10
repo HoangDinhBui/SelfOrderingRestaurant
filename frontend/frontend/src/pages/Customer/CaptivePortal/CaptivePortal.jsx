@@ -1,6 +1,7 @@
+// CaptivePortal.js
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import axios from "axios";
+import { publicAPI } from "../../../axiosConfig"; // Import publicAPI
 import Bg1 from "../../../assets/img/CaptiveBg.jpg";
 import Bg2 from "../../../assets/img/CaptiveBg2.jpg";
 import logoCap from "../../../assets/img/CaptiveLogo.png";
@@ -22,26 +23,26 @@ const CaptivePortal = () => {
 
   const logoSrc = logoCap;
 
-  // Lấy tableNumber từ query parameter
+  // Lấy tableNumber từ query parameter hoặc state
   const queryParams = new URLSearchParams(location.search);
-  const tableNumber = queryParams.get("tableNumber") || "1";
+  const tableNumber =
+    queryParams.get("tableNumber") || location.state?.tableNumber || "1";
 
   // Kiểm tra IP khi component được tải
   useEffect(() => {
     const token = localStorage.getItem("accessToken");
-    if (token) {
-      const userType = localStorage.getItem("userType");
-      navigate(
-        userType === "ADMIN" ? "/table-management_admin" : "/attendance"
-      );
-      return;
-    }
+    const userType = localStorage.getItem("userType");
 
-    axios
-      .get(`/api/captive/check-ip?tableNumber=${tableNumber}`)
+    // Kiểm tra IP cho khách hàng (không có token)
+    publicAPI
+      .get(`/captive/check-ip?tableNumber=${tableNumber}`)
       .then((response) => {
         setClientIp(response.data.ip);
-        if (response.data.redirect.startsWith("/table/")) {
+        // Chỉ chuyển hướng nếu API trả về đường dẫn hợp lệ và không phải STAFF/ADMIN
+        if (
+          response.data.redirect.startsWith("/table/") &&
+          (!token || userType === "CUSTOMER")
+        ) {
           navigate(response.data.redirect);
         }
       })
@@ -93,8 +94,8 @@ const CaptivePortal = () => {
     e.preventDefault();
     setIsLoading(true);
 
-    axios
-      .post(`/api/captive/connect?tableNumber=${tableNumber}`)
+    publicAPI
+      .post(`/captive/connect?tableNumber=${tableNumber}`)
       .then((response) => {
         setIsLoading(false);
         if (response.data.status === "connected") {
