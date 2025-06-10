@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from "react";
-import MenuBar from "../../../components/layout/MenuBar"; // Corrected import name
+import React, { useState, useEffect, useRef } from "react";
+import MenuBar from "../../../components/layout/MenuBar";
 import logoRemoveBg from "../../../assets/img/logoremovebg.png";
-import chefImage from "../../../assets/img/chef.png"; // Import chef image
-import { authAPI } from "../../../services/api"; // Adjust path to your API file
+import chefImage from "../../../assets/img/chef.png";
+import { authAPI } from "../../../services/api";
 
 const StaffManagementAdmin = () => {
   const [staff, setStaff] = useState([]);
@@ -29,11 +29,15 @@ const StaffManagementAdmin = () => {
   const [showEditForm, setShowEditForm] = useState(false);
   const [staffToEdit, setStaffToEdit] = useState(null);
   const [userRole, setUserRole] = useState(null);
+  // Camera-related state and refs
+  const [showCamera, setShowCamera] = useState(false);
+  const [capturedImage, setCapturedImage] = useState(null);
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
 
-  // API base URL
-  const API_BASE_URL = "http://localhost:8080/api/admin";
+  const API_BASE_URL = "/admin";
+  const ATTENDANCE_API_URL = "/api/attendance";
 
-  // Check user role on component mount
   useEffect(() => {
     const role = localStorage.getItem("userType");
     setUserRole(role);
@@ -42,18 +46,54 @@ const StaffManagementAdmin = () => {
     }
   }, []);
 
-  // Lấy token từ localStorage
   const getAuthHeaders = () => ({
-    "Content-Type": "application/json",
+    //"Content-Type": "application/json",
     Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
   });
 
-  // Lấy danh sách nhân viên khi component mount và userRole là ADMIN
   useEffect(() => {
     if (userRole === "ADMIN") {
       fetchStaff();
     }
   }, [userRole]);
+
+  // Handle camera stream setup
+  useEffect(() => {
+    let stream = null;
+    if (showCamera && videoRef.current) {
+      console.log("Mounting camera stream...");
+      navigator.mediaDevices
+        .getUserMedia({ video: true })
+        .then((mediaStream) => {
+          stream = mediaStream;
+          videoRef.current.srcObject = stream;
+          videoRef.current.onloadedmetadata = () => {
+            videoRef.current
+              .play()
+              .catch((err) => console.error("Play error:", err));
+          };
+        })
+        .catch((error) => {
+          console.error("Error accessing camera in useEffect:", error);
+          setErrorMessage(
+            error.name === "NotAllowedError"
+              ? "Camera access denied. Please grant camera permissions."
+              : "Failed to access camera. Ensure a camera is available and permissions are granted."
+          );
+          setShowCamera(false);
+        });
+    }
+    // Cleanup
+    return () => {
+      if (stream) {
+        console.log("Cleaning up camera stream...");
+        stream.getTracks().forEach((track) => track.stop());
+      }
+      if (videoRef.current) {
+        videoRef.current.srcObject = null;
+      }
+    };
+  }, [showCamera]);
 
   const fetchStaff = async () => {
     try {
@@ -61,13 +101,13 @@ const StaffManagementAdmin = () => {
       const response = await authAPI.get(`${API_BASE_URL}/staff`, {
         headers: getAuthHeaders(),
       });
-      const data = response.data || []; // Fallback to empty array
+      const data = response.data || [];
       const mappedData = data
         .filter((item) => item.status === "ACTIVE")
         .map((item) => ({
           id: item.staff_id,
           fullName: item.fullname,
-          role: item.position || "Unknown", // Fallback for position
+          role: item.position || "Unknown",
           workShift:
             item.position &&
             typeof item.position === "string" &&
@@ -120,7 +160,8 @@ const StaffManagementAdmin = () => {
       });
       await fetchStaff();
       const status = error.response?.status;
-      let message = error.response?.data?.message || "Error while deleting employee";
+      let message =
+        error.response?.data?.message || "Error while deleting employee";
       if (status === 403 || status === 401) {
         message = "Access denied: Administrator privileges required.";
       } else if (status === 404) {
@@ -130,7 +171,6 @@ const StaffManagementAdmin = () => {
     }
   };
 
-  // Xử lý tìm kiếm cục bộ
   const handleSearch = (event) => {
     if (userRole !== "ADMIN") return;
     if (event.key === "Enter") {
@@ -145,14 +185,12 @@ const StaffManagementAdmin = () => {
     }
   };
 
-  // Xử lý xóa nhân viên
   const handleDeleteStaff = (staff) => {
     if (userRole !== "ADMIN") return;
     setStaffToDelete(staff);
     setShowDeletePopup(true);
   };
 
-  // Xử lý sửa nhân viên
   const handleEditStaff = (staff) => {
     if (userRole !== "ADMIN") return;
     setStaffToEdit(staff);
@@ -162,6 +200,30 @@ const StaffManagementAdmin = () => {
       status: "ACTIVE",
     });
     setShowEditForm(true);
+  };
+
+  const startCamera = () => {
+    console.log("Triggering camera start...");
+    setShowCamera(true);
+  };
+
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const context = canvasRef.current.getContext("2d");
+      canvasRef.current.width = videoRef.current.videoWidth;
+      canvasRef.current.height = videoRef.current.videoHeight;
+      context.drawImage(videoRef.current, 0, 0);
+      const imageData = canvasRef.current.toDataURL("image/jpeg");
+      setCapturedImage(imageData);
+      setShowCamera(false);
+    } else {
+      console.error("Video or canvas ref not available");
+      setErrorMessage("Failed to capture photo. Please try again.");
+    }
+  };
+
+  const stopCamera = () => {
+    setShowCamera(false);
   };
 
   const validateAndAddStaff = async () => {
@@ -174,41 +236,59 @@ const StaffManagementAdmin = () => {
       !newStaff.username ||
       !newStaff.password
     ) {
-      setErrorMessage("Please fill in all required fields!");
+      setErrorMessage("Vui lòng điền đầy đủ các trường bắt buộc!");
       return;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(newStaff.email)) {
-      setErrorMessage("Email is not in correct format!");
+      setErrorMessage("Email không đúng định dạng!");
       return;
     }
 
     if (newStaff.username.length < 3 || newStaff.username.length > 50) {
-      setErrorMessage("Username must be between 3 and 50 characters!");
+      setErrorMessage("Tên đăng nhập phải từ 3 đến 50 ký tự!");
       return;
     }
 
     if (newStaff.password.length < 8) {
-      setErrorMessage("Password must be at least 8 characters!");
+      setErrorMessage("Mật khẩu phải có ít nhất 8 ký tự!");
       return;
     }
 
     if (newStaff.salary && isNaN(parseFloat(newStaff.salary))) {
-      setErrorMessage("Salary must be a valid number!");
+      setErrorMessage("Lương phải là một số hợp lệ!");
       return;
     }
 
     try {
-      await authAPI.post(`${API_BASE_URL}/staff/register`, {
+      // Prepare FormData for multipart request
+      const formData = new FormData();
+      const staffData = {
         username: newStaff.username,
         email: newStaff.email,
         password: newStaff.password,
-        phone: newStaff.phoneNumber,
+        phone: newStaff.phoneNumber || null,
         fullname: newStaff.fullName,
         position: newStaff.position,
-        salary: newStaff.salary ? parseFloat(newStaff.salary) : null,
-      });
+        salary: newStaff.salary ? newStaff.salary.toString() : null,
+      };
+      // Append request as JSON Blob
+      formData.append(
+        "request",
+        new Blob([JSON.stringify(staffData)], { type: "application/json" })
+      );
+      if (capturedImage) {
+        const blob = await fetch(capturedImage).then((res) => res.blob());
+        formData.append("image", blob, "profile.jpg");
+      }
+      // Log FormData entries
+      for (let [key, value] of formData.entries()) {
+        console.log(`FormData: ${key} =`, value);
+      }
+      // Register staff with image
+      const response = await authAPI.post(`/admin/staff/register`, formData);
+      console.log("Response:", response.data);
 
       await fetchStaff();
       setShowAddForm(false);
@@ -225,15 +305,24 @@ const StaffManagementAdmin = () => {
         password: "",
         status: "ACTIVE",
       });
+      setCapturedImage(null);
       setErrorMessage("");
       setShowSuccessPopup(true);
       setTimeout(() => setShowSuccessPopup(false), 2000);
     } catch (error) {
-      console.error("Error adding staff:", error);
+      console.error("Lỗi khi thêm nhân viên:", error);
+      console.log("Error response:", error.response?.data);
       const status = error.response?.status;
-      let message = error.response?.data?.message || "Error adding employee!";
+      let message =
+        error.response?.data?.message ||
+        error.message ||
+        "Lỗi khi thêm nhân viên!";
       if (status === 403 || status === 401) {
-        message = "Access denied: Administrator privileges required.";
+        message = "Từ chối truy cập: Yêu cầu quyền quản trị viên.";
+      } else if (status === 400) {
+        message = "Dữ liệu không hợp lệ. Vui lòng kiểm tra lại thông tin.";
+      } else if (status === 500) {
+        message = "Lỗi server. Vui lòng kiểm tra cấu hình API.";
       }
       setErrorMessage(message);
     }
@@ -256,11 +345,15 @@ const StaffManagementAdmin = () => {
       return;
     }
     try {
-      await authAPI.put(`${API_BASE_URL}/staff/${staffToEdit.id}`, {
-        position: newStaff.position,
-        salary: newStaff.salary,
-        status: newStaff.status,
-      });
+      await authAPI.put(
+        `${API_BASE_URL}/staff/${staffToEdit.id}`,
+        {
+          position: newStaff.position,
+          salary: newStaff.salary,
+          status: newStaff.status,
+        },
+        { headers: getAuthHeaders() }
+      );
 
       await fetchStaff();
       setShowEditForm(false);
@@ -269,9 +362,6 @@ const StaffManagementAdmin = () => {
         fullName: "",
         startDate: "",
         workShift: "",
-        position: "",
-        phoneNumber: "",
-        address: "",
         email: "",
         salary: "",
         username: "",
@@ -293,10 +383,9 @@ const StaffManagementAdmin = () => {
     }
   };
 
-  // Render "Access Denied" message if user is not ADMIN
   if (userRole !== "ADMIN") {
     return (
-      <div className="h-screen w-screen flex flex-col bg-gradient-to-br from-blue-50 to-gray-100">
+      <div className="h-screen w-screen flex flex-col bg-gradient-to-br from-blue-50 to-glass-100">
         <MenuBar
           title="Staff Management"
           icon="https://img.icons8.com/ios-filled/50/FFFFFF/user.png"
@@ -618,6 +707,41 @@ const StaffManagementAdmin = () => {
       marginBottom: "10px",
       textAlign: "center",
     },
+    // Camera-specific styles
+    cameraContainer: {
+      display: "flex",
+      flexDirection: "column",
+      alignItems: "center",
+      gap: "10px",
+      border: "1px solid #ddd",
+      borderRadius: "10px",
+      padding: "20px",
+      backgroundColor: "#f9f9f9",
+    },
+    video: {
+      width: "250px",
+      height: "250px",
+      borderRadius: "10px",
+      border: "1px solid #ddd",
+    },
+    canvas: {
+      display: "none",
+    },
+    capturedImage: {
+      width: "250px",
+      height: "250px",
+      borderRadius: "10px",
+      border: "1px solid #ddd",
+      objectFit: "cover",
+    },
+    cameraButton: {
+      padding: "10px 20px",
+      backgroundColor: "#3498db",
+      color: "white",
+      border: "none",
+      borderRadius: "5px",
+      cursor: "pointer",
+    },
   };
 
   return (
@@ -701,7 +825,10 @@ const StaffManagementAdmin = () => {
             <>
               <div
                 style={styles.overlay}
-                onClick={() => setShowAddForm(false)}
+                onClick={() => {
+                  setShowAddForm(false);
+                  stopCamera();
+                }}
               ></div>
               <div style={styles.addFormContainer}>
                 <h2 style={styles.addFormTitle}>Add Staff</h2>
@@ -831,8 +958,7 @@ const StaffManagementAdmin = () => {
                       </label>
                       <label style={styles.formLabel}>
                         <span style={styles.labelText}>
-                          Username{" "}
-                          <span style={styles.requiredMark}>(*)</span>:
+                          Username <span style={styles.requiredMark}>(*)</span>:
                         </span>
                         <input
                           type="text"
@@ -863,6 +989,51 @@ const StaffManagementAdmin = () => {
                         />
                       </label>
                     </div>
+                    <div style={styles.cameraContainer}>
+                      {showCamera ? (
+                        <>
+                          <video ref={videoRef} autoPlay style={styles.video} />
+                          <button
+                            onClick={capturePhoto}
+                            style={styles.cameraButton}
+                          >
+                            Capture Photo
+                          </button>
+                        </>
+                      ) : capturedImage ? (
+                        <>
+                          <img
+                            src={capturedImage}
+                            alt="Captured Face"
+                            style={styles.capturedImage}
+                          />
+                          <button
+                            onClick={startCamera}
+                            style={styles.cameraButton}
+                          >
+                            Retake Photo
+                          </button>
+                        </>
+                      ) : (
+                        <>
+                          <div style={styles.capturedImage}>
+                            <p style={styles.placeholderText}>
+                              No photo captured
+                            </p>
+                          </div>
+                          <button
+                            onClick={startCamera}
+                            style={styles.cameraButton}
+                          >
+                            Open Camera
+                          </button>
+                        </>
+                      )}
+                      <p style={styles.imageNote}>
+                        Please capture a clear photo of the staff's face.
+                      </p>
+                    </div>
+                    <canvas ref={canvasRef} style={styles.canvas} />
                   </div>
                   {errorMessage && (
                     <p style={styles.errorText}>{errorMessage}</p>
@@ -875,7 +1046,10 @@ const StaffManagementAdmin = () => {
                       Add
                     </button>
                     <button
-                      onClick={() => setShowAddForm(false)}
+                      onClick={() => {
+                        setShowAddForm(false);
+                        stopCamera();
+                      }}
                       style={styles.cancelButton}
                     >
                       Cancel
@@ -965,8 +1139,7 @@ const StaffManagementAdmin = () => {
                       </label>
                       <label style={styles.formLabel}>
                         <span style={styles.labelText}>
-                          Status{" "}
-                          <span style={styles.requiredMark}>(*)</span>:
+                          Status <span style={styles.requiredMark}>(*)</span>:
                         </span>
                         <select
                           value={newStaff.status}

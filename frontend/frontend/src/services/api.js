@@ -7,28 +7,21 @@ const API_BASE_URL =
 // Tạo instance axios cho các yêu cầu cần xác thực
 const authAPI = axios.create({
   baseURL: API_BASE_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
   timeout: 15000, // Timeout 15 giây
 });
 
 // Tạo instance axios cho các yêu cầu công khai (không cần Authorization header)
 const publicAPI = axios.create({
   baseURL: API_BASE_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
   timeout: 30000, // Timeout 30 giây cho các API payment
 });
 
-// Interceptor yêu cầu cho authAPI - thêm token vào các yêu cầu trừ các endpoint công khai
+// Interceptor yêu cầu cho authAPI - thêm token và xử lý Content-Type
 authAPI.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("accessToken");
-    // Danh sách các endpoint công khai không cần token
     const publicEndpoints = [
-      "/api/payment", // Tất cả API payment đều công khai
+      "/api/payment",
       "/api/auth/login",
       "/api/auth/forgot-password",
       "/api/auth/refresh-token",
@@ -42,21 +35,53 @@ authAPI.interceptors.request.use(
     const isPublicEndpoint = publicEndpoints.some((endpoint) =>
       config.url.startsWith(endpoint)
     );
+    // Thêm Authorization header nếu cần
     if (token && !isPublicEndpoint) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    // Xử lý Content-Type
+    if (config.data instanceof FormData) {
+      console.log("FormData detected, removing Content-Type");
+      delete config.headers["Content-Type"];
+    } else {
+      // Đặt Content-Type mặc định cho JSON nếu không phải FormData
+      config.headers["Content-Type"] =
+        config.headers["Content-Type"] || "application/json";
+    }
+    console.log("authAPI Request:", {
+      url: config.url,
+      headers: config.headers,
+      data: config.data instanceof FormData ? "FormData" : config.data,
+    });
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    console.error("authAPI Request Interceptor Error:", error);
+    return Promise.reject(error);
+  }
 );
 
+// Interceptor yêu cầu cho publicAPI
 publicAPI.interceptors.request.use(
   (config) => {
-    console.log("PublicAPI Request Headers:", config.headers);
-    console.log("Request URL:", config.url);
+    if (config.data instanceof FormData) {
+      console.log("FormData detected in publicAPI, removing Content-Type");
+      delete config.headers["Content-Type"];
+    } else {
+      config.headers["Content-Type"] =
+        config.headers["Content-Type"] || "application/json";
+    }
+    console.log("publicAPI Request:", {
+      url: config.url,
+      headers: config.headers,
+      data: config.data instanceof FormData ? "FormData" : config.data,
+    });
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => {
+    console.error("publicAPI Request Interceptor Error:", error);
+    return Promise.reject(error);
+  }
 );
 
 // Interceptor phản hồi để xử lý làm mới token và lỗi xác thực
@@ -70,7 +95,6 @@ authAPI.interceptors.response.use(
       originalRequest._retry = false;
     }
 
-    // Xử lý lỗi 401 cho các endpoint không công khai
     const publicEndpoints = [
       "/api/payment",
       "/api/auth/login",
@@ -102,11 +126,9 @@ authAPI.interceptors.response.use(
           return Promise.reject(error);
         }
 
-        // Sử dụng publicAPI để làm mới token, tránh vòng lặp interceptor
         const refreshResponse = await publicAPI.post(
           "/api/auth/refresh-token",
-          { refreshToken },
-          { headers: { "Content-Type": "application/json" } }
+          { refreshToken }
         );
 
         if (refreshResponse.data.accessToken) {
@@ -118,7 +140,6 @@ authAPI.interceptors.response.use(
             );
           }
 
-          // Thử lại yêu cầu ban đầu với token mới
           originalRequest.headers.Authorization = `Bearer ${refreshResponse.data.accessToken}`;
           return authAPI(originalRequest);
         } else {
@@ -135,7 +156,6 @@ authAPI.interceptors.response.use(
       }
     }
 
-    // Xử lý lỗi 403 Forbidden
     if (error.response?.status === 403) {
       console.error("Không có quyền truy cập tài nguyên này.");
     }
@@ -219,15 +239,15 @@ export const refreshToken = async (refreshToken) => {
 };
 
 // ===================== Nhân Viên ===================== //
-// export const getStaff = async () => {
-//   try {
-//     const response = await authAPI.get("/api/admin/staff");
-//     return response.data;
-//   } catch (error) {
-//     handleApiError(error);
-//     throw error;
-//   }
-// };
+export const getStaff = async () => {
+  try {
+    const response = await authAPI.get("/api/admin/staff");
+    return response.data;
+  } catch (error) {
+    handleApiError(error);
+    throw error;
+  }
+};
 
 export const getDishById = async (id) => {
   try {
@@ -403,7 +423,7 @@ export const initiateVNPayPayment = async (paymentData) => {
       "/api/payment/vnpay_payment",
       paymentData
     );
-    return response.data; // Trả về URL thanh toán hoặc chi tiết giao dịch
+    return response.data;
   } catch (error) {
     handleApiError(error);
     if (error.response?.status === 400) {
@@ -431,8 +451,6 @@ export const getPaymentStatus = async (orderId) => {
 };
 
 // ===================== Hàm Hỗ Trợ ===================== //
-
-// Xử lý lỗi API để chuẩn hóa ghi log và xử lý
 const handleApiError = (error) => {
   if (error.response) {
     console.error("Lỗi phản hồi API:", {
