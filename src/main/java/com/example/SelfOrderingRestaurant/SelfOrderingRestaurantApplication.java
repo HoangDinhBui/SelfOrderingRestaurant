@@ -18,5 +18,4 @@ public class SelfOrderingRestaurantApplication {
 		System.out.println("OpenCV library version: " + Core.VERSION);
 		SpringApplication.run(SelfOrderingRestaurantApplication.class, args);
 	}
-
 }
