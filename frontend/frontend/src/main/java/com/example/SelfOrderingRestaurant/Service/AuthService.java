@@ -28,9 +28,12 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -52,7 +55,7 @@ public class AuthService {
     private final Logger log = LoggerFactory.getLogger(AuthService.class);
 
     @Transactional
-    public AuthResponseDto registerStaff(RegisterRequestDto request) {
+    public AuthResponseDto registerStaff(RegisterRequestDto request, MultipartFile image) {
         // Check if username or email already exists
         if (userRepository.existsByUsername(request.getUsername())) {
             throw new RuntimeException("Username already exists");
@@ -73,15 +76,27 @@ public class AuthService {
 
         User savedUser = userRepository.save(user);
 
-        // Create staff profile instead of customer profile
+        // Create staff profile
         Staff staff = new Staff();
         staff.setUser(savedUser);
         staff.setFullname(request.getFullname());
-        staff.setHireDate(LocalDate.now()); // Set hire date to current time
-        staff.setPosition("New Staff"); // Default position
-        staff.setSalary(BigDecimal.ZERO); // Default salary, can be updated later
+        staff.setHireDate(LocalDate.now());
+        staff.setPosition("New Staff");
+        staff.setSalary(BigDecimal.ZERO);
         staff.setStatus(UserStatus.ACTIVE);
-        staffRepository.save(staff);
+
+        // Handle image if provided
+        if (image != null && !image.isEmpty()) {
+            String filePath = "src/main/resources/static/staff_faces/" + savedUser.getUserId() + ".jpg";
+            try {
+                Files.write(Paths.get(filePath), image.getBytes());
+                staff.setFaceImagePath(filePath);
+            } catch (IOException e) {
+                throw new RuntimeException("Failed to save image: " + e.getMessage());
+            }
+        }
+
+        Staff savedStaff = staffRepository.save(staff);
 
         // Generate tokens
         String accessToken = jwtTokenService.generateAccessToken(savedUser);
@@ -94,6 +109,7 @@ public class AuthService {
         response.setUsername(savedUser.getUsername());
         response.setEmail(savedUser.getEmail());
         response.setUserType(savedUser.getUserType().name());
+        response.setStaffId(savedStaff.getStaffId());
 
         return response;
     }

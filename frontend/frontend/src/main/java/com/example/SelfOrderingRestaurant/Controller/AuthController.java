@@ -4,6 +4,7 @@ import com.example.SelfOrderingRestaurant.Dto.Request.UserRequestDTO.RegisterReq
 import com.example.SelfOrderingRestaurant.Dto.Request.UserRequestDTO.*;
 import com.example.SelfOrderingRestaurant.Dto.Response.UserResponseDTO.AuthResponseDto;
 import com.example.SelfOrderingRestaurant.Service.AuthService;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,8 +29,12 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponseDto> login(
-            @Valid @RequestBody LoginRequestDto request
+            @Valid @RequestBody LoginRequestDto request, HttpSession session
     ) {
+        AuthResponseDto response = authService.login(request);
+        // Lưu trạng thái kết nối vào session
+        session.setAttribute("isConnected", true);
+        session.setAttribute("tableNumber", "1");
         return ResponseEntity.ok(authService.login(request));
     }
 
