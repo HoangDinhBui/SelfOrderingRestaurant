@@ -37,4 +37,11 @@ public class DinningTableController {
         dinningTableService.updateTableStatus(tableId, dinningTableRequestDTO.getStatus());
         return ResponseEntity.ok("Table status updated successfully!");
     }
+    @PostMapping("/swap")
+    public ResponseEntity<String> swapTables(
+            @RequestParam Integer tableNumberA,
+            @RequestParam Integer tableNumberB) {
+        dinningTableService.swapTables(tableNumberA, tableNumberB);
+        return ResponseEntity.ok("Tables swapped successfully!");
+    }
 }

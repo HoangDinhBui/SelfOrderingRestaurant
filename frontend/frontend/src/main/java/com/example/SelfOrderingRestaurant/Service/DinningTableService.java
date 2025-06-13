@@ -79,20 +79,19 @@ public class DinningTableService implements IDinningTableService {
     public List<DinningTableResponseDTO> getAllTables() {
         return dinningTableRepository.findAll().stream()
                 .map(table -> {
-                    // Lấy danh sách đơn hàng
                     List<Order> tableOrders = orderRepository.findByTableNumber(table.getTableNumber());
-
-                    // Tính trạng thái
                     TableStatus status;
                     if (tableOrders.isEmpty()) {
                         status = TableStatus.AVAILABLE;
-                    } else if (tableOrders.size() == 1 && PaymentStatus.PAID.name().equals(tableOrders.get(0).getPaymentStatus())) {
+                    } else if (tableOrders.size() == 1 && tableOrders.get(0).getPaymentStatus() == PaymentStatus.PAID) {
                         status = TableStatus.AVAILABLE;
                     } else {
                         status = TableStatus.OCCUPIED;
                     }
-
-                    // Cập nhật trạng thái nếu khác
+                    if (table.getTableStatus() != status) {
+                        table.setTableStatus(status);
+                        dinningTableRepository.save(table);
+                    }
                     return convertToResponseDTO(table);
                 })
                 .collect(Collectors.toList());
@@ -118,5 +117,46 @@ public class DinningTableService implements IDinningTableService {
                 dinningTable.getCapacity(),
                 dinningTable.getTableStatus() != null ? dinningTable.getTableStatus().toString() : "UNKNOWN"
         );
+    }
+
+    @Transactional
+    @Override
+    public void swapTables(Integer tableNumberA, Integer tableNumberB) {
+        // Kiểm tra xem cả hai bàn có tồn tại không
+        DinningTable tableA = dinningTableRepository.findById(tableNumberA)
+                .orElseThrow(() -> new ResourceNotFoundException("Table with number " + tableNumberA + " not found"));
+        DinningTable tableB = dinningTableRepository.findById(tableNumberB)
+                .orElseThrow(() -> new ResourceNotFoundException("Table with number " + tableNumberB + " not found"));
+
+        // Lấy danh sách đơn hàng của hai bàn
+        List<Order> ordersTableA = orderRepository.findByTableNumber(tableNumberA);
+        List<Order> ordersTableB = orderRepository.findByTableNumber(tableNumberB);
+
+        // Kiểm tra nếu cả hai bàn đều không có đơn hàng
+        if (ordersTableA.isEmpty() && ordersTableB.isEmpty()) {
+            throw new IllegalStateException("Both tables have no active orders to swap");
+        }
+
+        // Hoán đổi bàn trong đơn hàng
+        ordersTableA.forEach(order -> order.setTables(tableB));
+        ordersTableB.forEach(order -> order.setTables(tableA));
+
+        // Lưu các đơn hàng đã cập nhật
+        orderRepository.saveAll(ordersTableA);
+        orderRepository.saveAll(ordersTableB);
+
+        // Cập nhật trạng thái bàn
+        updateTableStatusAfterSwap(tableA, ordersTableB);
+        updateTableStatusAfterSwap(tableB, ordersTableA);
+    }
+
+    private void updateTableStatusAfterSwap(DinningTable table, List<Order> orders) {
+        // Nếu bàn không có đơn hàng hoặc chỉ có đơn hàng đã thanh toán, đặt trạng thái là AVAILABLE
+        if (orders.isEmpty() || orders.stream().allMatch(order -> order.getPaymentStatus() == PaymentStatus.PAID)) {
+            table.setTableStatus(TableStatus.AVAILABLE);
+        } else {
+            table.setTableStatus(TableStatus.OCCUPIED);
+        }
+        dinningTableRepository.save(table);
     }
 }
