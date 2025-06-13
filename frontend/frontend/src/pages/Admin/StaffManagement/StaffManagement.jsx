@@ -34,6 +34,42 @@ const StaffManagementAdmin = () => {
   const [capturedImage, setCapturedImage] = useState(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+  const [showTimekeepingModal, setShowTimekeepingModal] = useState(false);
+  const [selectedStaffTimekeeping, setSelectedStaffTimekeeping] =
+    useState(null);
+  const [showAllTimekeepingModal, setShowAllTimekeepingModal] = useState(false); // New state for all timekeeping modal
+
+  // Mock data for timekeeping
+  const mockTimekeepingData = [
+    {
+      id: 1,
+      fullName: "John Doe",
+      checkIn: "08:00 AM",
+      checkOut: "05:00 PM",
+      salary: 50000,
+    },
+    {
+      id: 2,
+      fullName: "Jane Smith",
+      checkIn: "09:00 AM",
+      checkOut: "06:00 PM",
+      salary: 45000,
+    },
+    {
+      id: 3,
+      fullName: "Alice Johnson",
+      checkIn: "07:30 AM",
+      checkOut: "04:30 PM",
+      salary: 48000,
+    },
+    {
+      id: 4,
+      fullName: "Bob Brown",
+      checkIn: "08:30 AM",
+      checkOut: "05:30 PM",
+      salary: 52000,
+    },
+  ];
 
   const API_BASE_URL = "/admin";
   const ATTENDANCE_API_URL = "/api/attendance";
@@ -224,6 +260,28 @@ const StaffManagementAdmin = () => {
 
   const stopCamera = () => {
     setShowCamera(false);
+  };
+
+  // Xử lý hiển thị modal chấm công cho nhân viên cụ thể
+  const handleTimekeeping = (staff) => {
+    if (userRole !== "ADMIN") return;
+    const timekeepingData = mockTimekeepingData.find(
+      (item) => item.id === staff.id
+    ) || {
+      id: staff.id,
+      fullName: staff.fullName,
+      checkIn: "N/A",
+      checkOut: "N/A",
+      salary: "N/A",
+    };
+    setSelectedStaffTimekeeping(timekeepingData);
+    setShowTimekeepingModal(true);
+  };
+
+  // Xử lý hiển thị modal chấm công cho tất cả nhân viên
+  const handleAllTimekeeping = () => {
+    if (userRole !== "ADMIN") return;
+    setShowAllTimekeepingModal(true);
   };
 
   const validateAndAddStaff = async () => {
@@ -546,6 +604,17 @@ const StaffManagementAdmin = () => {
       borderRadius: "5px",
       cursor: "pointer",
     },
+    timekeepingButton: {
+      padding: "0px 5px",
+      backgroundColor: "#4CAF50",
+      color: "white",
+      border: "none",
+      borderRadius: "5px",
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      gap: "5px",
+    },
     cancelButton: {
       padding: "10px 20px",
       backgroundColor: "#e74c3c",
@@ -707,6 +776,7 @@ const StaffManagementAdmin = () => {
       marginBottom: "10px",
       textAlign: "center",
     },
+
     // Camera-specific styles
     cameraContainer: {
       display: "flex",
@@ -741,6 +811,46 @@ const StaffManagementAdmin = () => {
       border: "none",
       borderRadius: "5px",
       cursor: "pointer",
+    },
+
+    // Timekeeping modal styles
+    timekeepingModal: {
+      position: "fixed",
+      top: "50%",
+      left: "50%",
+      transform: "translate(-50%, -50%)",
+      backgroundColor: "#fff",
+      padding: "20px",
+      borderRadius: "10px",
+      boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
+      zIndex: 1000,
+      width: "500px",
+      maxWidth: "90%",
+      height: "auto",
+      maxHeight: "90vh",
+      overflowY: "auto",
+    },
+    timekeepingTable: {
+      width: "100%",
+      borderCollapse: "collapse",
+      marginTop: "10px",
+    },
+    allTimekeepingTable: {
+      width: "100%",
+      borderCollapse: "collapse",
+      marginTop: "10px",
+    },
+    timekeepingTh: {
+      backgroundColor: "#9DC6CE",
+      fontWeight: "bold",
+      border: "1px solid #dddddd",
+      padding: "10px",
+      textAlign: "left",
+    },
+    timekeepingTd: {
+      border: "1px solid #9DC6CE",
+      padding: "10px",
+      textAlign: "left",
     },
   };
 
@@ -780,8 +890,17 @@ const StaffManagementAdmin = () => {
                       <td style={styles.td}>
                         <button
                           style={{ marginRight: "10px", cursor: "pointer" }}
+                          onClick={() => handleTimekeeping(item)}
+                          disabled={userRole !== "ADMIN"}
+                          aria-label="View Timekeeping"
+                        >
+                          ⏰
+                        </button>
+                        <button
+                          style={{ marginRight: "10px", cursor: "pointer" }}
                           onClick={() => handleEditStaff(item)}
                           disabled={userRole !== "ADMIN"}
+                          aria-label="Edit Staff"
                         >
                           ✏️
                         </button>
@@ -789,6 +908,7 @@ const StaffManagementAdmin = () => {
                           style={{ cursor: "pointer" }}
                           onClick={() => handleDeleteStaff(item)}
                           disabled={userRole !== "ADMIN"}
+                          aria-label="Delete Staff"
                         >
                           🗑️
                         </button>
@@ -808,13 +928,23 @@ const StaffManagementAdmin = () => {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onKeyDown={handleSearch}
                   disabled={userRole !== "ADMIN"}
+                  aria-label="Search staff"
                 />
                 <button
                   style={styles.addButton}
                   onClick={() => setShowAddForm(true)}
                   disabled={userRole !== "ADMIN"}
+                  aria-label="Add new staff"
                 >
                   +
+                </button>
+                <button
+                  style={styles.timekeepingButton}
+                  onClick={handleAllTimekeeping}
+                  disabled={userRole !== "ADMIN"}
+                  aria-label="View all timekeeping records"
+                >
+                  ⏰ Timekeeping
                 </button>
               </div>
               <img src={chefImage} alt="Chef" style={styles.chefMouseImage} />
@@ -1067,7 +1197,7 @@ const StaffManagementAdmin = () => {
                 alt="Bon Appétit"
                 style={styles.successImage}
               />
-              <p style={styles.successText}>Successfull</p>
+              <p style={styles.successText}>Successful</p>
               <div style={styles.successIcon}>✔</div>
             </div>
           )}
@@ -1171,6 +1301,108 @@ const StaffManagementAdmin = () => {
                       Cancel
                     </button>
                   </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {showTimekeepingModal && selectedStaffTimekeeping && (
+            <>
+              <div
+                style={styles.overlay}
+                onClick={() => setShowTimekeepingModal(false)}
+              ></div>
+              <div style={styles.timekeepingModal}>
+                <h2 style={styles.addFormTitle}>Timekeeping Details</h2>
+                <table style={styles.timekeepingTable}>
+                  <thead>
+                    <tr>
+                      <th style={styles.timekeepingTh}>Field</th>
+                      <th style={styles.timekeepingTh}>Value</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td style={styles.timekeepingTd}>Employee ID</td>
+                      <td style={styles.timekeepingTd}>
+                        {selectedStaffTimekeeping.id}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style={styles.timekeepingTd}>Name</td>
+                      <td style={styles.timekeepingTd}>
+                        {selectedStaffTimekeeping.fullName}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style={styles.timekeepingTd}>Check-in Time</td>
+                      <td style={styles.timekeepingTd}>
+                        {selectedStaffTimekeeping.checkIn}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style={styles.timekeepingTd}>Check-out Time</td>
+                      <td style={styles.timekeepingTd}>
+                        {selectedStaffTimekeeping.checkOut}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style={styles.timekeepingTd}>Salary</td>
+                      <td style={styles.timekeepingTd}>
+                        {selectedStaffTimekeeping.salary}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div style={styles.actionButtons}>
+                  <button
+                    onClick={() => setShowTimekeepingModal(false)}
+                    style={styles.cancelButton}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </>
+          )}
+
+          {showAllTimekeepingModal && (
+            <>
+              <div
+                style={styles.overlay}
+                onClick={() => setShowAllTimekeepingModal(false)}
+              ></div>
+              <div style={styles.timekeepingModal}>
+                <h2 style={styles.addFormTitle}>All Timekeeping Records</h2>
+                <table style={styles.allTimekeepingTable}>
+                  <thead>
+                    <tr>
+                      <th style={styles.timekeepingTh}>ID</th>
+                      <th style={styles.timekeepingTh}>Name</th>
+                      <th style={styles.timekeepingTh}>Check-in</th>
+                      <th style={styles.timekeepingTh}>Check-out</th>
+                      <th style={styles.timekeepingTh}>Salary</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {mockTimekeepingData.map((item) => (
+                      <tr key={item.id}>
+                        <td style={styles.timekeepingTd}>{item.id}</td>
+                        <td style={styles.timekeepingTd}>{item.fullName}</td>
+                        <td style={styles.timekeepingTd}>{item.checkIn}</td>
+                        <td style={styles.timekeepingTd}>{item.checkOut}</td>
+                        <td style={styles.timekeepingTd}>{item.salary}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div style={styles.actionButtons}>
+                  <button
+                    onClick={() => setShowAllTimekeepingModal(false)}
+                    style={styles.cancelButton}
+                  >
+                    Close
+                  </button>
                 </div>
               </div>
             </>
