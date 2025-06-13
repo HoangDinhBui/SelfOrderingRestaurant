@@ -38,10 +38,8 @@ public class StaffShiftService implements IStaffShiftService {
     private final StaffShiftRepository staffShiftRepository;
     private final UserRepository userRepository;
 
-    // Maximum number of staff per shift
     private static final int MAX_STAFF_PER_SHIFT = 3;
 
-    // Configuration for shift types (can be extended in the future)
     private enum ShiftType {
         MORNING, AFTERNOON, EVENING
     }
@@ -84,14 +82,12 @@ public class StaffShiftService implements IStaffShiftService {
 
         Map<LocalDate, List<ShiftScheduleDTO>> scheduleByDay = new LinkedHashMap<>();
 
-        // Initialize all days of the period
         LocalDate currentDate = startDate;
         while (!currentDate.isAfter(endDate)) {
             scheduleByDay.put(currentDate, new ArrayList<>());
             currentDate = currentDate.plusDays(1);
         }
 
-        // Fill in scheduled shifts
         for (StaffShift staffShift : staffShifts) {
             ShiftScheduleDTO dto = mapToShiftScheduleDTO(staffShift);
             scheduleByDay.get(staffShift.getDate()).add(dto);
@@ -106,7 +102,6 @@ public class StaffShiftService implements IStaffShiftService {
             throw new UnauthorizedException("Staff not found");
         }
 
-        // Check 7-day restriction only for the first registration date
         LocalDate today = LocalDate.now();
         LocalDate restrictionStart = today.minusDays(7);
         List<StaffShift> recentShifts = staffShiftRepository.findByStaffAndDateBetween(staff, restrictionStart, today);
@@ -114,35 +109,40 @@ public class StaffShiftService implements IStaffShiftService {
             throw new BadRequestException("Cannot register new shift. You must wait 7 days since your last shift registration.");
         }
 
-        // Validate the shift exists
         Shift shift = shiftRepository.findById(registration.getShiftId())
                 .orElseThrow(() -> new ResourceNotFoundException("Shift with ID " + registration.getShiftId() + " not found"));
 
-        // Prepare response
         Map<String, Object> response = new HashMap<>();
         List<Integer> registeredShiftIds = new ArrayList<>();
 
-        // Register shifts for the specified date and the next 6 days (total 7 days)
         LocalDate startDate = registration.getDate();
         for (int i = 0; i < 7; i++) {
             LocalDate currentDate = startDate.plusDays(i);
 
-            // Check if staff is already registered for this shift on the current date
+            // Kiểm tra xem nhân viên đã đăng ký ca trong ngày chưa
             StaffShift existingShift = staffShiftRepository.findByStaffAndShiftAndDate(staff, shift, currentDate);
             if (existingShift != null) {
-                continue; // Skip if already registered
+                continue;
             }
 
-            // Check maximum staff per shift for the current date
-            List<StaffShift> shiftRegistrations = staffShiftRepository.findByDate(currentDate).stream()
-                    .filter(ss -> ss.getShift().getShiftId().equals(registration.getShiftId()))
-                    .collect(Collectors.toList());
+            // Kiểm tra số lượng nhân viên trong ca
+            List<StaffShift> shiftRegistrations = staffShiftRepository.findByDateAndShift(currentDate, shift);
             if (shiftRegistrations.size() >= MAX_STAFF_PER_SHIFT) {
-                continue; // Skip if shift is full
+                continue;
             }
 
-            // Check for overlapping shifts on the current date
-            List<StaffShift> shiftsOnSameDay = staffShiftRepository.findByStaffAndDate(staff, currentDate);
+            // Kiểm tra loại ca của các nhân viên đã đăng ký trong ngày
+            List<StaffShift> shiftsOnSameDay = staffShiftRepository.findByDate(currentDate);
+            ShiftType requestedShiftType = determineShiftType(shift.getStartTime());
+            boolean hasSameShiftType = shiftsOnSameDay.stream()
+                    .map(ss -> determineShiftType(ss.getShift().getStartTime()))
+                    .anyMatch(shiftType -> shiftType == requestedShiftType);
+
+            if (hasSameShiftType) {
+                continue; // Bỏ qua nếu đã có nhân viên đăng ký cùng loại ca
+            }
+
+            // Kiểm tra trùng lặp thời gian
             boolean hasOverlap = shiftsOnSameDay.stream().anyMatch(ss -> {
                 Shift existingShiftObj = ss.getShift();
                 return (shift.getStartTime().isBefore(existingShiftObj.getEndTime()) &&
@@ -150,22 +150,26 @@ public class StaffShiftService implements IStaffShiftService {
             });
 
             if (hasOverlap) {
-                continue; // Skip if there is an overlap
+                continue;
             }
 
-            // Register the shift for the current date
+            // Đăng ký ca
             StaffShift staffShift = new StaffShift();
             staffShift.setStaff(staff);
             staffShift.setShift(shift);
             staffShift.setDate(currentDate);
             staffShift.setStatus(StaffShiftStatus.ASSIGNED);
 
-            staffShift = staffShiftRepository.save(staffShift);
-            registeredShiftIds.add(staffShift.getStaffShiftKey());
+            try {
+                staffShift = staffShiftRepository.save(staffShift);
+                registeredShiftIds.add(staffShift.getStaffShiftKey());
+            } catch (Exception e) {
+                throw new BadRequestException("Failed to register shift for date " + currentDate + ": " + e.getMessage());
+            }
         }
 
         if (registeredShiftIds.isEmpty()) {
-            throw new BadRequestException("No shifts were registered due to conflicts or existing registrations.");
+            throw new BadRequestException("No shifts were registered due to conflicts, existing registrations, or same shift type.");
         }
 
         response.put("registeredShiftIds", registeredShiftIds);
@@ -177,14 +181,12 @@ public class StaffShiftService implements IStaffShiftService {
         Shift shift = shiftRepository.findById(registration.getShiftId())
                 .orElseThrow(() -> new ResourceNotFoundException("Shift with ID " + registration.getShiftId() + " not found"));
 
-        // Check if staff already registered for this shift on this date
         StaffShift existingShift = staffShiftRepository.findByStaffAndShiftAndDate(
                 staff, shift, registration.getDate());
         if (existingShift != null) {
             throw new BadRequestException("Already registered for shift " + shift.getName() + " on " + registration.getDate());
         }
 
-        // Check for overlapping shifts on the same day
         List<StaffShift> shiftsOnSameDay = staffShiftRepository.findByStaffAndDate(staff, registration.getDate());
         boolean hasOverlap = shiftsOnSameDay.stream().anyMatch(ss -> {
             Shift existingShiftObj = ss.getShift();
@@ -195,13 +197,6 @@ public class StaffShiftService implements IStaffShiftService {
         if (hasOverlap) {
             throw new BadRequestException("Shift " + shift.getName() + " overlaps with an existing shift on " + registration.getDate());
         }
-
-        // Optional: Add shift type restriction logic here (e.g., restrict to specific shift types)
-        ShiftType shiftType = determineShiftType(shift.getStartTime());
-        // Example: Restrict to only morning shifts (can be configured as needed)
-        // if (shiftType != ShiftType.MORNING) {
-        //     throw new BadRequestException("Only morning shifts can be registered.");
-        // }
 
         StaffShift staffShift = new StaffShift();
         staffShift.setStaff(staff);
@@ -222,12 +217,10 @@ public class StaffShiftService implements IStaffShiftService {
         StaffShift staffShift = staffShiftRepository.findById(staffShiftId)
                 .orElseThrow(() -> new ResourceNotFoundException("Shift registration not found"));
 
-        // Ensure staff can only cancel their own shifts
         if (!staffShift.getStaff().getStaffId().equals(staff.getStaffId())) {
             throw new UnauthorizedException("Not authorized to cancel this shift");
         }
 
-        // Only allow cancellation if the shift is in the future and status is ASSIGNED
         if (staffShift.getDate().isBefore(LocalDate.now())) {
             throw new BadRequestException("Cannot cancel past shifts");
         }
@@ -242,14 +235,11 @@ public class StaffShiftService implements IStaffShiftService {
     @Transactional
     @Override
     public Map<LocalDate, List<ShiftScheduleDTO>> getAvailableShiftsForWeek(LocalDate weekStart) {
-        // Adjust to make sure weekStart is a Monday
         LocalDate startOfWeek = weekStart.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-        LocalDate endOfWeek = startOfWeek.plusDays(6); // Sunday
+        LocalDate endOfWeek = startOfWeek.plusDays(6);
 
-        // Get all shifts
         List<Shift> allShifts = shiftRepository.findAll();
 
-        // Create a map of available shifts for each day
         Map<LocalDate, List<ShiftScheduleDTO>> availableShiftsByDay = new LinkedHashMap<>();
 
         LocalDate currentDate = startOfWeek;
@@ -294,22 +284,30 @@ public class StaffShiftService implements IStaffShiftService {
         Shift shift = shiftRepository.findById(shiftId)
                 .orElseThrow(() -> new ResourceNotFoundException("Shift with ID " + shiftId + " not found"));
 
-        // Check maximum staff per shift
-        List<StaffShift> shiftRegistrations = staffShiftRepository.findByDate(date).stream()
-                .filter(ss -> ss.getShift().getShiftId().equals(shiftId))
-                .collect(Collectors.toList());
+        // Kiểm tra số lượng nhân viên trong ca
+        List<StaffShift> shiftRegistrations = staffShiftRepository.findByDateAndShift(date, shift);
         if (shiftRegistrations.size() >= MAX_STAFF_PER_SHIFT) {
             throw new BadRequestException("Shift " + shift.getName() + " on " + date + " is already full (maximum " + MAX_STAFF_PER_SHIFT + " staff).");
         }
 
-        // Check if staff already registered for this shift on this date
+        // Kiểm tra xem nhân viên đã được gán ca trong ngày chưa
         StaffShift existingShift = staffShiftRepository.findByStaffAndShiftAndDate(staff, shift, date);
         if (existingShift != null) {
             throw new BadRequestException("Staff already assigned to shift " + shift.getName() + " on " + date);
         }
 
-        // Check for overlapping shifts on the same day
-        List<StaffShift> shiftsOnSameDay = staffShiftRepository.findByStaffAndDate(staff, date);
+        // Kiểm tra loại ca của các nhân viên đã đăng ký trong ngày
+        List<StaffShift> shiftsOnSameDay = staffShiftRepository.findByDate(date);
+        ShiftType requestedShiftType = determineShiftType(shift.getStartTime());
+        boolean hasSameShiftType = shiftsOnSameDay.stream()
+                .map(ss -> determineShiftType(ss.getShift().getStartTime()))
+                .anyMatch(shiftType -> shiftType == requestedShiftType);
+
+        if (hasSameShiftType) {
+            throw new BadRequestException("Shift type " + requestedShiftType + " is already assigned for " + date);
+        }
+
+        // Kiểm tra trùng lặp thời gian
         boolean hasOverlap = shiftsOnSameDay.stream().anyMatch(ss -> {
             Shift existingShiftObj = ss.getShift();
             return (shift.getStartTime().isBefore(existingShiftObj.getEndTime()) &&
@@ -320,7 +318,7 @@ public class StaffShiftService implements IStaffShiftService {
             throw new BadRequestException("Shift " + shift.getName() + " overlaps with an existing shift on " + date);
         }
 
-        // No 7-day restriction for admin assignments
+        // Gán ca
         StaffShift staffShift = new StaffShift();
         staffShift.setStaff(staff);
         staffShift.setShift(shift);

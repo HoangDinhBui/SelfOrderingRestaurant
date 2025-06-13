@@ -31,4 +31,6 @@ public interface StaffShiftRepository extends JpaRepository<StaffShift, Integer>
 
     @Query("SELECT ss FROM StaffShift ss WHERE ss.date = :date")
     List<StaffShift> findByDate(LocalDate date);
+
+    List<StaffShift> findByDateAndShift(LocalDate date, Shift shift);
 }
