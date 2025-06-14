@@ -46,4 +46,7 @@ public class Staff {
 
     @Column(name = "face_image_path")
     private String faceImagePath;
+
+    @Column(name = "total_working_hours")
+    private Double totalWorkingHours = 0.0;
 }

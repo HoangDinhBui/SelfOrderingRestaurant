@@ -9,6 +9,7 @@ import com.example.SelfOrderingRestaurant.Entity.Staff;
 import com.example.SelfOrderingRestaurant.Exception.BadRequestException;
 import com.example.SelfOrderingRestaurant.Exception.ResourceNotFoundException;
 import com.example.SelfOrderingRestaurant.Exception.UnauthorizedException;
+import com.example.SelfOrderingRestaurant.Repository.StaffRepository;
 import com.example.SelfOrderingRestaurant.Service.StaffService;
 import com.example.SelfOrderingRestaurant.Service.StaffShiftService;
 import jakarta.persistence.EntityNotFoundException;
@@ -29,7 +30,8 @@ import lombok.AllArgsConstructor;
 public class StaffController {
 
     private final StaffShiftService staffShiftService;
-    private final StaffService staffService; // Thêm StaffService
+    private final StaffService staffService;
+    private final StaffRepository staffRepository;
 
     // Get all available shifts
     @GetMapping("/shifts/available")
@@ -143,5 +145,12 @@ public class StaffController {
         } catch (EntityNotFoundException e) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
         }
+    }
+
+    @GetMapping("/by-username/{username}")
+    public ResponseEntity<Staff> getStaffByUsername(@PathVariable String username) {
+        Staff staff = staffRepository.findByUserUsername(username)
+                .orElseThrow(() -> new RuntimeException("Staff not found for username: " + username));
+        return ResponseEntity.ok(staff);
     }
 }

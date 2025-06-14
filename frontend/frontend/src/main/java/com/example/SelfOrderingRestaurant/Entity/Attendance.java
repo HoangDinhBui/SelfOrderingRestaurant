@@ -36,6 +36,9 @@ public class Attendance {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "working_hours")
+    private Double workingHours;
+
     public enum AttendanceStatus {
         CHECK_IN, CHECK_OUT
     }
