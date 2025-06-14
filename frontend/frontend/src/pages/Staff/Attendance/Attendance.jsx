@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const Attendance = () => {
   const videoRef = useRef(null);
@@ -10,6 +12,7 @@ const Attendance = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Initialize camera
     navigator.mediaDevices
       .getUserMedia({ video: true })
       .then((stream) => {
@@ -17,26 +20,37 @@ const Attendance = () => {
       })
       .catch((err) => {
         setMessage("Error accessing camera: " + err.message);
+        toast.error("Error accessing camera: " + err.message);
       });
 
+    // Verify authentication
     const token = localStorage.getItem("accessToken");
     const username = localStorage.getItem("username");
     const userType = localStorage.getItem("userType");
 
+    console.log("Attendance: Auth check", {
+      token: !!token,
+      username,
+      userType,
+    });
+
     if (!token || !username) {
       setMessage("Please log in first.");
+      toast.error("Please log in first.");
       navigate("/login", { replace: true });
       return;
     }
 
     if (userType !== "STAFF" && userType !== "ADMIN") {
-      setMessage("Access restricted to STAFF and ADMIN only.");
+      setMessage("Only STAFF and ADMIN can access this page.");
+      toast.error("Only STAFF and ADMIN can access this page.");
       navigate("/login", { replace: true });
       return;
     }
 
     axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
+    // Cleanup
     return () => {
       if (videoRef.current && videoRef.current.srcObject) {
         videoRef.current.srcObject.getTracks().forEach((track) => track.stop());
@@ -72,27 +86,55 @@ const Attendance = () => {
           }
         );
         setMessage(response.data.message);
-        const userType = localStorage.getItem("userType");
-        // Allow navigation for both successful check-in and already checked-in cases
+
+        // Handle notifications
+        const messageLower = response.data.message.toLowerCase();
         if (
-          (response.data.message.includes("successful") ||
-            response.data.message.includes("already recorded")) &&
+          messageLower.includes("thành công") ||
+          messageLower.includes("ghi nhận")
+        ) {
+          toast.success(response.data.message);
+        } else {
+          toast.info(response.data.message);
+        }
+
+        // Navigate for STAFF
+        const userType = localStorage.getItem("userType");
+        console.log("Check-in response:", {
+          message: response.data.message,
+          userType,
+          shouldNavigate:
+            messageLower.includes("thành công") ||
+            messageLower.includes("ghi nhận"),
+        });
+
+        if (
+          (messageLower.includes("thành công") ||
+            messageLower.includes("ghi nhận")) &&
           userType === "STAFF"
         ) {
+          console.log("Navigating to /table-management_staff");
           navigate("/table-management_staff", { replace: true });
+        } else {
+          console.warn("Navigation skipped", {
+            userType,
+            message: response.data.message,
+          });
         }
       } catch (error) {
         console.error("Check-in error:", error);
-        setMessage(
+        const errorMessage =
           error.response?.data?.message ||
-            "Error during check-in. Please try again."
-        );
+          "Error during check-in. Please try again.";
+        setMessage(errorMessage);
+        toast.error(errorMessage);
         if (error.response?.status === 403) {
-          setMessage(
-            "Access denied. Ensure your token is valid and you have STAFF role."
-          );
+          setMessage("Access denied. Please verify STAFF role.");
+          toast.error("Access denied. Please verify STAFF role.");
+          navigate("/login", { replace: true });
         } else if (error.response?.status === 401) {
           setMessage("Session expired. Please log in again.");
+          toast.error("Session expired. Please log in again.");
           navigate("/login", { replace: true });
         }
       } finally {
@@ -103,6 +145,7 @@ const Attendance = () => {
 
   return (
     <div className="flex flex-col items-center justify-center h-screen bg-gray-100">
+      <ToastContainer position="top-right" autoClose={3000} />
       <h1 className="text-2xl font-bold mb-4">Check-in with Camera</h1>
       <video
         ref={videoRef}
@@ -124,8 +167,8 @@ const Attendance = () => {
       {message && (
         <p
           className={`mt-4 ${
-            message.includes("successful") ||
-            message.includes("already recorded")
+            message.toLowerCase().includes("thành công") ||
+            message.toLowerCase().includes("ghi nhận")
               ? "text-green-600"
               : "text-red-600"
           }`}
