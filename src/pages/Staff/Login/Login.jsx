@@ -1,13 +1,33 @@
+// Login.js
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { login, googleLogin, forgotPassword } from "../../../services/api";
 import axios from "axios";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
+const decodeJwt = (token) => {
+  try {
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    console.error("Error decoding JWT:", error);
+    return null;
+  }
+};
 
 const Login = () => {
   const navigate = useNavigate();
   const [userId, setUserId] = useState("");
   const [password, setPassword] = useState("");
-  const [email, setEmail] = useState(""); // Separate state for email in forgot password mode
+  const [email, setEmail] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -27,80 +47,154 @@ const Login = () => {
 
       if (!userId || !password) {
         setError("Please enter both Username and Password");
+        toast.error("Please enter both Username and Password");
         setLoading(false);
         return;
       }
 
       const response = await login(userId, password);
 
-      // Lưu token và thông tin người dùng
+      // Validate API response
+      if (
+        !response.accessToken ||
+        !response.refreshToken ||
+        !response.username
+      ) {
+        throw new Error("Invalid API response: Missing required fields");
+      }
+
+      // Fetch staffId by username
+      const staffResponse = await axios.get(
+        `http://localhost:8080/api/staff/by-username/${response.username}`,
+        {
+          headers: { Authorization: `Bearer ${response.accessToken}` },
+        }
+      );
+      const staffId = staffResponse.data.staff_id;
+
+      // Log response for debugging
+      console.log("Login response:", {
+        accessToken: response.accessToken,
+        refreshToken: response.refreshToken,
+        username: response.username,
+        userType: response.userType,
+        staffId,
+      });
+
+      // Store tokens and user info in localStorage
       localStorage.setItem("accessToken", response.accessToken);
       localStorage.setItem("refreshToken", response.refreshToken);
       localStorage.setItem("username", response.username);
       localStorage.setItem("userType", response.userType);
+      if (staffId) {
+        localStorage.setItem("staffId", staffId);
+      } else {
+        console.warn("No staffId in staff response");
+        toast.warn("Staff ID not provided. Some features may be limited.");
+      }
 
-      // Cấu hình axios để gửi token trong các yêu cầu sau
+      // Configure axios with the new token
       axios.defaults.headers.common[
         "Authorization"
       ] = `Bearer ${response.accessToken}`;
 
-      console.log("Login successful");
+      toast.success("Login successful!");
 
-      // Điều hướng đến /attendance cho STAFF (và tùy chọn ADMIN)
+      // Navigate based on userType
       switch (response.userType) {
         case "ADMIN":
-          navigate("/table-management_admin");
+          navigate("/table-management_admin", { replace: true });
           break;
         case "STAFF":
-          navigate("/attendance");
+          navigate("/attendance", { replace: true });
           break;
         default:
-          navigate("/attendance");
+          setError("Unknown user type. Please contact support.");
+          toast.error("Unknown user type. Please contact support.");
+          setLoading(false);
+          return;
       }
     } catch (error) {
       console.error("Login failed:", error);
-      setError(
+      const errorMessage =
         error.response?.data?.message ||
-          "Invalid username or password. Please try again."
-      );
+        error.message ||
+        "Invalid username or password. Please try again.";
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  // Hàm handleGoogleLogin cũng cần được cập nhật tương tự
   const handleGoogleLogin = async () => {
     try {
       setError("");
       setLoading(true);
 
-      const tokenId = "google-oauth-token";
+      const tokenId = "google-oauth-token"; // Replace with actual Google OAuth token
       const response = await googleLogin(tokenId);
 
+      // Validate API response
+      if (
+        !response.accessToken ||
+        !response.refreshToken ||
+        !response.username ||
+        !response.userType
+      ) {
+        throw new Error("Invalid API response: Missing required fields");
+      }
+
+      // Log response for debugging
+      console.log("Google login response:", {
+        accessToken: response.accessToken,
+        refreshToken: response.refreshToken,
+        username: response.username,
+        userType: response.userType,
+        staffId: response.staffId || response.userId,
+      });
+
+      // Store tokens and user info in localStorage
       localStorage.setItem("accessToken", response.accessToken);
       localStorage.setItem("refreshToken", response.refreshToken);
       localStorage.setItem("username", response.username);
       localStorage.setItem("userType", response.userType);
+      // Store staffId (prefer staffId if available, fallback to userId)
+      if (response.staffId || response.userId) {
+        localStorage.setItem("staffId", response.staffId || response.userId);
+      } else {
+        console.warn("No staffId or userId in Google login response");
+        toast.warn("Staff ID not provided. Some features may be limited.");
+      }
 
+      // Configure axios with the new token
       axios.defaults.headers.common[
         "Authorization"
       ] = `Bearer ${response.accessToken}`;
 
-      console.log("Google login successful");
+      toast.success("Google login successful!");
 
+      // Navigate based on userType
       switch (response.userType) {
         case "ADMIN":
-          navigate("/table-management_admin");
+          navigate("/table-management_admin", { replace: true });
           break;
         case "STAFF":
-          navigate("/attendance");
+          navigate("/staff-information_staff", { replace: true }); // Updated to match previous context
           break;
         default:
-          navigate("/attendance");
+          setError("Unknown user type. Please contact support.");
+          toast.error("Unknown user type. Please contact support.");
+          setLoading(false);
+          return;
       }
     } catch (error) {
       console.error("Google login failed:", error);
-      setError("Google login failed. Please try again.");
+      const errorMessage =
+        error.response?.data?.message ||
+        "Google login failed. Please try again.";
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -109,21 +203,24 @@ const Login = () => {
   const handleForgotPassword = async () => {
     if (!userId || !email) {
       setError("Please enter both Username and Email to reset password");
+      toast.error("Please enter both Username and Email to reset password");
       return;
     }
 
     try {
       setLoading(true);
       await forgotPassword({ username: userId, email });
-      setShowOtpModal(true); // Show OTP modal after successful API call
+      setShowOtpModal(true);
       setError("");
+      toast.success("OTP sent successfully!");
       console.log("OTP sent successfully");
     } catch (error) {
       console.error("Forgot password request failed:", error);
-      setError(
+      const errorMessage =
         error.response?.data?.message ||
-          "Failed to send OTP. Please check your username and email."
-      );
+        "Failed to send OTP. Please check your username and email.";
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -147,6 +244,7 @@ const Login = () => {
       setError("");
     } else {
       setError("Please enter a valid 6-digit OTP");
+      toast.error("Please enter a valid 6-digit OTP");
     }
   };
 
@@ -155,13 +253,14 @@ const Login = () => {
       setLoading(true);
       await forgotPassword({ username: userId, email });
       console.log("OTP resent successfully");
-      alert("OTP resent to your email.");
+      toast.success("OTP resent to your email!");
     } catch (error) {
       console.error("Failed to resend OTP:", error);
-      setError(
+      const errorMessage =
         error.response?.data?.message ||
-          "Failed to resend OTP. Please try again."
-      );
+        "Failed to resend OTP. Please try again.";
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -172,27 +271,33 @@ const Login = () => {
 
     if (!newPassword || !confirmPassword) {
       setNewPasswordError("Please enter and confirm your new password");
+      toast.error("Please enter and confirm your new password");
       return;
     }
 
     if (newPassword !== confirmPassword) {
       setNewPasswordError("Passwords do not match");
+      toast.error("Passwords do not match");
       return;
     }
 
     if (newPassword.length < 8) {
       setNewPasswordError("Password must be at least 8 characters long");
+      toast.error("Password must be at least 8 characters long");
       return;
     }
 
     try {
       setLoading(true);
-      const otpCode = otp.join(""); // Get OTP from previous step
+      const otpCode = otp.join("");
       await axios.post("/api/auth/reset-password", {
         otp: otpCode,
         newPassword,
       });
       console.log("Password reset successfully");
+      toast.success(
+        "Password reset successfully. Please log in with your new password."
+      );
       setShowNewPasswordModal(false);
       setIsForgotPassword(false);
       setNewPassword("");
@@ -200,15 +305,13 @@ const Login = () => {
       setOtp(["", "", "", "", "", ""]);
       setEmail("");
       setError("");
-      alert(
-        "Password reset successfully. Please log in with your new password."
-      );
     } catch (error) {
       console.error("Failed to reset password:", error);
-      setNewPasswordError(
+      const errorMessage =
         error.response?.data?.message ||
-          "Failed to reset password. Please try again."
-      );
+        "Failed to reset password. Please try again.";
+      setNewPasswordError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -224,12 +327,13 @@ const Login = () => {
         filter: "none",
       }}
     >
+      <ToastContainer position="top-right" autoClose={3000} />
       <div
         className="absolute inset-0"
         style={{ background: "rgba(0, 0, 0, 0.4)" }}
       ></div>
       <div
-        className="absolute inset-0 bg-opacity-30 "
+        className="absolute inset-0 bg-opacity-30"
         style={{ backdropFilter: "blur(3px)" }}
       ></div>
 

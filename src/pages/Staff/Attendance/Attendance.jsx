@@ -73,8 +73,10 @@ const Attendance = () => {
         );
         setMessage(response.data.message);
         const userType = localStorage.getItem("userType");
+        // Allow navigation for both successful check-in and already checked-in cases
         if (
-          response.data.message.includes("successful") &&
+          (response.data.message.includes("successful") ||
+            response.data.message.includes("already recorded")) &&
           userType === "STAFF"
         ) {
           navigate("/table-management_staff", { replace: true });
@@ -122,7 +124,10 @@ const Attendance = () => {
       {message && (
         <p
           className={`mt-4 ${
-            message.includes("successful") ? "text-green-600" : "text-red-600"
+            message.includes("successful") ||
+            message.includes("already recorded")
+              ? "text-green-600"
+              : "text-red-600"
           }`}
         >
           {message}

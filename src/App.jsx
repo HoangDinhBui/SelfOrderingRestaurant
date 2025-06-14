@@ -14,7 +14,6 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import ProtectedRoute from "./components/ProtectedRoute";
 
-// Customer Pages
 import Home from "./pages/Customer/Home/Home";
 import Menu from "./pages/Customer/Menu/Menu";
 import Order from "./pages/Customer/Order/Order";
@@ -25,7 +24,6 @@ import Evaluate from "./pages/Customer/Evaluate/Evaluate";
 import CreateTable from "./components/CreateTable";
 import CaptivePortal from "./pages/Customer/CaptivePortal/CaptivePortal";
 
-// Admin Pages
 import AdminInformation from "./pages/Admin/AdminInformation/AdminInformation";
 import DishManagementAdmin from "./pages/Admin/DishManagement/DishManagment";
 import EvaluateAdmin from "./pages/Admin/Evaluate/Evaluate";
@@ -38,14 +36,13 @@ import MenuManagementAdmin from "./pages/Admin/MenuManagement/MenuManagement";
 import RevenueManagement from "./pages/Admin/RevenueManagement/RevenueManagement";
 import StaffManagement from "./pages/Admin/StaffManagement/StaffManagement";
 
-// Staff Pages
 import DishManagementStaff from "./pages/Staff/DishManagement/DishManagement";
 import OrderHistoryStaff from "./pages/Staff/OrderHistory/OrderHistory";
 import TableManagementStaff from "./pages/Staff/TableManagement/TableManagement";
 import StaffInformation from "./pages/Staff/StaffInformation/StaffInformation";
 
-// Attendance Page
 import Attendance from "./pages/Staff/Attendance/Attendance";
+import CheckOut from "./pages/Staff/CheckOut/CheckOut";
 
 function App() {
   return (
@@ -54,14 +51,9 @@ function App() {
         <MenuProvider>
           <Router>
             <Routes>
-              {/* Customer Routes */}
               <Route
                 path="/"
-                element={
-                  // <ProtectedRoute>
-                  <Navigate to="/captive-portal" replace />
-                  // </ProtectedRoute>
-                }
+                element={<Navigate to="/captive-portal" replace />}
               />
               <Route path="/table/:tableNumber" element={<Home />} />
               <Route path="/create-table" element={<CreateTable />} />
@@ -77,7 +69,6 @@ function App() {
               <Route path="/evaluate_cus" element={<Evaluate />} />
               <Route path="/captive-portal" element={<CaptivePortal />} />
 
-              {/* Admin and Staff Routes */}
               <Route path="/login" element={<Login />} />
               <Route
                 path="/dish-management_staff"
@@ -114,20 +105,30 @@ function App() {
               />
               <Route
                 path="/staff-information_staff"
-                element={<StaffInformation />}
+                element={
+                  <ProtectedRoute>
+                    <StaffInformation />
+                  </ProtectedRoute>
+                }
               />
               <Route
                 path="/table-management_staff"
                 element={<TableManagementStaff />}
               />
               <Route path="/order-history" element={<OrderHistoryStaff />} />
-
-              {/* Attendance Route */}
               <Route
                 path="/attendance"
                 element={
                   <ProtectedRoute>
                     <Attendance />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/check-out"
+                element={
+                  <ProtectedRoute>
+                    <CheckOut />
                   </ProtectedRoute>
                 }
               />
