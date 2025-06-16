@@ -116,6 +116,21 @@ const TableManagementStaff = () => {
                 console.log(
                   `Updated table ${message.tableNumber} status to ${message.tableStatus} for order ${message.orderId} via WebSocket`
                 );
+                axios
+                  .put(
+                    "http://localhost:8080/api/staff/tables/${message.tableNumber}",
+                    {
+                      status: message.tableStatus.toLowerCase(),
+                    }
+                  )
+                  .then((response) => {
+                    console.log("API: ${response.data}");
+                  })
+                  .catch((error) => {
+                    console.error(
+                      "Error updating table status via API: ${error}"
+                    );
+                  });
                 return updatedTables;
               });
               setLastWebSocketUpdate(Date.now());

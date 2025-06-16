@@ -1,4 +1,3 @@
-// Login.js
 import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { login, googleLogin, forgotPassword } from "../../../services/api";
@@ -63,14 +62,51 @@ const Login = () => {
         throw new Error("Invalid API response: Missing required fields");
       }
 
-      // Fetch staffId by username
-      const staffResponse = await axios.get(
-        `http://localhost:8080/api/staff/by-username/${response.username}`,
-        {
+      // Store tokens and user info in localStorage
+      localStorage.setItem("accessToken", response.accessToken);
+      localStorage.setItem("refreshToken", response.refreshToken);
+      localStorage.setItem("username", response.username);
+      localStorage.setItem("userType", response.userType);
+
+      // Configure axios with the new token
+      axios.defaults.headers.common[
+        "Authorization"
+      ] = `Bearer ${response.accessToken}`;
+
+      let idKey, idValue, endpoint;
+      if (response.userType === "ADMIN") {
+        idKey = "adminId";
+        endpoint = `http://localhost:8080/api/admin/by-username/${response.username}`;
+      } else if (response.userType === "STAFF") {
+        idKey = "staffId";
+        endpoint = `http://localhost:8080/api/staff/by-username/${response.username}`;
+      } else {
+        setError("Unknown user type. Please contact support.");
+        toast.error("Unknown user type. Please contact support.");
+        setLoading(false);
+        return;
+      }
+
+      // Fetch user-specific ID
+      try {
+        const userResponse = await axios.get(endpoint, {
           headers: { Authorization: `Bearer ${response.accessToken}` },
+        });
+        idValue =
+          response.userType === "ADMIN"
+            ? userResponse.data.admin_id
+            : userResponse.data.staff_id;
+
+        if (idValue) {
+          localStorage.setItem(idKey, idValue);
+        } else {
+          console.warn(`No ${idKey} in response`);
+          toast.warn(`${idKey} not provided. Some features may be limited.`);
         }
-      );
-      const staffId = staffResponse.data.staff_id;
+      } catch (userError) {
+        console.warn(`Failed to fetch ${idKey}:`, userError);
+        toast.warn(`${idKey} not retrieved. Some features may be limited.`);
+      }
 
       // Log response for debugging
       console.log("Login response:", {
@@ -78,25 +114,8 @@ const Login = () => {
         refreshToken: response.refreshToken,
         username: response.username,
         userType: response.userType,
-        staffId,
+        [idKey]: idValue,
       });
-
-      // Store tokens and user info in localStorage
-      localStorage.setItem("accessToken", response.accessToken);
-      localStorage.setItem("refreshToken", response.refreshToken);
-      localStorage.setItem("username", response.username);
-      localStorage.setItem("userType", response.userType);
-      if (staffId) {
-        localStorage.setItem("staffId", staffId);
-      } else {
-        console.warn("No staffId in staff response");
-        toast.warn("Staff ID not provided. Some features may be limited.");
-      }
-
-      // Configure axios with the new token
-      axios.defaults.headers.common[
-        "Authorization"
-      ] = `Bearer ${response.accessToken}`;
 
       toast.success("Login successful!");
 
@@ -145,32 +164,60 @@ const Login = () => {
         throw new Error("Invalid API response: Missing required fields");
       }
 
+      // Store tokens and user info in localStorage
+      localStorage.setItem("accessToken", response.accessToken);
+      localStorage.setItem("refreshToken", response.refreshToken);
+      localStorage.setItem("username", response.username);
+      localStorage.setItem("userType", response.userType);
+
+      // Configure axios with the new token
+      axios.defaults.headers.common[
+        "Authorization"
+      ] = `Bearer ${response.accessToken}`;
+
+      let idKey, idValue, endpoint;
+      if (response.userType === "ADMIN") {
+        idKey = "adminId";
+        endpoint = `http://localhost:8080/api/admin/by-username/${response.username}`;
+      } else if (response.userType === "STAFF") {
+        idKey = "staffId";
+        endpoint = `http://localhost:8080/api/staff/by-username/${response.username}`;
+      } else {
+        setError("Unknown user type. Please contact support.");
+        toast.error("Unknown user type. Please contact support.");
+        setLoading(false);
+        return;
+      }
+
+      // Fetch user-specific ID
+      try {
+        const userResponse = await axios.get(endpoint, {
+          headers: { Authorization: `Bearer ${response.accessToken}` },
+        });
+        idValue =
+          response.userType === "ADMIN"
+            ? userResponse.data.admin_id
+            : userResponse.data.staff_id;
+
+        if (idValue) {
+          localStorage.setItem(idKey, idValue);
+        } else {
+          console.warn(`No ${idKey} in response`);
+          toast.warn(`${idKey} not provided. Some features may be limited.`);
+        }
+      } catch (userError) {
+        console.warn(`Failed to fetch ${idKey}:`, userError);
+        toast.warn(`${idKey} not retrieved. Some features may be limited.`);
+      }
+
       // Log response for debugging
       console.log("Google login response:", {
         accessToken: response.accessToken,
         refreshToken: response.refreshToken,
         username: response.username,
         userType: response.userType,
-        staffId: response.staffId || response.userId,
+        [idKey]: idValue,
       });
-
-      // Store tokens and user info in localStorage
-      localStorage.setItem("accessToken", response.accessToken);
-      localStorage.setItem("refreshToken", response.refreshToken);
-      localStorage.setItem("username", response.username);
-      localStorage.setItem("userType", response.userType);
-      // Store staffId (prefer staffId if available, fallback to userId)
-      if (response.staffId || response.userId) {
-        localStorage.setItem("staffId", response.staffId || response.userId);
-      } else {
-        console.warn("No staffId or userId in Google login response");
-        toast.warn("Staff ID not provided. Some features may be limited.");
-      }
-
-      // Configure axios with the new token
-      axios.defaults.headers.common[
-        "Authorization"
-      ] = `Bearer ${response.accessToken}`;
 
       toast.success("Google login successful!");
 
@@ -180,7 +227,7 @@ const Login = () => {
           navigate("/table-management_admin", { replace: true });
           break;
         case "STAFF":
-          navigate("/staff-information_staff", { replace: true }); // Updated to match previous context
+          navigate("/staff-information_staff", { replace: true });
           break;
         default:
           setError("Unknown user type. Please contact support.");
