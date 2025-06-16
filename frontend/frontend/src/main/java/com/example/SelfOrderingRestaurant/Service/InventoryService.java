@@ -28,14 +28,11 @@ public class InventoryService implements IInventoryService {
 
     private final InventoryRepository inventoryRepository;
 
-
     private final IngredientRepository ingredientRepository;
 
     private final DishIngredientRepository dishIngredientRepository;
 
     private final SupplierRepository supplierRepository;
-
-
 
     @Transactional
     @Override
@@ -74,18 +71,18 @@ public class InventoryService implements IInventoryService {
     @Transactional
     @Override
     public void createInventory(CreateInventoryRequestDTO request) {
-        // Tìm Ingredient theo ingredientId
+        // Find Ingredient by ingredientId
         Ingredient ingredient = ingredientRepository.findById(request.getIngredientId())
                 .orElseThrow(() -> new RuntimeException("Ingredient not found"));
 
-        // Kiểm tra nếu ingredient đã có supplier, không cần truy vấn lại supplier
+        // Check that if ingredient already has supplier, no need to re-query supplier
         if (ingredient.getSupplier() == null) {
             Supplier supplier = supplierRepository.findById(request.getSupplierId())
                     .orElseThrow(() -> new RuntimeException("Supplier not found"));
-            ingredient.setSupplier(supplier);  // Cập nhật supplier cho ingredient
+            ingredient.setSupplier(supplier);  // Update supplier for ingredient
         }
 
-        // Tạo đối tượng Inventory và thiết lập các giá trị
+        // Create Inventory Objects and settle values
         Inventory inventory = new Inventory();
         inventory.setIngredient(ingredient);
         inventory.setQuantity(request.getQuantity());
@@ -206,7 +203,7 @@ public class InventoryService implements IInventoryService {
             }
             Double remainingQuantity = inventory.getQuantity() - totalUsedQuantity.doubleValue();
 
-            // Không cập nhật database, chỉ trả về dữ liệu
+            // No update database, just return data
             return new RemainingInventoryResponseDTO(
                     inventory.getIngredient().getIngredientId(),
                     inventory.getInventoryId(),

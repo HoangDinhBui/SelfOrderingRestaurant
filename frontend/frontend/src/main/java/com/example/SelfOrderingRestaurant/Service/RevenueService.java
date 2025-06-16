@@ -145,7 +145,6 @@ public class RevenueService {
         try {
             monthRevenues = revenueRepository.findByYearAndMonth(year, month);
         } catch (Exception e) {
-            // Log lỗi và trả về DTO mặc định
             System.err.println("Lỗi khi truy vấn revenueRepository.findByYearAndMonth: " + e.getMessage());
             return new MonthlyRevenueDTO(year, month, BigDecimal.ZERO, BigDecimal.ZERO,
                     BigDecimal.ZERO, 0, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
@@ -159,7 +158,6 @@ public class RevenueService {
         }
 
         try {
-            // Calculate monthly totals
             BigDecimal totalRevenue = monthRevenues.stream()
                     .map(revenue -> Objects.requireNonNullElse(revenue.getTotalRevenue(), BigDecimal.ZERO))
                     .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -195,7 +193,6 @@ public class RevenueService {
                     foodRevenue, drinkRevenue, otherRevenue, dailyRevenues
             );
         } catch (Exception e) {
-            // Log lỗi và trả về DTO mặc định
             System.err.println("Lỗi khi tính toán MonthlyRevenueDTO: " + e.getMessage());
             return new MonthlyRevenueDTO(year, month, BigDecimal.ZERO, BigDecimal.ZERO,
                     BigDecimal.ZERO, 0, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
@@ -258,7 +255,6 @@ public class RevenueService {
     }
 
     public byte[] exportRevenueReport(RevenueExportDTO exportDTO) {
-        // Convert String dates to LocalDate objects if they're not already
         if (exportDTO.getStartDate() == null) {
             exportDTO.setStartDate(LocalDate.now().withDayOfMonth(1)); // Default to first day of current month
         }

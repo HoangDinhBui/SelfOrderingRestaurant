@@ -15,9 +15,6 @@ public class WebSocketService {
         this.webSocketHandler = webSocketHandler;
     }
 
-    /**
-     * Send notification to staff currently on shift
-     */
     public void sendNotificationToActiveStaff(NotificationResponseDTO notification) {
         try {
             webSocketHandler.sendNotificationToStaff(notification);
@@ -26,9 +23,6 @@ public class WebSocketService {
         }
     }
 
-    /**
-     * Send notification to a specific user (if needed)
-     */
     public void sendNotificationToUser(Integer userId, NotificationResponseDTO notification) {
         try {
             webSocketHandler.sendNotificationToUser(userId, notification);

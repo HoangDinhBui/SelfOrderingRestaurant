@@ -38,9 +38,6 @@ public class NotificationWebSocketHandler extends TextWebSocketHandler {
     @Autowired
     private ObjectMapper objectMapper; // Tiêm ObjectMapper từ JacksonConfig
 
-    /**
-     * When a WebSocket connection is established
-     */
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         Map<String, String> attributes = extractQueryParams(session.getUri());
@@ -57,27 +54,10 @@ public class NotificationWebSocketHandler extends TextWebSocketHandler {
                     // Temporarily bypass shift check for testing
                     staffSessions.computeIfAbsent(userId, k -> ConcurrentHashMap.newKeySet()).add(session);
                     log.info("Staff user {} connected to notification WebSocket (bypassed shift check)", userId);
-
-                    // Original shift check (commented out for testing)
-                    /*
-                    LocalDate today = LocalDate.now();
-                    LocalTime currentTime = LocalTime.now();
-                    List<Staff> onShiftStaff = staffShiftRepository.findStaffOnCurrentShift(today, currentTime);
-                    boolean isOnShift = onShiftStaff.stream()
-                            .anyMatch(staff -> staff.getUser().getUserId().equals(userId));
-                    log.info("Staff user {} on shift: {}. Active staff: {}", userId, isOnShift, onShiftStaff);
-                    if (isOnShift) {
-                        staffSessions.computeIfAbsent(userId, k -> ConcurrentHashMap.newKeySet()).add(session);
-                        log.info("Staff user {} connected to notification WebSocket (on current shift)", userId);
-                    } else {
-                        log.warn("Staff user {} connected but not on current shift - notifications restricted", userId);
-                    }
-                    */
                 } else if ("ADMIN".equalsIgnoreCase(userType)) {
                     adminSessions.add(session);
                     log.info("Admin {} connected to notification WebSocket", userId);
                 }
-                // Customer connections are not stored as we don't send notifications to them
             } catch (NumberFormatException e) {
                 log.error("Invalid userId format in WebSocket connection: {}", userIdStr);
             }
@@ -102,9 +82,6 @@ public class NotificationWebSocketHandler extends TextWebSocketHandler {
         log.info("WebSocket connection closed: {}", status);
     }
 
-    /**
-     * Send notification to a specific user
-     */
     public void sendNotificationToUser(Integer userId, NotificationResponseDTO notification) {
         try {
             String jsonNotification = objectMapper.writeValueAsString(notification);
@@ -126,9 +103,6 @@ public class NotificationWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
-    /**
-     * Send notification to all active staff on current shift
-     */
     public void sendNotificationToStaff(NotificationResponseDTO notification) {
         try {
             String jsonNotification = notification.toJson(); // Use toJson
@@ -156,9 +130,6 @@ public class NotificationWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
-    /**
-     * Extract query parameters from URI
-     */
     private Map<String, String> extractQueryParams(URI uri) {
         Map<String, String> queryPairs = new LinkedHashMap<>();
         if (uri != null && uri.getQuery() != null) {

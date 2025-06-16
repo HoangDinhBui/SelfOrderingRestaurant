@@ -21,7 +21,6 @@ public class VNPayConfig {
     //Util for VNPAY
     public static String hashAllFields(Map<String, String> fields) throws Exception {
         List<String> fieldNames = new ArrayList(fields.keySet());
-        //fieldNames.remove("vnp_SecureHash");
         Collections.sort(fieldNames);
 
         StringBuilder sb = new StringBuilder();
@@ -31,7 +30,7 @@ public class VNPayConfig {
                 sb.append(fieldName).append("=").append(fieldValue).append("&");
             }
         }
-        if (sb.length() > 0) sb.setLength(sb.length() - 1); // Xóa ký tự '&' cuối cùng
+        if (sb.length() > 0) sb.setLength(sb.length() - 1);
 
         return hmacSHA512(vnp_HashSecret, sb.toString());
     }

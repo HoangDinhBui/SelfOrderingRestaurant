@@ -102,7 +102,6 @@ public class StaffService implements IStaffService {
         Staff staff = staffRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Staff not found with id: " + id));
 
-        // Validate DTO
         if (staffUpdateDTO.getPosition() == null || staffUpdateDTO.getPosition().trim().isEmpty()) {
             throw new IllegalArgumentException("Position cannot be empty");
         }
@@ -113,12 +112,10 @@ public class StaffService implements IStaffService {
             throw new IllegalArgumentException("Status cannot be null");
         }
 
-        // Update fields
         staff.setPosition(staffUpdateDTO.getPosition());
         staff.setSalary(staffUpdateDTO.getSalary());
         staff.setStatus(staffUpdateDTO.getStatus());
 
-        // Ensure hireDate is not null
         if (staff.getHireDate() == null) {
             log.warn("hireDate is null for staff ID {}. Setting to current time.", id);
             staff.setHireDate(LocalDate.now());
@@ -133,7 +130,6 @@ public class StaffService implements IStaffService {
         Staff staff = staffRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Staff not found with id: " + id));
 
-        // Ensure hireDate is not null before saving
         if (staff.getHireDate() == null) {
             log.warn("hireDate is null for staff ID {}. Setting to current time.", id);
             staff.setHireDate(LocalDate.now());

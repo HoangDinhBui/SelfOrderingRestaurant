@@ -38,7 +38,7 @@ public class FileStorageService {
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
 
             // Trả về đường dẫn tương đối (ví dụ: dishes/abc_xyz.jpg)
-            return Paths.get(subDirectory, uniqueFileName).toString().replace("\\", "/");
+            return uniqueFileName;
         } catch (IOException e) {
             throw new RuntimeException("Không thể lưu file " + fileName + ". Vui lòng thử lại!", e);
         }

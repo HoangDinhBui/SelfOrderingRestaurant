@@ -168,7 +168,7 @@ public class AuthService {
         String email = payload.getEmail();
         String googleId = payload.getSubject();
 
-        // Chỉ chấp nhận email Gmail
+        // Only accept email Gmail
         if (!email.endsWith("@gmail.com")) {
             throw new RuntimeException("Only Gmail accounts are allowed");
         }
@@ -180,7 +180,7 @@ public class AuthService {
             newUser.setGoogleId(googleId);
             newUser.setEmail(email);
             newUser.setUsername(email.split("@")[0]);
-            newUser.setUserType(UserType.STAFF); // Mặc định là staff
+            newUser.setUserType(UserType.STAFF); // Default staff
             newUser.setUserStatus(UserStatus.ACTIVE);
             newUser.setCreatedAt(LocalDateTime.now());
             newUser.setLastLogin(new Date());

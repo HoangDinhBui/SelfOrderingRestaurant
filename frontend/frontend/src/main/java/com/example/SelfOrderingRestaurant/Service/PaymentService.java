@@ -583,7 +583,6 @@ public class PaymentService {
         return statusDTO;
     }
 
-    // New exception class for payment processing errors
     public static class PaymentProcessingException extends RuntimeException {
         public PaymentProcessingException(String message) {
             super(message);
