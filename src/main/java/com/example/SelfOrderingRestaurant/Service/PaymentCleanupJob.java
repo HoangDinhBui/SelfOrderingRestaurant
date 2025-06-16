@@ -19,7 +19,7 @@ public class PaymentCleanupJob {
     private final PaymentRepository paymentRepository;
     private final Logger log = LoggerFactory.getLogger(PaymentCleanupJob.class);
 
-    @Scheduled(fixedRate = 60000) // Chạy mỗi phút
+    @Scheduled(fixedRate = 60000)
     @Transactional
     public void cleanupExpiredPendingPayments() {
         LocalDateTime expiryThreshold = LocalDateTime.now().minusMinutes(15);

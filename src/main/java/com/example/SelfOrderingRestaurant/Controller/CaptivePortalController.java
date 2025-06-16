@@ -82,7 +82,7 @@ public class CaptivePortalController {
         }
     }
 
-    // Endpoint xử lý yêu cầu kết nối mạng
+    // Xử lý yêu cầu kết nối mạng
     @PostMapping("/connect")
     public ResponseEntity<?> connectToNetwork(HttpServletRequest request,
                                               @RequestParam(value = "tableNumber", required = false) String tableNumber,
@@ -115,7 +115,7 @@ public class CaptivePortalController {
         String ip = request.getRemoteAddr();
         if (ip == null || ip.isEmpty() || "0:0:0:0:0:0:0:1".equals(ip)) {
             logger.warn("IP localhost được phát hiện, giả lập IP trong dải mạng cho phát triển");
-            return "192.168.137.172"; // Đảm bảo IP này thuộc restaurantCidr
+            return "172.20.10.9";
         }
         return ip;
     }

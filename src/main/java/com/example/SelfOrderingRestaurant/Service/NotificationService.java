@@ -59,9 +59,9 @@ public class NotificationService implements INotificationService {
 
         notificationRepository.markAsRead(notificationId);
 
-        // Gửi thông báo cập nhật qua WebSocket
+        // Send update notification throughout WebSocket
         NotificationResponseDTO notificationDTO = mapToResponseDTO(notification);
-        notificationDTO.setIsRead(true); // Cập nhật trạng thái
+        notificationDTO.setIsRead(true); // Update status
         webSocketService.sendNotificationToActiveStaff(notificationDTO);
     }
 
