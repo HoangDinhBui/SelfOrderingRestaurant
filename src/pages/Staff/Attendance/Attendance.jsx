@@ -158,7 +158,7 @@ const Attendance = () => {
       <button
         onClick={handleCapture}
         disabled={loading}
-        className={`px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 ${
+        className={`px-6 py-2 !bg-blue-600 text-white rounded-lg hover:bg-blue-700 ${
           loading ? "opacity-50 cursor-not-allowed" : ""
         }`}
       >

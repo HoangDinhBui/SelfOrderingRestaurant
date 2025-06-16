@@ -698,7 +698,7 @@ const MenuManagementAdmin = () => {
                         </td>
                         <td style={styles.td}>{dish.dishId}</td>
                         <td style={{ ...styles.td, ...styles.price }}>
-                          ${dish.price}
+                          {dish.price} VND
                         </td>
                         <td style={styles.td}>{dish.categoryName}</td>
                         <td style={styles.td}>

@@ -18,7 +18,9 @@ const Home = () => {
   const [notificationSuccess, setNotificationSuccess] = useState(false);
   const [tableNumber, setTableNumber] = useState(() => {
     const savedTableNumber = localStorage.getItem("tableNumber");
-    return savedTableNumber && !isNaN(savedTableNumber) && parseInt(savedTableNumber) > 0
+    return savedTableNumber &&
+      !isNaN(savedTableNumber) &&
+      parseInt(savedTableNumber) > 0
       ? savedTableNumber
       : "1";
   });
@@ -28,13 +30,13 @@ const Home = () => {
   const specialStaff = [
     {
       name: "Lemon Macarons",
-      price: "10.99",
+      price: "109,000",
       image: "/src/assets/img/TodaySpeacial1.jpg",
       type: "Cake",
     },
     {
       name: "Beef-steak",
-      price: "10.99",
+      price: "109,000",
       image: "/src/assets/img/TodaySpecial2.jpg",
       type: "Meat",
     },
@@ -380,7 +382,9 @@ const Home = () => {
                 />
                 <p className="text-sm text-gray-500">{dish.type}</p>
                 <p className="text-lg font-semibold">{dish.name}</p>
-                <p className="text-sm font-bold text-gray-800">${dish.price}</p>
+                <p className="text-sm font-bold text-gray-800">
+                  {dish.price} VND
+                </p>
               </div>
             ))}
           </div>
