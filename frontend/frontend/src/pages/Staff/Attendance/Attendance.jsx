@@ -144,26 +144,41 @@ const Attendance = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-gray-100">
+    <div className="flex flex-col items-center justify-center h-screen w-screen p-4"
+      style={{
+        backgroundImage: "url('https://i.pinimg.com/736x/94/95/3b/94953b87c421ef358cad42c358876403.jpg')",
+      }}>
       <ToastContainer position="top-right" autoClose={3000} />
-      <h1 className="text-2xl font-bold mb-4">Check-in with Camera</h1>
+      <h1 className="text-center text-black mb-6"
+            style={{ fontFamily: "'Baskervville', serif", fontStyle: "italic", fontSize: "2.5rem" }}
+          >Check-in with Camera</h1>
       <video
         ref={videoRef}
         autoPlay
-        className="border border-gray-400 mb-4"
-        width="640"
+        className="border border-gray-600 mb-4"
+        width="600"
         height="480"
+        style={{ borderRadius: "20px" }}
       />
       <canvas ref={canvasRef} width="640" height="480" className="hidden" />
       <button
         onClick={handleCapture}
         disabled={loading}
+        style={{
+        background:"radial-gradient(circle at center, #5E5E5E 100%)",
+      }}
         className={`px-6 py-2 !bg-blue-600 text-white rounded-lg hover:bg-blue-700 ${
           loading ? "opacity-50 cursor-not-allowed" : ""
-        }`}
+        }`
+        }
       >
         {loading ? "Checking in..." : "Capture and Check-in"}
       </button>
+      <img
+        src="https://media.tenor.com/WN09MfEh7FAAAAAj/cute-food.gif"
+        alt="Animation"
+        className="mt-4 w-25 h-25"
+      />
       {message && (
         <p
           className={`mt-4 ${
