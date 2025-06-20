@@ -28,6 +28,16 @@ const TableManagementStaff = () => {
   const [orderError, setOrderError] = useState(null);
   const [socket, setSocket] = useState(null);
   const [socketError, setSocketError] = useState(null);
+  const [isTransferTableModalOpen, setIsTransferTableModalOpen] =
+    useState(false);
+  const [isTransferConfirmModalOpen, setIsTransferConfirmModalOpen] =
+    useState(false);
+  const [isTransferSuccessModalOpen, setIsTransferSuccessModalOpen] =
+    useState(false);
+  const [transferSourceTable, setTransferSourceTable] = useState(null);
+  const [transferDestinationTable, setTransferDestinationTable] =
+    useState(null);
+  const [errorMessage, setErrorMessage] = useState(""); // Used for transfer error handling
 
   // Assume userId is stored in localStorage or fetched from auth context
   const userId = localStorage.getItem("userId") || "1"; // Replace with actual userId retrieval logic
@@ -1730,6 +1740,188 @@ const TableManagementStaff = () => {
     );
   };
 
+  const renderTransferTableModal = () => {
+    if (!isTransferTableModalOpen) return null;
+
+    const occupiedTables = tables.filter(
+      (table) => table.status === "occupied"
+    );
+    const availableTables = tables.filter(
+      (table) => table.status === "available"
+    );
+
+    return (
+      <div className="fixed inset-0 flex items-center justify-center z-50">
+        <div
+          className="absolute inset-0"
+          style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
+          onClick={() => {
+            setIsTransferTableModalOpen(false);
+            setTransferSourceTable(null);
+            setTransferDestinationTable(null);
+            setErrorMessage("");
+          }}
+        ></div>
+        <div className="bg-[#F0F8FD] rounded-lg shadow-lg p-6 w-[400px] relative z-50">
+          <button
+            className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+            onClick={() => {
+              setIsTransferTableModalOpen(false);
+              setTransferSourceTable(null);
+              setTransferDestinationTable(null);
+              setErrorMessage("");
+            }}
+          >
+            ✕
+          </button>
+          <h2 className="text-center text-xl font-bold mb-4">Transfer Table</h2>
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-1">
+              From Table (Occupied)
+            </label>
+            <select
+              value={transferSourceTable?.id || ""}
+              onChange={(e) => {
+                const selected = tables.find(
+                  (t) => t.id === parseInt(e.target.value)
+                );
+                setTransferSourceTable(selected || null);
+              }}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            >
+              <option value="">Choose current</option>
+              {occupiedTables.map((table) => (
+                <option key={table.id} value={table.id}>
+                  Table {table.id} (Capacity: {table.capacity})
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-1">
+              To Table (Available)
+            </label>
+            <select
+              value={transferDestinationTable?.id || ""}
+              onChange={(e) => {
+                const selected = tables.find(
+                  (t) => t.id === parseInt(e.target.value)
+                );
+                setTransferDestinationTable(selected || null);
+              }}
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+            >
+              <option value="">Choose new</option>
+              {availableTables.map((table) => (
+                <option key={table.id} value={table.id}>
+                  Table {table.id} (Capacity: {table.capacity})
+                </option>
+              ))}
+            </select>
+          </div>
+          {errorMessage && (
+            <p className="text-red-500 text-sm mb-4">{errorMessage}</p>
+          )}
+          <button
+            style={{ backgroundColor: "#4CAF50" }}
+            className="w-full text-white font-medium py-2 px-4 rounded-lg hover:bg-green-600"
+            onClick={() => {
+              if (transferSourceTable && transferDestinationTable) {
+                setIsTransferTableModalOpen(false);
+                setIsTransferConfirmModalOpen(true);
+              } else {
+                setErrorMessage("Vui lòng chọn cả bàn nguồn và bàn đích.");
+              }
+            }}
+            disabled={!transferSourceTable || !transferDestinationTable}
+          >
+            Transfer
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  // Transfer confirmation modal rendering function
+  const renderTransferConfirmModal = () => {
+    if (!isTransferConfirmModalOpen) return null;
+
+    return (
+      <div className="fixed inset-0 flex items-center justify-center z-50">
+        <div
+          className="absolute inset-0"
+          style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
+          onClick={() => setIsTransferConfirmModalOpen(false)}
+        ></div>
+        <div className="bg-white rounded-lg p-6 w-80 relative z-50 text-center">
+          <div className="flex justify-center mb-4">
+            <img
+              alt="Logo"
+              className="w-24 h-24"
+              src="../../src/assets/img/logoremovebg.png"
+            />
+          </div>
+          <p className="text-lg mb-6">
+            Are you sure you want to transfer from Table{" "}
+            {transferSourceTable?.id} to Table {transferDestinationTable?.id}?
+          </p>
+          <div className="flex justify-center space-x-4">
+            <button
+              className="!bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg"
+              onClick={() => {
+                setIsTransferConfirmModalOpen(false);
+                setIsTransferSuccessModalOpen(true);
+                setTransferSourceTable(null);
+                setTransferDestinationTable(null);
+              }}
+            >
+              Yes
+            </button>
+            <button
+              className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg"
+              onClick={() => setIsTransferConfirmModalOpen(false)}
+            >
+              No
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  // Transfer success modal rendering function
+  const renderTransferSuccessModal = () => {
+    if (!isTransferSuccessModalOpen) return null;
+
+    return (
+      <div className="fixed inset-0 flex items-center justify-center z-50">
+        <div
+          className="absolute inset-0"
+          style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
+          onClick={() => setIsTransferSuccessModalOpen(false)}
+        ></div>
+        <div className="bg-white rounded-lg p-6 w-80 relative z-50 text-center">
+          <div className="flex justify-center mb-4">
+            <img
+              alt="Logo"
+              className="w-24 h-24"
+              src="../../src/assets/img/logoremovebg.png"
+            />
+          </div>
+          <p className="text-lg mb-6 text-green-600 font-medium">
+            Transfer Successful!
+          </p>
+          <button
+            className="!bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg"
+            onClick={() => setIsTransferSuccessModalOpen(false)}
+          >
+            OK
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="h-screen w-screen bg-[#C2C7CA] flex justify-center items-center">
       <div
@@ -1740,6 +1932,9 @@ const TableManagementStaff = () => {
           isBillModalOpen ||
           isConfirmModalOpen ||
           isSuccessModalOpen ||
+          isTransferTableModalOpen ||
+          isTransferConfirmModalOpen ||
+          isTransferSuccessModalOpen ||
           isNotificationModalOpen
             ? "blur-sm"
             : ""
@@ -1968,6 +2163,18 @@ const TableManagementStaff = () => {
                       Empty Table List
                     </b>
                   </button>
+                  <button
+                  style={{ backgroundColor: "#FFFFFF" }}
+                  className="flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 mt-4 px-4 rounded-lg shadow-md"
+                  onClick={() => setIsTransferTableModalOpen(true)}
+                >
+                  <img
+                    width="20"
+                    height="20"
+                    src="https://img.icons8.com/ios-glyphs/90/000000/refresh.png"
+                    alt="transfer"
+                  />
+                </button>
                 </div>
               </div>
             </div>
@@ -1982,6 +2189,10 @@ const TableManagementStaff = () => {
       {renderBillModal()}
       {renderConfirmModal()}
       {renderSuccessModal()}
+      {renderTransferTableModal()}
+      {renderTransferConfirmModal()}
+      {renderTransferSuccessModal()}
+      
     </div>
   );
 };
