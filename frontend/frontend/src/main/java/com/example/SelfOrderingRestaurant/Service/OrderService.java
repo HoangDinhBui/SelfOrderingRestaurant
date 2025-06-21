@@ -77,142 +77,32 @@ public class OrderService implements IOrderService {
         List<Order> existingOrders = orderRepository.findByTableNumberAndPaymentStatus(
                 dinningTable.getTableNumber(), PaymentStatus.UNPAID);
 
+        final Order order;
         if (!existingOrders.isEmpty()) {
-            Integer orderId = existingOrders.get(0).getOrderId();
-            log.info("Found existing unpaid order with ID: {} for table {}, redirecting to updateOrder", orderId, dinningTable.getTableNumber());
-            return updateOrder(orderId, request);
-        }
-
-        if (TableStatus.OCCUPIED.equals(dinningTable.getTableStatus())) {
-            throw new ValidationException("Table is already occupied");
-        }
-
-        Customer customer = getOrCreateCustomer(request);
-
-        Order newOrder = new Order();
-        newOrder.setCustomer(customer);
-        newOrder.setTables(dinningTable);
-        newOrder.setStatus(OrderStatus.PENDING);
-        newOrder.setPaymentStatus(PaymentStatus.UNPAID);
-        newOrder.setNotes(request.getNotes());
-        newOrder.setOrderDate(new Date());
-
-        Order order = orderRepository.save(newOrder); // Save order to generate orderId
-        log.info("Created new order with ID: {} for table {}", order.getOrderId(), dinningTable.getTableNumber());
-
-        // Add items to new order
-        List<OrderItem> orderItems = new ArrayList<>();
-        if (request.getItems() != null && !request.getItems().isEmpty()) {
-            for (OrderItemDTO itemDTO : request.getItems()) {
-                // Validate dish exists
-                Dish dish = dishRepository.findById(itemDTO.getDishId())
-                        .orElseThrow(() -> new ResourceNotFoundException("Dish not found with ID: " + itemDTO.getDishId()));
-
-                if (itemDTO.getQuantity() <= 0) {
-                    throw new ValidationException("Quantity must be positive for dish ID: " + itemDTO.getDishId());
-                }
-
-                log.info("Adding new dish ID: {} with quantity: {} to order {}",
-                        itemDTO.getDishId(), itemDTO.getQuantity(), order.getOrderId());
-
-                OrderItem orderItem = new OrderItem();
-                orderItem.setId(new OrderItemKey(order.getOrderId(), itemDTO.getDishId()));
-                orderItem.setOrder(order);
-                orderItem.setDish(dish);
-                orderItem.setQuantity(itemDTO.getQuantity());
-                orderItem.setUnitPrice(dish.getPrice());
-                orderItem.setNotes(itemDTO.getNotes());
-                orderItem.setStatus(OrderItemStatus.PENDING);
-                orderItems.add(orderItem);
+            order = existingOrders.get(0);
+            log.info("Found existing unpaid order with ID: {} for table {}", order.getOrderId(), dinningTable.getTableNumber());
+            if (request.getNotes() != null && !request.getNotes().isEmpty()) {
+                order.setNotes(request.getNotes());
             }
-            orderItemRepository.saveAll(orderItems);
-        }
-
-        BigDecimal additionalAmount = processOrderItems(order, request.getItems());
-        BigDecimal newTotalAmount = order.getTotalAmount() != null
-                ? order.getTotalAmount().add(additionalAmount)
-                : additionalAmount;
-
-        order.setTotalAmount(newTotalAmount);
-        orderRepository.save(order);
-
-        dinningTable.setTableStatus(TableStatus.OCCUPIED);
-        dinningTableRepository.save(dinningTable);
-
-        orderCartService.clearCart();
-
-        sendOrderNotification(order, dinningTable);
-
-        return order.getOrderId();
-    }
-
-    @Transactional
-    public Integer updateOrder(Integer orderId, OrderRequestDTO request) {
-        validateOrderRequest(request);
-
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + orderId));
-
-        if (!order.getPaymentStatus().equals(PaymentStatus.UNPAID)) {
-            throw new ValidationException("Cannot update paid order with ID: " + orderId);
-        }
-
-        DinningTable dinningTable = order.getTables();
-        log.info("Updating order with ID: {} for table {}", order.getOrderId(), dinningTable.getTableNumber());
-
-        // Update notes if provided
-        if (request.getNotes() != null && !request.getNotes().isEmpty()) {
-            order.setNotes(request.getNotes());
-        }
-
-        // Process items for existing order
-        List<OrderItem> existingItems = orderItemRepository.findByOrderOrderId(order.getOrderId());
-        log.info("Fetched {} items for order ID: {}", existingItems != null ? existingItems.size() : 0, order.getOrderId());
-        if (existingItems == null) {
-            existingItems = new ArrayList<>();
-        }
-
-        if (request.getItems() != null && !request.getItems().isEmpty()) {
-            for (OrderItemDTO itemDTO : request.getItems()) {
-                // Validate dish exists
-                Dish dish = dishRepository.findById(itemDTO.getDishId())
-                        .orElseThrow(() -> new ResourceNotFoundException("Dish not found with ID: " + itemDTO.getDishId()));
-
-                if (itemDTO.getQuantity() <= 0) {
-                    throw new ValidationException("Quantity must be positive for dish ID: " + itemDTO.getDishId());
-                }
-
-                log.info("Processing dish ID: {} with quantity: {}", itemDTO.getDishId(), itemDTO.getQuantity());
-
-                // Check if item already exists in the order
-                Optional<OrderItem> existingItem = existingItems.stream()
-                        .filter(item -> item.getDish().getDishId().equals(itemDTO.getDishId()))
-                        .findFirst();
-
-                if (existingItem.isPresent()) {
-                    // Update quantity for existing item
-                    OrderItem item = existingItem.get();
-                    int newQuantity = item.getQuantity() + itemDTO.getQuantity();
-                    item.setQuantity(newQuantity);
-                    item.setNotes(itemDTO.getNotes());
-                    orderItemRepository.save(item);
-                    log.info("Updated quantity for dish ID: {} in order {}, new quantity: {}",
-                            item.getDish().getDishId(), order.getOrderId(), newQuantity);
-                } else {
-                    // Add new item
-                    OrderItem newItem = new OrderItem();
-                    newItem.setId(new OrderItemKey(order.getOrderId(), itemDTO.getDishId()));
-                    newItem.setOrder(order);
-                    newItem.setDish(dish);
-                    newItem.setQuantity(itemDTO.getQuantity());
-                    newItem.setUnitPrice(dish.getPrice());
-                    newItem.setNotes(itemDTO.getNotes());
-                    newItem.setStatus(OrderItemStatus.PENDING);
-                    existingItems.add(newItem);
-                    log.info("Added new dish ID: {} to order {}", itemDTO.getDishId(), order.getOrderId());
-                }
+        } else {
+            if (TableStatus.OCCUPIED.equals(dinningTable.getTableStatus())) {
+                throw new ValidationException("Table is already occupied");
             }
-            orderItemRepository.saveAll(existingItems);
+
+            Customer customer = getOrCreateCustomer(request);
+
+            Order newOrder = new Order();
+            newOrder.setCustomer(customer);
+            newOrder.setTables(dinningTable);
+            newOrder.setStatus(OrderStatus.PENDING);
+            newOrder.setPaymentStatus(PaymentStatus.UNPAID);
+            newOrder.setNotes(request.getNotes());
+            newOrder.setOrderDate(new Date());
+
+            order = orderRepository.save(newOrder);
+            dinningTable.setTableStatus(TableStatus.OCCUPIED);
+            dinningTableRepository.save(dinningTable);
+            log.info("Created new order with ID: {} for table {}", order.getOrderId(), dinningTable.getTableNumber());
         }
 
         BigDecimal additionalAmount = processOrderItems(order, request.getItems());
@@ -225,32 +115,7 @@ public class OrderService implements IOrderService {
 
         orderCartService.clearCart();
 
-        sendOrderNotification(order, dinningTable);
-
-        return order.getOrderId();
-    }
-
-    private BigDecimal processOrderItems(Order order, List<OrderItemDTO> itemRequests) {
-        BigDecimal totalAmount = BigDecimal.ZERO;
-
-        if (itemRequests == null || itemRequests.isEmpty()) {
-            return totalAmount;
-        }
-
-        for (OrderItemDTO itemRequest : itemRequests) {
-            Dish dish = dishRepository.findById(itemRequest.getDishId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Dish not found with ID: " + itemRequest.getDishId()));
-
-            BigDecimal subTotal = dish.getPrice().multiply(BigDecimal.valueOf(itemRequest.getQuantity()));
-            totalAmount = totalAmount.add(subTotal);
-            log.debug("Calculated subtotal for dish {}: {} x {} = {}",
-                    dish.getName(), itemRequest.getQuantity(), dish.getPrice(), subTotal);
-        }
-
-        return totalAmount;
-    }
-
-    private void sendOrderNotification(Order order, DinningTable dinningTable) {
+        // Send WebSocket message for new order
         Map<String, Object> message = new HashMap<>();
         message.put("type", "NEW_ORDER");
         Map<String, Object> orderDetails = new HashMap<>();
@@ -290,6 +155,8 @@ public class OrderService implements IOrderService {
                 }
             }
         });
+
+        return order.getOrderId();
     }
 
     private void validateOrderRequest(OrderRequestDTO request) {
@@ -349,6 +216,35 @@ public class OrderService implements IOrderService {
         return customer;
     }
 
+    private BigDecimal processOrderItems(Order order, List<OrderItemDTO> itemRequests) {
+        BigDecimal totalAmount = BigDecimal.ZERO;
+
+        for (OrderItemDTO itemRequest : itemRequests) {
+            Dish dish = dishRepository.findById(itemRequest.getDishId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Dish not found with ID: " + itemRequest.getDishId()));
+
+            BigDecimal subTotal = dish.getPrice().multiply(BigDecimal.valueOf(itemRequest.getQuantity()));
+            totalAmount = totalAmount.add(subTotal);
+
+            OrderItemKey orderItemKey = new OrderItemKey();
+            orderItemKey.setOrderId(order.getOrderId());
+            orderItemKey.setDishId(dish.getDishId());
+
+            OrderItem orderItem = new OrderItem();
+            orderItem.setId(orderItemKey);
+            orderItem.setOrder(order);
+            orderItem.setDish(dish);
+            orderItem.setQuantity(itemRequest.getQuantity());
+            orderItem.setUnitPrice(dish.getPrice());
+            orderItem.setNotes(itemRequest.getNotes());
+
+            orderItemRepository.save(orderItem);
+            log.debug("Added item: {} x{} to order {}", dish.getName(), itemRequest.getQuantity(), order.getOrderId());
+        }
+
+        return totalAmount;
+    }
+
     @Override
     public List<GetAllOrdersResponseDTO> getAllOrders() {
         try {
@@ -368,6 +264,7 @@ public class OrderService implements IOrderService {
                             dto.setNotes(item.getNotes());
                             dto.setDishName(item.getDish().getName());
                             dto.setPrice(item.getDish().getPrice());
+                            // Ensure status is never null
                             dto.setStatus(item.getStatus() != null ? item.getStatus().name() : OrderItemStatus.PENDING.name());
                             return dto;
                         }).collect(Collectors.toList());
@@ -407,6 +304,7 @@ public class OrderService implements IOrderService {
                     dto.setNotes(item.getNotes());
                     dto.setDishName(item.getDish().getName());
                     dto.setPrice(item.getDish().getPrice());
+                    // Ensure status is never null
                     dto.setStatus(item.getStatus() != null ? item.getStatus().name() : OrderItemStatus.PENDING.name());
                     return dto;
                 }).collect(Collectors.toList());
