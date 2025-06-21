@@ -2278,51 +2278,91 @@ const TableManagementAdmin = () => {
     );
   };
 
+  const handleSwapTables = async () => {
+  if (!transferSourceTable || !transferDestinationTable) {
+    setErrorMessage("Please select both source and destination tables.");
+    return;
+  }
+
+  try {
+    setLoading(true);
+    setErrorMessage(null);
+
+    // Call the swap tables API
+    await API.post(
+      `/api/staff/tables/swap?tableNumberA=${transferSourceTable.id}&tableNumberB=${transferDestinationTable.id}`
+    );
+
+    // Update local table state
+    setTables((prevTables) =>
+      prevTables.map((table) => {
+        if (table.id === transferSourceTable.id) {
+          return { ...table, status: "available", orders: [] };
+        }
+        if (table.id === transferDestinationTable.id) {
+          return { ...table, status: "occupied", orders: transferSourceTable.orders || [] };
+        }
+        return table;
+      })
+    );
+
+    // Fetch updated data
+    await fetchTables();
+    await fetchOrders();
+
+    // Show success modal
+    setIsTransferConfirmModalOpen(false);
+    setIsTransferSuccessModalOpen(true);
+    setTransferSourceTable(null);
+    setTransferDestinationTable(null);
+  } catch (err) {
+    console.error("Error swapping tables:", err);
+    setErrorMessage("Failed to swap tables. Please try again.");
+  } finally {
+    setLoading(false);
+  }
+};
+
   // New modal render function for transfer confirmation
   const renderTransferConfirmModal = () => {
-    if (!isTransferConfirmModalOpen) return null;
+  if (!isTransferConfirmModalOpen) return null;
 
-    return (
-      <div className="fixed inset-0 flex items-center justify-center z-50">
-        <div
-          className="absolute inset-0"
-          style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
-          onClick={() => setIsTransferConfirmModalOpen(false)}
-        ></div>
-        <div className="bg-white rounded-lg p-6 w-80 relative z-50 text-center">
-          <div className="flex justify-center mb-4">
-            <img
-              alt="Logo"
-              className="w-24 h-24"
-              src="../../src/assets/img/logoremovebg.png"
-            />
-          </div>
-          <p className="text-lg mb-6">
-            Are you sure you want to transfer from Table {transferSourceTable?.id} to Table {transferDestinationTable?.id}?
-          </p>
-          <div className="flex justify-center space-x-4">
-            <button
-              className="!bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg"
-              onClick={() => {
-                setIsTransferConfirmModalOpen(false);
-                setIsTransferSuccessModalOpen(true);
-                setTransferSourceTable(null);
-                setTransferDestinationTable(null);
-              }}
-            >
-              Yes
-            </button>
-            <button
-              className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg"
-              onClick={() => setIsTransferConfirmModalOpen(false)}
-            >
-              No
-            </button>
-          </div>
+  return (
+    <div className="fixed inset-0 flex items-center justify-center z-50">
+      <div
+        className="absolute inset-0"
+        style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
+        onClick={() => setIsTransferConfirmModalOpen(false)}
+      ></div>
+      <div className="bg-white rounded-lg p-6 w-80 relative z-50 text-center">
+        <div className="flex justify-center mb-4">
+          <img
+            alt="Logo"
+            className="w-24 h-24"
+            src="../../src/assets/img/logoremovebg.png"
+          />
+        </div>
+        <p className="text-lg mb-6">
+          Are you sure you want to transfer from Table {transferSourceTable?.id} to Table {transferDestinationTable?.id}?
+        </p>
+        <div className="flex justify-center space-x-4">
+          <button
+            className="!bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg"
+            onClick={handleSwapTables} // Call the new function
+          >
+            Yes
+          </button>
+          <button
+            className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg"
+            onClick={() => setIsTransferConfirmModalOpen(false)}
+          >
+            No
+          </button>
         </div>
       </div>
-    );
-  };
+    </div>
+  );
+};
 
   // New modal render function for transfer success
   const renderTransferSuccessModal = () => {
