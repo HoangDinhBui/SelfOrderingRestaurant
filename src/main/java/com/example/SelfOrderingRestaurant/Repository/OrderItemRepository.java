@@ -27,6 +27,4 @@ public interface OrderItemRepository extends JpaRepository<OrderItem, OrderItemK
     @Query("UPDATE OrderItem oi SET oi.status = :status WHERE oi.id.orderId = :orderId AND oi.id.dishId = :dishId")
     @Modifying
     void updateStatus(@Param("orderId") Integer orderId, @Param("dishId") Integer dishId, @Param("status") OrderItemStatus status);
-
-    List<OrderItem> findByOrderOrderId(Integer orderId);
 }
