@@ -55,7 +55,7 @@ public class AttendanceController {
 
     public AttendanceController() {
         // Tải Haar Cascade để phát hiện khuôn mặt
-        faceDetector = new CascadeClassifier("D://Download/haarcascade_frontalface_default.xml");
+        faceDetector = new CascadeClassifier("C://Users/MY DUNG/Documents/Zalo Received Files/haarcascade_frontalface_default.xml");
     }
 
     @PreAuthorize("hasRole('STAFF')")
