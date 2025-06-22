@@ -134,6 +134,32 @@ const DishManagementStaff = () => {
     }
   };
 
+  // Added function to handle retry on error
+  const handleRetry = () => {
+    refetch();
+  };
+
+  // Added function to cancel deletion and close confirmation dialog
+  const cancelDelete = () => {
+    setShowConfirmation(false);
+    setItemToDelete(null);
+  };
+
+  // Added function to confirm deletion by updating status to CANCELLED
+  const confirmDelete = async () => {
+    if (itemToDelete) {
+      await handleStatusChange(itemToDelete, "CANCELLED");
+      setShowConfirmation(false);
+      setItemToDelete(null);
+    }
+  };
+
+  // Modified Cancel button to trigger confirmation dialog
+  const handleCancelClick = (item) => {
+    setItemToDelete(item);
+    setShowConfirmation(true);
+  };
+
   return (
     <div className="h-screen w-screen !bg-blue-50 flex flex-col">
       <div className={`h-full w-full ${showConfirmation ? "blur-sm" : ""}`}>
@@ -216,7 +242,7 @@ const DishManagementStaff = () => {
                               className="px-4 py-1 bg-green-500 text-white rounded hover:bg-green-600"
                               onClick={() =>
                                 handleStatusChange(item, "PROCESSING")
-                              } // Correct
+                              }
                               style={{ backgroundColor: "#8DD8FF" }}
                             >
                               Nhận
@@ -226,19 +252,17 @@ const DishManagementStaff = () => {
                               className="px-4 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
                               onClick={() =>
                                 handleStatusChange(item, "COMPLETED")
-                              } // Correct
+                              }
                               style={{ backgroundColor: "#4CAF50" }}
                             >
                               Xong
                             </button>
                           ) : null}
-                          {item.status !== "CANCEL" &&
-                            item.status !== "COMPLETE" && (
+                          {item.status !== "CANCELLED" &&
+                            item.status !== "COMPLETED" && (
                               <button
                                 className="px-4 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-                                onClick={() =>
-                                  handleStatusChange(item, "CANCEL")
-                                }
+                                onClick={() => handleCancelClick(item)} // Modified to trigger confirmation
                                 style={{ backgroundColor: "#F44336" }}
                               >
                                 Cancel

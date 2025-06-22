@@ -1543,26 +1543,40 @@ const TableManagementAdmin = () => {
                                     {item.notes || "—"}
                                   </td>
                                   <td className="py-2 px-4">
-                                    <div className="flex items-center space-x-2">
-                                      {getStatusButton(
-                                        order.orderId,
-                                        order.status || "pending"
-                                      )}
-                                      {order.status?.toLowerCase() ===
-                                        "pending" && (
-                                        <button
-                                          className="bg-red-500 hover:bg-red-600 text-white py-1 px-2 rounded"
-                                          onClick={() =>
-                                            handleDeleteItem(
-                                              order.orderId,
-                                              index
-                                            )
-                                          }
-                                        >
-                                          Delete
-                                        </button>
-                                      )}
-                                    </div>
+                                    <button
+                                      className={`${
+                                        order.status?.toLowerCase() ===
+                                        "complete"
+                                          ? "bg-green-500"
+                                          : order.status?.toLowerCase() ===
+                                            "processing"
+                                          ? "bg-yellow-500"
+                                          : order.status?.toLowerCase() ===
+                                            "pending"
+                                          ? "bg-blue-500"
+                                          : order.status?.toLowerCase() ===
+                                            "cancel"
+                                          ? "bg-red-500"
+                                          : "bg-gray-500"
+                                      } text-white py-1 px-2 rounded cursor-default`}
+                                      disabled
+                                    >
+                                      {order.status
+                                        ? order.status.charAt(0).toUpperCase() +
+                                          order.status.slice(1)
+                                        : "Pending"}
+                                    </button>
+                                    {order.status?.toLowerCase() ===
+                                      "pending" && (
+                                      <button
+                                        className="bg-red-500 hover:bg-red-600 text-white py-1 mt-1 px-2 rounded"
+                                        onClick={() =>
+                                          handleDeleteItem(order.orderId, index)
+                                        }
+                                      >
+                                        Delete
+                                      </button>
+                                    )}
                                   </td>
                                 </tr>
                               ))
@@ -2279,90 +2293,95 @@ const TableManagementAdmin = () => {
   };
 
   const handleSwapTables = async () => {
-  if (!transferSourceTable || !transferDestinationTable) {
-    setErrorMessage("Please select both source and destination tables.");
-    return;
-  }
+    if (!transferSourceTable || !transferDestinationTable) {
+      setErrorMessage("Please select both source and destination tables.");
+      return;
+    }
 
-  try {
-    setLoading(true);
-    setErrorMessage(null);
+    try {
+      setLoading(true);
+      setErrorMessage(null);
 
-    // Call the swap tables API
-    await API.post(
-      `/api/staff/tables/swap?tableNumberA=${transferSourceTable.id}&tableNumberB=${transferDestinationTable.id}`
-    );
+      // Call the swap tables API
+      await API.post(
+        `/api/staff/tables/swap?tableNumberA=${transferSourceTable.id}&tableNumberB=${transferDestinationTable.id}`
+      );
 
-    // Update local table state
-    setTables((prevTables) =>
-      prevTables.map((table) => {
-        if (table.id === transferSourceTable.id) {
-          return { ...table, status: "available", orders: [] };
-        }
-        if (table.id === transferDestinationTable.id) {
-          return { ...table, status: "occupied", orders: transferSourceTable.orders || [] };
-        }
-        return table;
-      })
-    );
+      // Update local table state
+      setTables((prevTables) =>
+        prevTables.map((table) => {
+          if (table.id === transferSourceTable.id) {
+            return { ...table, status: "available", orders: [] };
+          }
+          if (table.id === transferDestinationTable.id) {
+            return {
+              ...table,
+              status: "occupied",
+              orders: transferSourceTable.orders || [],
+            };
+          }
+          return table;
+        })
+      );
 
-    // Fetch updated data
-    await fetchTables();
-    await fetchOrders();
+      // Fetch updated data
+      await fetchTables();
+      await fetchOrders();
 
-    // Show success modal
-    setIsTransferConfirmModalOpen(false);
-    setIsTransferSuccessModalOpen(true);
-    setTransferSourceTable(null);
-    setTransferDestinationTable(null);
-  } catch (err) {
-    console.error("Error swapping tables:", err);
-    setErrorMessage("Failed to swap tables. Please try again.");
-  } finally {
-    setLoading(false);
-  }
-};
+      // Show success modal
+      setIsTransferConfirmModalOpen(false);
+      setIsTransferSuccessModalOpen(true);
+      setTransferSourceTable(null);
+      setTransferDestinationTable(null);
+    } catch (err) {
+      console.error("Error swapping tables:", err);
+      setErrorMessage("Failed to swap tables. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // New modal render function for transfer confirmation
   const renderTransferConfirmModal = () => {
-  if (!isTransferConfirmModalOpen) return null;
+    if (!isTransferConfirmModalOpen) return null;
 
-  return (
-    <div className="fixed inset-0 flex items-center justify-center z-50">
-      <div
-        className="absolute inset-0"
-        style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
-        onClick={() => setIsTransferConfirmModalOpen(false)}
-      ></div>
-      <div className="bg-white rounded-lg p-6 w-80 relative z-50 text-center">
-        <div className="flex justify-center mb-4">
-          <img
-            alt="Logo"
-            className="w-24 h-24"
-            src="../../src/assets/img/logoremovebg.png"
-          />
-        </div>
-        <p className="text-lg mb-6">
-          Are you sure you want to transfer from Table {transferSourceTable?.id} to Table {transferDestinationTable?.id}?
-        </p>
-        <div className="flex justify-center space-x-4">
-          <button
-            className="!bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg"
-            onClick={handleSwapTables} // Call the new function
-          >
-            Yes
-          </button>
-          <button
-            className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg"
-            onClick={() => setIsTransferConfirmModalOpen(false)}
-          >
-            No
-          </button>
+    return (
+      <div className="fixed inset-0 flex items-center justify-center z-50">
+        <div
+          className="absolute inset-0"
+          style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
+          onClick={() => setIsTransferConfirmModalOpen(false)}
+        ></div>
+        <div className="bg-white rounded-lg p-6 w-80 relative z-50 text-center">
+          <div className="flex justify-center mb-4">
+            <img
+              alt="Logo"
+              className="w-24 h-24"
+              src="../../src/assets/img/logoremovebg.png"
+            />
+          </div>
+          <p className="text-lg mb-6">
+            Are you sure you want to transfer from Table{" "}
+            {transferSourceTable?.id} to Table {transferDestinationTable?.id}?
+          </p>
+          <div className="flex justify-center space-x-4">
+            <button
+              className="!bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg"
+              onClick={handleSwapTables} // Call the new function
+            >
+              Yes
+            </button>
+            <button
+              className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg"
+              onClick={() => setIsTransferConfirmModalOpen(false)}
+            >
+              No
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
   // New modal render function for transfer success
   const renderTransferSuccessModal = () => {
