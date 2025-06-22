@@ -25,7 +25,9 @@ import org.springframework.transaction.annotation.Transactional;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -41,6 +43,7 @@ public class OrderService implements IOrderService {
     private final HttpServletRequest httpServletRequest;
     private final SecurityUtils securityUtils;
     private final WebSocketService webSocketService;
+    private final StaffShiftRepository staffShiftRepository;
 
     private static final Logger log = LoggerFactory.getLogger(OrderService.class);
 
@@ -54,7 +57,7 @@ public class OrderService implements IOrderService {
             OrderCartService orderCartService,
             HttpServletRequest httpServletRequest,
             SecurityUtils securityUtils,
-            WebSocketService webSocketService) {
+            WebSocketService webSocketService, StaffShiftRepository staffShiftRepository) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.dishRepository = dishRepository;
@@ -64,11 +67,17 @@ public class OrderService implements IOrderService {
         this.httpServletRequest = httpServletRequest;
         this.securityUtils = securityUtils;
         this.webSocketService = webSocketService;
+        this.staffShiftRepository = staffShiftRepository;
     }
 
     @Transactional
     @Override
     public Integer createOrder(OrderRequestDTO request) {
+        List<Staff> staffOnShift = staffShiftRepository.findStaffOnCurrentShift(LocalDate.now(), LocalTime.now());
+        if (staffOnShift.isEmpty()) {
+            log.error("Cannot create order: No staff is currently on shift");
+            throw new ValidationException("Cannot create order: No staff is currently on shift");
+        }
         validateOrderRequest(request);
 
         DinningTable dinningTable = dinningTableRepository.findById(request.getTableId())
