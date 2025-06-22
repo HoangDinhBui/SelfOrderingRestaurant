@@ -25,6 +25,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -54,9 +55,24 @@ public class AttendanceController {
     private final CascadeClassifier faceDetector;
 
     public AttendanceController() {
-        // Tải Haar Cascade để phát hiện khuôn mặt
-        faceDetector = new CascadeClassifier("C://Users/MY DUNG/Documents/Zalo Received Files/haarcascade_frontalface_default.xml");
+        try {
+            URL resource = getClass().getResource("/cascade/haarcascade_frontalface_default.xml");
+            if (resource == null) {
+                throw new RuntimeException("Không tìm thấy file haarcascade_frontalface_default.xml trong resources.");
+            }
+
+            String cascadePath = Paths.get(resource.toURI()).toString();
+
+            faceDetector = new CascadeClassifier(cascadePath);
+            if (faceDetector.empty()) {
+                throw new RuntimeException("Không thể load file cascade: " + cascadePath);
+            }
+
+        } catch (Exception e) {
+            throw new RuntimeException("Lỗi khi khởi tạo AttendanceController: " + e.getMessage(), e);
+        }
     }
+
 
     @PreAuthorize("hasRole('STAFF')")
     @PostMapping("/check-in")
