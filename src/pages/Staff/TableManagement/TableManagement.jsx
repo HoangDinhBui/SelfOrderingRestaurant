@@ -2164,17 +2164,17 @@ const TableManagementStaff = () => {
                     </b>
                   </button>
                   <button
-                  style={{ backgroundColor: "#FFFFFF" }}
-                  className="flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 mt-4 px-4 rounded-lg shadow-md"
-                  onClick={() => setIsTransferTableModalOpen(true)}
-                >
-                  <img
-                    width="20"
-                    height="20"
-                    src="https://img.icons8.com/ios-glyphs/90/000000/refresh.png"
-                    alt="transfer"
-                  />
-                </button>
+                    style={{ backgroundColor: "#FFFFFF" }}
+                    className="flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 mt-4 px-4 rounded-lg shadow-md"
+                    onClick={() => setIsTransferTableModalOpen(true)}
+                  >
+                    <img
+                      width="20"
+                      height="20"
+                      src="https://img.icons8.com/ios-glyphs/90/000000/refresh.png"
+                      alt="transfer"
+                    />
+                  </button>
                 </div>
               </div>
             </div>
@@ -2192,7 +2192,6 @@ const TableManagementStaff = () => {
       {renderTransferTableModal()}
       {renderTransferConfirmModal()}
       {renderTransferSuccessModal()}
-      
     </div>
   );
 };
