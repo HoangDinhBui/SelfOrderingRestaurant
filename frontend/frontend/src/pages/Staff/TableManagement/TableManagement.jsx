@@ -162,6 +162,53 @@ const TableManagementStaff = () => {
               return prev;
             });
             fetchTables();
+          } else if (
+            message.type === "TABLE_TRANSFERRED" &&
+            message.sourceTableId &&
+            message.destinationTableId
+          ) {
+            // Xử lý thông báo chuyển bàn
+            console.log(
+              `Received TABLE_TRANSFERRED: from Table ${message.sourceTableId} to Table ${message.destinationTableId}`
+            );
+
+            // Cập nhật trạng thái bàn
+            setTables((prevTables) => {
+              const updatedTables = prevTables.map((table) => {
+                if (table.id === message.sourceTableId) {
+                  return { ...table, status: "available", orders: [] };
+                }
+                if (table.id === message.destinationTableId) {
+                  const sourceTable = prevTables.find(
+                    (t) => t.id === message.sourceTableId
+                  );
+                  return {
+                    ...table,
+                    status: "occupied",
+                    orders: sourceTable?.orders || [],
+                  };
+                }
+                return table;
+              });
+              console.log(
+                "Updated tables via TABLE_TRANSFERRED:",
+                updatedTables
+              );
+              return updatedTables;
+            });
+
+            // Cập nhật orders
+            setOrders((prevOrders) => {
+              return prevOrders.map((order) => {
+                if (order.tableNumber === message.sourceTableId) {
+                  return { ...order, tableNumber: message.destinationTableId };
+                }
+                return order;
+              });
+            });
+
+            // Đặt lại thời gian cập nhật WebSocket
+            setLastWebSocketUpdate(Date.now());
           } else {
             console.warn("Unrecognized WebSocket message:", message);
             fetchOrders();
@@ -1841,7 +1888,88 @@ const TableManagementStaff = () => {
       </div>
     );
   };
+  const handleSwapTables = async () => {
+    if (!transferSourceTable || !transferDestinationTable) {
+      setErrorMessage("Please select both source and destination tables.");
+      return;
+    }
 
+    try {
+      setLoading(true);
+      setErrorMessage(null);
+
+      console.log("Calling swap tables API:", {
+        tableNumberA: transferSourceTable.id,
+        tableNumberB: transferDestinationTable.id,
+      });
+
+      // Gọi API swap tables
+      await API.post(
+        `/api/staff/tables/swap?tableNumberA=${transferSourceTable.id}&tableNumberB=${transferDestinationTable.id}`
+      );
+
+      console.log("Swap tables API call successful");
+
+      // Đặt timeout để kiểm tra xem WebSocket có cập nhật không
+      const websocketTimeout = setTimeout(async () => {
+        console.warn(
+          "WebSocket did not update within 5 seconds, fetching tables and orders"
+        );
+        await fetchTables();
+        await fetchOrders();
+      }, 5000);
+
+      // Lưu timeout ID để hủy nếu WebSocket cập nhật thành công
+      setTables((prevTables) => {
+        const updatedTables = prevTables.map((table) => {
+          if (table.id === transferSourceTable.id) {
+            return { ...table, status: "available", orders: [] };
+          }
+          if (table.id === transferDestinationTable.id) {
+            return {
+              ...table,
+              status: "occupied",
+              orders: transferSourceTable.orders || [],
+            };
+          }
+          return table;
+        });
+        return [...updatedTables];
+      });
+
+      setOrders((prevOrders) => {
+        const updatedOrders = prevOrders.map((order) => {
+          if (order.tableNumber === transferSourceTable.id) {
+            return { ...order, tableNumber: transferDestinationTable.id };
+          }
+          return order;
+        });
+        return [...updatedOrders];
+      });
+
+      // Hủy timeout khi WebSocket cập nhật
+      ws.onmessage = (event) => {
+        const message = JSON.parse(event.data);
+        if (message.type === "TABLE_TRANSFERRED") {
+          clearTimeout(websocketTimeout);
+        }
+      };
+
+      setIsTransferConfirmModalOpen(false);
+      setIsTransferSuccessModalOpen(true);
+      setTransferSourceTable(null);
+      setTransferDestinationTable(null);
+    } catch (err) {
+      console.error("Swap tables error:", err.response || err);
+      setErrorMessage(
+        err.response?.data?.message ||
+          "Failed to swap tables. Please try again."
+      );
+      setIsTransferConfirmModalOpen(false);
+    } finally {
+      setLoading(false);
+    }
+  };
   // Transfer confirmation modal rendering function
   const renderTransferConfirmModal = () => {
     if (!isTransferConfirmModalOpen) return null;
@@ -1868,12 +1996,7 @@ const TableManagementStaff = () => {
           <div className="flex justify-center space-x-4">
             <button
               className="!bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg"
-              onClick={() => {
-                setIsTransferConfirmModalOpen(false);
-                setIsTransferSuccessModalOpen(true);
-                setTransferSourceTable(null);
-                setTransferDestinationTable(null);
-              }}
+              onClick={handleSwapTables}
             >
               Yes
             </button>

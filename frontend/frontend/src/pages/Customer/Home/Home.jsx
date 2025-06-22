@@ -3,7 +3,18 @@ import { useNavigate, useParams } from "react-router-dom";
 import Header from "../../../components/layout/Header";
 import Banner from "../../../components/ui/Banner";
 import { CartContext } from "../../../context/CartContext";
-import axios from "axios";
+import { gql, useLazyQuery } from "@apollo/client";
+
+// GraphQL Query for Table Validation
+const VALIDATE_TABLE_NUMBER = gql`
+  query ValidateTableNumber($orderId: ID!, $tableNumber: Int!) {
+    validateTableNumber(orderId: $orderId, tableNumber: $tableNumber) {
+      isValid
+      correctTableNumber
+      error
+    }
+  }
+`;
 
 const Home = () => {
   const { cartItemCount, loading, fetchCartData } = useContext(CartContext);
@@ -24,81 +35,254 @@ const Home = () => {
       ? savedTableNumber
       : "1";
   });
+  const [socket, setSocket] = useState(null);
+  const [socketError, setSocketError] = useState(null);
+  const [validationError, setValidationError] = useState(null);
 
   const API_BASE_URL = "http://localhost:8080";
 
-  const specialStaff = [
-    {
-      name: "Lemon Macarons",
-      price: "109,000",
-      image: "/src/assets/img/TodaySpeacial1.jpg",
-      type: "Cake",
-    },
-    {
-      name: "Beef-steak",
-      price: "109,000",
-      image: "/src/assets/img/TodaySpecial2.jpg",
-      type: "Meat",
-    },
-  ];
+  // Apollo Lazy Query for Table Validation
+  const [
+    validateTableNumberQuery,
+    { loading: validationLoading, error: validationQueryError },
+  ] = useLazyQuery(VALIDATE_TABLE_NUMBER);
 
+  // Validate tableNumber against orderId
+  const validateTableNumber = async (orderId, tableNumberToValidate) => {
+    try {
+      const { data } = await validateTableNumberQuery({
+        variables: {
+          orderId: orderId.toString(),
+          tableNumber: parseInt(tableNumberToValidate),
+        },
+      });
+
+      const response = data.validateTableNumber;
+      return {
+        isValid: response.isValid,
+        correctTableNumber: response.correctTableNumber
+          ? response.correctTableNumber.toString()
+          : null,
+        error: response.error,
+      };
+    } catch (error) {
+      console.error("Error validating table number:", error);
+      return {
+        isValid: false,
+        error: error.message || "Failed to validate table number",
+      };
+    }
+  };
+
+  // WebSocket connection (unchanged)
   useEffect(() => {
-    const savedTableNumber = localStorage.getItem("tableNumber");
+    let ws;
+    let reconnectTimeout;
+    let isMounted = true;
+    let reconnectAttempts = 0;
+    const maxReconnectAttempts = 5;
+    const baseReconnectDelay = 3000;
 
-    if (tableNumberFromUrl) {
-      if (!isNaN(tableNumberFromUrl) && parseInt(tableNumberFromUrl) > 0) {
-        setTableNumber(tableNumberFromUrl);
-        localStorage.setItem("tableNumber", tableNumberFromUrl);
-      } else {
-        const fallbackTableNumber = savedTableNumber || "1";
-        setTableNumber(fallbackTableNumber);
-        localStorage.setItem("tableNumber", fallbackTableNumber);
-        navigate(`/table/${fallbackTableNumber}`, { replace: true });
+    const connectWebSocket = () => {
+      if (!isMounted || reconnectAttempts >= maxReconnectAttempts) {
+        console.log("Max reconnect attempts reached or component unmounted");
+        return;
       }
-    } else {
-      if (
-        savedTableNumber &&
-        !isNaN(savedTableNumber) &&
-        parseInt(savedTableNumber) > 0
-      ) {
-        setTableNumber(savedTableNumber);
-        navigate(`/table/${savedTableNumber}`, { replace: true });
-      } else {
-        localStorage.setItem("tableNumber", "1");
-        setTableNumber("1");
-        navigate(`/table/1`, { replace: true });
-      }
-    }
 
-    const cachedCartData = localStorage.getItem("cartData");
-    if (cachedCartData) {
-      try {
-        const parsedData = JSON.parse(cachedCartData);
-      } catch (e) {
-        console.error("Error parsing cached cart data", e);
-      }
-    }
+      console.log(
+        `Attempting WebSocket connection (Attempt ${reconnectAttempts + 1})`
+      );
+      ws = new WebSocket(
+        `ws://localhost:8080/ws/notifications?userType=CUSTOMER&tableNumber=${tableNumber}`
+      );
 
-    let orderInfo = localStorage.getItem("latestOrderInfo");
-    if (!orderInfo) {
-      orderInfo = sessionStorage.getItem("latestOrderInfo");
+      ws.onopen = () => {
+        console.log("WebSocket connected successfully for customer");
+        setSocket(ws);
+        setSocketError(null);
+        reconnectAttempts = 0;
+        clearTimeout(reconnectTimeout);
+      };
+
+      ws.onmessage = (event) => {
+        try {
+          if (typeof event.data !== "string") {
+            throw new Error("Received non-string WebSocket message");
+          }
+          if (event.data === "PONG") {
+            console.log("Received PONG from server");
+            return;
+          }
+          const message = JSON.parse(event.data);
+          console.log(
+            "Received WebSocket message:",
+            JSON.stringify(message, null, 2)
+          );
+
+          if (
+            message.type === "TABLE_TRANSFERRED" &&
+            message.sourceTableId &&
+            message.destinationTableId
+          ) {
+            console.log(
+              `Received TABLE_TRANSFERRED: from Table ${message.sourceTableId} to Table ${message.destinationTableId}`
+            );
+            if (parseInt(message.sourceTableId) === parseInt(tableNumber)) {
+              const newTableNumber = message.destinationTableId.toString();
+              setTableNumber(newTableNumber);
+              localStorage.setItem("tableNumber", newTableNumber);
+              navigate(`/table/${newTableNumber}`, { replace: true });
+              console.log(
+                `Updated table number to ${newTableNumber} in state, localStorage, and URL`
+              );
+              alert(`Your table has been changed to Table ${newTableNumber}`);
+            }
+          }
+        } catch (err) {
+          console.error("Error processing WebSocket message:", err);
+          setSocketError(
+            "Failed to process notification. Please check your connection."
+          );
+        }
+      };
+
+      ws.onerror = (error) => {
+        console.error("WebSocket error:", error);
+        setSocketError("Failed to connect to notifications server");
+      };
+
+      ws.onclose = () => {
+        console.log("WebSocket disconnected");
+        setSocket(null);
+        if (isMounted && reconnectAttempts < maxReconnectAttempts) {
+          const delay = baseReconnectDelay * Math.pow(2, reconnectAttempts);
+          reconnectAttempts++;
+          console.log(
+            `Scheduling reconnect in ${delay}ms (Attempt ${reconnectAttempts})`
+          );
+          reconnectTimeout = setTimeout(() => {
+            connectWebSocket();
+          }, delay);
+        }
+      };
+
+      const pingInterval = setInterval(() => {
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          console.log("Sending PING");
+          ws.send(JSON.stringify({ type: "PING" }));
+        }
+      }, 30000);
+
+      return () => {
+        isMounted = false;
+        clearTimeout(reconnectTimeout);
+        clearInterval(pingInterval);
+        if (ws) {
+          console.log("Closing WebSocket during cleanup");
+          ws.close();
+        }
+      };
+    };
+
+    connectWebSocket();
+
+    return () => {
+      isMounted = false;
+      clearTimeout(reconnectTimeout);
+      if (ws) {
+        console.log("Closing WebSocket during cleanup");
+        ws.close();
+      }
+    };
+  }, [tableNumber, navigate]);
+
+  // Main useEffect for initialization and validation
+  useEffect(() => {
+    const initialize = async () => {
+      let savedTableNumber = localStorage.getItem("tableNumber");
+      let orderInfo =
+        localStorage.getItem("latestOrderInfo") ||
+        sessionStorage.getItem("latestOrderInfo");
+
+      // Parse orderInfo
       if (orderInfo) {
-        localStorage.setItem("latestOrderInfo", orderInfo);
-      }
-    }
+        try {
+          const parsedOrderInfo = JSON.parse(orderInfo);
+          setLastOrderInfo(parsedOrderInfo);
+          if (!localStorage.getItem("latestOrderInfo")) {
+            localStorage.setItem("latestOrderInfo", orderInfo);
+          }
 
-    if (orderInfo) {
-      try {
-        const parsedOrderInfo = JSON.parse(orderInfo);
-        setLastOrderInfo(parsedOrderInfo);
-      } catch (e) {
-        console.error("Error parsing order info:", e);
+          // Validate tableNumber against orderId
+          if (parsedOrderInfo.orderId) {
+            const validationResult = await validateTableNumber(
+              parsedOrderInfo.orderId,
+              tableNumberFromUrl || savedTableNumber || "1"
+            );
+            if (!validationResult.isValid) {
+              if (validationResult.correctTableNumber) {
+                setTableNumber(validationResult.correctTableNumber);
+                localStorage.setItem(
+                  "tableNumber",
+                  validationResult.correctTableNumber
+                );
+                navigate(`/table/${validationResult.correctTableNumber}`, {
+                  replace: true,
+                });
+                console.log(
+                  `Redirected to correct table number: ${validationResult.correctTableNumber}`
+                );
+                return;
+              } else {
+                setValidationError(
+                  validationResult.error || "Invalid order or table number"
+                );
+                localStorage.removeItem("latestOrderInfo");
+                sessionStorage.removeItem("latestOrderInfo");
+                setLastOrderInfo(null);
+                savedTableNumber = null; // Force fallback
+              }
+            }
+          }
+        } catch (e) {
+          console.error("Error parsing order info:", e);
+          setValidationError("Failed to load order information");
+        }
       }
-    }
 
-    if (typeof fetchCartData === "function") {
-      fetchCartData();
-    }
+      // Handle tableNumber initialization if no valid order
+      if (tableNumberFromUrl) {
+        if (!isNaN(tableNumberFromUrl) && parseInt(tableNumberFromUrl) > 0) {
+          setTableNumber(tableNumberFromUrl);
+          localStorage.setItem("tableNumber", tableNumberFromUrl);
+        } else {
+          const fallbackTableNumber = savedTableNumber || "1";
+          setTableNumber(fallbackTableNumber);
+          localStorage.setItem("tableNumber", fallbackTableNumber);
+          navigate(`/table/${fallbackTableNumber}`, { replace: true });
+        }
+      } else {
+        if (
+          savedTableNumber &&
+          !isNaN(savedTableNumber) &&
+          parseInt(savedTableNumber) > 0
+        ) {
+          setTableNumber(savedTableNumber);
+          navigate(`/table/${savedTableNumber}`, { replace: true });
+        } else {
+          localStorage.setItem("tableNumber", "1");
+          setTableNumber("1");
+          navigate(`/table/1`, { replace: true });
+        }
+      }
+
+      // Fetch cart data
+      if (typeof fetchCartData === "function") {
+        fetchCartData();
+      }
+    };
+
+    initialize();
   }, [fetchCartData, navigate, tableNumberFromUrl]);
 
   const handleTableNumberChange = (newTableNumber) => {
@@ -147,12 +331,13 @@ const Home = () => {
           additionalMessage || `${type} request from table ${tableNumber}`,
       };
 
-      const response = await axios.post(
-        `${API_BASE_URL}/api/notifications`,
-        notificationRequest
-      );
+      const response = await fetch(`${API_BASE_URL}/api/notifications`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(notificationRequest),
+      });
 
-      if (response.status >= 200 && response.status < 300) {
+      if (response.ok) {
         setNotificationSuccess(true);
         return true;
       } else {
@@ -161,9 +346,7 @@ const Home = () => {
     } catch (error) {
       console.error("Error sending notification:", error);
       setNotificationError(
-        error.response?.data?.message ||
-          error.response?.data?.error ||
-          "Failed to notify staff. Please try again."
+        error.message || "Failed to notify staff. Please try again."
       );
       return false;
     } finally {
@@ -186,32 +369,50 @@ const Home = () => {
       setProcessingPayment(true);
       setPaymentError(null);
 
-      let orderInfo = localStorage.getItem("latestOrderInfo");
+      let orderInfo =
+        localStorage.getItem("latestOrderInfo") ||
+        sessionStorage.getItem("latestOrderInfo");
       if (!orderInfo) {
-        orderInfo = sessionStorage.getItem("latestOrderInfo");
-        if (orderInfo) {
-          localStorage.setItem("latestOrderInfo", orderInfo);
-        }
-      }
-
-      let orderId = null;
-      if (orderInfo) {
-        const parsedOrderInfo = JSON.parse(orderInfo);
-        orderId = parsedOrderInfo.orderId;
-      }
-
-      if (!orderId) {
         setPaymentError("No active order found. Please place an order first.");
         setProcessingPayment(false);
         return;
+      }
+
+      const parsedOrderInfo = JSON.parse(orderInfo);
+      const orderId = parsedOrderInfo.orderId;
+
+      // Validate tableNumber before navigating to payment
+      const validationResult = await validateTableNumber(orderId, tableNumber);
+      if (!validationResult.isValid) {
+        if (validationResult.correctTableNumber) {
+          setTableNumber(validationResult.correctTableNumber);
+          localStorage.setItem(
+            "tableNumber",
+            validationResult.correctTableNumber
+          );
+          navigate(`/table/${validationResult.correctTableNumber}`, {
+            replace: true,
+          });
+          setPaymentError("Table number updated. Please try payment again.");
+          setProcessingPayment(false);
+          return;
+        } else {
+          setPaymentError(
+            validationResult.error || "Invalid order or table number"
+          );
+          localStorage.removeItem("latestOrderInfo");
+          sessionStorage.removeItem("latestOrderInfo");
+          setLastOrderInfo(null);
+          setProcessingPayment(false);
+          return;
+        }
       }
 
       navigate(`/payment_cus?orderId=${orderId}`);
     } catch (err) {
       console.error("Error in payment flow:", err);
       setPaymentError(
-        err.response?.data?.message ||
-          "Cannot process payment. Please try again."
+        err.message || "Cannot process payment. Please try again."
       );
     } finally {
       setProcessingPayment(false);
@@ -222,11 +423,38 @@ const Home = () => {
     navigate(`/menu_cus?tableNumber=${tableNumber}`);
   };
 
+  const specialStaff = [
+    {
+      name: "Lemon Macarons",
+      price: "109,000",
+      image: "/src/assets/img/TodaySpeacial1.jpg",
+      type: "Cake",
+    },
+    {
+      name: "Beef-steak",
+      price: "109,000",
+      image: "/src/assets/img/TodaySpecial2.jpg",
+      type: "Meat",
+    },
+  ];
+
   return (
     <div className="flex justify-center items-center min-h-screen">
       <div className="w-full max-w-md px-4">
         <Header />
         <Banner />
+
+        {validationError && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            <p>{validationError}</p>
+          </div>
+        )}
+
+        {socketError && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+            <p>{socketError}</p>
+          </div>
+        )}
 
         {paymentError && (
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
