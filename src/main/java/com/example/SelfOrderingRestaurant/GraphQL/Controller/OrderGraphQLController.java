@@ -96,6 +96,31 @@ public class OrderGraphQLController {
         }
     }
 
+    @QueryMapping
+    public TableValidationResponse validateTableNumber(@Argument String orderId, @Argument int tableNumber) {
+        try {
+            log.info("Validating table number {} for order {}", tableNumber, orderId);
+            OrderResponseDTO order = orderService.getOrderById(Integer.valueOf(orderId));
+
+            if (order.getPaymentStatus().equals("PAID")) {
+                log.warn("Order {} is already paid", orderId);
+                return new TableValidationResponse(false, null, "Order has already been paid");
+            }
+
+            if (order.getTableNumber() == tableNumber) {
+                log.info("Table number {} is valid for order {}", tableNumber, orderId);
+                return new TableValidationResponse(true, null, null);
+            } else {
+                log.info("Table number {} is invalid for order {}; correct table number is {}",
+                        tableNumber, orderId, order.getTableNumber());
+                return new TableValidationResponse(false, order.getTableNumber(), null);
+            }
+        } catch (Exception e) {
+            log.error("Error validating table number for order {}: {}", orderId, e.getMessage(), e);
+            return new TableValidationResponse(false, null, "Order not found or invalid");
+        }
+    }
+
     // Mutation Resolvers
     @MutationMapping
     public Integer createOrder(@Argument OrderInput input) {
@@ -228,5 +253,29 @@ public class OrderGraphQLController {
 
         orderDTO.setItems(items);
         return orderDTO;
+    }
+
+    public static class TableValidationResponse {
+        private final boolean isValid;
+        private final Integer correctTableNumber;
+        private final String error;
+
+        public TableValidationResponse(boolean isValid, Integer correctTableNumber, String error) {
+            this.isValid = isValid;
+            this.correctTableNumber = correctTableNumber;
+            this.error = error;
+        }
+
+        public boolean getIsValid() {
+            return isValid;
+        }
+
+        public Integer getCorrectTableNumber() {
+            return correctTableNumber;
+        }
+
+        public String getError() {
+            return error;
+        }
     }
 }

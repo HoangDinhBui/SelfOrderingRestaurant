@@ -77,6 +77,7 @@ type Query {
   orderCart: OrderCart
   orderPaymentDetails(orderId: ID!): OrderPaymentDetails
   paymentNotificationStatus(orderId: ID!): PaymentNotificationStatus
+  validateTableNumber(orderId: ID!, tableNumber: Int!): TableValidationResponse!
 }
 
 # Mutations
@@ -90,4 +91,10 @@ type Mutation {
   deleteOrder(orderId: String!): String!
   removeOrderItem(orderId: ID!, dishId: ID!): Order!
   updateOrderItemStatus(orderId: ID!, dishId: ID!, status: String!): Order!
+}
+
+type TableValidationResponse {
+  isValid: Boolean!
+  correctTableNumber: Int
+  error: String
 }
