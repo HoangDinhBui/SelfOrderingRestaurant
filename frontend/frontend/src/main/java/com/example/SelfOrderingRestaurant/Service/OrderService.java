@@ -83,17 +83,14 @@ public class OrderService implements IOrderService {
         DinningTable dinningTable = dinningTableRepository.findById(request.getTableId())
                 .orElseThrow(() -> new ResourceNotFoundException("Table not found with ID: " + request.getTableId()));
 
-        List<Order> existingOrders = orderRepository.findByTableNumberAndPaymentStatus(
-                dinningTable.getTableNumber(), PaymentStatus.UNPAID);
-
-        if (!existingOrders.isEmpty()) {
-            Integer orderId = existingOrders.get(0).getOrderId();
-            log.info("Found existing unpaid order with ID: {} for table {}, redirecting to updateOrder", orderId, dinningTable.getTableNumber());
-            return updateOrder(orderId, request);
-        }
-
         if (TableStatus.OCCUPIED.equals(dinningTable.getTableStatus())) {
-            throw new ValidationException("Table is already occupied");
+            List<Order> existingOrders = orderRepository.findByTableNumberAndPaymentStatus(
+                    dinningTable.getTableNumber(), PaymentStatus.UNPAID);
+            if (!existingOrders.isEmpty()) {
+                Integer orderId = existingOrders.get(0).getOrderId();
+                log.info("Found existing unpaid order with ID: {} for table {}, redirecting to updateOrder", orderId, dinningTable.getTableNumber());
+                return updateOrder(orderId, request);
+            }
         }
 
         Customer customer = getOrCreateCustomer(request);
@@ -390,31 +387,33 @@ public class OrderService implements IOrderService {
             List<Order> orders = orderRepository.findAll();
             log.info("Retrieved {} unpaid orders", orders.size());
 
-            return orders.stream().map(order -> {
-                List<OrderItem> orderItems = orderItemRepository.findByOrder(order);
+            return orders.stream()
+                    .filter(order -> order.getTables() != null)
+                    .map(order -> {
+                        List<OrderItem> orderItems = orderItemRepository.findByOrder(order);
 
-                List<OrderItemDTO> items = orderItems.stream()
-                        .map(item -> {
-                            OrderItemDTO dto = new OrderItemDTO();
-                            dto.setDishId(item.getId().getDishId());
-                            dto.setQuantity(item.getQuantity());
-                            dto.setNotes(item.getNotes());
-                            dto.setDishName(item.getDish().getName());
-                            dto.setPrice(item.getDish().getPrice());
-                            dto.setStatus(item.getStatus() != null ? item.getStatus().name() : OrderItemStatus.PENDING.name());
-                            return dto;
-                        }).collect(Collectors.toList());
+                        List<OrderItemDTO> items = orderItems.stream()
+                                .map(item -> {
+                                    OrderItemDTO dto = new OrderItemDTO();
+                                    dto.setDishId(item.getId().getDishId());
+                                    dto.setQuantity(item.getQuantity());
+                                    dto.setNotes(item.getNotes());
+                                    dto.setDishName(item.getDish().getName());
+                                    dto.setPrice(item.getDish().getPrice());
+                                    dto.setStatus(item.getStatus() != null ? item.getStatus().name() : OrderItemStatus.PENDING.name());
+                                    return dto;
+                                }).collect(Collectors.toList());
 
-                return new GetAllOrdersResponseDTO(
-                        order.getOrderId(),
-                        order.getCustomer().getFullname(),
-                        order.getTables().getTableNumber(),
-                        order.getStatus().name(),
-                        order.getTotalAmount(),
-                        order.getPaymentStatus().name(),
-                        items
-                );
-            }).collect(Collectors.toList());
+                        return new GetAllOrdersResponseDTO(
+                                order.getOrderId(),
+                                order.getCustomer().getFullname(),
+                                order.getTables().getTableNumber(),
+                                order.getStatus().name(),
+                                order.getTotalAmount(),
+                                order.getPaymentStatus().name(),
+                                items
+                        );
+                    }).collect(Collectors.toList());
         } catch (Exception e) {
             log.error("Error fetching unpaid orders: {}", e.getMessage(), e);
             throw new RuntimeException("Failed to fetch unpaid orders: " + e.getMessage());
