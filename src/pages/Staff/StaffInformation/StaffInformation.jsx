@@ -1098,13 +1098,6 @@ const StaffInformation = () => {
                       </svg>
                       Logout
                     </button>
-                    {/* Test button for debugging */}
-                    <button
-                      className="w-full text-left flex items-center px-4 py-2 text-green-500 hover:bg-gray-100 rounded-lg"
-                      onClick={() => console.log("Test button clicked")}
-                    >
-                      Test Click
-                    </button>
                   </div>
                 </div>
                 <div className="w-2/3">
