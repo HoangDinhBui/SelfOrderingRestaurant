@@ -21,4 +21,5 @@ public interface PaymentRepository extends JpaRepository<Payment, Integer> {
     Optional<Payment> findTopByOrderAndStatusNotOrderByPaymentDateDesc(Order order, PaymentStatus status);
     Optional<Payment> findTopByOrderAndStatusInOrderByPaymentDateDesc(Order order, List<PaymentStatus> statuses);
     List<Payment> findByOrderAndStatusIn(Order order, List<PaymentStatus> statuses);
+    Optional<Payment> findTopByOrder_OrderIdAndStatusInOrderByPaymentDateDesc(Integer orderId, List<PaymentStatus> statuses);
 }

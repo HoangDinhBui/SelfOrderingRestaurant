@@ -406,7 +406,7 @@ public class PaymentService {
                         txnRef.equals(payment.getTransactionId()) &&
                         "00".equals(responseCode);
 
-                payment.setStatus(isSuccessful ? PaymentStatus.PAID : PaymentStatus.UNPAID);
+                payment.setStatus(isSuccessful ? PaymentStatus.PAID : PaymentStatus.CANCELLED);
                 paymentRepository.save(payment);
 
                 if (isSuccessful && payment.getOrder() != null) {
@@ -416,7 +416,8 @@ public class PaymentService {
 
                     DinningTable table = order.getTables();
                     if (table != null) {
-                        boolean hasUnpaidOrders = hasUnpaidOrdersForTable(table.getTableNumber());
+                        boolean hasUnpaidOrders = orderRepository.existsByTablesTableNumberAndPaymentStatus(
+                                table.getTableNumber(), PaymentStatus.UNPAID);
                         table.setTableStatus(hasUnpaidOrders ? TableStatus.OCCUPIED : TableStatus.AVAILABLE);
                         tableRepository.save(table);
                         log.info("Table {} status updated to {} after online payment for order {}",
@@ -424,6 +425,8 @@ public class PaymentService {
                     }
 
                     sendPaymentStatusUpdatedMessage(order);
+                } else {
+                    log.info("VNPay transaction failed for order {}: responseCode={}", payment.getOrder().getOrderId(), responseCode);
                 }
 
                 result.put("status", isSuccessful ? 1 : 0);
