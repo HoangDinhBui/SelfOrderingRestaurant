@@ -148,9 +148,18 @@ public class PaymentController {
             Order order = orderRepository.findById(request.getOrderId())
                     .orElseThrow(() -> new IllegalArgumentException("Order not found with ID: " + request.getOrderId()));
 
-            // Check for existing PENDING or UNPAID payments
+            // Kiểm tra trạng thái đơn hàng
+            if (order.getPaymentStatus() == PaymentStatus.PAID) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                        "success", false,
+                        "message", "Order has already been paid"
+                ));
+            }
+
+            // Kiểm tra các giao dịch PENDING hoặc UNPAID hiện có
             List<Payment> existingPayments = paymentRepository.findByOrderAndStatusIn(
                     order, Arrays.asList(PaymentStatus.PENDING, PaymentStatus.UNPAID));
+            Payment payment = null;
             for (Payment pendingPayment : existingPayments) {
                 LocalDateTime paymentDate = pendingPayment.getPaymentDate();
                 LocalDateTime expiryTime = paymentDate.plusMinutes(15);
@@ -158,11 +167,11 @@ public class PaymentController {
                         request.getOrderId(), pendingPayment.getTransactionId(), pendingPayment.getStatus(), pendingPayment.getPaymentDate());
 
                 if (LocalDateTime.now().isBefore(expiryTime)) {
-                    return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
-                            "success", false,
-                            "message", "A " + pendingPayment.getStatus() + " payment transaction exists for order " + request.getOrderId() + ". Please wait for it to complete or expire."
-                    ));
+                    // Giao dịch vẫn hợp lệ
+                    payment = pendingPayment;
+                    break;
                 } else {
+                    // Hủy giao dịch hết hạn
                     pendingPayment.setStatus(PaymentStatus.CANCELLED);
                     paymentRepository.save(pendingPayment);
                     log.info("Cancelled expired {} payment for order {} with transaction ID: {}",
@@ -177,25 +186,34 @@ public class PaymentController {
                 method = PaymentMethod.CASH;
             }
 
-            String txnRef = generateTransactionId();
-
             boolean confirmPayment = request.isConfirmPayment();
 
-            Payment payment = new Payment();
-            payment.setOrder(order);
-            payment.setCustomer(order.getCustomer());
-            if (order.getTotalAmount() == null || order.getTotalAmount().compareTo(BigDecimal.ZERO) <= 0) {
-                throw new IllegalArgumentException("Order total amount must be greater than zero");
+            // Nếu không có giao dịch hợp lệ, tạo mới
+            if (payment == null) {
+                String txnRef = generateTransactionId();
+                payment = new Payment();
+                payment.setOrder(order);
+                payment.setCustomer(order.getCustomer());
+                if (order.getTotalAmount() == null || order.getTotalAmount().compareTo(BigDecimal.ZERO) <= 0) {
+                    throw new IllegalArgumentException("Order total amount must be greater than zero");
+                }
+                payment.setAmount(order.getTotalAmount());
+                payment.setPaymentMethod(method);
+                payment.setStatus(confirmPayment ? PaymentStatus.PAID : PaymentStatus.UNPAID);
+                payment.setTransactionId(txnRef);
+                payment.setPaymentDate(LocalDateTime.now());
+                paymentRepository.save(payment);
+                log.info("Created new payment for order {}: transactionId={}, status={}, method={}",
+                        request.getOrderId(), txnRef, payment.getStatus(), method);
+            } else {
+                // Cập nhật giao dịch hiện có nếu cần
+                payment.setPaymentMethod(method);
+                payment.setStatus(confirmPayment ? PaymentStatus.PAID : payment.getStatus());
+                payment.setPaymentDate(LocalDateTime.now());
+                paymentRepository.save(payment);
+                log.info("Updated existing payment for order {}: transactionId={}, status={}, method={}",
+                        request.getOrderId(), payment.getTransactionId(), payment.getStatus(), method);
             }
-            payment.setAmount(order.getTotalAmount());
-            payment.setPaymentMethod(method);
-            payment.setStatus(confirmPayment ? PaymentStatus.PAID : PaymentStatus.UNPAID);
-            payment.setTransactionId(txnRef);
-            payment.setPaymentDate(LocalDateTime.now());
-
-            paymentRepository.save(payment);
-            log.info("Created/Updated payment for order {}: transactionId={}, status={}, method={}",
-                    request.getOrderId(), txnRef, payment.getStatus(), method);
 
             if (confirmPayment) {
                 order.setPaymentStatus(PaymentStatus.PAID);
@@ -203,17 +221,21 @@ public class PaymentController {
 
                 DinningTable table = order.getTables();
                 if (table != null) {
-                    table.setTableStatus(TableStatus.AVAILABLE);
+                    boolean hasUnpaidOrders = orderRepository.existsByTablesTableNumberAndPaymentStatus(
+                            table.getTableNumber(), PaymentStatus.UNPAID);
+                    table.setTableStatus(hasUnpaidOrders ? TableStatus.OCCUPIED : TableStatus.AVAILABLE);
                     tableRepository.save(table);
-                    log.info("Table {} status updated to AVAILABLE after payment for order {}",
-                            table.getTableNumber(), order.getOrderId());
+                    log.info("Table {} status updated to {} after payment for order {}",
+                            table.getTableNumber(), table.getTableStatus(), order.getOrderId());
                 }
+
+                sendPaymentStatusUpdatedMessage(order);
             }
 
             Map<String, Object> response = new HashMap<>();
             response.put("success", true);
             response.put("message", confirmPayment ? "Payment processed successfully" : "Payment initiated, awaiting confirmation");
-            response.put("transactionId", txnRef);
+            response.put("transactionId", payment.getTransactionId());
             response.put("paymentStatus", payment.getStatus().toString());
 
             return ResponseEntity.ok(response);
@@ -223,6 +245,118 @@ public class PaymentController {
             response.put("success", false);
             response.put("message", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+    @PostMapping("/reset/{orderId}")
+    @Transactional
+    public ResponseEntity<Map<String, Object>> resetPaymentStatus(@PathVariable Integer orderId) {
+        try {
+            log.info("Resetting payment status for order ID: {}", orderId);
+
+            // Tìm đơn hàng
+            Order order = orderRepository.findById(orderId)
+                    .orElseThrow(() -> new IllegalArgumentException("Order not found with ID: " + orderId));
+
+            // Kiểm tra và hủy các giao dịch PENDING hoặc UNPAID
+            List<Payment> existingPayments = paymentRepository.findByOrderAndStatusIn(
+                    order, Arrays.asList(PaymentStatus.PENDING, PaymentStatus.UNPAID));
+            int cancelledCount = 0;
+            for (Payment payment : existingPayments) {
+                payment.setStatus(PaymentStatus.CANCELLED);
+                paymentRepository.save(payment);
+                log.info("Cancelled payment for order {}: transactionId={}, previous status={}",
+                        orderId, payment.getTransactionId(), payment.getStatus());
+                cancelledCount++;
+            }
+
+            // Ghi log nếu có nhiều giao dịch bị hủy
+            if (cancelledCount > 1) {
+                log.warn("Multiple payments (count={}) were cancelled for order ID: {}", cancelledCount, orderId);
+            } else if (cancelledCount == 0) {
+                log.info("No PENDING or UNPAID payments found for order ID: {}", orderId);
+            }
+
+            // Đặt lại paymentStatus của đơn hàng về UNPAID
+            if (order.getPaymentStatus() != PaymentStatus.UNPAID) {
+                order.setPaymentStatus(PaymentStatus.UNPAID);
+                orderRepository.save(order);
+                log.info("Reset paymentStatus to UNPAID for order ID: {}", orderId);
+            }
+
+            // Kiểm tra và cập nhật trạng thái bàn ăn
+            DinningTable table = order.getTables();
+            if (table != null) {
+                boolean hasUnpaidOrders = orderRepository.existsByTablesTableNumberAndPaymentStatus(
+                        table.getTableNumber(), PaymentStatus.UNPAID);
+                table.setTableStatus(hasUnpaidOrders ? TableStatus.OCCUPIED : TableStatus.AVAILABLE);
+                tableRepository.save(table);
+                log.info("Reset table {} status to {} for order ID: {}",
+                        table.getTableNumber(), table.getTableStatus(), orderId);
+            } else {
+                log.warn("No table associated with order ID: {}", orderId);
+            }
+
+            // Gửi thông báo WebSocket
+            sendPaymentStatusResetMessage(order);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("message", "Payment status reset successfully for order ID: " + orderId);
+            response.put("cancelledPayments", cancelledCount);
+            return ResponseEntity.ok(response);
+
+        } catch (IllegalArgumentException e) {
+            log.error("Error resetting payment status for order {}: {}", orderId, e.getMessage());
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        } catch (Exception e) {
+            log.error("Unexpected error resetting payment status for order {}: {}", orderId, e.getMessage(), e);
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", false);
+            response.put("message", "Failed to reset payment status: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+    private void sendPaymentStatusResetMessage(Order order) {
+        Map<String, Object> message = new HashMap<>();
+        message.put("type", "PAYMENT_STATUS_RESET");
+        message.put("orderId", order.getOrderId());
+        message.put("paymentStatus", order.getPaymentStatus().name());
+
+        DinningTable table = order.getTables();
+        if (table != null) {
+            message.put("tableNumber", table.getTableNumber());
+            message.put("tableStatus", table.getTableStatus().name());
+        } else {
+            log.warn("No table associated with order {}", order.getOrderId());
+        }
+
+        NotificationResponseDTO notification = NotificationResponseDTO.builder()
+                .orderId(order.getOrderId())
+                .tableNumber(table != null ? table.getTableNumber() : null)
+                .title("Payment Status Reset")
+                .content("Payment status reset for order " + order.getOrderId())
+                .isRead(false)
+                .type(NotificationType.PAYMENT_REQUEST) // Giả định NotificationType.PAYMENT_REQUEST phù hợp
+                .createAt(LocalDateTime.now())
+                .customPayload(message)
+                .build();
+
+        try {
+            String messageJson = objectMapper.writeValueAsString(notification);
+            log.info("Sending WebSocket message for reset: {}", messageJson);
+            webSocketService.sendNotificationToActiveStaff(notification);
+            log.info("Sent PAYMENT_STATUS_RESET for orderId: {}, tableNumber: {}, tableStatus: {}",
+                    order.getOrderId(),
+                    table != null ? table.getTableNumber() : "N/A",
+                    table != null ? table.getTableStatus().name() : "N/A");
+        } catch (Exception e) {
+            log.error("Failed to send PAYMENT_STATUS_RESET for orderId: {}: {}",
+                    order.getOrderId(), e.getMessage(), e);
         }
     }
 
@@ -282,12 +416,32 @@ public class PaymentController {
         Integer orderId = request.get("orderId");
         log.info("Confirming payment for order ID: {}", orderId);
 
-        Payment payment = paymentRepository.findByOrder_OrderId(orderId);
-        if (payment == null) {
-            throw new IllegalArgumentException("Payment not found for order ID: " + orderId);
+        // Tìm bản ghi thanh toán mới nhất với trạng thái PENDING hoặc UNPAID
+        Optional<Payment> paymentOptional = paymentRepository.findTopByOrder_OrderIdAndStatusInOrderByPaymentDateDesc(
+                orderId, Arrays.asList(PaymentStatus.PENDING, PaymentStatus.UNPAID));
+
+        if (paymentOptional.isEmpty()) {
+            log.error("No UNPAID or PENDING payment found for order ID: {}", orderId);
+            throw new IllegalArgumentException("No pending payment found for order ID: " + orderId);
         }
+
+        Payment payment = paymentOptional.get();
         log.info("Found payment for order {}: transactionId={}, status={}, method={}",
                 orderId, payment.getTransactionId(), payment.getStatus(), payment.getPaymentMethod());
+
+        // Kiểm tra nếu giao dịch PENDING và còn hiệu lực
+        if (payment.getStatus() == PaymentStatus.PENDING) {
+            LocalDateTime paymentDate = payment.getPaymentDate();
+            LocalDateTime expiryTime = paymentDate.plusMinutes(15);
+            if (LocalDateTime.now().isAfter(expiryTime)) {
+                payment.setStatus(PaymentStatus.CANCELLED);
+                paymentRepository.save(payment);
+                log.info("Cancelled expired PENDING payment for order {}: transactionId={}",
+                        orderId, payment.getTransactionId());
+                throw new IllegalStateException("Pending payment has expired for order ID: " + orderId);
+            }
+            throw new IllegalStateException("Cannot confirm payment: Payment is still PENDING for order ID: " + orderId);
+        }
 
         payment.setStatus(PaymentStatus.PAID);
         paymentRepository.save(payment);
@@ -308,7 +462,7 @@ public class PaymentController {
                     table.getTableNumber(), table.getTableStatus(), orderId);
         }
 
-        // Send WebSocket notification
+        // Gửi thông báo WebSocket
         sendPaymentStatusUpdatedMessage(order);
 
         Map<String, Object> response = new HashMap<>();
