@@ -1,7 +1,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { authAPI, publicAPI } from "../../../services/api"; // Existing API services
-import { confirmPayment, getPaymentStatus } from "../../../services/paymentAPI"; // New payment service
+import { authAPI, publicAPI } from "../../../services/api";
+import { confirmPayment, getPaymentStatus } from "../../../services/paymentAPI";
 
 const Payment = () => {
   const navigate = useNavigate();
@@ -19,7 +19,7 @@ const Payment = () => {
   const momoPhoneNumber = "0329914143";
   const queryParams = new URLSearchParams(location.search);
   const orderId = queryParams.get("orderId");
-  const API_BASE_URL = "http://localhost:8080"; // Replace with your API base URL
+  const API_BASE_URL = "http://localhost:8080";
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
@@ -123,6 +123,30 @@ const Payment = () => {
     } catch (err) {
       console.error("Error checking transaction status:", err);
       setError("Failed to check transaction status. Please try again.");
+    }
+  };
+
+  const resetPayment = async () => {
+    try {
+      const response = await authAPI.post(`/payment/reset/${orderId}`);
+      if (response.data.success) {
+        setTransactionStatus(null);
+        setExistingPaymentDetails(null);
+        setError(null);
+        console.log("Reset payment status successfully for order:", orderId);
+        const refreshResponse = await getPaymentStatus(orderId);
+        if (!refreshResponse.error) {
+          setOrderDetails(refreshResponse);
+        }
+      } else {
+        throw new Error(response.data.message || "Failed to reset payment status");
+      }
+    } catch (err) {
+      console.error("Error resetting payment status:", err);
+      setError(
+        err.response?.data?.message ||
+        "Failed to reset payment status. Please try again."
+      );
     }
   };
 
@@ -288,7 +312,6 @@ const Payment = () => {
     try {
       setProcessingPayment(true);
 
-      // Check payment status before confirming
       const statusResponse = await getPaymentStatus(orderId);
       if (statusResponse.error) {
         throw new Error(
@@ -318,7 +341,6 @@ const Payment = () => {
         return;
       }
 
-      // Confirm payment
       const response = await authAPI.post(`/payment/confirm`, {
         orderId: parseInt(orderId),
       });
@@ -510,23 +532,23 @@ const Payment = () => {
             setShowModal(true);
           } else {
             setError(
-              "Thanh toán VNPay thất bại: " + verifyResponse.data.message
+              "VNPay payment failed: " + verifyResponse.data.message
             );
           }
           navigate(`/payment_cus?orderId=${orderId}`, { replace: true });
         } catch (err) {
-          console.error("Lỗi khi xác minh thanh toán VNPay:", err);
+          console.error("Error verifying VNPay payment:", err);
           if (err.response?.status === 401) {
             setError(
-              "Truy cập không được phép. Kiểm tra token hoặc cấu hình API."
+              "Unauthorized access. Check token or API configuration."
             );
           } else if (err.response?.status === 400) {
             setError(
-              "Dữ liệu thanh toán không hợp lệ: " + err.response.data.message
+              "Invalid payment data: " + err.response.data.message
             );
           } else {
             setError(
-              "Không thể xác minh thanh toán: " +
+              "Unable to verify payment: " +
                 (err.response?.data?.message || err.message)
             );
           }
@@ -604,7 +626,6 @@ const Payment = () => {
 
   return (
     <div className="min-h-screen w-full bg-gray-100 flex flex-col">
-      {/* Header Container - Changed from fixed to container style */}
       <div className="max-w-lg mx-auto w-full bg-white py-2 shadow-md z-10">
         <div className="flex items-center px-4 w-full">
           <button
@@ -851,7 +872,12 @@ const Payment = () => {
         <div className="fixed inset-0 bg-opacity-20 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="relative bg-white p-6 rounded-lg shadow-lg w-96 border border-gray-300">
             <button
-              onClick={() => setShowModal(false)}
+              onClick={() => {
+                if (paymentMethod === "MOMO") {
+                  resetPayment();
+                }
+                setShowModal(false);
+              }}
               className="absolute top-2 right-2 text-gray-500 hover:text-gray-800"
             >
               <svg
@@ -971,7 +997,10 @@ const Payment = () => {
                 </div>
                 <div className="flex justify-between gap-2">
                   <button
-                    onClick={() => setShowModal(false)}
+                    onClick={() => {
+                      resetPayment();
+                      setShowModal(false);
+                    }}
                     className="w-1/2 !bg-gray-300 text-black py-2 rounded-lg hover:bg-gray-400 transition"
                   >
                     Cancel

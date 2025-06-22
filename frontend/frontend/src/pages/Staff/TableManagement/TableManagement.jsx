@@ -1339,10 +1339,139 @@ const TableManagementStaff = () => {
     );
   };
 
+  // Render Dish Modal
   const renderDishModal = () => {
     if (!isDishModalOpen || !selectedTable) return null;
 
     const orders = selectedTable.orders || [];
+
+    const handleUpdateStatus = async (orderId, newStatus) => {
+      try {
+        await API.put(`/api/orders/${orderId}/status`, {
+          status: newStatus.toUpperCase(),
+        });
+        setSelectedTable((prev) => ({
+          ...prev,
+          orders: prev.orders.map((order) =>
+            order.orderId === orderId ? { ...order, status: newStatus } : order
+          ),
+        }));
+        setOrders((prevOrders) =>
+          prevOrders.map((order) =>
+            order.orderId === orderId ? { ...order, status: newStatus } : order
+          )
+        );
+      } catch (err) {
+        console.error(`Error updating status for order ${orderId}:`, err);
+        setOrderError("Failed to update order status");
+      }
+    };
+
+    const handleUpdateQuantity = async (orderId, itemIndex, newQuantity) => {
+      try {
+        // Assuming an API endpoint to update item quantity
+        await API.put(`/api/orders/${orderId}/items/${itemIndex}`, {
+          quantity: newQuantity,
+        });
+        setSelectedTable((prev) => ({
+          ...prev,
+          orders: prev.orders.map((order) =>
+            order.orderId === orderId
+              ? {
+                  ...order,
+                  items: order.items.map((item, idx) =>
+                    idx === itemIndex
+                      ? { ...item, quantity: newQuantity }
+                      : item
+                  ),
+                }
+              : order
+          ),
+        }));
+      } catch (err) {
+        console.error(`Error updating quantity for order ${orderId}:`, err);
+        setOrderError("Failed to update item quantity");
+      }
+    };
+
+    const handleDeleteItem = async (orderId, itemIndex) => {
+      try {
+        // Assuming an API endpoint to delete an item
+        await API.delete(`/api/orders/${orderId}/items/${itemIndex}`);
+        setSelectedTable((prev) => ({
+          ...prev,
+          orders: prev.orders.map((order) =>
+            order.orderId === orderId
+              ? {
+                  ...order,
+                  items: order.items.filter((_, idx) => idx !== itemIndex),
+                }
+              : order
+          ),
+        }));
+      } catch (err) {
+        console.error(`Error deleting item for order ${orderId}:`, err);
+        setOrderError("Failed to delete item");
+      }
+    };
+
+    const getStatusButton = (orderId, status) => {
+      const statusLower = status?.toLowerCase();
+      let bgColor, text;
+
+      switch (statusLower) {
+        case "complete":
+          bgColor = "bg-green-500";
+          text = "Complete";
+          break;
+        case "processing":
+          bgColor = "bg-yellow-500";
+          text = "Processing";
+          break;
+        case "pending":
+          bgColor = "bg-blue-500";
+          text = "Pending";
+          break;
+        case "cancel":
+          bgColor = "bg-red-500";
+          text = "Cancel";
+          break;
+        default:
+          bgColor = "bg-gray-500";
+          text = "Unknown";
+      }
+
+      const statusOptions = [
+        "pending",
+        "processing",
+        "complete",
+        "cancel",
+      ].filter((s) => s !== statusLower);
+
+      return (
+        <div className="relative inline-block">
+          <button
+            className={`${bgColor} text-white py-1 px-2 rounded`}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {text}
+          </button>
+          {statusLower === "pending" && (
+            <div className="absolute left-0 mt-1 w-32 bg-white border border-gray-300 rounded shadow-lg z-10">
+              {statusOptions.map((option) => (
+                <button
+                  key={option}
+                  className="block w-full text-left px-2 py-1 hover:bg-gray-100"
+                  onClick={() => handleUpdateStatus(orderId, option)}
+                >
+                  {option.charAt(0).toUpperCase() + option.slice(1)}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    };
 
     return (
       <div className="fixed inset-0 flex items-center justify-center z-50">
@@ -1395,6 +1524,7 @@ const TableManagementStaff = () => {
                               <th className="text-left py-2 px-4">Quantity</th>
                               <th className="text-left py-2 px-4">Price</th>
                               <th className="text-left py-2 px-4">Notes</th>
+                              <th className="text-left py-2 px-4">Action</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1408,7 +1538,24 @@ const TableManagementStaff = () => {
                                     {item.dishName || "—"}
                                   </td>
                                   <td className="py-2 px-4">
-                                    {item.quantity || "—"}
+                                    {order.status?.toLowerCase() ===
+                                    "pending" ? (
+                                      <input
+                                        type="number"
+                                        value={item.quantity || 0}
+                                        onChange={(e) =>
+                                          handleUpdateQuantity(
+                                            order.orderId,
+                                            index,
+                                            parseInt(e.target.value) || 0
+                                          )
+                                        }
+                                        className="w-16 border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        min="0"
+                                      />
+                                    ) : (
+                                      item.quantity || "—"
+                                    )}
                                   </td>
                                   <td className="py-2 px-4">
                                     {item.price
@@ -1420,12 +1567,48 @@ const TableManagementStaff = () => {
                                   <td className="py-2 px-4">
                                     {item.notes || "—"}
                                   </td>
+                                  <td className="py-2 px-4">
+                                    <button
+                                      className={`${
+                                        order.status?.toLowerCase() ===
+                                        "complete"
+                                          ? "bg-green-500"
+                                          : order.status?.toLowerCase() ===
+                                            "processing"
+                                          ? "bg-yellow-500"
+                                          : order.status?.toLowerCase() ===
+                                            "pending"
+                                          ? "bg-blue-500"
+                                          : order.status?.toLowerCase() ===
+                                            "cancel"
+                                          ? "bg-red-500"
+                                          : "bg-gray-500"
+                                      } text-white py-1 px-2 rounded cursor-default`}
+                                      disabled
+                                    >
+                                      {order.status
+                                        ? order.status.charAt(0).toUpperCase() +
+                                          order.status.slice(1)
+                                        : "Pending"}
+                                    </button>
+                                    {order.status?.toLowerCase() ===
+                                      "pending" && (
+                                      <button
+                                        className="bg-red-500 hover:bg-red-600 text-white py-1 mt-1 px-2 rounded"
+                                        onClick={() =>
+                                          handleDeleteItem(order.orderId, index)
+                                        }
+                                      >
+                                        Delete
+                                      </button>
+                                    )}
+                                  </td>
                                 </tr>
                               ))
                             ) : (
                               <tr>
                                 <td
-                                  colSpan="4"
+                                  colSpan="5"
                                   className="py-2 px-4 text-center text-gray-500"
                                 >
                                   No items in this order
