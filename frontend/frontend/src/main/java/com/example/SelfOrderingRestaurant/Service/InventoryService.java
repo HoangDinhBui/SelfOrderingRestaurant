@@ -2,23 +2,18 @@ package com.example.SelfOrderingRestaurant.Service;
 
 import com.example.SelfOrderingRestaurant.Dto.Request.InventoryRequestDTO.CreateInventoryRequestDTO;
 import com.example.SelfOrderingRestaurant.Dto.Request.InventoryRequestDTO.UpdateInventoryRequestDTO;
+import com.example.SelfOrderingRestaurant.Dto.Request.OrderRequestDTO.UpdateInventoryByOrderRequestDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.InventoryResponseDTO.GetInventoryResponseDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.InventoryResponseDTO.RemainingInventoryResponseDTO;
-import com.example.SelfOrderingRestaurant.Entity.Ingredient;
-import com.example.SelfOrderingRestaurant.Entity.Inventory;
-import com.example.SelfOrderingRestaurant.Entity.Supplier;
-import com.example.SelfOrderingRestaurant.Repository.IngredientRepository;
-import com.example.SelfOrderingRestaurant.Repository.InventoryRepository;
-import com.example.SelfOrderingRestaurant.Repository.DishIngredientRepository;
-import com.example.SelfOrderingRestaurant.Repository.SupplierRepository;
+import com.example.SelfOrderingRestaurant.Entity.*;
+import com.example.SelfOrderingRestaurant.Repository.*;
 import com.example.SelfOrderingRestaurant.Service.Imp.IInventoryService;
+import org.apache.poi.hpsf.Decimal;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 
@@ -33,6 +28,8 @@ public class InventoryService implements IInventoryService {
     private final DishIngredientRepository dishIngredientRepository;
 
     private final SupplierRepository supplierRepository;
+
+    private final DishRepository dishRepository;
 
     @Transactional
     @Override
@@ -214,5 +211,55 @@ public class InventoryService implements IInventoryService {
                     inventory.getLastUpdated()
             );
         }).collect(Collectors.toList());
+    }
+
+    @Transactional
+    @Override
+    public void updateInventoryByOrder(UpdateInventoryByOrderRequestDTO request) {
+        // Map để lưu số lượng nguyên liệu cần trừ (sử dụng BigDecimal cho độ chính xác)
+        Map<Integer, BigDecimal> ingredientQuantities = new HashMap<>();
+
+        // Duyệt qua từng món trong order
+        for (UpdateInventoryByOrderRequestDTO.OrderItemDTO item : request.getItems()) {
+            String dishName = item.getDishName();
+            Integer orderQuantity = item.getQuantity();
+
+            // Resolve dishId from dishName
+            Dish dish = dishRepository.findByName(dishName)
+                    .orElseThrow(() -> new RuntimeException("Dish not found: " + dishName));
+            Integer dishId = dish.getDishId();
+
+            List<DishIngredient> dishIngredients = dishIngredientRepository.findByDishId(dishId);
+            if (dishIngredients.isEmpty()) {
+                throw new RuntimeException("No ingredients found for dish: " + dishName);
+            }
+
+            // Tính tổng số lượng nguyên liệu cần trừ cho mỗi món
+            for (DishIngredient dishIngredient : dishIngredients) {
+                Integer ingredientId = dishIngredient.getIngredient().getIngredientId();
+                BigDecimal quantityPerDish = dishIngredient.getQuantity();
+                BigDecimal totalQuantity = quantityPerDish.multiply(new BigDecimal(orderQuantity));
+                ingredientQuantities.merge(ingredientId, totalQuantity, BigDecimal::add);
+            }
+        }
+
+        // Cập nhật inventory cho từng nguyên liệu
+        for (Map.Entry<Integer, BigDecimal> entry : ingredientQuantities.entrySet()) {
+            Integer ingredientId = entry.getKey();
+            BigDecimal quantityToDeduct = entry.getValue();
+
+            Inventory inventory = inventoryRepository.findByIngredientIngredientId(ingredientId)
+                    .orElseThrow(() -> new RuntimeException("Inventory not found for ingredient ID: " + ingredientId));
+
+            BigDecimal currentQuantity = new BigDecimal(inventory.getQuantity());
+            BigDecimal remainingQuantity = currentQuantity.subtract(quantityToDeduct);
+            if (remainingQuantity.compareTo(BigDecimal.ZERO) < 0) {
+                throw new RuntimeException("Insufficient inventory for ingredient ID: " + ingredientId);
+            }
+
+            inventory.setQuantity(remainingQuantity.doubleValue()); // Chuyển sang Double nếu cần
+            inventory.setLastUpdated(new Date());
+            inventoryRepository.save(inventory);
+        }
     }
 }

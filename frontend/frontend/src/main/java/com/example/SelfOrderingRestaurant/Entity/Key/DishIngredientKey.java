@@ -15,23 +15,23 @@ import java.util.Objects;
 @AllArgsConstructor
 @NoArgsConstructor
 public class DishIngredientKey {
-    @Column(name = "Dish_ID")
+    @Column(name = "dish_id")
     private Integer dishId;
 
-    @Column(name = "Ingredient_ID")
+    @Column(name = "ingredient_id")
     private Integer ingredientId;
 
-//    @Override
-//    public boolean equals(Object o) {
-//        if (this == o) return true;
-//        if (o == null || getClass() != o.getClass()) return false;
-//        DishIngredientKey that = (DishIngredientKey) o;
-//        return Objects.equals(dishId, that.getDishId()) &&
-//                Objects.equals(ingredientId, that.getIngredientId());
-//    }
-//
-//    @Override
-//    public int hashCode() {
-//        return Objects.hash(dishId, ingredientId);
-//    }
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        DishIngredientKey that = (DishIngredientKey) o;
+        return Objects.equals(dishId, that.getDishId()) &&
+                Objects.equals(ingredientId, that.getIngredientId());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(dishId, ingredientId);
+    }
 }

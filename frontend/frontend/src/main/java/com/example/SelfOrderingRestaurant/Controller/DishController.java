@@ -3,13 +3,17 @@ package com.example.SelfOrderingRestaurant.Controller;
 import com.example.SelfOrderingRestaurant.Dto.Request.DishRequestDTO.DishRequestDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.DishResponseDTO.DishResponseDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.DishResponseDTO.GetAllDishesResponseDTO;
+import com.example.SelfOrderingRestaurant.Repository.DishRepository;
 import com.example.SelfOrderingRestaurant.Service.DishService;
 import jakarta.annotation.security.PermitAll;
 import jakarta.validation.Valid;
 import jakarta.validation.ValidationException;
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpHeaders;
@@ -36,6 +40,27 @@ public class DishController {
     private static final Logger logger = LoggerFactory.getLogger(DishController.class);
     private static final String DISH_IMAGE_DIR = "uploads/dishes";
     private final DishService dishService;
+    @Autowired
+    private DishRepository dishRepository;
+
+    @GetMapping("/dishes/name-to-id")
+    public ResponseEntity<?> getDishIdByName(@RequestParam String name) {
+        return dishRepository.findByName(name)
+                .map(dish -> ResponseEntity.ok(new DishIdResponse(dish.getDishId())))
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
+    // DTO để trả về chỉ dishId
+    @Setter
+    @Getter
+    static class DishIdResponse {
+        private Integer dishId;
+
+        public DishIdResponse(Integer dishId) {
+            this.dishId = dishId;
+        }
+
+    }
 
     @PostMapping(path = "/admin/dishes", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> createDish(@Valid @ModelAttribute DishRequestDTO dishDTO, Authentication authentication) {
