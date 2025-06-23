@@ -90,8 +90,8 @@ const Attendance = () => {
         // Handle notifications
         const messageLower = response.data.message.toLowerCase();
         if (
-          messageLower.includes("thành công") ||
-          messageLower.includes("ghi nhận")
+          messageLower.includes("success") ||
+          messageLower.includes("recorded")
         ) {
           toast.success(response.data.message);
         } else {
@@ -104,13 +104,13 @@ const Attendance = () => {
           message: response.data.message,
           userType,
           shouldNavigate:
-            messageLower.includes("thành công") ||
-            messageLower.includes("ghi nhận"),
+            messageLower.includes("success") ||
+            messageLower.includes("recorded"),
         });
 
         if (
-          (messageLower.includes("thành công") ||
-            messageLower.includes("ghi nhận")) &&
+          (messageLower.includes("success") ||
+            messageLower.includes("recorded")) &&
           userType === "STAFF"
         ) {
           console.log("Navigating to /table-management_staff");

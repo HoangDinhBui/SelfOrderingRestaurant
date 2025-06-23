@@ -245,7 +245,7 @@ const DishManagementStaff = () => {
                               }
                               style={{ backgroundColor: "#8DD8FF" }}
                             >
-                              Nhận
+                              Accept
                             </button>
                           ) : item.status === "PROCESSING" ? (
                             <button
@@ -255,7 +255,7 @@ const DishManagementStaff = () => {
                               }
                               style={{ backgroundColor: "#4CAF50" }}
                             >
-                              Xong
+                              Done 
                             </button>
                           ) : null}
                           {item.status !== "CANCELLED" &&
