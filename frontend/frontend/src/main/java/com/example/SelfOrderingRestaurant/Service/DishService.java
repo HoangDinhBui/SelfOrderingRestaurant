@@ -87,12 +87,6 @@ public class DishService implements IDishService {
         Category category = categoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy danh mục với id: " + request.getCategoryId()));
 
-        LocalTime currentTime = LocalTime.now();
-        LocalTime startBusinessHour = LocalTime.of(8, 0);
-        LocalTime endBusinessHour = LocalTime.of(22, 0);
-
-        logger.debug("Thời gian hiện tại: {}, Giờ làm việc: {} - {}", currentTime, startBusinessHour, endBusinessHour);
-
         String imagePath = dish.getImage();
         if (request.getImage() != null && !request.getImage().isEmpty()) {
             try {
@@ -103,8 +97,12 @@ public class DishService implements IDishService {
             }
         }
 
-        if (currentTime.isAfter(startBusinessHour.minusSeconds(1)) && currentTime.isBefore(endBusinessHour.plusSeconds(1))) {
-            logger.info("Trong giờ làm việc (8h-22h), lưu cập nhật vào pending_dish_updates cho món ăn id: {}", dishId);
+        LocalTime currentTime = LocalTime.now();
+        LocalTime startBusinessHour = LocalTime.of(7, 0);
+        LocalTime endBusinessHour = LocalTime.of(23, 0);
+
+        if (currentTime.isAfter(startBusinessHour.minusSeconds(1)) && currentTime.isBefore(endBusinessHour)) {
+            logger.info("Trong giờ làm việc (7h-23h), lưu cập nhật vào pending_dish_updates cho món ăn id: {}", dishId);
             PendingDishUpdate pending = new PendingDishUpdate();
             pending.setDishId(dishId);
             pending.setName(request.getName());
@@ -113,10 +111,11 @@ public class DishService implements IDishService {
             pending.setStatus(request.getStatus().name());
             pending.setDescription(request.getDescription());
             pending.setImage(imagePath);
-            pending.setEffectiveDateTime(LocalDate.now().plusDays(1).atStartOfDay());
+            pending.setEffectiveDateTime(LocalDate.now().atTime(23, 0));
             pendingDishUpdateRepository.save(pending);
         } else {
-            logger.info("Ngoài giờ làm việc, áp dụng cập nhật ngay cho món ăn id: {}", dishId);
+            logger.info("Ngoài giờ làm việc (23h-7h), áp dụng cập nhật ngay cho món ăn id: {}", dishId);
+            String oldImage = dish.getImage();
             dish.setName(request.getName());
             dish.setPrice(request.getPrice());
             dish.setCategory(category);
@@ -125,8 +124,12 @@ public class DishService implements IDishService {
             dish.setImage(imagePath);
             dishRepository.save(dish);
 
-            if (imagePath != null && !imagePath.equals(dish.getImage()) && dish.getImage() != null) {
-                fileStorageService.deleteFile(dish.getImage());
+            if (oldImage != null && !oldImage.equals(imagePath)) {
+                try {
+                    fileStorageService.deleteFile(oldImage);
+                } catch (RuntimeException e) {
+                    logger.error("Lỗi khi xóa ảnh cũ {}: {}", oldImage, e.getMessage());
+                }
             }
         }
     }
@@ -266,7 +269,6 @@ public class DishService implements IDishService {
         Dish dish = dishRepository.findById(dishId)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy món ăn với id: " + dishId));
 
-        // Check for pending updates
         Optional<PendingDishUpdate> pendingUpdate = pendingDishUpdateRepository.findByDishIdAndEffectiveDateTimeAfter(dishId, LocalDateTime.now());
         DishResponseDTO dishDTO;
 
@@ -295,12 +297,18 @@ public class DishService implements IDishService {
         return dishDTO;
     }
 
-    @Scheduled(cron = "0 0 0 * * *") // Chạy lúc 0h hàng ngày
+    @Scheduled(cron = "0 0 23 * * *") // Chạy lúc 23:00 hàng ngàygit
     @Transactional
     public void applyPendingDishUpdates() {
         logger.info("Bắt đầu áp dụng các cập nhật món ăn đang chờ xử lý");
         LocalDateTime now = LocalDateTime.now();
+        logger.info("Current time: {}", now);
         List<PendingDishUpdate> updates = pendingDishUpdateRepository.findByEffectiveDateTimeBefore(now);
+        logger.info("Found {} pending updates", updates.size());
+        for (PendingDishUpdate update : updates) {
+            logger.debug("Pending update: dish_id={}, effective_date_time={}",
+                    update.getDishId(), update.getEffectiveDateTime());
+        }
 
         if (updates.isEmpty()) {
             logger.info("Không có cập nhật món ăn nào đang chờ xử lý");
@@ -315,24 +323,38 @@ public class DishService implements IDishService {
                 String oldImage = dish.getImage();
                 dish.setName(update.getName());
                 dish.setPrice(update.getPrice());
-                dish.setCategory(categoryRepository.findById(update.getCategoryId()).orElse(null));
-                dish.setStatus(DishStatus.valueOf(update.getStatus()));
+                Category category = categoryRepository.findById(update.getCategoryId()).orElse(null);
+                if (category == null) {
+                    logger.warn("Category not found for id: {}", update.getCategoryId());
+                    continue;
+                }
+                dish.setCategory(category);
+                try {
+                    dish.setStatus(DishStatus.valueOf(update.getStatus()));
+                } catch (IllegalArgumentException e) {
+                    logger.error("Invalid status value: {} for dish id: {}", update.getStatus(), update.getDishId());
+                    continue;
+                }
                 dish.setDescription(update.getDescription());
                 dish.setImage(update.getImage());
+                logger.debug("Saving dish update: {}", dish);
                 dishRepository.save(dish);
+                logger.info("Applied update for dish id: {}", update.getDishId());
 
                 if (oldImage != null && !oldImage.equals(update.getImage())) {
                     try {
                         fileStorageService.deleteFile(oldImage);
+                        logger.info("Deleted old image: {}", oldImage);
                     } catch (RuntimeException e) {
                         logger.error("Lỗi khi xóa ảnh cũ {}: {}", oldImage, e.getMessage());
                     }
                 }
-                logger.info("Áp dụng cập nhật thành công cho món ăn id: {}", update.getDishId());
             } else {
                 logger.warn("Không tìm thấy món ăn với id: {}", update.getDishId());
             }
+            logger.debug("Deleting pending update id: {}", update.getPendingId());
             pendingDishUpdateRepository.delete(update);
+            logger.info("Deleted pending update for dish id: {}", update.getDishId());
         }
         logger.info("Hoàn thành áp dụng {} cập nhật món ăn", updates.size());
     }
