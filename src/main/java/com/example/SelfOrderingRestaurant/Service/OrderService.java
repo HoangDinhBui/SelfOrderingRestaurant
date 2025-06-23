@@ -294,21 +294,44 @@ public class OrderService implements IOrderService {
 
         webSocketService.sendNotificationToActiveStaff(new NotificationResponseDTO() {
             @Override
-            public Integer getNotificationId() { return null; }
+            public Integer getNotificationId() {
+                return null;
+            }
+
             @Override
-            public String getTitle() { return null; }
+            public String getTitle() {
+                return null;
+            }
+
             @Override
-            public String getContent() { return null; }
+            public String getContent() {
+                return null;
+            }
+
             @Override
-            public Boolean getIsRead() { return null; }
+            public Boolean getIsRead() {
+                return null;
+            }
+
             @Override
-            public NotificationType getType() { return null; }
+            public NotificationType getType() {
+                return null;
+            }
+
             @Override
-            public LocalDateTime getCreateAt() { return null; }
+            public LocalDateTime getCreateAt() {
+                return null;
+            }
+
             @Override
-            public Integer getTableNumber() { return dinningTable.getTableNumber(); }
+            public Integer getTableNumber() {
+                return dinningTable.getTableNumber();
+            }
+
             @Override
-            public Integer getOrderId() { return order.getOrderId(); }
+            public Integer getOrderId() {
+                return order.getOrderId();
+            }
 
             @Override
             public String toJson() {
@@ -335,20 +358,20 @@ public class OrderService implements IOrderService {
             for (int i = 0; i < request.getItems().size(); i++) {
                 OrderItemDTO item = request.getItems().get(i);
                 if (item.getDishId() == null || item.getDishId() <= 0) {
-                    errors.add("Item #" + (i+1) + ": Dish ID must be a positive integer");
+                    errors.add("Item #" + (i + 1) + ": Dish ID must be a positive integer");
                 } else {
                     boolean dishExists = dishRepository.existsById(item.getDishId());
                     if (!dishExists) {
-                        errors.add("Item #" + (i+1) + ": Dish with ID " + item.getDishId() + " does not exist");
+                        errors.add("Item #" + (i + 1) + ": Dish with ID " + item.getDishId() + " does not exist");
                     }
                 }
 
                 if (item.getQuantity() <= 0) {
-                    errors.add("Item #" + (i+1) + ": Quantity must be a positive integer");
+                    errors.add("Item #" + (i + 1) + ": Quantity must be a positive integer");
                 }
 
                 if (item.getNotes() != null && item.getNotes().length() > 255) {
-                    errors.add("Item #" + (i+1) + ": Notes must not exceed 255 characters");
+                    errors.add("Item #" + (i + 1) + ": Notes must not exceed 255 characters");
                 }
             }
         }
@@ -690,39 +713,42 @@ public class OrderService implements IOrderService {
     @Transactional
     @Override
     public OrderResponseDTO updateOrderItemStatus(Integer orderId, Integer dishId, String status) {
-        if (!securityUtils.isAuthenticated() ) {
+        Logger log = LoggerFactory.getLogger(OrderService.class);
+
+        // Authentication check
+        if (!securityUtils.isAuthenticated()) {
             throw new AuthorizationException("Only staff members can update order item status");
         }
 
+        // Validation
         if (orderId == null || orderId <= 0) {
             throw new ValidationException("Order ID must be a positive integer");
         }
-
         if (dishId == null || dishId <= 0) {
             throw new ValidationException("Dish ID must be a positive integer");
         }
-
         if (status == null || status.trim().isEmpty()) {
             throw new ValidationException("Status cannot be empty");
         }
 
+        // Fetch order
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + orderId));
 
+        // Fetch order item
         OrderItemKey key = new OrderItemKey();
         key.setOrderId(orderId);
         key.setDishId(dishId);
-
         OrderItem orderItem = orderItemRepository.findById(key)
                 .orElseThrow(() -> new ResourceNotFoundException("Order item not found for order ID: " + orderId + " and dish ID: " + dishId));
 
         try {
+            // Validate and set new status
             OrderItemStatus newStatus = OrderItemStatus.valueOf(status.toUpperCase());
             if (!isValidStatusTransition(orderItem.getStatus(), newStatus)) {
                 throw new ValidationException("Invalid status transition from " + orderItem.getStatus() + " to " + newStatus);
             }
 
-            // Log current state
             log.info("Before updating item status for order {}, dish {}: status={}, totalAmount={}",
                     orderId, dishId, orderItem.getStatus(), order.getTotalAmount());
 
@@ -733,25 +759,39 @@ public class OrderService implements IOrderService {
             // Recalculate total amount
             BigDecimal totalAmount = calculateTotalAmount(order);
             order.setTotalAmount(totalAmount);
-            orderRepository.save(order);
-            log.info("Updated total amount for order {} to {}", orderId, totalAmount);
 
-            // Update table status if all items are COMPLETED or CANCELLED
+            // Update OrderStatus based on OrderItemStatus
             List<OrderItem> orderItems = orderItemRepository.findByOrder(order);
             boolean allItemsDone = orderItems.stream()
                     .allMatch(item -> item.getStatus() == OrderItemStatus.COMPLETED || item.getStatus() == OrderItemStatus.CANCELLED);
-            log.info("All items done for order {}: {}", orderId, allItemsDone);
+            boolean anyProcessing = orderItems.stream()
+                    .anyMatch(item -> item.getStatus() == OrderItemStatus.PROCESSING);
 
+            OrderStatus newOrderStatus;
             if (allItemsDone) {
-                DinningTable table = order.getTables();
-                if (TableStatus.OCCUPIED.equals(table.getTableStatus())) {
-                    table.setTableStatus(TableStatus.AVAILABLE);
-                    dinningTableRepository.save(table);
-                    log.info("Updated table {} status to AVAILABLE", table.getTableNumber());
-                }
+                newOrderStatus = OrderStatus.COMPLETED;
+            } else if (anyProcessing) {
+                newOrderStatus = OrderStatus.PROCESSING;
+            } else {
+                newOrderStatus = OrderStatus.PENDING;
             }
 
-            // Return updated order
+            order.setStatus(newOrderStatus);
+            orderRepository.save(order);
+            log.info("Updated order {} status to {}, totalAmount={}", orderId, newOrderStatus, totalAmount);
+
+            // Update table status if all items are COMPLETED or CANCELLED
+            DinningTable table = order.getTables();
+            if (allItemsDone && TableStatus.OCCUPIED.equals(table.getTableStatus())) {
+                table.setTableStatus(TableStatus.AVAILABLE);
+                dinningTableRepository.save(table);
+                log.info("Updated table {} status to AVAILABLE", table.getTableNumber());
+            }
+
+            // Send WebSocket notification
+            sendOrderItemStatusUpdateNotification(order, orderItem, newStatus);
+
+            // Prepare response
             List<OrderItemDTO> items = orderItems.stream()
                     .map(item -> {
                         OrderItemDTO dto = new OrderItemDTO();
@@ -768,7 +808,7 @@ public class OrderService implements IOrderService {
                     order.getOrderId(),
                     order.getCustomer().getFullname(),
                     order.getTables().getTableNumber(),
-                    order.getStatus().name(),
+                    newOrderStatus.name(), // Use updated order status
                     order.getTotalAmount(),
                     order.getPaymentStatus().name(),
                     items
@@ -785,5 +825,83 @@ public class OrderService implements IOrderService {
             return newStatus == OrderItemStatus.COMPLETED || newStatus == OrderItemStatus.CANCELLED;
         }
         return false;
+    }
+
+    private void sendOrderItemStatusUpdateNotification(Order order, OrderItem orderItem, OrderItemStatus newStatus) {
+        Map<String, Object> message = new HashMap<>();
+        message.put("type", "ORDER_ITEM_STATUS_UPDATED");
+        Map<String, Object> itemDetails = new HashMap<>();
+        itemDetails.put("orderId", order.getOrderId());
+        itemDetails.put("dishId", orderItem.getId().getDishId());
+        itemDetails.put("tableNumber", order.getTables().getTableNumber());
+        itemDetails.put("status", newStatus.name());
+        itemDetails.put("dishName", orderItem.getDish().getName());
+        itemDetails.put("quantity", orderItem.getQuantity());
+        itemDetails.put("notes", orderItem.getNotes() != null ? orderItem.getNotes() : "");
+        itemDetails.put("price", orderItem.getDish().getPrice()); // Use dish price
+        message.put("item", itemDetails);
+
+        NotificationResponseDTO notification = new NotificationResponseDTO() {
+            @Override
+            public Integer getNotificationId() {
+                return null;
+            }
+
+            @Override
+            public String getTitle() {
+                return "Order Item Status Updated";
+            }
+
+            @Override
+            public String getContent() {
+                return String.format("Item %s (Order %d, Table %d) status updated to %s",
+                        orderItem.getDish().getName(), order.getOrderId(),
+                        order.getTables().getTableNumber(), newStatus.name());
+            }
+
+            @Override
+            public Boolean getIsRead() {
+                return false;
+            }
+
+            @Override
+            public NotificationType getType() {
+                return NotificationType.OTHER;
+            }
+
+            @Override
+            public LocalDateTime getCreateAt() {
+                return LocalDateTime.now();
+            }
+
+            @Override
+            public Integer getTableNumber() {
+                return order.getTables().getTableNumber();
+            }
+
+            @Override
+            public Integer getOrderId() {
+                return order.getOrderId();
+            }
+
+            @Override
+            public String toJson() {
+                try {
+                    return new ObjectMapper().writeValueAsString(message);
+                } catch (Exception e) {
+                    log.error("Error serializing order item status notification: {}", e.getMessage(), e);
+                    return "{}";
+                }
+            }
+        };
+
+        try {
+            webSocketService.sendNotificationToActiveStaff(notification);
+            log.info("Sent WebSocket notification for order {}, dish {}, status: {}",
+                    order.getOrderId(), orderItem.getId().getDishId(), newStatus.name());
+        } catch (Exception e) {
+            log.error("Failed to send WebSocket notification for order {}, dish {}: {}",
+                    order.getOrderId(), orderItem.getId().getDishId(), e.getMessage(), e);
+        }
     }
 }

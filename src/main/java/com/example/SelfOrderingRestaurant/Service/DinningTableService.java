@@ -28,7 +28,7 @@ public class DinningTableService implements IDinningTableService {
     private final OrderRepository orderRepository;
     private final WebSocketService webSocketService;
     private final Logger log = org.slf4j.LoggerFactory.getLogger(DinningTableService.class);
-
+    
     @Transactional
     @Override
     public DinningTableResponseDTO createTable(CreateTableRequestDTO request) {
