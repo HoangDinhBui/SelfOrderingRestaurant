@@ -297,7 +297,7 @@ public class DishService implements IDishService {
         return dishDTO;
     }
 
-    @Scheduled(cron = "0 0 23 * * *") // Chạy lúc 23:00 hàng ngàygit
+    @Scheduled(cron = "0 0 23 * * *")
     @Transactional
     public void applyPendingDishUpdates() {
         logger.info("Bắt đầu áp dụng các cập nhật món ăn đang chờ xử lý");

@@ -80,7 +80,7 @@ public class DishController {
     public ResponseEntity<List<GetAllDishesResponseDTO>> getDishes() {
         logger.info("Fetching all dishes");
         List<GetAllDishesResponseDTO> dishes = dishService.getAllDishes();
-        String baseUrl = "http://localhost:8080/uploads/dishes/";
+        String baseUrl = "http://localhost:8080/api/images/";
         dishes.forEach(dish -> {
             if (dish.getImageUrl() != null) {
                 dish.setImageUrl(baseUrl + dish.getImageUrl());
@@ -92,10 +92,11 @@ public class DishController {
     @GetMapping("/dishes/{dishId}")
     public ResponseEntity<?> getDishById(@PathVariable Integer dishId) {
         logger.info("Fetching dish with id: {}", dishId);
+        String baseUrl = "http://localhost:8080/api/images/";
         try {
             DishResponseDTO dish = dishService.getDishById(dishId);
             if (dish.getImageUrl() != null) {
-                dish.setImageUrl("http://localhost:8080/uploads/" + dish.getImageUrl());
+                dish.setImageUrl(baseUrl + dish.getImageUrl());
             }
             return ResponseEntity.ok(dish);
         } catch (IllegalArgumentException e) {
