@@ -54,6 +54,7 @@ const TableManagementStaff = () => {
     const connectWebSocket = () => {
       if (!isMounted || reconnectAttempts >= maxReconnectAttempts) {
         console.log("Max reconnect attempts reached or component unmounted");
+        fetchOrders();
         return;
       }
 
@@ -149,7 +150,6 @@ const TableManagementStaff = () => {
               console.warn(
                 "Table info missing in PAYMENT_STATUS_UPDATED message, fetching tables"
               );
-              fetchTables();
             }
           } else if (message.type === "NEW_ORDER" && message.order) {
             setOrders((prev) => {
@@ -162,7 +162,6 @@ const TableManagementStaff = () => {
               }
               return prev;
             });
-            fetchTables();
           } else if (
             message.type === "TABLE_TRANSFERRED" &&
             message.sourceTableId &&
@@ -209,6 +208,150 @@ const TableManagementStaff = () => {
             });
 
             // Đặt lại thời gian cập nhật WebSocket
+            setLastWebSocketUpdate(Date.now());
+          } else if (message.type === "OTHER" && message.item) {
+            console.log(
+              "Received ORDER_ITEM_STATUS_UPDATED message:",
+              message.item
+            );
+
+            // Cập nhật trạng thái món ăn và đơn hàng trong orders
+            setOrders((prevOrders) => {
+              const updatedOrders = prevOrders.map((order) => {
+                if (Number(order.orderId) === Number(message.item.orderId)) {
+                  const updatedItems = order.items.map((item) =>
+                    Number(item.dishId) === Number(message.item.dishId)
+                      ? {
+                          ...item,
+                          status:
+                            message.item.status === "COMPLETED"
+                              ? "SERVED"
+                              : message.item.status,
+                        }
+                      : item
+                  );
+                  // Cập nhật trạng thái đơn hàng dựa trên trạng thái món ăn
+                  const allItemsDone = updatedItems.every(
+                    (item) =>
+                      item.status === "SERVED" || item.status === "CANCELLED"
+                  );
+                  const anyProcessing = updatedItems.some(
+                    (item) => item.status === "PROCESSING"
+                  );
+                  return {
+                    ...order,
+                    items: updatedItems,
+                    status: allItemsDone
+                      ? "served"
+                      : anyProcessing
+                      ? "processing"
+                      : "pending",
+                  };
+                }
+                return order;
+              });
+              console.log(
+                "Updated orders with new item status:",
+                updatedOrders
+              );
+              return updatedOrders;
+            });
+
+            // Cập nhật selectedTable nếu đang xem bàn tương ứng
+            if (
+              selectedTable &&
+              Number(selectedTable.id) === Number(message.item.tableNumber)
+            ) {
+              setSelectedTable((prev) => ({
+                ...prev,
+                orders: prev.orders.map((order) =>
+                  Number(order.orderId) === Number(message.item.orderId)
+                    ? {
+                        ...order,
+                        items: order.items.map((item) =>
+                          Number(item.dishId) === Number(message.item.dishId)
+                            ? {
+                                ...item,
+                                status:
+                                  message.item.status === "COMPLETED"
+                                    ? "SERVED"
+                                    : message.item.status,
+                              }
+                            : item
+                        ),
+                        status: order.items.every(
+                          (item) =>
+                            (Number(item.dishId) === Number(message.item.dishId)
+                              ? message.item.status === "COMPLETED"
+                                ? "SERVED"
+                                : message.item.status
+                              : item.status) === "SERVED" ||
+                            item.status === "CANCELLED"
+                        )
+                          ? "served"
+                          : order.items.some(
+                              (item) =>
+                                (Number(item.dishId) ===
+                                Number(message.item.dishId)
+                                  ? message.item.status === "PROCESSING"
+                                  : item.status) === "PROCESSING"
+                            )
+                          ? "processing"
+                          : "pending",
+                      }
+                    : order
+                ),
+              }));
+            }
+
+            // Cập nhật trạng thái bàn
+            setTables((prevTables) => {
+              const updatedTables = prevTables.map((table) => {
+                if (Number(table.id) === Number(message.item.tableNumber)) {
+                  const tableOrders = orders
+                    .filter(
+                      (order) => Number(order.tableNumber) === Number(table.id)
+                    )
+                    .map((order) =>
+                      Number(order.orderId) === Number(message.item.orderId)
+                        ? {
+                            ...order,
+                            items: order.items.map((item) =>
+                              Number(item.dishId) ===
+                              Number(message.item.dishId)
+                                ? {
+                                    ...item,
+                                    status:
+                                      message.item.status === "COMPLETED"
+                                        ? "SERVED"
+                                        : message.item.status,
+                                  }
+                                : item
+                            ),
+                          }
+                        : order
+                    );
+                  const allItemsDone = tableOrders.every((order) =>
+                    order.items.every(
+                      (item) =>
+                        item.status === "SERVED" || item.status === "CANCELLED"
+                    )
+                  );
+                  return {
+                    ...table,
+                    status: allItemsDone ? "available" : table.status,
+                    orders: tableOrders,
+                  };
+                }
+                return table;
+              });
+              console.log(
+                "Updated tables with new item status:",
+                updatedTables
+              );
+              return updatedTables;
+            });
+
             setLastWebSocketUpdate(Date.now());
           } else {
             console.warn("Unrecognized WebSocket message:", message);
@@ -264,9 +407,14 @@ const TableManagementStaff = () => {
     connectWebSocket();
 
     const syncInterval = setInterval(() => {
-      if (isMounted && tables.length > 0) {
-        console.log("Performing periodic notification sync");
+      if (isMounted && tables.length > 0 && !socket) {
+        console.log(
+          "Performing periodic notification sync (WebSocket inactive)"
+        );
         fetchUnreadNotifications();
+        fetchOrders();
+      } else {
+        console.log("Skipping periodic sync: WebSocket is active");
       }
     }, 120000);
 
@@ -359,24 +507,25 @@ const TableManagementStaff = () => {
   const fetchOrdersGraphQL = useCallback(async () => {
     try {
       const query = `
-        query GetAllOrders {
-          orders {
-            orderId
-            customerName
-            tableNumber
+      query GetAllOrders {
+        orders {
+          orderId
+          customerName
+          tableNumber
+          status
+          totalAmount
+          paymentStatus
+          items {
+            dishId
+            dishName
+            quantity
+            price
+            notes
             status
-            totalAmount
-            paymentStatus
-            items {
-              dishId
-              dishName
-              quantity
-              price
-              notes
-            }
           }
         }
-      `;
+      }
+    `;
       const result = await executeGraphQL(query);
       if (!result || !result.orders) {
         throw new Error("Invalid GraphQL response structure");
@@ -437,24 +586,25 @@ const TableManagementStaff = () => {
   const fetchOrderByIdGraphQL = useCallback(async (orderId) => {
     try {
       const query = `
-        query GetOrder($orderId: ID!) {
-          order(orderId: $orderId) {
-            orderId
-            customerName
-            tableNumber
+      query GetOrder($orderId: ID!) {
+        order(orderId: $orderId) {
+          orderId
+          customerName
+          tableNumber
+          status
+          totalAmount
+          paymentStatus
+          items {
+            dishId
+            dishName
+            quantity
+            price
+            notes
             status
-            totalAmount
-            paymentStatus
-            items {
-              dishId
-              dishName
-              quantity
-              price
-              notes
-            }
           }
         }
-      `;
+      }
+    `;
       const variables = { orderId: orderId.toString() };
       const result = await executeGraphQL(query, variables);
       if (!result || !result.order) {
@@ -694,11 +844,12 @@ const TableManagementStaff = () => {
 
     fetchTables();
 
-    // Periodic polling for table status
+    // Periodic polling for table and order status
     const pollInterval = setInterval(() => {
-      console.log("Polling for table status updates");
+      console.log("Polling for table and order status updates");
       fetchTables();
-    }, 300000); // Poll every 5 minutes
+      fetchOrders();
+    }, 60000); // Poll every 1 minute
 
     return () => clearInterval(pollInterval);
   }, [fetchOrders]);
@@ -1016,55 +1167,57 @@ const TableManagementStaff = () => {
   };
 
   const handlePaymentSuccess = async () => {
-  if (!selectedTable || !selectedTable.id) {
-    console.error("Cannot update status for undefined table");
-    setOrderError("Invalid table selected");
-    return;
-  }
-
-  console.log(`Processing payment success for table ${selectedTable.id}`);
-  try {
-    await API.put(`/api/admin/tables/${selectedTable.id}`, {
-      status: "AVAILABLE",
-    });
-
-    if (selectedTable.orders && selectedTable.orders.length > 0) {
-      for (const order of selectedTable.orders) {
-        try {
-          await API.put(`/api/orders/${order.orderId}/payment`, {
-            paymentStatus: "PAID",
-          });
-          // Bỏ handlePrintBill(order.orderId) ở đây
-        } catch (err) {
-          console.error(
-            `Error updating payment for order ${order.orderId}:`,
-            err
-          );
-          setOrderError(`Failed to process payment for order ${order.orderId}`);
-        }
-      }
+    if (!selectedTable || !selectedTable.id) {
+      console.error("Cannot update status for undefined table");
+      setOrderError("Invalid table selected");
+      return;
     }
 
-    setTables((prevTables) =>
-      prevTables.map((table) =>
-        table.id === selectedTable.id
-          ? { ...table, status: "available", orders: [] }
-          : table
-      )
-    );
+    console.log(`Processing payment success for table ${selectedTable.id}`);
+    try {
+      await API.put(`/api/admin/tables/${selectedTable.id}`, {
+        status: "AVAILABLE",
+      });
 
-    setIsPaymentModalOpen(false);
+      if (selectedTable.orders && selectedTable.orders.length > 0) {
+        for (const order of selectedTable.orders) {
+          try {
+            await API.put(`/api/orders/${order.orderId}/payment`, {
+              paymentStatus: "PAID",
+            });
+            // Bỏ handlePrintBill(order.orderId) ở đây
+          } catch (err) {
+            console.error(
+              `Error updating payment for order ${order.orderId}:`,
+              err
+            );
+            setOrderError(
+              `Failed to process payment for order ${order.orderId}`
+            );
+          }
+        }
+      }
+
+      setTables((prevTables) =>
+        prevTables.map((table) =>
+          table.id === selectedTable.id
+            ? { ...table, status: "available", orders: [] }
+            : table
+        )
+      );
+
+      setIsPaymentModalOpen(false);
+      setIsConfirmModalOpen(false);
+      setIsSuccessModalOpen(true);
+      await fetchAllNotifications();
+    } catch (err) {
+      console.error("Error processing payment:", err);
+      setOrderError("Failed to process payment");
+      setIsPaymentModalOpen(false);
+    }
     setIsConfirmModalOpen(false);
-    setIsSuccessModalOpen(true);
-    await fetchAllNotifications();
-  } catch (err) {
-    console.error("Error processing payment:", err);
-    setOrderError("Failed to process payment");
-    setIsPaymentModalOpen(false);
-  }
-  setIsConfirmModalOpen(false);
-  setIsPrintModalOpen(true); // Mở Print Modal sau khi thanh toán
-};
+    setIsPrintModalOpen(true); // Mở Print Modal sau khi thanh toán
+  };
 
   const handleShowEmptyTableModal = () => {
     console.log("Showing empty table modal");
@@ -1072,9 +1225,9 @@ const TableManagementStaff = () => {
   };
 
   const handlePrintReceipt = () => {
-  console.log("Initiating print receipt");
-  setIsPaymentModalOpen(false); // Đóng Payment Modal
-  setIsPrintModalOpen(true); // Mở Print Modal
+    console.log("Initiating print receipt");
+    setIsPaymentModalOpen(false); // Đóng Payment Modal
+    setIsPrintModalOpen(true); // Mở Print Modal
   };
 
   const calculateTotalFromOrders = (orders) => {
@@ -1406,23 +1559,23 @@ const TableManagementStaff = () => {
 
       switch (statusLower) {
         case "complete":
-          bgColor = "bg-green-500";
+          bgColor = "!bg-green-500";
           text = "Complete";
           break;
         case "processing":
-          bgColor = "bg-yellow-500";
+          bgColor = "!bg-yellow-500";
           text = "Processing";
           break;
         case "pending":
-          bgColor = "bg-blue-500";
+          bgColor = "!bg-blue-500";
           text = "Pending";
           break;
         case "cancel":
-          bgColor = "bg-red-500";
+          bgColor = "!bg-red-500";
           text = "Cancel";
           break;
         default:
-          bgColor = "bg-gray-500";
+          bgColor = "!bg-gray-500";
           text = "Unknown";
       }
 
@@ -1500,7 +1653,9 @@ const TableManagementStaff = () => {
                     {orders.map((order) => (
                       <div key={order.orderId} className="mb-6">
                         <h3 className="font-semibold text-lg mb-2">
-                          Order #{order.orderId}
+                          Order #{order.orderId} - Status:{" "}
+                          {order.status?.charAt(0).toUpperCase() +
+                            order.status?.slice(1)}
                         </h3>
                         <table className="w-full border-collapse">
                           <thead>
@@ -1509,7 +1664,7 @@ const TableManagementStaff = () => {
                               <th className="text-left py-2 px-4">Quantity</th>
                               <th className="text-left py-2 px-4">Price</th>
                               <th className="text-left py-2 px-4">Notes</th>
-                              <th className="text-left py-2 px-4">Action</th>
+                              <th className="text-left py-2 px-4">Status</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1523,24 +1678,7 @@ const TableManagementStaff = () => {
                                     {item.dishName || "—"}
                                   </td>
                                   <td className="py-2 px-4">
-                                    {order.status?.toLowerCase() ===
-                                    "pending" ? (
-                                      <input
-                                        type="number"
-                                        value={item.quantity || 0}
-                                        onChange={(e) =>
-                                          handleUpdateQuantity(
-                                            order.orderId,
-                                            index,
-                                            parseInt(e.target.value) || 0
-                                          )
-                                        }
-                                        className="w-16 border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        min="0"
-                                      />
-                                    ) : (
-                                      item.quantity || "—"
-                                    )}
+                                    {item.quantity || "—"}
                                   </td>
                                   <td className="py-2 px-4">
                                     {item.price
@@ -1553,40 +1691,10 @@ const TableManagementStaff = () => {
                                     {item.notes || "—"}
                                   </td>
                                   <td className="py-2 px-4">
-                                    <button
-                                      className={`${
-                                        order.status?.toLowerCase() ===
-                                        "complete"
-                                          ? "bg-green-500"
-                                          : order.status?.toLowerCase() ===
-                                            "processing"
-                                          ? "bg-yellow-500"
-                                          : order.status?.toLowerCase() ===
-                                            "pending"
-                                          ? "bg-blue-500"
-                                          : order.status?.toLowerCase() ===
-                                            "cancel"
-                                          ? "bg-red-500"
-                                          : "bg-gray-500"
-                                      } text-white py-1 px-2 rounded cursor-default`}
-                                      disabled
-                                    >
-                                      {order.status
-                                        ? order.status.charAt(0).toUpperCase() +
-                                          order.status.slice(1)
-                                        : "Pending"}
-                                    </button>
-                                    {order.status?.toLowerCase() ===
-                                      "pending" && (
-                                      <button
-                                        className="bg-red-500 hover:bg-red-600 text-white py-1 mt-1 px-2 rounded"
-                                        onClick={() =>
-                                          handleDeleteItem(order.orderId, index)
-                                        }
-                                      >
-                                        Delete
-                                      </button>
-                                    )}
+                                    {item.status
+                                      ? item.status.charAt(0).toUpperCase() +
+                                        item.status.slice(1)
+                                      : "Pending"}
                                   </td>
                                 </tr>
                               ))
@@ -1746,83 +1854,92 @@ const TableManagementStaff = () => {
   };
 
   const handleConfirmPrint = () => {
-  if (selectedTable && selectedTable.orders && selectedTable.orders.length > 0) {
-    const orderId = selectedTable.orders[0].orderId; // Giả sử lấy orderId đầu tiên
-    if (orderId) {
-      handlePrintBill(orderId);
+    if (
+      selectedTable &&
+      selectedTable.orders &&
+      selectedTable.orders.length > 0
+    ) {
+      const orderId = selectedTable.orders[0].orderId; // Giả sử lấy orderId đầu tiên
+      if (orderId) {
+        handlePrintBill(orderId);
+      }
     }
-  }
-  setIsPrintModalOpen(false);
-};
+    setIsPrintModalOpen(false);
+  };
 
   const handlePrintBill = async (orderId) => {
-  if (!orderId) {
-    setOrderError("Invalid order ID");
-    return;
-  }
-  try {
-    const response = await fetch(`/api/receipts/generate/${orderId}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/pdf",
-      },
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Failed to generate PDF (Status: ${response.status})`);
+    if (!orderId) {
+      setOrderError("Invalid order ID");
+      return;
     }
+    try {
+      const response = await fetch(`/api/receipts/generate/${orderId}`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/pdf",
+        },
+      });
 
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `receipt-order-${orderId}.pdf`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
-  } catch (error) {
-    console.error("Error generating PDF:", error);
-    setOrderError(`Failed to generate receipt for order ${orderId}: ${error.message}`);
-  }
-};
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.message ||
+            `Failed to generate PDF (Status: ${response.status})`
+        );
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `receipt-order-${orderId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      setOrderError(
+        `Failed to generate receipt for order ${orderId}: ${error.message}`
+      );
+    }
+  };
 
   const renderPrintModal = () => {
-  if (!isPrintModalOpen) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div
-        className="absolute inset-0 bg-black/50"
-        onClick={() => setIsPrintModalOpen(false)}
-      ></div>
-      <div className="relative bg-white rounded-xl shadow-2xl w-96 p-8 mx-4">
-        <div className="flex justify-center mb-4">
-          <img
-            alt="Logo"
-            className="w-24 h-24"
-            src="../../src/assets/img/logoremovebg.png"
-          />
-        </div>
-        <h3 className="text-xl font-bold mb-4 text-center">CONFIRM PRINT?</h3>
-        <div className="flex justify-center space-x-4">
-          <button
-            className="px-4 py-2 !bg-green-500 text-white rounded hover:bg-green-600"
-            onClick={handleConfirmPrint}
-          >
-            YES
-          </button>
-          <button
-            className="px-4 py-2 !bg-gray-500 text-white rounded hover:bg-gray-600"
-            onClick={() => setIsPrintModalOpen(false)}
-          >
-            NO
-          </button>
+    if (!isPrintModalOpen) return null;
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center">
+        <div
+          className="absolute inset-0 bg-black/50"
+          onClick={() => setIsPrintModalOpen(false)}
+        ></div>
+        <div className="relative bg-white rounded-xl shadow-2xl w-96 p-8 mx-4">
+          <div className="flex justify-center mb-4">
+            <img
+              alt="Logo"
+              className="w-24 h-24"
+              src="../../src/assets/img/logoremovebg.png"
+            />
+          </div>
+          <h3 className="text-xl font-bold mb-4 text-center">CONFIRM PRINT?</h3>
+          <div className="flex justify-center space-x-4">
+            <button
+              className="px-4 py-2 !bg-green-500 text-white rounded hover:bg-green-600"
+              onClick={handleConfirmPrint}
+            >
+              YES
+            </button>
+            <button
+              className="px-4 py-2 !bg-gray-500 text-white rounded hover:bg-gray-600"
+              onClick={() => setIsPrintModalOpen(false)}
+            >
+              NO
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  );
-};
+    );
+  };
 
   const renderSuccessModal = () => {
     if (!isSuccessModalOpen) return null;
