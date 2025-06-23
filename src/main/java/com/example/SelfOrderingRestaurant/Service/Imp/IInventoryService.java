@@ -2,6 +2,7 @@ package com.example.SelfOrderingRestaurant.Service.Imp;
 
 import com.example.SelfOrderingRestaurant.Dto.Request.InventoryRequestDTO.CreateInventoryRequestDTO;
 import com.example.SelfOrderingRestaurant.Dto.Request.InventoryRequestDTO.UpdateInventoryRequestDTO;
+import com.example.SelfOrderingRestaurant.Dto.Request.OrderRequestDTO.UpdateInventoryByOrderRequestDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.InventoryResponseDTO.GetInventoryResponseDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.InventoryResponseDTO.RemainingInventoryResponseDTO;
 import com.example.SelfOrderingRestaurant.Entity.Inventory;
@@ -24,4 +25,7 @@ public interface IInventoryService {
 
     @Transactional(readOnly = true)
     List<RemainingInventoryResponseDTO> getAvailableInventories();
+
+    @Transactional
+    void updateInventoryByOrder(UpdateInventoryByOrderRequestDTO request);
 }

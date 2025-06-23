@@ -2,6 +2,7 @@ package com.example.SelfOrderingRestaurant.Controller;
 
 import com.example.SelfOrderingRestaurant.Dto.Request.InventoryRequestDTO.CreateInventoryRequestDTO;
 import com.example.SelfOrderingRestaurant.Dto.Request.InventoryRequestDTO.UpdateInventoryRequestDTO;
+import com.example.SelfOrderingRestaurant.Dto.Request.OrderRequestDTO.UpdateInventoryByOrderRequestDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.InventoryResponseDTO.RemainingInventoryResponseDTO;
 import com.example.SelfOrderingRestaurant.Service.InventoryService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +24,7 @@ public class InventoryController {
         return inventoryService.getAvailableInventories();
     }
 
-    @GetMapping("/inventory")
+    @GetMapping("admin/inventory")
     public ResponseEntity<?> getAllInventories() {
         return ResponseEntity.ok(inventoryService.getAllInventories());
     }
@@ -47,7 +48,7 @@ public class InventoryController {
 
     @DeleteMapping("/admin/inventory/{id}")
     public ResponseEntity<?> deleteInventory(@PathVariable Integer id) {
-        if(inventoryService.deleteInventory(id)) {
+        if (inventoryService.deleteInventory(id)) {
             return ResponseEntity.ok("Inventory deleted");
         }
         return ResponseEntity.notFound().build();
@@ -65,5 +66,15 @@ public class InventoryController {
     @GetMapping("/admin/inventory/remaining")
     public ResponseEntity<?> getAllRemainingInventories() {
         return ResponseEntity.ok(inventoryService.getAllRemainingInventories());
+    }
+
+    @PostMapping("/inventory/update-by-order")
+    public ResponseEntity<?> updateInventoryByOrder(@RequestBody UpdateInventoryByOrderRequestDTO request) {
+        try {
+            inventoryService.updateInventoryByOrder(request);
+            return ResponseEntity.ok("Inventory updated successfully for order");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 }
