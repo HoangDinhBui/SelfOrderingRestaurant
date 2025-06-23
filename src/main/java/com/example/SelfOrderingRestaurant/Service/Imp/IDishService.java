@@ -21,6 +21,4 @@ public interface IDishService {
     void updateDish(Integer dishId, DishRequestDTO request, Authentication authentication);
 
     void deleteDish(Integer dishId);
-
-     void applyPendingDishUpdates();
 }
