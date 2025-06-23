@@ -19,4 +19,5 @@ public class GetAllStaffResponseDTO {
     private String email;
     private String phone;
     private BigDecimal salary;
+    private Double totalWorkingHours;
 }

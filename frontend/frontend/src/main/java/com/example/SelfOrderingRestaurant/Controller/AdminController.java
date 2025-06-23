@@ -147,7 +147,8 @@ public class AdminController {
                             staff.getPosition(),
                             staff.getUser().getEmail(),
                             staff.getUser().getPhone(),
-                            staff.getSalary()
+                            staff.getSalary(),
+                            staff.getTotalWorkingHours()
                     ))
                     .collect(Collectors.toList());
             return ResponseEntity.ok(response);
@@ -404,6 +405,34 @@ public class AdminController {
             return new ResponseEntity<>(reportBytes, headers, HttpStatus.OK);
         } catch (Exception e) {
             logger.error("Error exporting revenue report: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
+    @GetMapping("/staff/sorted-by-salary")
+    public ResponseEntity<List<GetAllStaffResponseDTO>> getAllStaffSortedBySalary(
+            @RequestParam(required = false) Integer year,
+            @RequestParam(required = false) Integer month) {
+        try {
+            logger.info("Fetching staff list sorted by salary for year: {}, month: {}", year, month);
+            // Default to current year and month if not provided
+            LocalDate targetDate = LocalDate.now();
+            if (year != null && month != null) {
+                if (month < 1 || month > 12) {
+                    throw new IllegalArgumentException("Month must be between 1 and 12");
+                }
+                if (year < 2000 || year > targetDate.getYear() + 1) {
+                    throw new IllegalArgumentException("Year must be between 2000 and " + (targetDate.getYear() + 1));
+                }
+                targetDate = LocalDate.of(year, month, 1);
+            }
+            List<GetAllStaffResponseDTO> staffList = staffService.getAllStaffSortedBySalary(targetDate);
+            return ResponseEntity.ok(staffList);
+        } catch (IllegalArgumentException e) {
+            logger.warn("Invalid input: {}", e.getMessage());
+            return ResponseEntity.badRequest().body(null);
+        } catch (Exception e) {
+            logger.error("Error fetching staff sorted by salary: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
     }

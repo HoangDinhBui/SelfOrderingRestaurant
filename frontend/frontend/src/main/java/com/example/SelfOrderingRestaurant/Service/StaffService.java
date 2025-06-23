@@ -4,10 +4,12 @@ import com.example.SelfOrderingRestaurant.Dto.Request.StaffRequestDTO.UpdateStaf
 import com.example.SelfOrderingRestaurant.Dto.Response.StaffResponseDTO.GetAllStaffResponseDTO;
 import com.example.SelfOrderingRestaurant.Entity.Shift;
 import com.example.SelfOrderingRestaurant.Entity.Staff;
+import com.example.SelfOrderingRestaurant.Entity.StaffMonthlySalary;
 import com.example.SelfOrderingRestaurant.Entity.StaffShift;
 import com.example.SelfOrderingRestaurant.Enum.StaffShiftStatus;
 import com.example.SelfOrderingRestaurant.Enum.UserStatus;
 import com.example.SelfOrderingRestaurant.Repository.ShiftRepository;
+import com.example.SelfOrderingRestaurant.Repository.StaffMonthlySalaryRepository;
 import com.example.SelfOrderingRestaurant.Repository.StaffShiftRepository;
 import com.example.SelfOrderingRestaurant.Repository.StaffRepository;
 import com.example.SelfOrderingRestaurant.Service.Imp.IStaffService;
@@ -22,6 +24,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 
@@ -36,6 +39,8 @@ public class StaffService implements IStaffService {
 
     private final ShiftRepository shiftRepository;
 
+    private final StaffMonthlySalaryRepository staffMonthlySalaryRepository;
+
     @Transactional
     @Override
     public List<GetAllStaffResponseDTO> getAllStaff() {
@@ -48,7 +53,8 @@ public class StaffService implements IStaffService {
                         staff.getPosition(),
                         staff.getUser().getEmail(),
                         staff.getUser().getPhone(),
-                        staff.getSalary()
+                        staff.getSalary(),
+                        staff.getTotalWorkingHours()
                 ))
                 .collect(Collectors.toList());
     }
@@ -92,7 +98,8 @@ public class StaffService implements IStaffService {
                 staff.getPosition(),
                 staff.getUser().getEmail(),
                 staff.getUser().getPhone(),
-                staff.getSalary()
+                staff.getSalary(),
+                staff.getTotalWorkingHours()
         );
     }
 
@@ -138,5 +145,41 @@ public class StaffService implements IStaffService {
         // Soft delete by setting status to INACTIVE
         staff.setStatus(UserStatus.INACTIVE);
         staffRepository.save(staff);
+    }
+
+    public List<GetAllStaffResponseDTO> getAllStaffSortedBySalary(LocalDate targetDate) {
+        // Fetch all staff
+        List<Staff> allStaff = staffRepository.findAllByStatus(UserStatus.ACTIVE);
+
+        // Fetch monthly salaries for the specified month/year
+        List<StaffMonthlySalary> monthlySalaries = staffMonthlySalaryRepository
+                .findByMonthYear(targetDate.withDayOfMonth(1));
+
+        // Create a map of staffId to totalSalary
+        Map<Integer, BigDecimal> salaryMap = monthlySalaries.stream()
+                .collect(Collectors.toMap(
+                        sms -> sms.getStaff().getStaffId(),
+                        StaffMonthlySalary::getTotalSalary,
+                        (s1, s2) -> s1)); // In case of duplicates, keep first
+
+        // Map staff to DTO and sort by salary
+        return allStaff.stream()
+                .map(staff -> {
+                    BigDecimal salary = salaryMap.getOrDefault(staff.getStaffId(), staff.getSalary());
+                    return new GetAllStaffResponseDTO(
+                            staff.getStaffId(),
+                            staff.getFullname(),
+                            staff.getPosition(),
+                            staff.getStatus(),
+                            staff.getPosition(),
+                            staff.getUser().getEmail(),
+                            staff.getUser().getPhone(),
+                            salary,
+                            staff.getTotalWorkingHours()
+                    );
+                })
+                .sorted((s1, s2) -> s2.getSalary().compareTo(s1.getSalary())) // Sort descending
+                .collect(Collectors.toList());
+
     }
 }
