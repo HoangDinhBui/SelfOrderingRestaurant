@@ -217,17 +217,7 @@ const CheckOut = () => {
         alt="Animation"
         className="mt-4 w-25 h-25"
       />
-      {message && (
-        <p
-          className={`mt-4 ${
-            message.toLowerCase().includes("successful")
-              ? "text-green-600"
-              : "text-red-600"
-          }`}
-        >
-          {message}
-        </p>
-      )}
+
       {authError && (
         <p className="mt-4 text-yellow-600">
           Authentication issue detected. You can retry check-out or skip to log
