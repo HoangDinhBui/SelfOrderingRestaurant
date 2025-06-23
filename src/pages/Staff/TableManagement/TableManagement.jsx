@@ -37,7 +37,8 @@ const TableManagementStaff = () => {
   const [transferSourceTable, setTransferSourceTable] = useState(null);
   const [transferDestinationTable, setTransferDestinationTable] =
     useState(null);
-  const [errorMessage, setErrorMessage] = useState(""); // Used for transfer error handling
+  const [errorMessage, setErrorMessage] = useState("");
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false); // Used for transfer error handling
 
   // Assume userId is stored in localStorage or fetched from auth context
   const userId = localStorage.getItem("userId") || "1"; // Replace with actual userId retrieval logic
@@ -1014,72 +1015,56 @@ const TableManagementStaff = () => {
     setIsPaymentModalOpen(true);
   };
 
-  const handlePaymentSuccess = async (paymentMethod = "CASH") => {
-    if (!selectedTable || !selectedTable.id) {
-      setOrderError("Invalid table selected");
-      return;
-    }
+  const handlePaymentSuccess = async () => {
+  if (!selectedTable || !selectedTable.id) {
+    console.error("Cannot update status for undefined table");
+    setOrderError("Invalid table selected");
+    return;
+  }
 
-    console.log(
-      `Processing ${paymentMethod} payment for table ${selectedTable.id}`
-    );
-    try {
-      const failedOrders = [];
-      if (selectedTable.orders && selectedTable.orders.length > 0) {
-        for (const order of selectedTable.orders) {
-          try {
-            const response = await API.post("/api/payment/process", {
-              orderId: order.orderId,
-              paymentMethod,
-              amount: order.totalAmount,
-              confirmPayment:
-                paymentMethod === "CASH" || paymentMethod === "CARD",
-            });
-            if (paymentMethod === "ONLINE" && response.data.paymentUrl) {
-              window.location.href = response.data.paymentUrl; // Redirect to VNPay
-              return;
-            }
-          } catch (err) {
-            console.error(
-              `Error processing payment for order ${order.orderId}:`,
-              err
-            );
-            failedOrders.push(order.orderId);
-          }
+  console.log(`Processing payment success for table ${selectedTable.id}`);
+  try {
+    await API.put(`/api/admin/tables/${selectedTable.id}`, {
+      status: "AVAILABLE",
+    });
+
+    if (selectedTable.orders && selectedTable.orders.length > 0) {
+      for (const order of selectedTable.orders) {
+        try {
+          await API.put(`/api/orders/${order.orderId}/payment`, {
+            paymentStatus: "PAID",
+          });
+          // Bỏ handlePrintBill(order.orderId) ở đây
+        } catch (err) {
+          console.error(
+            `Error updating payment for order ${order.orderId}:`,
+            err
+          );
+          setOrderError(`Failed to process payment for order ${order.orderId}`);
         }
       }
-
-      if (failedOrders.length > 0) {
-        setOrderError(
-          `Failed to process payments for orders: ${failedOrders.join(", ")}`
-        );
-        return;
-      }
-
-      // Fetch latest orders and tables
-      await fetchOrders();
-      const response = await API.get("/api/staff/tables");
-      if (response.data) {
-        const mappedTables = response.data.map((table) => ({
-          id: table.table_id,
-          status: table.status?.toLowerCase() || "available",
-          capacity: table.capacity,
-          orders: orders.filter(
-            (order) =>
-              order.tableNumber?.toString() === table.table_id.toString()
-          ),
-        }));
-        setTables(mappedTables);
-      }
-
-      setIsPaymentModalOpen(false);
-      setIsSuccessModalOpen(true);
-    } catch (err) {
-      console.error("Error processing payment:", err);
-      setOrderError("Failed to process payment");
-      setIsPaymentModalOpen(false);
     }
-  };
+
+    setTables((prevTables) =>
+      prevTables.map((table) =>
+        table.id === selectedTable.id
+          ? { ...table, status: "available", orders: [] }
+          : table
+      )
+    );
+
+    setIsPaymentModalOpen(false);
+    setIsConfirmModalOpen(false);
+    setIsSuccessModalOpen(true);
+    await fetchAllNotifications();
+  } catch (err) {
+    console.error("Error processing payment:", err);
+    setOrderError("Failed to process payment");
+    setIsPaymentModalOpen(false);
+  }
+  setIsConfirmModalOpen(false);
+  setIsPrintModalOpen(true); // Mở Print Modal sau khi thanh toán
+};
 
   const handleShowEmptyTableModal = () => {
     console.log("Showing empty table modal");
@@ -1087,9 +1072,9 @@ const TableManagementStaff = () => {
   };
 
   const handlePrintReceipt = () => {
-    console.log("Printing receipt");
-    setIsBillModalOpen(false);
-    setIsConfirmModalOpen(true);
+  console.log("Initiating print receipt");
+  setIsPaymentModalOpen(false); // Đóng Payment Modal
+  setIsPrintModalOpen(true); // Mở Print Modal
   };
 
   const calculateTotalFromOrders = (orders) => {
@@ -1750,7 +1735,7 @@ const TableManagementStaff = () => {
             </button>
             <button
               className="!bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg"
-              onClick={handlePaymentSuccess}
+              onClick={handlePrintReceipt}
             >
               Confirm Payment
             </button>
@@ -1759,6 +1744,85 @@ const TableManagementStaff = () => {
       </div>
     );
   };
+
+  const handleConfirmPrint = () => {
+  if (selectedTable && selectedTable.orders && selectedTable.orders.length > 0) {
+    const orderId = selectedTable.orders[0].orderId; // Giả sử lấy orderId đầu tiên
+    if (orderId) {
+      handlePrintBill(orderId);
+    }
+  }
+  setIsPrintModalOpen(false);
+};
+
+  const handlePrintBill = async (orderId) => {
+  if (!orderId) {
+    setOrderError("Invalid order ID");
+    return;
+  }
+  try {
+    const response = await fetch(`/api/receipts/generate/${orderId}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/pdf",
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Failed to generate PDF (Status: ${response.status})`);
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `receipt-order-${orderId}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error("Error generating PDF:", error);
+    setOrderError(`Failed to generate receipt for order ${orderId}: ${error.message}`);
+  }
+};
+
+  const renderPrintModal = () => {
+  if (!isPrintModalOpen) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div
+        className="absolute inset-0 bg-black/50"
+        onClick={() => setIsPrintModalOpen(false)}
+      ></div>
+      <div className="relative bg-white rounded-xl shadow-2xl w-96 p-8 mx-4">
+        <div className="flex justify-center mb-4">
+          <img
+            alt="Logo"
+            className="w-24 h-24"
+            src="../../src/assets/img/logoremovebg.png"
+          />
+        </div>
+        <h3 className="text-xl font-bold mb-4 text-center">CONFIRM PRINT?</h3>
+        <div className="flex justify-center space-x-4">
+          <button
+            className="px-4 py-2 !bg-green-500 text-white rounded hover:bg-green-600"
+            onClick={handleConfirmPrint}
+          >
+            YES
+          </button>
+          <button
+            className="px-4 py-2 !bg-gray-500 text-white rounded hover:bg-gray-600"
+            onClick={() => setIsPrintModalOpen(false)}
+          >
+            NO
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
   const renderSuccessModal = () => {
     if (!isSuccessModalOpen) return null;
@@ -2498,6 +2562,7 @@ const TableManagementStaff = () => {
       {renderTransferTableModal()}
       {renderTransferConfirmModal()}
       {renderTransferSuccessModal()}
+      {renderPrintModal()}
     </div>
   );
 };
