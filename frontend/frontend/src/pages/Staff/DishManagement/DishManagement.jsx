@@ -294,13 +294,13 @@ const DishManagementStaff = () => {
             </div>
             <div className="flex justify-center space-x-4">
               <button
-                className="px-6 py-2 bg-gray-300 text-gray-800 rounded-lg font-medium hover:bg-gray-400 transition-colors"
+                className="px-6 py-2 !bg-gray-300 text-gray-800 rounded-lg font-medium hover:bg-gray-400 transition-colors"
                 onClick={cancelDelete}
               >
                 NO
               </button>
               <button
-                className="px-6 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
+                className="px-6 py-2 !bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors"
                 onClick={confirmDelete}
               >
                 YES
