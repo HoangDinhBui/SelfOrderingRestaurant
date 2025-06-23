@@ -42,22 +42,25 @@ const InventoryManagement = () => {
 
   // Fetch all inventories, suppliers, and ingredients on mount
   useEffect(() => {
-    if (userRole !== "ADMIN") return;
-    const fetchData = async () => {
-      setIsLoading(true);
-      setErrorMessage(null);
-      try {
-        await Promise.all([fetchSuppliers(), fetchIngredients()]);
-        await fetchInventories();
-      } catch (error) {
-        console.error("Error fetching data:", error);
-        setErrorMessage("Failed to load data. Please try again.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchData();
-  }, [userRole]);
+  if (userRole !== "ADMIN") return;
+  const fetchData = async () => {
+    setIsLoading(true);
+    setErrorMessage(null);
+    try {
+      await Promise.all([fetchSuppliers(), fetchIngredients()]);
+      await fetchInventories();
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      setErrorMessage("Failed to load data. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  fetchData();
+
+  // Lắng nghe sự kiện từ WebSocket hoặc context (nếu có)
+  // Ví dụ: window.addEventListener('inventoryUpdated', fetchInventories);
+}, [userRole]);
 
   const fetchInventories = async () => {
     try {

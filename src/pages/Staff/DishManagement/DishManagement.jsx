@@ -121,7 +121,45 @@ const DishManagementStaff = () => {
     console.log(
       `Updating item ${item.dishId} in order ${item.orderId} from ${item.status} to ${newStatus}`
     );
+
     try {
+      // If transitioning to PROCESSING, call the inventory update API
+      if (newStatus === "PROCESSING") {
+        const accessToken = "eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJST0xFX0FETUlOIl0sInVzZXJUeXBlIjoiQURNSU4iLCJ1c2VySWQiOjcsImVtYWlsIjoiYWRtaW4xQHJlc3RhdXJhbnQuY29tIiwidXNlcm5hbWUiOiJhZG1pbjEiLCJzdWIiOiJhZG1pbjEiLCJpYXQiOjE3NTA2ODQyOTEsImV4cCI6MTc1MDY4Nzg5MX0.XtmEnDd8yXwuqiGvzvAfXWxH8itkvOkCfHuqUuKbcaA";
+        const dishName = item.name;
+        const quantity = item.quantity;
+        const tableNumber = item.table;
+        const note = item.note || "";
+
+        // Prepare payload with a list of items
+        const payload = {
+          tableNumber,
+          note,
+          items: [
+            {
+              dishName,
+              quantity,
+            },
+          ],
+        };
+
+        // Call /inventory/update-by-order
+        const response = await fetch("http://localhost:8080/api/inventory/update-by-order", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Failed to update inventory: ${errorText}`);
+        }
+      }
+
+      // Update order item status
       await updateOrderItemStatus({
         variables: {
           orderId: item.orderId.toString(),
@@ -131,21 +169,19 @@ const DishManagementStaff = () => {
       });
     } catch (err) {
       console.error("Error updating status:", err);
+      toast.error(`Error: ${err.message}`);
     }
   };
 
-  // Added function to handle retry on error
   const handleRetry = () => {
     refetch();
   };
 
-  // Added function to cancel deletion and close confirmation dialog
   const cancelDelete = () => {
     setShowConfirmation(false);
     setItemToDelete(null);
   };
 
-  // Added function to confirm deletion by updating status to CANCELLED
   const confirmDelete = async () => {
     if (itemToDelete) {
       await handleStatusChange(itemToDelete, "CANCELLED");
@@ -154,7 +190,6 @@ const DishManagementStaff = () => {
     }
   };
 
-  // Modified Cancel button to trigger confirmation dialog
   const handleCancelClick = (item) => {
     setItemToDelete(item);
     setShowConfirmation(true);
@@ -255,14 +290,14 @@ const DishManagementStaff = () => {
                               }
                               style={{ backgroundColor: "#4CAF50" }}
                             >
-                              Done 
+                              Done
                             </button>
                           ) : null}
                           {item.status !== "CANCELLED" &&
                             item.status !== "COMPLETED" && (
                               <button
                                 className="px-4 py-1 bg-red-500 text-white rounded hover:bg-red-600"
-                                onClick={() => handleCancelClick(item)} // Modified to trigger confirmation
+                                onClick={() => handleCancelClick(item)}
                                 style={{ backgroundColor: "#F44336" }}
                               >
                                 Cancel
@@ -286,8 +321,8 @@ const DishManagementStaff = () => {
               <div className="flex justify-center mb-2">
                 <img
                   alt="Logo"
-                  className="w-24 h-24"
-                  src="../../src/assets/img/logoremovebg.png"
+                  className="w-24 h-16"
+                  src="/assets/img/logo.png"
                 />
               </div>
               <p className="text-gray-600 mb-4">ARE YOU SURE?</p>
