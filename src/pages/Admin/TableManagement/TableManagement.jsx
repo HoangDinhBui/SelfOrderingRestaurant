@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import MenuBar from "../../../components/layout/MenuBar.jsx";
 import axios from "axios";
+import { FaTrash } from "react-icons/fa";
 
 const TableManagementAdmin = () => {
   const [selectedTable, setSelectedTable] = useState(null);
@@ -35,15 +36,12 @@ const TableManagementAdmin = () => {
   const [qrError, setQrError] = useState(null);
   const [qrUploading, setQrUploading] = useState(false);
   const [lastWebSocketUpdate, setLastWebSocketUpdate] = useState(null);
-  const [isTransferTableModalOpen, setIsTransferTableModalOpen] =
-    useState(false);
-  const [isTransferConfirmModalOpen, setIsTransferConfirmModalOpen] =
-    useState(false);
-  const [isTransferSuccessModalOpen, setIsTransferSuccessModalOpen] =
-    useState(false);
+  const [isTransferTableModalOpen, setIsTransferTableModalOpen] = useState(false);
+  const [isTransferConfirmModalOpen, setIsTransferConfirmModalOpen] = useState(false);
+  const [isTransferSuccessModalOpen, setIsTransferSuccessModalOpen] = useState(false);
   const [transferSourceTable, setTransferSourceTable] = useState(null);
-  const [transferDestinationTable, setTransferDestinationTable] =
-    useState(null);
+  const [transferDestinationTable, setTransferDestinationTable] = useState(null);
+  const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
   const userId = localStorage.getItem("userId") || "1";
 
@@ -870,6 +868,88 @@ const TableManagementAdmin = () => {
     }, {});
   }, [tableNotifications, tables]);
 
+  // New: Handle Print Bill
+  const handlePrintBill = async (orderId) => {
+  if (!orderId) {
+    setOrderError("Invalid order ID");
+    return;
+  }
+  try {
+    const response = await fetch(`/api/receipts/generate/${orderId}`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/pdf",
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Failed to generate PDF (Status: ${response.status})`);
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `receipt-order-${orderId}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error("Error generating PDF:", error);
+    setOrderError(`Failed to generate receipt for order ${orderId}: ${error.message}`);
+  }
+};
+  
+  const handleConfirmPrint = () => {
+  if (selectedTable && selectedTable.orders && selectedTable.orders.length > 0) {
+    const orderId = selectedTable.orders[0].orderId; // Giả sử lấy orderId đầu tiên
+    if (orderId) {
+      handlePrintBill(orderId);
+    }
+  }
+  setIsPrintModalOpen(false);
+};
+
+const renderPrintModal = () => {
+  if (!isPrintModalOpen) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div
+        className="absolute inset-0 bg-black/50"
+        onClick={() => setIsPrintModalOpen(false)}
+      ></div>
+      <div className="relative bg-white rounded-xl shadow-2xl w-96 p-8 mx-4">
+        <div className="flex justify-center mb-4">
+          <img
+            alt="Logo"
+            className="w-24 h-24"
+            src="../../src/assets/img/logoremovebg.png"
+          />
+        </div>
+        <h3 className="text-xl font-bold mb-4 text-center">
+          CONFIRM PRINT?
+        </h3>
+        <div className="flex justify-center space-x-4">
+          <button
+            className="px-4 py-2 !bg-green-500 text-white rounded hover:bg-green-600"
+            onClick={handleConfirmPrint}
+          >
+            YES
+          </button>
+          <button
+            className="px-4 py-2 !bg-gray-500 text-white rounded hover:bg-gray-600"
+            onClick={() => setIsPrintModalOpen(false)}
+          >
+            NO
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
   // Modal Handlers
   const toggleNotificationModal = async (e, table) => {
     e.stopPropagation();
@@ -955,61 +1035,66 @@ const TableManagementAdmin = () => {
     setIsPaymentModalOpen(true);
   };
 
+  const handlePrintReceipt = () => {
+  console.log("Initiating print receipt");
+  setIsPaymentModalOpen(false);
+  setIsPrintModalOpen(true); // Mở Print Modal thay vì Confirm Modal
+};
+
   const handlePaymentSuccess = async () => {
-    if (!selectedTable || !selectedTable.id) {
-      console.error("Cannot update status for undefined table");
-      setOrderError("Invalid table selected");
-      return;
-    }
+  if (!selectedTable || !selectedTable.id) {
+    console.error("Cannot update status for undefined table");
+    setOrderError("Invalid table selected");
+    return;
+  }
 
-    console.log(`Processing payment success for table ${selectedTable.id}`);
-    try {
-      await API.put(`/api/admin/tables/${selectedTable.id}`, {
-        status: "AVAILABLE",
-      });
+  console.log(`Processing payment success for table ${selectedTable.id}`);
+  try {
+    await API.put(`/api/admin/tables/${selectedTable.id}`, {
+      status: "AVAILABLE",
+    });
 
-      if (selectedTable.orders && selectedTable.orders.length > 0) {
-        for (const order of selectedTable.orders) {
-          try {
-            await API.put(`/api/orders/${order.orderId}/payment`, {
-              paymentStatus: "PAID",
-            });
-          } catch (err) {
-            console.error(
-              `Error updating payment for order ${order.orderId}:`,
-              err
-            );
-          }
+    if (selectedTable.orders && selectedTable.orders.length > 0) {
+      for (const order of selectedTable.orders) {
+        try {
+          await API.put(`/api/orders/${order.orderId}/payment`, {
+            paymentStatus: "PAID",
+          });
+          // Bỏ handlePrintBill(order.orderId) ở đây
+        } catch (err) {
+          console.error(
+            `Error updating payment for order ${order.orderId}:`,
+            err
+          );
+          setOrderError(`Failed to process payment for order ${order.orderId}`);
         }
       }
-
-      setTables((prevTables) =>
-        prevTables.map((table) =>
-          table.id === selectedTable.id
-            ? { ...table, status: "available", orders: [] }
-            : table
-        )
-      );
-
-      setIsPaymentModalOpen(false);
-      setIsSuccessModalOpen(true);
-      await fetchAllNotifications();
-    } catch (err) {
-      console.error("Error processing payment:", err);
-      setOrderError("Failed to process payment");
-      setIsPaymentModalOpen(false);
     }
-  };
+
+    setTables((prevTables) =>
+      prevTables.map((table) =>
+        table.id === selectedTable.id
+          ? { ...table, status: "available", orders: [] }
+          : table
+      )
+    );
+
+    setIsPaymentModalOpen(false);
+    setIsConfirmModalOpen(false);
+    setIsSuccessModalOpen(true);
+    await fetchAllNotifications();
+  } catch (err) {
+    console.error("Error processing payment:", err);
+    setOrderError("Failed to process payment");
+    setIsPaymentModalOpen(false);
+  }
+  setIsConfirmModalOpen(false);
+  setIsPrintModalOpen(true); // Mở Print Modal sau khi thanh toán
+};
 
   const handleShowEmptyTableModal = () => {
     console.log("Showing empty table modal");
     setIsEmptyTableModalOpen(true);
-  };
-
-  const handlePrintReceipt = () => {
-    console.log("Printing receipt");
-    setIsBillModalOpen(false);
-    setIsConfirmModalOpen(true);
   };
 
   const handleAddTableModal = () => {
@@ -1344,7 +1429,6 @@ const TableManagementAdmin = () => {
 
     const handleUpdateQuantity = async (orderId, itemIndex, newQuantity) => {
       try {
-        // Assuming an API endpoint to update item quantity
         await API.put(`/api/orders/${orderId}/items/${itemIndex}`, {
           quantity: newQuantity,
         });
@@ -1371,7 +1455,6 @@ const TableManagementAdmin = () => {
 
     const handleDeleteItem = async (orderId, itemIndex) => {
       try {
-        // Assuming an API endpoint to delete an item
         await API.delete(`/api/orders/${orderId}/items/${itemIndex}`);
         setSelectedTable((prev) => ({
           ...prev,
@@ -1649,14 +1732,14 @@ const TableManagementAdmin = () => {
             </p>
             <p className="text-sm text-gray-600">Phone: 0987654321</p>
             <h3 className="font-bold mt-2 text-xl text-blue-800">
-              Payment Slip 001
+              Payment Slip {selectedTable.id.toString().padStart(3, "0")}
             </h3>
           </div>
           <div className="flex justify-between border-b pb-2 mb-4">
             <span className="font-bold text-gray-700">
               Table {selectedTable.id}
             </span>
-            <span className="font-bold text-gray-700">Payment Slip 001</span>
+            <span className="font-bold text-gray-700">Payment Slip {selectedTable.id.toString().padStart(3, "0")}</span>
           </div>
           <div className="max-h-96 overflow-y-auto mb-4">
             <table className="w-full">
@@ -1726,7 +1809,7 @@ const TableManagementAdmin = () => {
             </button>
             <button
               className="!bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg"
-              onClick={handlePaymentSuccess}
+              onClick={handlePrintReceipt}
             >
               Confirm Payment
             </button>
@@ -1764,6 +1847,45 @@ const TableManagementAdmin = () => {
           >
             OK
           </button>
+        </div>
+      </div>
+    );
+  };
+
+  // Render Confirm Modal
+  const renderConfirmModal = () => {
+    if (!isConfirmModalOpen) return null;
+
+    return (
+      <div className="fixed inset-0 flex items-center justify-center z-50">
+        <div
+          className="absolute inset-0"
+          style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
+          onClick={() => setIsConfirmModalOpen(false)}
+        ></div>
+        <div className="bg-white rounded-lg p-6 w-80 relative z-50 text-center">
+          <div className="flex justify-center mb-4">
+            <img
+              alt="Logo"
+              className="w-24 h-24"
+              src="../../src/assets/img/logoremovebg.png"
+            />
+          </div>
+          <p className="text-lg mb-6">ARE YOU SURE?</p>
+          <div className="flex justify-center space-x-4">
+            <button
+              className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg"
+              onClick={() => setIsConfirmModalOpen(false)}
+            >
+              NO
+            </button>
+            <button
+              className="!bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg"
+              onClick={handlePaymentSuccess}
+            >
+              YES
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -1909,48 +2031,6 @@ const TableManagementAdmin = () => {
               onClick={handlePrintReceipt}
             >
               Print Receipt
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Render Confirm Modal
-  const renderConfirmModal = () => {
-    if (!isConfirmModalOpen) return null;
-
-    return (
-      <div className="fixed inset-0 flex items-center justify-center z-50">
-        <div
-          className="absolute inset-0"
-          style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
-          onClick={() => setIsConfirmModalOpen(false)}
-        ></div>
-        <div className="bg-white rounded-lg p-6 w-80 relative z-50 text-center">
-          <div className="flex justify-center mb-4">
-            <img
-              alt="Logo"
-              className="w-24 h-24"
-              src="../../src/assets/img/logoremovebg.png"
-            />
-          </div>
-          <p className="text-lg mb-6">ARE YOU SURE?</p>
-          <div className="flex justify-center space-x-4">
-            <button
-              className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg"
-              onClick={() => setIsConfirmModalOpen(false)}
-            >
-              NO
-            </button>
-            <button
-              className="!bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg"
-              onClick={() => {
-                setIsConfirmModalOpen(false);
-                setIsSuccessModalOpen(true);
-              }}
-            >
-              YES
             </button>
           </div>
         </div>
@@ -2728,6 +2808,7 @@ const TableManagementAdmin = () => {
       {renderSuccessModal()}
       {renderAddTableModal()}
       {renderEditTableModal()}
+      {renderPrintModal()}
     </div>
   );
 };
