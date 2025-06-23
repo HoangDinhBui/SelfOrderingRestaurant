@@ -5,9 +5,12 @@ import chefImage from "../../../assets/img/chef.png";
 import { authAPI } from "../../../services/api";
 
 const StaffManagementAdmin = () => {
+  // State quản lý danh sách nhân viên
   const [staff, setStaff] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredStaff, setFilteredStaff] = useState([]);
+
+  // State cho form thêm nhân viên
   const [showAddForm, setShowAddForm] = useState(false);
   const [newStaff, setNewStaff] = useState({
     fullName: "",
@@ -22,58 +25,40 @@ const StaffManagementAdmin = () => {
     password: "",
     status: "ACTIVE",
   });
+
+  // State cho thông báo và popup
   const [errorMessage, setErrorMessage] = useState("");
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [showDeletePopup, setShowDeletePopup] = useState(false);
   const [staffToDelete, setStaffToDelete] = useState(null);
+
+  // State cho form chỉnh sửa nhân viên
   const [showEditForm, setShowEditForm] = useState(false);
   const [staffToEdit, setStaffToEdit] = useState(null);
+
+  // State kiểm tra quyền người dùng
   const [userRole, setUserRole] = useState(null);
-  // Camera-related state and refs
+
+  // State và ref cho camera
   const [showCamera, setShowCamera] = useState(false);
   const [capturedImage, setCapturedImage] = useState(null);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
+
+  // State cho modal chấm công
   const [showTimekeepingModal, setShowTimekeepingModal] = useState(false);
   const [selectedStaffTimekeeping, setSelectedStaffTimekeeping] =
     useState(null);
-  const [showAllTimekeepingModal, setShowAllTimekeepingModal] = useState(false); // New state for all timekeeping modal
+  const [showAllTimekeepingModal, setShowAllTimekeepingModal] = useState(false);
+  const [monthlySalaries, setMonthlySalaries] = useState([]);
 
-  // Mock data for timekeeping
-  const mockTimekeepingData = [
-    {
-      id: 1,
-      fullName: "John Doe",
-      checkIn: "08:00 AM",
-      checkOut: "05:00 PM",
-      salary: 50000,
-    },
-    {
-      id: 2,
-      fullName: "Jane Smith",
-      checkIn: "09:00 AM",
-      checkOut: "06:00 PM",
-      salary: 45000,
-    },
-    {
-      id: 3,
-      fullName: "Alice Johnson",
-      checkIn: "07:30 AM",
-      checkOut: "04:30 PM",
-      salary: 48000,
-    },
-    {
-      id: 4,
-      fullName: "Bob Brown",
-      checkIn: "08:30 AM",
-      checkOut: "05:30 PM",
-      salary: 52000,
-    },
-  ];
+  // State cho bộ lọc tháng/năm
+  const [selectedMonthYear, setSelectedMonthYear] = useState("");
 
   const API_BASE_URL = "/admin";
-  const ATTENDANCE_API_URL = "/api/attendance";
+  const SALARY_API_URL = "/salary";
 
+  // Kiểm tra quyền admin khi component mount
   useEffect(() => {
     const role = localStorage.getItem("userType");
     setUserRole(role);
@@ -82,22 +67,22 @@ const StaffManagementAdmin = () => {
     }
   }, []);
 
+  // Lấy header xác thực
   const getAuthHeaders = () => ({
-    //"Content-Type": "application/json",
     Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
   });
 
+  // Lấy danh sách nhân viên khi có quyền admin
   useEffect(() => {
     if (userRole === "ADMIN") {
       fetchStaff();
     }
   }, [userRole]);
 
-  // Handle camera stream setup
+  // Thiết lập và dọn dẹp camera stream
   useEffect(() => {
     let stream = null;
     if (showCamera && videoRef.current) {
-      console.log("Mounting camera stream...");
       navigator.mediaDevices
         .getUserMedia({ video: true })
         .then((mediaStream) => {
@@ -110,7 +95,7 @@ const StaffManagementAdmin = () => {
           };
         })
         .catch((error) => {
-          console.error("Error accessing camera in useEffect:", error);
+          console.error("Error accessing camera:", error);
           setErrorMessage(
             error.name === "NotAllowedError"
               ? "Camera access denied. Please grant camera permissions."
@@ -119,10 +104,8 @@ const StaffManagementAdmin = () => {
           setShowCamera(false);
         });
     }
-    // Cleanup
     return () => {
       if (stream) {
-        console.log("Cleaning up camera stream...");
         stream.getTracks().forEach((track) => track.stop());
       }
       if (videoRef.current) {
@@ -131,9 +114,9 @@ const StaffManagementAdmin = () => {
     };
   }, [showCamera]);
 
+  // Hàm lấy danh sách nhân viên
   const fetchStaff = async () => {
     try {
-      console.log("Fetching staff");
       const response = await authAPI.get(`${API_BASE_URL}/staff`, {
         headers: getAuthHeaders(),
       });
@@ -155,60 +138,74 @@ const StaffManagementAdmin = () => {
       setStaff(mappedData);
       setFilteredStaff(mappedData);
     } catch (error) {
-      console.error("Error fetching staff:", error, {
-        status: error.response?.status,
-        data: error.response?.data,
-      });
-      const status = error.response?.status;
-      let message =
-        error.response?.data?.message || "Error while getting employee list";
-      if (status === 403 || status === 401) {
-        message = "Access denied: Administrator privileges required.";
-      } else if (status === 404) {
-        message = "Not found endpoint /api/admin/staff.";
-      }
-      setErrorMessage(message);
+      console.error("Error fetching staff:", error);
+      setErrorMessage(
+        error.response?.status === 403
+          ? "Access denied: Administrator privileges required."
+          : error.response?.data?.message || "Error while fetching staff list"
+      );
     }
   };
 
-  const confirmDeleteStaff = async () => {
-    if (userRole !== "ADMIN") return;
-    console.log("Deleting staff:", staffToDelete.id);
+  // Hàm lấy dữ liệu lương tháng
+  const fetchMonthlySalaries = async () => {
     try {
-      const updatedStaff = staff.filter((item) => item.id !== staffToDelete.id);
-      const updatedFilteredStaff = filteredStaff.filter(
-        (item) => item.id !== staffToDelete.id
+      const response = await authAPI.get(`${SALARY_API_URL}/monthly`, {
+        headers: getAuthHeaders(),
+      });
+      const data = response.data || [];
+      const mappedData = data.map((item) => ({
+        id: item.salaryId,
+        staffId: item.staff.staffId,
+        fullName: item.staff.fullname,
+        monthYear: new Date(item.monthYear).toLocaleString("default", {
+          month: "long",
+          year: "numeric",
+        }),
+        totalWorkingHours: item.totalWorkingHours,
+        hourlySalary: item.hourlySalary,
+        totalSalary: item.totalSalary,
+      }));
+      setMonthlySalaries(mappedData);
+    } catch (error) {
+      console.error("Error fetching monthly salaries:", error);
+      setErrorMessage(
+        error.response?.status === 403
+          ? "Access denied: Administrator privileges required."
+          : error.response?.data?.message ||
+              "Error while fetching monthly salary data"
       );
-      setStaff(updatedStaff);
-      setFilteredStaff(updatedFilteredStaff);
+    }
+  };
 
+  // Hàm xóa nhân viên
+  const confirmDeleteStaff = async () => {
+    if (!staffToDelete) return;
+    try {
       await authAPI.delete(`${API_BASE_URL}/staff/${staffToDelete.id}`, {
         headers: getAuthHeaders(),
       });
+      setStaff(staff.filter((item) => item.id !== staffToDelete.id));
+      setFilteredStaff(
+        filteredStaff.filter((item) => item.id !== staffToDelete.id)
+      );
       setShowDeletePopup(false);
       setStaffToDelete(null);
       setShowSuccessPopup(true);
       setTimeout(() => setShowSuccessPopup(false), 2000);
     } catch (error) {
-      console.error("Error deleting staff:", error, {
-        status: error.response?.status,
-        data: error.response?.data,
-      });
+      console.error("Error deleting staff:", error);
+      setErrorMessage(
+        error.response?.status === 403
+          ? "Access denied: Administrator privileges required."
+          : error.response?.data?.message || "Error while deleting staff"
+      );
       await fetchStaff();
-      const status = error.response?.status;
-      let message =
-        error.response?.data?.message || "Error while deleting employee";
-      if (status === 403 || status === 401) {
-        message = "Access denied: Administrator privileges required.";
-      } else if (status === 404) {
-        message = "Not found endpoint /api/admin/staff.";
-      }
-      setErrorMessage(message);
     }
   };
 
+  // Hàm tìm kiếm nhân viên
   const handleSearch = (event) => {
-    if (userRole !== "ADMIN") return;
     if (event.key === "Enter") {
       if (searchTerm.trim() === "") {
         setFilteredStaff(staff);
@@ -221,12 +218,14 @@ const StaffManagementAdmin = () => {
     }
   };
 
+  // Hàm mở popup xóa nhân viên
   const handleDeleteStaff = (staff) => {
     if (userRole !== "ADMIN") return;
     setStaffToDelete(staff);
     setShowDeletePopup(true);
   };
 
+  // Hàm mở form chỉnh sửa nhân viên
   const handleEditStaff = (staff) => {
     if (userRole !== "ADMIN") return;
     setStaffToEdit(staff);
@@ -238,11 +237,12 @@ const StaffManagementAdmin = () => {
     setShowEditForm(true);
   };
 
+  // Hàm mở camera
   const startCamera = () => {
-    console.log("Triggering camera start...");
     setShowCamera(true);
   };
 
+  // Hàm chụp ảnh từ camera
   const capturePhoto = () => {
     if (videoRef.current && canvasRef.current) {
       const context = canvasRef.current.getContext("2d");
@@ -253,40 +253,49 @@ const StaffManagementAdmin = () => {
       setCapturedImage(imageData);
       setShowCamera(false);
     } else {
-      console.error("Video or canvas ref not available");
       setErrorMessage("Failed to capture photo. Please try again.");
     }
   };
 
+  // Hàm dừng camera
   const stopCamera = () => {
     setShowCamera(false);
   };
 
-  // Xử lý hiển thị modal chấm công cho nhân viên cụ thể
+  // Hàm hiển thị chi tiết lương tháng của nhân viên
   const handleTimekeeping = (staff) => {
     if (userRole !== "ADMIN") return;
-    const timekeepingData = mockTimekeepingData.find(
-      (item) => item.id === staff.id
-    ) || {
+    const staffSalaryData = monthlySalaries.filter(
+      (item) => item.staffId === staff.id
+    );
+    setSelectedStaffTimekeeping({
       id: staff.id,
       fullName: staff.fullName,
-      checkIn: "N/A",
-      checkOut: "N/A",
-      salary: "N/A",
-    };
-    setSelectedStaffTimekeeping(timekeepingData);
+      salaryData:
+        staffSalaryData.length > 0
+          ? staffSalaryData
+          : [
+              {
+                monthYear: "N/A",
+                totalWorkingHours: "N/A",
+                hourlySalary: "N/A",
+                totalSalary: "N/A",
+              },
+            ],
+    });
     setShowTimekeepingModal(true);
   };
 
-  // Xử lý hiển thị modal chấm công cho tất cả nhân viên
-  const handleAllTimekeeping = () => {
+  // Hàm hiển thị tất cả bản ghi lương tháng
+  const handleAllTimekeeping = async () => {
     if (userRole !== "ADMIN") return;
+    await fetchMonthlySalaries();
     setShowAllTimekeepingModal(true);
   };
 
+  // Hàm thêm nhân viên mới
   const validateAndAddStaff = async () => {
     if (userRole !== "ADMIN") return;
-    console.log("Adding staff:", newStaff);
     if (
       !newStaff.fullName ||
       !newStaff.email ||
@@ -294,33 +303,27 @@ const StaffManagementAdmin = () => {
       !newStaff.username ||
       !newStaff.password
     ) {
-      setErrorMessage("Vui lòng điền đầy đủ các trường bắt buộc!");
+      setErrorMessage("Please fill in all required fields!");
       return;
     }
-
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(newStaff.email)) {
-      setErrorMessage("Email không đúng định dạng!");
+      setErrorMessage("Invalid email format!");
       return;
     }
-
     if (newStaff.username.length < 3 || newStaff.username.length > 50) {
-      setErrorMessage("Tên đăng nhập phải từ 3 đến 50 ký tự!");
+      setErrorMessage("Username must be between 3 and 50 characters!");
       return;
     }
-
     if (newStaff.password.length < 8) {
-      setErrorMessage("Mật khẩu phải có ít nhất 8 ký tự!");
+      setErrorMessage("Password must be at least 8 characters!");
       return;
     }
-
     if (newStaff.salary && isNaN(parseFloat(newStaff.salary))) {
-      setErrorMessage("Lương phải là một số hợp lệ!");
+      setErrorMessage("Salary must be a valid number!");
       return;
     }
-
     try {
-      // Prepare FormData for multipart request
       const formData = new FormData();
       const staffData = {
         username: newStaff.username,
@@ -331,7 +334,6 @@ const StaffManagementAdmin = () => {
         position: newStaff.position,
         salary: newStaff.salary ? newStaff.salary.toString() : null,
       };
-      // Append request as JSON Blob
       formData.append(
         "request",
         new Blob([JSON.stringify(staffData)], { type: "application/json" })
@@ -340,14 +342,7 @@ const StaffManagementAdmin = () => {
         const blob = await fetch(capturedImage).then((res) => res.blob());
         formData.append("image", blob, "profile.jpg");
       }
-      // Log FormData entries
-      for (let [key, value] of formData.entries()) {
-        console.log(`FormData: ${key} =`, value);
-      }
-      // Register staff with image
-      const response = await authAPI.post(`/admin/staff/register`, formData);
-      console.log("Response:", response.data);
-
+      await authAPI.post(`/admin/staff/register`, formData);
       await fetchStaff();
       setShowAddForm(false);
       setNewStaff({
@@ -368,34 +363,25 @@ const StaffManagementAdmin = () => {
       setShowSuccessPopup(true);
       setTimeout(() => setShowSuccessPopup(false), 2000);
     } catch (error) {
-      console.error("Lỗi khi thêm nhân viên:", error);
-      console.log("Error response:", error.response?.data);
-      const status = error.response?.status;
-      let message =
-        error.response?.data?.message ||
-        error.message ||
-        "Lỗi khi thêm nhân viên!";
-      if (status === 403 || status === 401) {
-        message = "Từ chối truy cập: Yêu cầu quyền quản trị viên.";
-      } else if (status === 400) {
-        message = "Dữ liệu không hợp lệ. Vui lòng kiểm tra lại thông tin.";
-      } else if (status === 500) {
-        message = "Lỗi server. Vui lòng kiểm tra cấu hình API.";
-      }
-      setErrorMessage(message);
+      console.error("Error adding staff:", error);
+      setErrorMessage(
+        error.response?.status === 403
+          ? "Access denied: Administrator privileges required."
+          : error.response?.data?.message || "Error while adding staff!"
+      );
     }
   };
 
+  // Hàm cập nhật thông tin nhân viên
   const confirmEditStaff = async () => {
     if (userRole !== "ADMIN") return;
-    console.log("Editing staff:", staffToEdit.id, newStaff);
     if (!newStaff.position || !newStaff.salary) {
       setErrorMessage("Please fill in position and salary!");
       return;
     }
     const salaryValue = parseFloat(newStaff.salary);
     if (isNaN(salaryValue) || salaryValue <= 0) {
-      setErrorMessage("Salary must be positive!");
+      setErrorMessage("Salary must be a positive number!");
       return;
     }
     if (!["ACTIVE", "INACTIVE"].includes(newStaff.status)) {
@@ -412,7 +398,6 @@ const StaffManagementAdmin = () => {
         },
         { headers: getAuthHeaders() }
       );
-
       await fetchStaff();
       setShowEditForm(false);
       setStaffToEdit(null);
@@ -431,16 +416,25 @@ const StaffManagementAdmin = () => {
       setTimeout(() => setShowSuccessPopup(false), 2000);
     } catch (error) {
       console.error("Error editing staff:", error);
-      const status = error.response?.status;
-      let message =
-        error.response?.data?.message || "Error while updating employee";
-      if (status === 403 || status === 401) {
-        message = "Access denied: Administrator privileges required.";
-      }
-      setErrorMessage(message);
+      setErrorMessage(
+        error.response?.status === 403
+          ? "Access denied: Administrator privileges required."
+          : error.response?.data?.message || "Error while updating staff"
+      );
     }
   };
 
+  // Lọc dữ liệu lương tháng theo tháng/năm
+  const filteredMonthlySalaries = selectedMonthYear
+    ? monthlySalaries.filter((item) => item.monthYear === selectedMonthYear)
+    : monthlySalaries;
+
+  // Lấy danh sách các tháng/năm duy nhất
+  const uniqueMonthYears = [
+    ...new Set(monthlySalaries.map((item) => item.monthYear)),
+  ];
+
+  // Kiểm tra quyền admin
   if (userRole !== "ADMIN") {
     return (
       <div className="h-screen w-screen flex flex-col bg-gradient-to-br from-blue-50 to-glass-100">
@@ -461,7 +455,7 @@ const StaffManagementAdmin = () => {
     outerContainer: {
       fontFamily: "Arial, sans-serif",
       backgroundColor: "rgba(157, 198, 206, 0.33)",
-      minHeight: "auto",
+      minHeight: "100vh",
       width: "100vw",
       display: "flex",
       justifyContent: "center",
@@ -532,7 +526,6 @@ const StaffManagementAdmin = () => {
     },
     thead: {
       position: "sticky",
-      padding: "0 0 10px ",
       top: 0,
       zIndex: 2,
       backgroundColor: "#9DC6CE",
@@ -605,7 +598,7 @@ const StaffManagementAdmin = () => {
       cursor: "pointer",
     },
     timekeepingButton: {
-      padding: "0px 5px",
+      padding: "8px 12px",
       backgroundColor: "#4CAF50",
       color: "white",
       border: "none",
@@ -628,7 +621,7 @@ const StaffManagementAdmin = () => {
       gap: "20px",
     },
     formFields: {
-      flex: "1",
+      flex: 1,
       display: "flex",
       flexDirection: "column",
       gap: "15px",
@@ -636,6 +629,7 @@ const StaffManagementAdmin = () => {
     labelText: {
       width: "150px",
       display: "inline-block",
+      fontWeight: "bold",
     },
     actionButtons: {
       display: "flex",
@@ -776,8 +770,6 @@ const StaffManagementAdmin = () => {
       marginBottom: "10px",
       textAlign: "center",
     },
-
-    // Camera-specific styles
     cameraContainer: {
       display: "flex",
       flexDirection: "column",
@@ -812,8 +804,6 @@ const StaffManagementAdmin = () => {
       borderRadius: "5px",
       cursor: "pointer",
     },
-
-    // Timekeeping modal styles
     timekeepingModal: {
       position: "fixed",
       top: "50%",
@@ -824,7 +814,7 @@ const StaffManagementAdmin = () => {
       borderRadius: "10px",
       boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
       zIndex: 1000,
-      width: "500px",
+      width: "700px",
       maxWidth: "90%",
       height: "auto",
       maxHeight: "90vh",
@@ -852,6 +842,12 @@ const StaffManagementAdmin = () => {
       padding: "10px",
       textAlign: "left",
     },
+    filterContainer: {
+      display: "flex",
+      alignItems: "center",
+      gap: "10px",
+      marginBottom: "10px",
+    },
   };
 
   return (
@@ -872,7 +868,7 @@ const StaffManagementAdmin = () => {
                     <th style={styles.th}>Name</th>
                     <th style={styles.th}>Shifts</th>
                     <th style={styles.th}>Position</th>
-                    <th style={styles.th}></th>
+                    <th style={styles.th}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -922,7 +918,7 @@ const StaffManagementAdmin = () => {
               <div style={styles.searchRow}>
                 <input
                   type="text"
-                  placeholder="Search..."
+                  placeholder="Search by name..."
                   style={styles.input}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
@@ -951,6 +947,7 @@ const StaffManagementAdmin = () => {
             </div>
           </div>
 
+          {/* Form thêm nhân viên */}
           {showAddForm && (
             <>
               <div
@@ -967,7 +964,7 @@ const StaffManagementAdmin = () => {
                     <div style={styles.formFields}>
                       <label style={styles.formLabel}>
                         <span style={styles.labelText}>
-                          Name<span style={styles.requiredMark}>(*)</span>:
+                          Name<span style={styles.requiredMark}>*</span>:
                         </span>
                         <input
                           type="text"
@@ -982,7 +979,7 @@ const StaffManagementAdmin = () => {
                         />
                       </label>
                       <label style={styles.formLabel}>
-                        <span style={styles.labelText}>Start date:</span>
+                        <span style={styles.labelText}>Start Date:</span>
                         <input
                           type="date"
                           value={newStaff.startDate}
@@ -996,7 +993,7 @@ const StaffManagementAdmin = () => {
                         />
                       </label>
                       <label style={styles.formLabel}>
-                        <span style={styles.labelText}>Shifts:</span>
+                        <span style={styles.labelText}>Shift:</span>
                         <select
                           value={newStaff.workShift}
                           onChange={(e) =>
@@ -1014,7 +1011,7 @@ const StaffManagementAdmin = () => {
                       </label>
                       <label style={styles.formLabel}>
                         <span style={styles.labelText}>
-                          Position <span style={styles.requiredMark}>(*)</span>:
+                          Position<span style={styles.requiredMark}>*</span>:
                         </span>
                         <input
                           type="text"
@@ -1058,16 +1055,13 @@ const StaffManagementAdmin = () => {
                       </label>
                       <label style={styles.formLabel}>
                         <span style={styles.labelText}>
-                          Email <span style={styles.requiredMark}>(*)</span>:
+                          Email<span style={styles.requiredMark}>*</span>:
                         </span>
                         <input
                           type="text"
                           value={newStaff.email}
                           onChange={(e) =>
-                            setNewStaff({
-                              ...newStaff,
-                              email: e.target.value,
-                            })
+                            setNewStaff({ ...newStaff, email: e.target.value })
                           }
                           style={styles.inputField}
                         />
@@ -1078,17 +1072,14 @@ const StaffManagementAdmin = () => {
                           type="number"
                           value={newStaff.salary}
                           onChange={(e) =>
-                            setNewStaff({
-                              ...newStaff,
-                              salary: e.target.value,
-                            })
+                            setNewStaff({ ...newStaff, salary: e.target.value })
                           }
                           style={styles.inputField}
                         />
                       </label>
                       <label style={styles.formLabel}>
                         <span style={styles.labelText}>
-                          Username <span style={styles.requiredMark}>(*)</span>:
+                          Username<span style={styles.requiredMark}>*</span>:
                         </span>
                         <input
                           type="text"
@@ -1104,7 +1095,7 @@ const StaffManagementAdmin = () => {
                       </label>
                       <label style={styles.formLabel}>
                         <span style={styles.labelText}>
-                          Password <span style={styles.requiredMark}>(*)</span>:
+                          Password<span style={styles.requiredMark}>*</span>:
                         </span>
                         <input
                           type="password"
@@ -1190,11 +1181,12 @@ const StaffManagementAdmin = () => {
             </>
           )}
 
+          {/* Popup thành công */}
           {showSuccessPopup && (
             <div style={styles.successPopup}>
               <img
                 src={logoRemoveBg}
-                alt="Bon Appétit"
+                alt="Success"
                 style={styles.successImage}
               />
               <p style={styles.successText}>Successful</p>
@@ -1202,11 +1194,12 @@ const StaffManagementAdmin = () => {
             </div>
           )}
 
+          {/* Popup xác nhận xóa */}
           {showDeletePopup && (
             <div style={styles.successPopup}>
               <img
                 src={logoRemoveBg}
-                alt="Bon Appétit"
+                alt="Confirm Delete"
                 style={styles.successImage}
               />
               <p style={styles.successText}>Are you sure?</p>
@@ -1224,6 +1217,7 @@ const StaffManagementAdmin = () => {
             </div>
           )}
 
+          {/* Form chỉnh sửa nhân viên */}
           {showEditForm && (
             <>
               <div
@@ -1237,7 +1231,7 @@ const StaffManagementAdmin = () => {
                     <div style={styles.formFields}>
                       <label style={styles.formLabel}>
                         <span style={styles.labelText}>
-                          Position <span style={styles.requiredMark}>(*)</span>:
+                          Position<span style={styles.requiredMark}>*</span>:
                         </span>
                         <input
                           type="text"
@@ -1253,31 +1247,25 @@ const StaffManagementAdmin = () => {
                       </label>
                       <label style={styles.formLabel}>
                         <span style={styles.labelText}>
-                          Salary <span style={styles.requiredMark}>(*)</span>:
+                          Salary<span style={styles.requiredMark}>*</span>:
                         </span>
                         <input
                           type="number"
                           value={newStaff.salary}
                           onChange={(e) =>
-                            setNewStaff({
-                              ...newStaff,
-                              salary: e.target.value,
-                            })
+                            setNewStaff({ ...newStaff, salary: e.target.value })
                           }
                           style={styles.inputField}
                         />
                       </label>
                       <label style={styles.formLabel}>
                         <span style={styles.labelText}>
-                          Status <span style={styles.requiredMark}>(*)</span>:
+                          Status<span style={styles.requiredMark}>*</span>:
                         </span>
                         <select
                           value={newStaff.status}
                           onChange={(e) =>
-                            setNewStaff({
-                              ...newStaff,
-                              status: e.target.value,
-                            })
+                            setNewStaff({ ...newStaff, status: e.target.value })
                           }
                           style={styles.selectField}
                         >
@@ -1306,6 +1294,7 @@ const StaffManagementAdmin = () => {
             </>
           )}
 
+          {/* Modal chi tiết lương tháng của nhân viên */}
           {showTimekeepingModal && selectedStaffTimekeeping && (
             <>
               <div
@@ -1313,45 +1302,37 @@ const StaffManagementAdmin = () => {
                 onClick={() => setShowTimekeepingModal(false)}
               ></div>
               <div style={styles.timekeepingModal}>
-                <h2 style={styles.addFormTitle}>Timekeeping Details</h2>
+                <h2 style={styles.addFormTitle}>
+                  Salary Details for {selectedStaffTimekeeping.fullName}
+                </h2>
                 <table style={styles.timekeepingTable}>
                   <thead>
                     <tr>
-                      <th style={styles.timekeepingTh}>Field</th>
-                      <th style={styles.timekeepingTh}>Value</th>
+                      <th style={styles.timekeepingTh}>Month/Year</th>
+                      <th style={styles.timekeepingTh}>Working Hours</th>
+                      <th style={styles.timekeepingTh}>Hourly Salary</th>
+                      <th style={styles.timekeepingTh}>Total Salary</th>
                     </tr>
                   </thead>
                   <tbody>
-                    <tr>
-                      <td style={styles.timekeepingTd}>Employee ID</td>
-                      <td style={styles.timekeepingTd}>
-                        {selectedStaffTimekeeping.id}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td style={styles.timekeepingTd}>Name</td>
-                      <td style={styles.timekeepingTd}>
-                        {selectedStaffTimekeeping.fullName}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td style={styles.timekeepingTd}>Check-in Time</td>
-                      <td style={styles.timekeepingTd}>
-                        {selectedStaffTimekeeping.checkIn}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td style={styles.timekeepingTd}>Check-out Time</td>
-                      <td style={styles.timekeepingTd}>
-                        {selectedStaffTimekeeping.checkOut}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td style={styles.timekeepingTd}>Salary</td>
-                      <td style={styles.timekeepingTd}>
-                        {selectedStaffTimekeeping.salary}
-                      </td>
-                    </tr>
+                    {selectedStaffTimekeeping.salaryData.map(
+                      (record, index) => (
+                        <tr key={index}>
+                          <td style={styles.timekeepingTd}>
+                            {record.monthYear}
+                          </td>
+                          <td style={styles.timekeepingTd}>
+                            {record.totalWorkingHours}
+                          </td>
+                          <td style={styles.timekeepingTd}>
+                            {record.hourlySalary}
+                          </td>
+                          <td style={styles.timekeepingTd}>
+                            {record.totalSalary}
+                          </td>
+                        </tr>
+                      )
+                    )}
                   </tbody>
                 </table>
                 <div style={styles.actionButtons}>
@@ -1366,6 +1347,7 @@ const StaffManagementAdmin = () => {
             </>
           )}
 
+          {/* Modal tất cả bản ghi lương tháng */}
           {showAllTimekeepingModal && (
             <>
               <div
@@ -1373,27 +1355,66 @@ const StaffManagementAdmin = () => {
                 onClick={() => setShowAllTimekeepingModal(false)}
               ></div>
               <div style={styles.timekeepingModal}>
-                <h2 style={styles.addFormTitle}>All Timekeeping Records</h2>
+                <h2 style={styles.addFormTitle}>All Monthly Salary Records</h2>
+                <div style={styles.filterContainer}>
+                  <label style={styles.formLabel}>
+                    <span style={styles.labelText}>Filter by Month/Year:</span>
+                    <select
+                      value={selectedMonthYear}
+                      onChange={(e) => setSelectedMonthYear(e.target.value)}
+                      style={styles.selectField}
+                    >
+                      <option value="">All</option>
+                      {uniqueMonthYears.map((monthYear) => (
+                        <option key={monthYear} value={monthYear}>
+                          {monthYear}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
                 <table style={styles.allTimekeepingTable}>
                   <thead>
                     <tr>
-                      <th style={styles.timekeepingTh}>ID</th>
+                      <th style={styles.timekeepingTh}>Staff ID</th>
                       <th style={styles.timekeepingTh}>Name</th>
-                      <th style={styles.timekeepingTh}>Check-in</th>
-                      <th style={styles.timekeepingTh}>Check-out</th>
-                      <th style={styles.timekeepingTh}>Salary</th>
+                      <th style={styles.timekeepingTh}>Month/Year</th>
+                      <th style={styles.timekeepingTh}>Working Hours</th>
+                      <th style={styles.timekeepingTh}>Hourly Salary</th>
+                      <th style={styles.timekeepingTh}>Total Salary</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {mockTimekeepingData.map((item) => (
-                      <tr key={item.id}>
-                        <td style={styles.timekeepingTd}>{item.id}</td>
-                        <td style={styles.timekeepingTd}>{item.fullName}</td>
-                        <td style={styles.timekeepingTd}>{item.checkIn}</td>
-                        <td style={styles.timekeepingTd}>{item.checkOut}</td>
-                        <td style={styles.timekeepingTd}>{item.salary}</td>
+                    {filteredMonthlySalaries.length > 0 ? (
+                      filteredMonthlySalaries.map((item) => (
+                        <tr key={item.id}>
+                          <td style={styles.timekeepingTd}>{item.staffId}</td>
+                          <td style={styles.timekeepingTd}>{item.fullName}</td>
+                          <td style={styles.timekeepingTd}>{item.monthYear}</td>
+                          <td style={styles.timekeepingTd}>
+                            {item.totalWorkingHours}
+                          </td>
+                          <td style={styles.timekeepingTd}>
+                            {item.hourlySalary}
+                          </td>
+                          <td style={styles.timekeepingTd}>
+                            {item.totalSalary}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan="6"
+                          style={{
+                            ...styles.timekeepingTd,
+                            textAlign: "center",
+                          }}
+                        >
+                          No salary records found
+                        </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
                 <div style={styles.actionButtons}>
