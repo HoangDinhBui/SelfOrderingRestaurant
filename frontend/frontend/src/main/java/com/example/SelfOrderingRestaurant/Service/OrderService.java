@@ -838,7 +838,7 @@ public class OrderService implements IOrderService {
         itemDetails.put("dishName", orderItem.getDish().getName());
         itemDetails.put("quantity", orderItem.getQuantity());
         itemDetails.put("notes", orderItem.getNotes() != null ? orderItem.getNotes() : "");
-        itemDetails.put("price", orderItem.getDish().getPrice()); // Use dish price
+        itemDetails.put("price", orderItem.getDish().getPrice());
         message.put("item", itemDetails);
 
         NotificationResponseDTO notification = new NotificationResponseDTO() {
