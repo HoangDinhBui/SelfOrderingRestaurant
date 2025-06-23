@@ -2106,12 +2106,12 @@ const renderPrintModal = () => {
           ) : (
             <div className="text-center">
               <p className="text-green-600 mb-4">
-                Bàn {newTableId} đã được tạo thành công!
+               Table {newTableId} was created successfully!
               </p>
               {qrUrl && (
                 <>
                   <h3 className="text-lg font-semibold mb-2">
-                    Mã QR cho bàn {newTableId}
+                    QR Code for table {newTableId}
                   </h3>
                   <img
                     src={qrUrl}
@@ -2144,7 +2144,7 @@ const renderPrintModal = () => {
                   className="w-full text-white font-medium py-2 rounded hover:bg-blue-600 disabled:bg-gray-400"
                   style={{ backgroundColor: "#4CAF50" }}
                 >
-                  {qrUploading ? "Đang lưu..." : "Tạo và Lưu Mã QR"}
+                  {qrUploading ? "Saving..." : "Create and Save QR Code"}
                 </button>
                 {qrUrl && (
                   <div className="flex justify-center gap-4">
@@ -2153,14 +2153,14 @@ const renderPrintModal = () => {
                       className="text-white py-2 px-4 rounded hover:bg-green-600"
                       style={{ backgroundColor: "#4E71FF" }}
                     >
-                      Tải Mã QR
+                      Download QR Code
                     </button>
                     <button
                       onClick={handlePrintQr}
                       className="text-white py-2 px-4 rounded hover:bg-gray-600"
                       style={{ backgroundColor: "#4E71FF" }}
                     >
-                      In Mã QR
+                      Print QR Code
                     </button>
                   </div>
                 )}
@@ -2169,7 +2169,7 @@ const renderPrintModal = () => {
                   className="w-full bg-gray-300 text-gray-800 font-medium py-2 rounded hover:bg-gray-400 mt-2"
                   style={{ backgroundColor: "#F7374F" }}
                 >
-                  Đóng
+                  Close
                 </button>
               </div>
             </div>
