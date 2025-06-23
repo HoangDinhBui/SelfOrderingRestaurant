@@ -150,7 +150,7 @@ const RevenueManagementAdmin = () => {
         );
       }
     } catch (err) {
-      console.error("Lỗi khi gọi API:", {
+      console.error("Error calling API:", {
         url: err.config?.url,
         status: err.response?.status,
         message: err.message,
@@ -158,18 +158,18 @@ const RevenueManagementAdmin = () => {
       });
 
       if (err.response?.status === 500 && retry) {
-        console.warn("Thử lại API sau lỗi 500...");
-        return fetchRevenueData(false); // Thử lại một lần
+        console.warn("Retrying API after 500 error...");
+        return fetchRevenueData(false); // Retry once
       }
 
-      let errorMessage = "Không thể tải dữ liệu doanh thu. Vui lòng thử lại.";
+      let errorMessage = "Unable to load revenue data. Please try again.";
       if (err.response?.status === 401) {
-        errorMessage = "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.";
+        errorMessage = "Session expired. Please log in again.";
       } else if (err.response?.status === 403) {
         errorMessage =
-          "Bạn không có quyền truy cập. Vui lòng đăng nhập với tài khoản ADMIN.";
+          "You do not have access. Please log in with an ADMIN account.";
       } else if (err.response?.status === 500) {
-        errorMessage = `Lỗi máy chủ khi tải dữ liệu ${viewMode.toLowerCase()}. Vui lòng kiểm tra log server hoặc thử lại sau.`;
+        errorMessage = `Server error loading data ${viewMode.toLowerCase()}. Please check server logs or try again later.`;
       }
 
       setError(errorMessage);
@@ -182,22 +182,22 @@ const RevenueManagementAdmin = () => {
   useEffect(() => {
     const userType = localStorage.getItem("userType");
     if (userType !== "ADMIN") {
-      setError("Bạn cần quyền ADMIN để truy cập trang này.");
+      setError("You need ADMIN privileges to access this page.");
       return;
     }
     fetchRevenueData();
   }, [viewMode]);
 
-  // Xử lý khi nhấn nút Apply
+  // Handle Apply button click
   const handleApplyFilter = () => {
     if (viewMode === "Day" && startDate > endDate) {
-      setError("Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.");
+      setError("Start date must be before or equal to end date.");
       return;
     }
     fetchRevenueData();
   };
 
-  // Xử lý in báo cáo PDF
+  // Handle PDF report printing
   const handlePrintReport = async (reportType) => {
     setLoading(true);
     setError(null);
@@ -205,17 +205,17 @@ const RevenueManagementAdmin = () => {
     // Kiểm tra quyền ADMIN
     const userType = localStorage.getItem("userType");
     if (userType !== "ADMIN") {
-      setError("Bạn cần quyền ADMIN để in báo cáo.");
+      setError("You need ADMIN privileges to print reports.");
       setLoading(false);
       return;
     }
 
-    // Kiểm tra dữ liệu có sẵn
+    // Check for available data
     if (
       (viewMode === "Day" || viewMode === "Month") &&
       chartData.length === 0
     ) {
-      setError("Không có dữ liệu để in báo cáo. Vui lòng tải dữ liệu trước.");
+      setError("No data available for report printing. Please load data first.");
       setLoading(false);
       return;
     }
@@ -271,34 +271,34 @@ const RevenueManagementAdmin = () => {
         try {
           iframe.contentWindow.print();
         } catch (e) {
-          setError("Không thể mở hộp thoại in. Vui lòng kiểm tra trình duyệt.");
+          setError("Unable to open print dialog. Please check your browser.");
         }
-        // Dọn dẹp sau khi in
+        // Cleanup after printing
         setTimeout(() => {
           document.body.removeChild(iframe);
           window.URL.revokeObjectURL(url);
         }, 1000);
       };
     } catch (err) {
-      console.error("Lỗi khi in báo cáo:", {
+      console.error("Error printing report:", {
         url: err.config?.url,
         status: err.response?.status,
         message: err.message,
         data: err.response?.data,
       });
 
-      let errorMessage = "Không thể tạo báo cáo in. Vui lòng thử lại.";
+      let errorMessage = "Unable to create print report. Please try again.";
       if (err.response?.status === 401) {
-        errorMessage = "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.";
+        errorMessage = "Session expired. Please log in again.";
       } else if (err.response?.status === 403) {
         errorMessage =
-          "Bạn không có quyền in báo cáo. Vui lòng đăng nhập với tài khoản ADMIN.";
+          "You do not have permission to print reports. Please log in with an ADMIN account.";
       } else if (err.response?.status === 400) {
         errorMessage =
-          err.response.data?.message || "Dữ liệu đầu vào không hợp lệ.";
+          err.response.data?.message || "Invalid input data.";
       } else if (err.response?.status === 500) {
         errorMessage =
-          "Lỗi máy chủ khi tạo báo cáo. Vui lòng kiểm tra log server.";
+          "Server error creating report. Please check server logs.";
       }
 
       setError(errorMessage);
@@ -307,25 +307,25 @@ const RevenueManagementAdmin = () => {
     }
   };
 
-  // Xử lý xuất báo cáo Excel
+  // Handle Excel report export
   const handleExportExcel = async (reportType) => {
     setLoading(true);
     setError(null);
 
-    // Kiểm tra quyền ADMIN
+    // Check for ADMIN privileges
     const userType = localStorage.getItem("userType");
     if (userType !== "ADMIN") {
-      setError("Bạn cần quyền ADMIN để xuất báo cáo.");
+      setError("You need ADMIN privileges to export reports.");
       setLoading(false);
       return;
     }
 
-    // Kiểm tra dữ liệu có sẵn
+    // Check for available data
     if (
       (viewMode === "Day" || viewMode === "Month") &&
       chartData.length === 0
     ) {
-      setError("Không có dữ liệu để xuất báo cáo. Vui lòng tải dữ liệu trước.");
+      setError("No data available for report export. Please load data first.");
       setLoading(false);
       return;
     }
@@ -381,18 +381,18 @@ const RevenueManagementAdmin = () => {
         data: err.response?.data,
       });
 
-      let errorMessage = "Không thể xuất báo cáo Excel. Vui lòng thử lại.";
+      let errorMessage = "Unable to export Excel report. Please try again.";
       if (err.response?.status === 401) {
-        errorMessage = "Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.";
+        errorMessage = "Session expired. Please log in again.";
       } else if (err.response?.status === 403) {
         errorMessage =
-          "Bạn không có quyền xuất báo cáo. Vui lòng đăng nhập với tài khoản ADMIN.";
+          "You do not have permission to export reports. Please log in with an ADMIN account.";
       } else if (err.response?.status === 400) {
         errorMessage =
-          err.response.data?.message || "Dữ liệu đầu vào không hợp lệ.";
+          err.response.data?.message || "Invalid input data.";
       } else if (err.response?.status === 500) {
         errorMessage =
-          "Lỗi máy chủ khi xuất báo cáo. Vui lòng kiểm tra log server.";
+          "Server error exporting report. Please check server logs.";
       }
 
       setError(errorMessage);
@@ -447,16 +447,6 @@ const RevenueManagementAdmin = () => {
                   }`}
                 >
                   Employees
-                </button>
-                <button
-                  onClick={() => setDisplayMode("Dish")}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
-                    displayMode === "Dish"
-                      ? "bg-gradient-to-r from-blue-400 to-blue-500 text-white"
-                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                  }`}
-                >
-                  Dishes
                 </button>
               </div>
 
