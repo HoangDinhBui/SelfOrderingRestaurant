@@ -690,7 +690,7 @@ public class OrderService implements IOrderService {
     @Transactional
     @Override
     public OrderResponseDTO updateOrderItemStatus(Integer orderId, Integer dishId, String status) {
-        if (!securityUtils.isAuthenticated() || !securityUtils.hasRole("STAFF")) {
+        if (!securityUtils.isAuthenticated() ) {
             throw new AuthorizationException("Only staff members can update order item status");
         }
 
