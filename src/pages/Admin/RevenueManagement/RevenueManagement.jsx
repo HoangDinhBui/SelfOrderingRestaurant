@@ -215,7 +215,9 @@ const RevenueManagementAdmin = () => {
       (viewMode === "Day" || viewMode === "Month") &&
       chartData.length === 0
     ) {
-      setError("No data available for report printing. Please load data first.");
+      setError(
+        "No data available for report printing. Please load data first."
+      );
       setLoading(false);
       return;
     }
@@ -294,8 +296,7 @@ const RevenueManagementAdmin = () => {
         errorMessage =
           "You do not have permission to print reports. Please log in with an ADMIN account.";
       } else if (err.response?.status === 400) {
-        errorMessage =
-          err.response.data?.message || "Invalid input data.";
+        errorMessage = err.response.data?.message || "Invalid input data.";
       } else if (err.response?.status === 500) {
         errorMessage =
           "Server error creating report. Please check server logs.";
@@ -388,8 +389,7 @@ const RevenueManagementAdmin = () => {
         errorMessage =
           "You do not have permission to export reports. Please log in with an ADMIN account.";
       } else if (err.response?.status === 400) {
-        errorMessage =
-          err.response.data?.message || "Invalid input data.";
+        errorMessage = err.response.data?.message || "Invalid input data.";
       } else if (err.response?.status === 500) {
         errorMessage =
           "Server error exporting report. Please check server logs.";
@@ -413,6 +413,63 @@ const RevenueManagementAdmin = () => {
     { label: "Monthly", value: "monthly" },
     { label: "Yearly", value: "yearly" },
   ];
+
+  // Add this function inside RevenueManagementAdmin component
+  const fetchEmployeeData = async (retry = true) => {
+    setLoading(true);
+    setError(null);
+    setAnimationComplete(false);
+    try {
+      const year = moment(selectedMonth).year();
+      const month = moment(selectedMonth).month() + 1;
+      const response = await api.get("/api/admin/staff/sorted-by-salary", {
+        params: { year, month },
+      });
+
+      setEmployeeData(
+        response.data.map((item, index) => ({
+          id: item.staffId,
+          name: item.fullname,
+          salary: Number(item.salary),
+          hoursWorked: item.totalWorkingHours || 0,
+        }))
+      );
+    } catch (err) {
+      console.error("Error fetching employee data:", {
+        url: err.config?.url,
+        status: err.response?.status,
+        message: err.message,
+        data: err.response?.data,
+      });
+
+      if (err.response?.status === 500 && retry) {
+        console.warn("Retrying API after 500 error...");
+        return fetchEmployeeData(false); // Retry once
+      }
+
+      let errorMessage = "Unable to load employee data. Please try again.";
+      if (err.response?.status === 401) {
+        errorMessage = "Session expired. Please log in again.";
+      } else if (err.response?.status === 403) {
+        errorMessage =
+          "You do not have access. Please log in with an ADMIN account.";
+      } else if (err.response?.status === 500) {
+        errorMessage =
+          "Server error loading employee data. Please check server logs or try again later.";
+      }
+
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+      setTimeout(() => setAnimationComplete(true), 1000);
+    }
+  };
+
+  // Update the Employees button click handler
+  const handleEmployeeButtonClick = () => {
+    setDisplayMode("Employee");
+    fetchEmployeeData();
+  };
 
   return (
     <div className="h-screen w-screen flex flex-col bg-gray-100">
@@ -439,7 +496,7 @@ const RevenueManagementAdmin = () => {
                   Revenue
                 </button>
                 <button
-                  onClick={() => setDisplayMode("Employee")}
+                  onClick={handleEmployeeButtonClick}
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
                     displayMode === "Employee"
                       ? "bg-gradient-to-r from-blue-400 to-blue-500 text-white"
@@ -600,9 +657,7 @@ const RevenueManagementAdmin = () => {
           {displayMode === "Revenue" && !loading && !error && (
             <>
               {chartData.length === 0 ? (
-                <div className="text-center p-4">
-                  No data to display.
-                </div>
+                <div className="text-center p-4">No data to display.</div>
               ) : (
                 <div className="flex flex-col md:flex-row p-3">
                   <div className="w-full md:w-2/5 overflow-y-auto">
@@ -678,16 +733,24 @@ const RevenueManagementAdmin = () => {
           {displayMode === "Employee" && !loading && !error && (
             <>
               {employeeData.length === 0 ? (
-                <div className="text-center p-4">No employee data available.</div>
+                <div className="text-center p-4">
+                  No employee data available.
+                </div>
               ) : (
                 <div className="flex flex-col md:flex-row p-3">
                   <div className="w-full md:w-2/5 overflow-y-auto max-h-96">
                     <table className="w-full border-collapse">
                       <thead>
                         <tr className="border-b bg-gray-50">
-                          <th className="py-3 px-4 text-left text-gray-600">ID</th>
-                          <th className="py-3 px-4 text-left text-gray-600">Name</th>
-                          <th className="py-3 px-4 text-left text-gray-600">Salary</th>
+                          <th className="py-3 px-4 text-left text-gray-600">
+                            ID
+                          </th>
+                          <th className="py-3 px-4 text-left text-gray-600">
+                            Name
+                          </th>
+                          <th className="py-3 px-4 text-left text-gray-600">
+                            Salary
+                          </th>
                           <th className="py-3 px-4 text-left text-gray-600">
                             Hours worked
                           </th>
@@ -701,13 +764,17 @@ const RevenueManagementAdmin = () => {
                               index % 2 === 0 ? "bg-blue-100" : "bg-gray-100"
                             } hover:bg-gray-50`}
                           >
-                            <td className="py-3 px-4 text-gray-700">{item.id}</td>
-                            <td className="py-3 px-4 text-gray-700">{item.name}</td>
+                            <td className="py-3 px-4 text-gray-700">
+                              {item.id}
+                            </td>
+                            <td className="py-3 px-4 text-gray-700">
+                              {item.name}
+                            </td>
                             <td className="py-3 px-4 font-medium text-gray-800">
                               {item.salary.toLocaleString("vi-VN")} VND
                             </td>
                             <td className="py-3 px-4 text-gray-700">
-                              {item.hoursWorked} Hour
+                              {Number(item.hoursWorked).toFixed(1)} Hour
                             </td>
                           </tr>
                         ))}
@@ -722,7 +789,9 @@ const RevenueManagementAdmin = () => {
                       >
                         <XAxis
                           dataKey="name"
-                          tickFormatter={(value) => value.split(" ").slice(-2).join(" ")}
+                          tickFormatter={(value) =>
+                            value.split(" ").slice(-2).join(" ")
+                          }
                         />
                         <YAxis />
                         <Tooltip
@@ -757,7 +826,9 @@ const RevenueManagementAdmin = () => {
                     <table className="w-full border-collapse">
                       <thead>
                         <tr className="border-b bg-gray-50">
-                          <th className="py-3 px-4 text-left text-gray-600">ID</th>
+                          <th className="py-3 px-4 text-left text-gray-600">
+                            ID
+                          </th>
                           <th className="py-3 px-4 text-left text-gray-600">
                             Name
                           </th>
@@ -774,7 +845,9 @@ const RevenueManagementAdmin = () => {
                               index % 2 === 0 ? "bg-blue-100" : "bg-gray-100"
                             } hover:bg-gray-50`}
                           >
-                            <td className="py-3 px-4 text-gray-700">{item.id}</td>
+                            <td className="py-3 px-4 text-gray-700">
+                              {item.id}
+                            </td>
                             <td className="py-3 px-4 text-gray-700">
                               {item.dishName}
                             </td>
