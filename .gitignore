@@ -34,3 +34,5 @@ build/
 
 **/application.yml
 **/application.properties
+
+venv/
