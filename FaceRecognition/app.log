@@ -1,0 +1,639 @@
+2025-06-16 09:46:10,482 - INFO - Created directory: D:\UTC2\FaceRecognition\staff_faces
+2025-06-16 09:46:10,482 - INFO - Starting Flask application...
+2025-06-16 09:46:10,576 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.20.10.9:5000
+2025-06-16 09:46:10,576 - INFO - [33mPress CTRL+C to quit[0m
+2025-06-16 09:46:10,578 - INFO -  * Restarting with stat
+2025-06-16 09:46:16,404 - INFO - Starting Flask application...
+2025-06-16 09:46:16,410 - WARNING -  * Debugger is active!
+2025-06-16 09:46:16,421 - INFO -  * Debugger PIN: 105-951-060
+2025-06-16 09:46:17,866 - INFO -  * Detected change in 'D:\\UTC2\\FaceRecognition\\face_recognition.py', reloading
+2025-06-16 09:46:18,279 - INFO -  * Restarting with stat
+2025-06-16 09:46:23,524 - INFO - Starting Flask application...
+2025-06-16 09:46:23,529 - WARNING -  * Debugger is active!
+2025-06-16 09:46:23,533 - INFO -  * Debugger PIN: 105-951-060
+2025-06-16 09:46:57,662 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\FaceRecognition\staff_faces\1.jpg
+2025-06-16 09:46:57,662 - ERROR - Reference path does not exist: D:\UTC2\FaceRecognition\staff_faces\1.jpg. Available files: []
+2025-06-16 09:46:57,663 - INFO - 127.0.0.1 - - [16/Jun/2025 09:46:57] "[31m[1mPOST /verify HTTP/1.1[0m" 400 -
+2025-06-16 09:47:52,131 - INFO -  * Detected change in 'D:\\UTC2\\FaceRecognition\\face_recognition.py', reloading
+2025-06-16 09:47:52,549 - INFO -  * Restarting with stat
+2025-06-16 09:47:57,610 - INFO - Starting Flask application...
+2025-06-16 09:47:57,615 - WARNING -  * Debugger is active!
+2025-06-16 09:47:57,620 - INFO -  * Debugger PIN: 105-951-060
+2025-06-16 09:49:58,392 - INFO - Starting Flask application...
+2025-06-16 09:49:58,449 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.20.10.9:5000
+2025-06-16 09:49:58,449 - INFO - [33mPress CTRL+C to quit[0m
+2025-06-16 09:49:58,451 - INFO -  * Restarting with stat
+2025-06-16 09:50:03,415 - INFO - Starting Flask application...
+2025-06-16 09:50:03,420 - WARNING -  * Debugger is active!
+2025-06-16 09:50:03,426 - INFO -  * Debugger PIN: 105-951-060
+2025-06-16 09:50:08,007 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\FaceRecognition\staff_faces\1.jpg
+2025-06-16 09:50:08,007 - ERROR - Reference path does not exist: D:\UTC2\FaceRecognition\staff_faces\1.jpg. Available files: ['11.jpg']
+2025-06-16 09:50:08,008 - INFO - 127.0.0.1 - - [16/Jun/2025 09:50:08] "[31m[1mPOST /verify HTTP/1.1[0m" 400 -
+2025-06-16 09:50:09,324 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\FaceRecognition\staff_faces\1.jpg
+2025-06-16 09:50:09,325 - ERROR - Reference path does not exist: D:\UTC2\FaceRecognition\staff_faces\1.jpg. Available files: ['11.jpg']
+2025-06-16 09:50:09,325 - INFO - 127.0.0.1 - - [16/Jun/2025 09:50:09] "[31m[1mPOST /verify HTTP/1.1[0m" 400 -
+2025-06-16 09:50:53,582 - INFO - Starting Flask application...
+2025-06-16 09:50:53,781 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.20.10.9:5000
+2025-06-16 09:50:53,781 - INFO - [33mPress CTRL+C to quit[0m
+2025-06-16 09:50:53,782 - INFO -  * Restarting with stat
+2025-06-16 09:50:59,033 - INFO - Starting Flask application...
+2025-06-16 09:50:59,039 - WARNING -  * Debugger is active!
+2025-06-16 09:50:59,045 - INFO -  * Debugger PIN: 105-951-060
+2025-06-16 09:51:20,152 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\FaceRecognition\staff_faces\1.jpg
+2025-06-16 09:51:20,156 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-16 09:51:22,905 - DEBUG - Creating converter from 3 to 5
+2025-06-16 09:51:23,888 - ERROR - DeepFace verification failed: Exception while processing img1_path
+2025-06-16 09:51:23,888 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-16 09:51:23,889 - INFO - 127.0.0.1 - - [16/Jun/2025 09:51:23] "[31m[1mPOST /verify HTTP/1.1[0m" 400 -
+2025-06-16 09:51:54,681 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\FaceRecognition\staff_faces\1.jpg
+2025-06-16 09:51:54,684 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-16 09:51:54,758 - ERROR - DeepFace verification failed: Exception while processing img1_path
+2025-06-16 09:51:54,758 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-16 09:51:54,758 - INFO - 127.0.0.1 - - [16/Jun/2025 09:51:54] "[31m[1mPOST /verify HTTP/1.1[0m" 400 -
+2025-06-16 09:52:06,975 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\FaceRecognition\staff_faces\1.jpg
+2025-06-16 09:52:06,977 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-16 09:52:07,060 - ERROR - DeepFace verification failed: Exception while processing img1_path
+2025-06-16 09:52:07,061 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-16 09:52:07,061 - INFO - 127.0.0.1 - - [16/Jun/2025 09:52:07] "[31m[1mPOST /verify HTTP/1.1[0m" 400 -
+2025-06-16 09:52:09,321 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\FaceRecognition\staff_faces\1.jpg
+2025-06-16 09:52:09,324 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-16 09:52:09,405 - ERROR - DeepFace verification failed: Exception while processing img1_path
+2025-06-16 09:52:09,406 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-16 09:52:09,406 - INFO - 127.0.0.1 - - [16/Jun/2025 09:52:09] "[31m[1mPOST /verify HTTP/1.1[0m" 400 -
+2025-06-16 09:53:34,072 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\FaceRecognition\staff_faces\1.jpg
+2025-06-16 09:53:34,074 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-16 09:53:34,163 - ERROR - DeepFace verification failed: Exception while processing img1_path
+2025-06-16 09:53:34,163 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-16 09:53:34,164 - INFO - 127.0.0.1 - - [16/Jun/2025 09:53:34] "[31m[1mPOST /verify HTTP/1.1[0m" 400 -
+2025-06-16 09:53:45,112 - INFO - Starting Flask application...
+2025-06-16 09:53:45,292 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.20.10.9:5000
+2025-06-16 09:53:45,292 - INFO - [33mPress CTRL+C to quit[0m
+2025-06-16 09:53:45,293 - INFO -  * Restarting with stat
+2025-06-16 09:53:50,839 - INFO - Starting Flask application...
+2025-06-16 09:53:50,844 - WARNING -  * Debugger is active!
+2025-06-16 09:53:50,849 - INFO -  * Debugger PIN: 105-951-060
+2025-06-16 09:53:53,397 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\FaceRecognition\staff_faces\1.jpg
+2025-06-16 09:53:53,399 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-16 09:53:55,868 - DEBUG - Creating converter from 3 to 5
+2025-06-16 09:53:56,531 - ERROR - DeepFace verification failed: Exception while processing img1_path
+2025-06-16 09:53:56,532 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-16 09:53:56,533 - INFO - 127.0.0.1 - - [16/Jun/2025 09:53:56] "[31m[1mPOST /verify HTTP/1.1[0m" 400 -
+2025-06-16 09:55:11,309 - INFO - Starting Flask application on port 5000...
+2025-06-16 09:55:11,522 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.20.10.9:5000
+2025-06-16 09:55:11,522 - INFO - [33mPress CTRL+C to quit[0m
+2025-06-16 09:55:11,540 - INFO -  * Restarting with stat
+2025-06-16 09:55:16,583 - INFO - Starting Flask application on port 5000...
+2025-06-16 09:55:16,587 - WARNING -  * Debugger is active!
+2025-06-16 09:55:16,593 - INFO -  * Debugger PIN: 105-951-060
+2025-06-16 09:55:20,299 - INFO -  * Detected change in 'D:\\UTC2\\FaceRecognition\\face_recognition.py', reloading
+2025-06-16 09:55:20,693 - INFO -  * Restarting with stat
+2025-06-16 09:55:25,823 - INFO - Starting Flask application on port 5000...
+2025-06-16 09:55:25,828 - WARNING -  * Debugger is active!
+2025-06-16 09:55:25,832 - INFO -  * Debugger PIN: 105-951-060
+2025-06-16 09:55:25,990 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-16 09:55:26,010 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-16 09:55:28,371 - DEBUG - Creating converter from 3 to 5
+2025-06-16 09:55:32,571 - DEBUG - Verification result: {'verified': False, 'distance': 0.4002907712913961, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 149, 'y': 52, 'w': 255, 'h': 255, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 6.55}
+2025-06-16 09:55:32,571 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-16 09:55:32,574 - INFO - 127.0.0.1 - - [16/Jun/2025 09:55:32] "POST /verify HTTP/1.1" 200 -
+2025-06-16 09:55:35,363 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-16 09:55:35,381 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-16 09:55:38,030 - DEBUG - Verification result: {'verified': False, 'distance': 0.4425430529790245, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 149, 'y': 53, 'w': 251, 'h': 251, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 2.64}
+2025-06-16 09:55:38,031 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-16 09:55:38,032 - INFO - 127.0.0.1 - - [16/Jun/2025 09:55:38] "POST /verify HTTP/1.1" 200 -
+2025-06-16 09:55:42,035 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-16 09:55:42,055 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-16 09:55:44,797 - DEBUG - Verification result: {'verified': True, 'distance': 0.28751110228975096, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 143, 'y': 67, 'w': 263, 'h': 263, 'left_eye': (318, 160), 'right_eye': (218, 163)}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 2.73}
+2025-06-16 09:55:44,797 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-16 09:55:44,799 - INFO - 127.0.0.1 - - [16/Jun/2025 09:55:44] "POST /verify HTTP/1.1" 200 -
+2025-06-16 10:35:12,549 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-16 10:35:12,575 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-16 10:35:15,901 - DEBUG - Verification result: {'verified': False, 'distance': 0.4610829914028324, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 185, 'y': 57, 'w': 227, 'h': 227, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 3.32}
+2025-06-16 10:35:15,902 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-16 10:35:15,905 - INFO - 127.0.0.1 - - [16/Jun/2025 10:35:15] "POST /verify HTTP/1.1" 200 -
+2025-06-16 10:35:21,074 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-16 10:35:21,091 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-16 10:35:23,844 - DEBUG - Verification result: {'verified': True, 'distance': 0.2472040622879249, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 210, 'y': 73, 'w': 235, 'h': 235, 'left_eye': (369, 159), 'right_eye': (277, 157)}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 2.75}
+2025-06-16 10:35:23,844 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-16 10:35:23,845 - INFO - 127.0.0.1 - - [16/Jun/2025 10:35:23] "POST /verify HTTP/1.1" 200 -
+2025-06-16 10:36:14,348 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-16 10:36:14,364 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-16 10:36:14,442 - ERROR - DeepFace verification failed: Exception while processing img1_path
+2025-06-16 10:36:14,442 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-16 10:36:14,443 - INFO - 127.0.0.1 - - [16/Jun/2025 10:36:14] "[31m[1mPOST /verify HTTP/1.1[0m" 400 -
+2025-06-16 10:36:16,890 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-16 10:36:16,910 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-16 10:36:19,632 - DEBUG - Verification result: {'verified': False, 'distance': 0.46501121473295204, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 195, 'y': 62, 'w': 224, 'h': 224, 'left_eye': (355, 153), 'right_eye': (256, 155)}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 2.71}
+2025-06-16 10:36:19,632 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-16 10:36:19,633 - INFO - 127.0.0.1 - - [16/Jun/2025 10:36:19] "POST /verify HTTP/1.1" 200 -
+2025-06-16 10:36:23,983 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-16 10:36:24,000 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-16 10:36:26,467 - DEBUG - Verification result: {'verified': True, 'distance': 0.26608208762616736, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 190, 'y': 78, 'w': 256, 'h': 256, 'left_eye': (368, 172), 'right_eye': (271, 172)}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 2.46}
+2025-06-16 10:36:26,468 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-16 10:36:26,469 - INFO - 127.0.0.1 - - [16/Jun/2025 10:36:26] "POST /verify HTTP/1.1" 200 -
+2025-06-16 10:46:08,058 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-16 10:46:08,080 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-16 10:46:11,307 - DEBUG - Verification result: {'verified': True, 'distance': 0.24429581769836428, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 193, 'y': 87, 'w': 229, 'h': 229, 'left_eye': (347, 169), 'right_eye': (255, 170)}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 3.21}
+2025-06-16 10:46:11,307 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-16 10:46:11,310 - INFO - 127.0.0.1 - - [16/Jun/2025 10:46:11] "POST /verify HTTP/1.1" 200 -
+2025-06-20 13:53:37,185 - INFO - Starting Flask application on port 5000...
+2025-06-20 13:53:37,220 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.16.22.11:5000
+2025-06-20 13:53:37,220 - INFO - [33mPress CTRL+C to quit[0m
+2025-06-20 13:53:37,224 - INFO -  * Restarting with stat
+2025-06-20 13:53:45,471 - INFO - Starting Flask application on port 5000...
+2025-06-20 13:53:45,479 - WARNING -  * Debugger is active!
+2025-06-20 13:53:45,495 - INFO -  * Debugger PIN: 105-951-060
+2025-06-20 13:56:13,524 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-20 13:56:13,586 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-20 13:56:18,680 - DEBUG - Creating converter from 3 to 5
+2025-06-20 13:56:22,828 - DEBUG - Verification result: {'verified': True, 'distance': 0.29057410135625106, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 217, 'y': 179, 'w': 246, 'h': 246, 'left_eye': (386, 271), 'right_eye': (289, 274)}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 9.23}
+2025-06-20 13:56:22,829 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-20 13:56:22,831 - INFO - 127.0.0.1 - - [20/Jun/2025 13:56:22] "POST /verify HTTP/1.1" 200 -
+2025-06-21 12:05:41,635 - INFO - Starting Flask application on port 5000...
+2025-06-21 12:05:41,662 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.16.23.211:5000
+2025-06-21 12:05:41,662 - INFO - [33mPress CTRL+C to quit[0m
+2025-06-21 12:05:41,665 - INFO -  * Restarting with stat
+2025-06-21 12:05:47,407 - INFO - Starting Flask application on port 5000...
+2025-06-21 12:05:47,413 - WARNING -  * Debugger is active!
+2025-06-21 12:05:47,419 - INFO -  * Debugger PIN: 105-951-060
+2025-06-21 12:08:36,678 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-21 12:08:36,734 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-21 12:08:40,519 - DEBUG - Creating converter from 3 to 5
+2025-06-21 12:08:41,696 - ERROR - DeepFace verification failed: Exception while processing img1_path
+2025-06-21 12:08:41,697 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-21 12:08:41,699 - INFO - 127.0.0.1 - - [21/Jun/2025 12:08:41] "[31m[1mPOST /verify HTTP/1.1[0m" 400 -
+2025-06-21 12:08:51,184 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-21 12:08:51,204 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-21 12:08:54,618 - DEBUG - Verification result: {'verified': True, 'distance': 0.2759015177552454, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 159, 'y': 152, 'w': 279, 'h': 279, 'left_eye': (346, 259), 'right_eye': (242, 265)}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 3.4}
+2025-06-21 12:08:54,618 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-21 12:08:54,620 - INFO - 127.0.0.1 - - [21/Jun/2025 12:08:54] "POST /verify HTTP/1.1" 200 -
+2025-06-22 10:49:04,611 - INFO - Starting Flask application on port 5000...
+2025-06-22 10:49:05,904 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.41:5000
+2025-06-22 10:49:05,904 - INFO - [33mPress CTRL+C to quit[0m
+2025-06-22 10:49:05,906 - INFO -  * Restarting with stat
+2025-06-22 10:49:14,226 - INFO - Starting Flask application on port 5000...
+2025-06-22 10:49:14,233 - WARNING -  * Debugger is active!
+2025-06-22 10:49:14,247 - INFO -  * Debugger PIN: 105-951-060
+2025-06-22 10:49:29,512 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-22 10:49:29,555 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-22 10:49:33,497 - DEBUG - Creating converter from 3 to 5
+2025-06-22 10:49:38,478 - DEBUG - Verification result: {'verified': True, 'distance': 0.19827826665425086, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 220, 'y': 211, 'w': 240, 'h': 240, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 8.91}
+2025-06-22 10:49:38,479 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-22 10:49:38,481 - INFO - 127.0.0.1 - - [22/Jun/2025 10:49:38] "POST /verify HTTP/1.1" 200 -
+2025-06-22 14:13:48,890 - INFO - Starting Flask application on port 5000...
+2025-06-22 14:13:48,981 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.41:5000
+2025-06-22 14:13:48,981 - INFO - [33mPress CTRL+C to quit[0m
+2025-06-22 14:13:48,985 - INFO -  * Restarting with stat
+2025-06-22 14:13:55,814 - INFO - Starting Flask application on port 5000...
+2025-06-22 14:13:55,842 - WARNING -  * Debugger is active!
+2025-06-22 14:13:55,878 - INFO -  * Debugger PIN: 105-951-060
+2025-06-22 14:13:56,149 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-22 14:13:56,175 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-22 14:13:59,465 - DEBUG - Creating converter from 3 to 5
+2025-06-22 14:14:04,947 - DEBUG - Verification result: {'verified': True, 'distance': 0.27056765255832305, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 279, 'y': 167, 'w': 201, 'h': 201, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 8.76}
+2025-06-22 14:14:04,947 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-22 14:14:04,949 - INFO - 127.0.0.1 - - [22/Jun/2025 14:14:04] "POST /verify HTTP/1.1" 200 -
+2025-06-22 14:26:29,745 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-22 14:26:29,801 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-22 14:26:35,332 - DEBUG - Verification result: {'verified': True, 'distance': 0.2509604499652126, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 294, 'y': 160, 'w': 233, 'h': 233, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 5.51}
+2025-06-22 14:26:35,333 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-22 14:26:35,337 - INFO - 127.0.0.1 - - [22/Jun/2025 14:26:35] "POST /verify HTTP/1.1" 200 -
+2025-06-23 00:51:42,061 - INFO - Starting Flask application on port 5000...
+2025-06-23 00:51:43,620 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.137.172:5000
+2025-06-23 00:51:43,622 - INFO - [33mPress CTRL+C to quit[0m
+2025-06-23 00:51:43,712 - INFO -  * Restarting with stat
+2025-06-23 00:51:58,080 - INFO - Starting Flask application on port 5000...
+2025-06-23 00:51:58,090 - WARNING -  * Debugger is active!
+2025-06-23 00:51:58,102 - INFO -  * Debugger PIN: 105-951-060
+2025-06-23 00:53:00,387 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-23 00:53:00,443 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 00:53:04,429 - DEBUG - Creating converter from 3 to 5
+2025-06-23 00:53:09,807 - DEBUG - Verification result: {'verified': True, 'distance': 0.26339608293180927, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 241, 'y': 172, 'w': 252, 'h': 252, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 9.35}
+2025-06-23 00:53:09,808 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 00:53:09,811 - INFO - 127.0.0.1 - - [23/Jun/2025 00:53:09] "POST /verify HTTP/1.1" 200 -
+2025-06-23 08:03:55,115 - INFO - Starting Flask application on port 5000...
+2025-06-23 08:03:56,463 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.137.172:5000
+2025-06-23 08:03:56,464 - INFO - [33mPress CTRL+C to quit[0m
+2025-06-23 08:03:56,466 - INFO -  * Restarting with stat
+2025-06-23 08:04:03,808 - INFO - Starting Flask application on port 5000...
+2025-06-23 08:04:03,813 - WARNING -  * Debugger is active!
+2025-06-23 08:04:03,820 - INFO -  * Debugger PIN: 105-951-060
+2025-06-23 08:08:51,492 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-23 08:08:51,536 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 08:08:54,162 - DEBUG - Creating converter from 3 to 5
+2025-06-23 08:09:00,281 - DEBUG - Verification result: {'verified': False, 'distance': 0.49488565603509227, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 284, 'y': 190, 'w': 216, 'h': 216, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 8.74}
+2025-06-23 08:09:00,283 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 08:09:00,290 - INFO - 127.0.0.1 - - [23/Jun/2025 08:09:00] "POST /verify HTTP/1.1" 200 -
+2025-06-23 08:09:06,296 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-23 08:09:06,316 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 08:09:09,067 - DEBUG - Verification result: {'verified': True, 'distance': 0.2731263125729798, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 284, 'y': 223, 'w': 206, 'h': 206, 'left_eye': (425, 305), 'right_eye': (344, 287)}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 2.74}
+2025-06-23 08:09:09,067 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 08:09:09,069 - INFO - 127.0.0.1 - - [23/Jun/2025 08:09:09] "POST /verify HTTP/1.1" 200 -
+2025-06-23 14:01:36,057 - INFO - Starting Flask application on port 5000...
+2025-06-23 14:01:37,369 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.59:5000
+2025-06-23 14:01:37,370 - INFO - [33mPress CTRL+C to quit[0m
+2025-06-23 14:01:37,371 - INFO -  * Restarting with stat
+2025-06-23 14:01:42,180 - INFO - Starting Flask application on port 5000...
+2025-06-23 14:01:42,185 - WARNING -  * Debugger is active!
+2025-06-23 14:01:42,190 - INFO -  * Debugger PIN: 105-951-060
+2025-06-23 14:21:28,274 - INFO - Starting Flask application on port 5000...
+2025-06-23 14:21:29,593 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.59:5000
+2025-06-23 14:21:29,593 - INFO - [33mPress CTRL+C to quit[0m
+2025-06-23 14:21:29,599 - INFO -  * Restarting with stat
+2025-06-23 14:21:34,824 - INFO - Starting Flask application on port 5000...
+2025-06-23 14:21:34,830 - WARNING -  * Debugger is active!
+2025-06-23 14:21:34,837 - INFO -  * Debugger PIN: 105-951-060
+2025-06-23 14:21:35,017 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\7.jpg
+2025-06-23 14:21:35,041 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 14:21:38,270 - DEBUG - Creating converter from 3 to 5
+2025-06-23 14:21:40,257 - DEBUG - Verification result: {'verified': True, 'distance': 0.04367408756490554, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 241, 'y': 201, 'w': 240, 'h': 240, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 235, 'y': 183, 'w': 230, 'h': 230, 'left_eye': None, 'right_eye': None}}, 'time': 5.2}
+2025-06-23 14:21:40,257 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 14:21:40,259 - INFO - 127.0.0.1 - - [23/Jun/2025 14:21:40] "POST /verify HTTP/1.1" 200 -
+2025-06-23 14:23:53,604 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\7.jpg
+2025-06-23 14:23:53,607 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 14:23:54,273 - DEBUG - Verification result: {'verified': True, 'distance': 0.06535887268924423, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 252, 'y': 183, 'w': 224, 'h': 224, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 235, 'y': 183, 'w': 230, 'h': 230, 'left_eye': None, 'right_eye': None}}, 'time': 0.65}
+2025-06-23 14:23:54,274 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 14:23:54,274 - INFO - 127.0.0.1 - - [23/Jun/2025 14:23:54] "POST /verify HTTP/1.1" 200 -
+2025-06-23 14:27:21,638 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\7.jpg
+2025-06-23 14:27:21,642 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 14:27:22,322 - DEBUG - Verification result: {'verified': True, 'distance': 0.04823747163739056, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 250, 'y': 192, 'w': 220, 'h': 220, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 235, 'y': 183, 'w': 230, 'h': 230, 'left_eye': None, 'right_eye': None}}, 'time': 0.67}
+2025-06-23 14:27:22,323 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 14:27:22,323 - INFO - 127.0.0.1 - - [23/Jun/2025 14:27:22] "POST /verify HTTP/1.1" 200 -
+2025-06-23 14:27:25,953 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\7.jpg
+2025-06-23 14:27:25,955 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 14:27:26,586 - DEBUG - Verification result: {'verified': True, 'distance': 0.029006785925195233, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 240, 'y': 188, 'w': 238, 'h': 238, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 235, 'y': 183, 'w': 230, 'h': 230, 'left_eye': None, 'right_eye': None}}, 'time': 0.62}
+2025-06-23 14:27:26,587 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 14:27:26,587 - INFO - 127.0.0.1 - - [23/Jun/2025 14:27:26] "POST /verify HTTP/1.1" 200 -
+2025-06-23 14:31:24,906 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\7.jpg
+2025-06-23 14:31:24,908 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 14:31:25,585 - DEBUG - Verification result: {'verified': True, 'distance': 0.1385300577755073, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 267, 'y': 221, 'w': 171, 'h': 171, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 235, 'y': 183, 'w': 230, 'h': 230, 'left_eye': None, 'right_eye': None}}, 'time': 0.67}
+2025-06-23 14:31:25,585 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 14:31:25,586 - INFO - 127.0.0.1 - - [23/Jun/2025 14:31:25] "POST /verify HTTP/1.1" 200 -
+2025-06-23 14:32:05,523 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\7.jpg
+2025-06-23 14:32:05,526 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 14:32:06,165 - DEBUG - Verification result: {'verified': True, 'distance': 0.07046269581105069, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 225, 'y': 203, 'w': 217, 'h': 217, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 235, 'y': 183, 'w': 230, 'h': 230, 'left_eye': None, 'right_eye': None}}, 'time': 0.63}
+2025-06-23 14:32:06,165 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 14:32:06,166 - INFO - 127.0.0.1 - - [23/Jun/2025 14:32:06] "POST /verify HTTP/1.1" 200 -
+2025-06-23 14:32:34,056 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\7.jpg
+2025-06-23 14:32:34,059 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 14:32:35,016 - DEBUG - Verification result: {'verified': True, 'distance': 0.05591388719251933, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 248, 'y': 205, 'w': 231, 'h': 231, 'left_eye': (395, 306), 'right_eye': (320, 307)}, 'img2': {'x': 235, 'y': 183, 'w': 230, 'h': 230, 'left_eye': None, 'right_eye': None}}, 'time': 0.95}
+2025-06-23 14:32:35,016 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 14:32:35,017 - INFO - 127.0.0.1 - - [23/Jun/2025 14:32:35] "POST /verify HTTP/1.1" 200 -
+2025-06-23 14:35:56,930 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\7.jpg
+2025-06-23 14:35:56,932 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 14:35:57,575 - DEBUG - Verification result: {'verified': True, 'distance': 0.0746866357508329, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 273, 'y': 253, 'w': 170, 'h': 170, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 235, 'y': 183, 'w': 230, 'h': 230, 'left_eye': None, 'right_eye': None}}, 'time': 0.63}
+2025-06-23 14:35:57,576 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 14:35:57,576 - INFO - 127.0.0.1 - - [23/Jun/2025 14:35:57] "POST /verify HTTP/1.1" 200 -
+2025-06-23 14:39:20,011 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\7.jpg
+2025-06-23 14:39:20,014 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 14:39:20,711 - DEBUG - Verification result: {'verified': True, 'distance': 0.0898521107264657, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 280, 'y': 258, 'w': 172, 'h': 172, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 235, 'y': 183, 'w': 230, 'h': 230, 'left_eye': None, 'right_eye': None}}, 'time': 0.69}
+2025-06-23 14:39:20,711 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 14:39:20,712 - INFO - 127.0.0.1 - - [23/Jun/2025 14:39:20] "POST /verify HTTP/1.1" 200 -
+2025-06-23 14:42:33,630 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\7.jpg
+2025-06-23 14:42:33,633 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 14:42:34,271 - DEBUG - Verification result: {'verified': True, 'distance': 0.11691609616682153, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 258, 'y': 259, 'w': 172, 'h': 172, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 235, 'y': 183, 'w': 230, 'h': 230, 'left_eye': None, 'right_eye': None}}, 'time': 0.63}
+2025-06-23 14:42:34,271 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 14:42:34,271 - INFO - 127.0.0.1 - - [23/Jun/2025 14:42:34] "POST /verify HTTP/1.1" 200 -
+2025-06-23 14:56:59,126 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\7.jpg
+2025-06-23 14:56:59,129 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 14:56:59,773 - DEBUG - Verification result: {'verified': True, 'distance': 0.08944898051393957, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 292, 'y': 221, 'w': 186, 'h': 186, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 235, 'y': 183, 'w': 230, 'h': 230, 'left_eye': None, 'right_eye': None}}, 'time': 0.64}
+2025-06-23 14:56:59,773 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 14:56:59,774 - INFO - 127.0.0.1 - - [23/Jun/2025 14:56:59] "POST /verify HTTP/1.1" 200 -
+2025-06-23 15:00:14,082 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\7.jpg
+2025-06-23 15:00:14,084 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 15:00:14,760 - DEBUG - Verification result: {'verified': True, 'distance': 0.04049500006937634, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 237, 'y': 198, 'w': 215, 'h': 215, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 235, 'y': 183, 'w': 230, 'h': 230, 'left_eye': None, 'right_eye': None}}, 'time': 0.67}
+2025-06-23 15:00:14,760 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 15:00:14,761 - INFO - 127.0.0.1 - - [23/Jun/2025 15:00:14] "POST /verify HTTP/1.1" 200 -
+2025-06-23 15:10:04,206 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\7.jpg
+2025-06-23 15:10:04,209 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 15:10:04,878 - DEBUG - Verification result: {'verified': True, 'distance': 0.15091635989526975, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 279, 'y': 244, 'w': 184, 'h': 184, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 235, 'y': 183, 'w': 230, 'h': 230, 'left_eye': None, 'right_eye': None}}, 'time': 0.66}
+2025-06-23 15:10:04,878 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 15:10:04,879 - INFO - 127.0.0.1 - - [23/Jun/2025 15:10:04] "POST /verify HTTP/1.1" 200 -
+2025-06-23 15:16:04,568 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\7.jpg
+2025-06-23 15:16:04,570 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 15:16:05,227 - DEBUG - Verification result: {'verified': True, 'distance': 0.11008504846987865, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 257, 'y': 257, 'w': 168, 'h': 168, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 235, 'y': 183, 'w': 230, 'h': 230, 'left_eye': None, 'right_eye': None}}, 'time': 0.65}
+2025-06-23 15:16:05,228 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 15:16:05,228 - INFO - 127.0.0.1 - - [23/Jun/2025 15:16:05] "POST /verify HTTP/1.1" 200 -
+2025-06-23 15:19:38,597 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\7.jpg
+2025-06-23 15:19:38,599 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 15:19:39,254 - DEBUG - Verification result: {'verified': True, 'distance': 0.12343852169010094, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 284, 'y': 261, 'w': 164, 'h': 164, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 235, 'y': 183, 'w': 230, 'h': 230, 'left_eye': None, 'right_eye': None}}, 'time': 0.65}
+2025-06-23 15:19:39,255 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 15:19:39,255 - INFO - 127.0.0.1 - - [23/Jun/2025 15:19:39] "POST /verify HTTP/1.1" 200 -
+2025-06-23 15:21:44,858 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\7.jpg
+2025-06-23 15:21:44,861 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 15:21:45,522 - DEBUG - Verification result: {'verified': True, 'distance': 0.05791774386696946, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 239, 'y': 189, 'w': 223, 'h': 223, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 235, 'y': 183, 'w': 230, 'h': 230, 'left_eye': None, 'right_eye': None}}, 'time': 0.65}
+2025-06-23 15:21:45,523 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 15:21:45,523 - INFO - 127.0.0.1 - - [23/Jun/2025 15:21:45] "POST /verify HTTP/1.1" 200 -
+2025-06-23 15:22:36,305 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\7.jpg
+2025-06-23 15:22:36,308 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 15:22:36,926 - DEBUG - Verification result: {'verified': True, 'distance': 0.07621803645477543, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 245, 'y': 194, 'w': 209, 'h': 209, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 235, 'y': 183, 'w': 230, 'h': 230, 'left_eye': None, 'right_eye': None}}, 'time': 0.61}
+2025-06-23 15:22:36,926 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 15:22:36,926 - INFO - 127.0.0.1 - - [23/Jun/2025 15:22:36] "POST /verify HTTP/1.1" 200 -
+2025-06-23 15:27:14,258 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\7.jpg
+2025-06-23 15:27:14,261 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 15:27:14,919 - DEBUG - Verification result: {'verified': True, 'distance': 0.051198167733974564, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 256, 'y': 231, 'w': 208, 'h': 208, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 235, 'y': 183, 'w': 230, 'h': 230, 'left_eye': None, 'right_eye': None}}, 'time': 0.65}
+2025-06-23 15:27:14,919 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 15:27:14,920 - INFO - 127.0.0.1 - - [23/Jun/2025 15:27:14] "POST /verify HTTP/1.1" 200 -
+2025-06-23 15:49:31,383 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\7.jpg
+2025-06-23 15:49:31,390 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 15:49:32,273 - DEBUG - Verification result: {'verified': True, 'distance': 0.0905583337777599, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 304, 'y': 235, 'w': 184, 'h': 184, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 235, 'y': 183, 'w': 230, 'h': 230, 'left_eye': None, 'right_eye': None}}, 'time': 0.87}
+2025-06-23 15:49:32,275 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 15:49:32,275 - INFO - 127.0.0.1 - - [23/Jun/2025 15:49:32] "POST /verify HTTP/1.1" 200 -
+2025-06-23 17:08:30,101 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\7.jpg
+2025-06-23 17:08:30,129 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 17:08:31,946 - DEBUG - Verification result: {'verified': True, 'distance': 0.16113484866588335, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 277, 'y': 253, 'w': 167, 'h': 167, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 235, 'y': 183, 'w': 230, 'h': 230, 'left_eye': None, 'right_eye': None}}, 'time': 1.8}
+2025-06-23 17:08:31,947 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 17:08:31,948 - INFO - 127.0.0.1 - - [23/Jun/2025 17:08:31] "POST /verify HTTP/1.1" 200 -
+2025-06-23 17:08:37,305 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\7.jpg
+2025-06-23 17:08:37,307 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 17:08:38,011 - DEBUG - Verification result: {'verified': True, 'distance': 0.16987005236707164, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 280, 'y': 254, 'w': 163, 'h': 163, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 235, 'y': 183, 'w': 230, 'h': 230, 'left_eye': None, 'right_eye': None}}, 'time': 0.7}
+2025-06-23 17:08:38,011 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 17:08:38,011 - INFO - 127.0.0.1 - - [23/Jun/2025 17:08:38] "POST /verify HTTP/1.1" 200 -
+2025-06-23 17:13:22,097 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\7.jpg
+2025-06-23 17:13:22,099 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 17:13:22,721 - DEBUG - Verification result: {'verified': True, 'distance': 0.11902754143903838, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 288, 'y': 254, 'w': 168, 'h': 168, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 235, 'y': 183, 'w': 230, 'h': 230, 'left_eye': None, 'right_eye': None}}, 'time': 0.61}
+2025-06-23 17:13:22,722 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 17:13:22,722 - INFO - 127.0.0.1 - - [23/Jun/2025 17:13:22] "POST /verify HTTP/1.1" 200 -
+2025-06-23 17:13:27,146 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\7.jpg
+2025-06-23 17:13:27,149 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 17:13:27,795 - DEBUG - Verification result: {'verified': True, 'distance': 0.1019008405231201, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 287, 'y': 256, 'w': 165, 'h': 165, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 235, 'y': 183, 'w': 230, 'h': 230, 'left_eye': None, 'right_eye': None}}, 'time': 0.64}
+2025-06-23 17:13:27,795 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 17:13:27,796 - INFO - 127.0.0.1 - - [23/Jun/2025 17:13:27] "POST /verify HTTP/1.1" 200 -
+2025-06-23 17:16:09,427 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\7.jpg
+2025-06-23 17:16:09,430 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 17:16:10,123 - DEBUG - Verification result: {'verified': True, 'distance': 0.11741875295381154, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 281, 'y': 253, 'w': 165, 'h': 165, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 235, 'y': 183, 'w': 230, 'h': 230, 'left_eye': None, 'right_eye': None}}, 'time': 0.68}
+2025-06-23 17:16:10,123 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 17:16:10,124 - INFO - 127.0.0.1 - - [23/Jun/2025 17:16:10] "POST /verify HTTP/1.1" 200 -
+2025-06-23 17:19:33,796 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\7.jpg
+2025-06-23 17:19:33,798 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 17:19:34,511 - DEBUG - Verification result: {'verified': True, 'distance': 0.14750679766081942, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 262, 'y': 264, 'w': 170, 'h': 170, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 235, 'y': 183, 'w': 230, 'h': 230, 'left_eye': None, 'right_eye': None}}, 'time': 0.7}
+2025-06-23 17:19:34,512 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 17:19:34,512 - INFO - 127.0.0.1 - - [23/Jun/2025 17:19:34] "POST /verify HTTP/1.1" 200 -
+2025-06-23 17:19:45,399 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\7.jpg
+2025-06-23 17:19:45,413 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 17:19:46,070 - DEBUG - Verification result: {'verified': True, 'distance': 0.12409188692203243, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 266, 'y': 256, 'w': 171, 'h': 171, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 235, 'y': 183, 'w': 230, 'h': 230, 'left_eye': None, 'right_eye': None}}, 'time': 0.65}
+2025-06-23 17:19:46,070 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 17:19:46,071 - INFO - 127.0.0.1 - - [23/Jun/2025 17:19:46] "POST /verify HTTP/1.1" 200 -
+2025-06-23 21:52:45,119 - INFO - Starting Flask application on port 5000...
+2025-06-23 21:52:45,204 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.59:5000
+2025-06-23 21:52:45,204 - INFO - [33mPress CTRL+C to quit[0m
+2025-06-23 21:52:45,206 - INFO -  * Restarting with stat
+2025-06-23 21:52:51,497 - INFO - Starting Flask application on port 5000...
+2025-06-23 21:52:51,503 - WARNING -  * Debugger is active!
+2025-06-23 21:52:51,508 - INFO -  * Debugger PIN: 105-951-060
+2025-06-23 22:19:47,637 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-23 22:19:47,688 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 22:19:52,581 - DEBUG - Creating converter from 3 to 5
+2025-06-23 22:19:56,988 - DEBUG - Verification result: {'verified': True, 'distance': 0.3913205620000507, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 195, 'y': 189, 'w': 247, 'h': 247, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 9.29}
+2025-06-23 22:19:56,989 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 22:19:56,991 - INFO - 127.0.0.1 - - [23/Jun/2025 22:19:56] "POST /verify HTTP/1.1" 200 -
+2025-06-23 22:20:11,407 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-23 22:20:11,428 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 22:20:14,831 - DEBUG - Verification result: {'verified': True, 'distance': 0.38602201454014784, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 208, 'y': 192, 'w': 277, 'h': 277, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 3.39}
+2025-06-23 22:20:14,831 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 22:20:14,833 - INFO - 127.0.0.1 - - [23/Jun/2025 22:20:14] "POST /verify HTTP/1.1" 200 -
+2025-06-23 22:20:51,192 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-23 22:20:51,212 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 22:20:53,865 - DEBUG - Verification result: {'verified': True, 'distance': 0.3856150746714688, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 230, 'y': 200, 'w': 280, 'h': 279, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 2.64}
+2025-06-23 22:20:53,866 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 22:20:53,868 - INFO - 127.0.0.1 - - [23/Jun/2025 22:20:53] "POST /verify HTTP/1.1" 200 -
+2025-06-23 22:23:28,701 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-23 22:23:28,722 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 22:23:31,588 - DEBUG - Verification result: {'verified': False, 'distance': 0.40762840383605214, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 218, 'y': 195, 'w': 259, 'h': 259, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 2.86}
+2025-06-23 22:23:31,588 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 22:23:31,591 - INFO - 127.0.0.1 - - [23/Jun/2025 22:23:31] "POST /verify HTTP/1.1" 200 -
+2025-06-23 22:23:35,800 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-23 22:23:35,818 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 22:23:38,687 - DEBUG - Verification result: {'verified': True, 'distance': 0.2986268985593469, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 176, 'y': 209, 'w': 232, 'h': 232, 'left_eye': (338, 303), 'right_eye': (243, 300)}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 2.86}
+2025-06-23 22:23:38,687 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 22:23:38,688 - INFO - 127.0.0.1 - - [23/Jun/2025 22:23:38] "POST /verify HTTP/1.1" 200 -
+2025-06-23 22:28:45,396 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-23 22:28:45,420 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 22:28:48,716 - DEBUG - Verification result: {'verified': True, 'distance': 0.3562853741640123, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 221, 'y': 180, 'w': 265, 'h': 265, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 3.29}
+2025-06-23 22:28:48,716 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 22:28:48,719 - INFO - 127.0.0.1 - - [23/Jun/2025 22:28:48] "POST /verify HTTP/1.1" 200 -
+2025-06-23 22:33:07,204 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-23 22:33:07,222 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 22:33:10,301 - DEBUG - Verification result: {'verified': True, 'distance': 0.34143018595692587, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 204, 'y': 182, 'w': 283, 'h': 283, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 3.07}
+2025-06-23 22:33:10,302 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 22:33:10,305 - INFO - 127.0.0.1 - - [23/Jun/2025 22:33:10] "POST /verify HTTP/1.1" 200 -
+2025-06-23 22:34:23,368 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-23 22:34:23,385 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 22:34:26,249 - DEBUG - Verification result: {'verified': True, 'distance': 0.3527524818940222, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 247, 'y': 238, 'w': 246, 'h': 241, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 2.86}
+2025-06-23 22:34:26,250 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 22:34:26,251 - INFO - 127.0.0.1 - - [23/Jun/2025 22:34:26] "POST /verify HTTP/1.1" 200 -
+2025-06-23 22:35:09,939 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-23 22:35:09,959 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 22:35:13,386 - DEBUG - Verification result: {'verified': True, 'distance': 0.3464693076324208, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 246, 'y': 194, 'w': 261, 'h': 261, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 3.41}
+2025-06-23 22:35:13,386 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 22:35:13,388 - INFO - 127.0.0.1 - - [23/Jun/2025 22:35:13] "POST /verify HTTP/1.1" 200 -
+2025-06-23 10:35:43,410 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-23 10:35:43,428 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 10:35:46,127 - DEBUG - Verification result: {'verified': True, 'distance': 0.35490604477094867, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 242, 'y': 189, 'w': 254, 'h': 254, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 2.69}
+2025-06-23 10:35:46,128 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 10:35:46,129 - INFO - 127.0.0.1 - - [23/Jun/2025 10:35:46] "POST /verify HTTP/1.1" 200 -
+2025-06-23 10:38:18,879 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-23 10:38:18,897 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 10:38:21,450 - DEBUG - Verification result: {'verified': True, 'distance': 0.30485503502014766, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 269, 'y': 221, 'w': 204, 'h': 204, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 2.54}
+2025-06-23 10:38:21,450 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 10:38:21,454 - INFO - 127.0.0.1 - - [23/Jun/2025 10:38:21] "POST /verify HTTP/1.1" 200 -
+2025-06-23 10:41:00,548 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-23 10:41:00,566 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 10:41:03,313 - DEBUG - Verification result: {'verified': True, 'distance': 0.3696730515967753, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 214, 'y': 213, 'w': 261, 'h': 261, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 2.74}
+2025-06-23 10:41:03,314 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 10:41:03,316 - INFO - 127.0.0.1 - - [23/Jun/2025 10:41:03] "POST /verify HTTP/1.1" 200 -
+2025-06-23 11:50:29,862 - INFO - Starting Flask application on port 5000...
+2025-06-23 11:50:31,225 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.137.172:5000
+2025-06-23 11:50:31,225 - INFO - [33mPress CTRL+C to quit[0m
+2025-06-23 11:50:31,232 - INFO -  * Restarting with stat
+2025-06-23 11:50:36,083 - INFO - Starting Flask application on port 5000...
+2025-06-23 11:50:36,087 - WARNING -  * Debugger is active!
+2025-06-23 11:50:36,106 - INFO -  * Debugger PIN: 105-951-060
+2025-06-23 07:45:26,318 - INFO - Starting Flask application on port 5000...
+2025-06-23 07:45:26,342 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.250.212:5000
+2025-06-23 07:45:26,342 - INFO - [33mPress CTRL+C to quit[0m
+2025-06-23 07:45:26,344 - INFO -  * Restarting with stat
+2025-06-23 07:45:31,661 - INFO - Starting Flask application on port 5000...
+2025-06-23 07:45:31,667 - WARNING -  * Debugger is active!
+2025-06-23 07:45:31,672 - INFO -  * Debugger PIN: 177-790-520
+2025-06-23 08:14:14,309 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-23 08:14:14,352 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 08:14:17,610 - DEBUG - Creating converter from 3 to 5
+2025-06-23 08:14:22,659 - DEBUG - Verification result: {'verified': True, 'distance': 0.3100982224413875, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 237, 'y': 221, 'w': 224, 'h': 224, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 8.3}
+2025-06-23 08:14:22,660 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-23 08:14:22,662 - INFO - 127.0.0.1 - - [23/Jun/2025 08:14:22] "POST /verify HTTP/1.1" 200 -
+2025-06-24 07:37:32,006 - INFO - Starting Flask application on port 5000...
+2025-06-24 07:37:32,030 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.16.5.12:5000
+2025-06-24 07:37:32,030 - INFO - [33mPress CTRL+C to quit[0m
+2025-06-24 07:37:32,030 - INFO - [33mPress CTRL+C to quit[0m
+2025-06-24 07:37:32,032 - INFO -  * Restarting with stat
+2025-06-24 07:37:32,032 - INFO -  * Restarting with stat
+2025-06-24 07:37:38,393 - INFO - Starting Flask application on port 5000...
+2025-06-24 07:37:38,399 - WARNING -  * Debugger is active!
+2025-06-24 07:37:38,405 - INFO -  * Debugger PIN: 177-790-520
+2025-06-24 07:37:38,408 - INFO - Starting Flask application on port 5000...
+2025-06-24 07:37:38,414 - WARNING -  * Debugger is active!
+2025-06-24 07:37:38,420 - INFO -  * Debugger PIN: 177-790-520
+2025-06-24 07:40:12,366 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-24 07:40:12,408 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-24 07:40:15,151 - DEBUG - Creating converter from 3 to 5
+2025-06-24 07:40:20,048 - DEBUG - Verification result: {'verified': True, 'distance': 0.3426379936851923, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 220, 'y': 249, 'w': 219, 'h': 219, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 7.63}
+2025-06-24 07:40:20,049 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-24 07:40:20,052 - INFO - 127.0.0.1 - - [24/Jun/2025 07:40:20] "POST /verify HTTP/1.1" 200 -
+2025-06-24 07:41:26,834 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-24 07:41:26,850 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-24 07:41:29,777 - DEBUG - Verification result: {'verified': False, 'distance': 0.7093933018633859, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 55, 'y': 356, 'w': 54, 'h': 54, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 2.92}
+2025-06-24 07:41:29,777 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-24 07:41:29,778 - INFO - 127.0.0.1 - - [24/Jun/2025 07:41:29] "POST /verify HTTP/1.1" 200 -
+2025-06-24 07:41:33,047 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-24 07:41:33,065 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-24 07:41:36,177 - DEBUG - Verification result: {'verified': True, 'distance': 0.3215050641945193, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 195, 'y': 234, 'w': 230, 'h': 230, 'left_eye': (356, 326), 'right_eye': (263, 323)}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 3.11}
+2025-06-24 07:41:36,177 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-24 07:41:36,178 - INFO - 127.0.0.1 - - [24/Jun/2025 07:41:36] "POST /verify HTTP/1.1" 200 -
+2025-06-24 07:44:15,800 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-24 07:44:15,820 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-24 07:44:18,608 - DEBUG - Verification result: {'verified': True, 'distance': 0.3683653268345043, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 193, 'y': 202, 'w': 278, 'h': 277, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 2.78}
+2025-06-24 07:44:18,608 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-24 07:44:18,610 - INFO - 127.0.0.1 - - [24/Jun/2025 07:44:18] "POST /verify HTTP/1.1" 200 -
+2025-06-24 08:06:12,197 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-24 08:06:12,216 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-24 08:06:15,706 - DEBUG - Verification result: {'verified': True, 'distance': 0.2769154821445501, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 209, 'y': 192, 'w': 234, 'h': 234, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 3.48}
+2025-06-24 08:06:15,707 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-24 08:06:15,709 - INFO - 127.0.0.1 - - [24/Jun/2025 08:06:15] "POST /verify HTTP/1.1" 200 -
+2025-06-24 08:06:49,509 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-24 08:06:49,533 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-24 08:06:49,607 - ERROR - DeepFace verification failed: Exception while processing img1_path
+2025-06-24 08:06:49,608 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-24 08:06:49,609 - INFO - 127.0.0.1 - - [24/Jun/2025 08:06:49] "[31m[1mPOST /verify HTTP/1.1[0m" 400 -
+2025-06-24 08:06:53,648 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-24 08:06:53,668 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-24 08:06:56,580 - DEBUG - Verification result: {'verified': True, 'distance': 0.322397369922128, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 193, 'y': 224, 'w': 237, 'h': 237, 'left_eye': (356, 320), 'right_eye': (263, 318)}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 2.9}
+2025-06-24 08:06:56,581 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-24 08:06:56,582 - INFO - 127.0.0.1 - - [24/Jun/2025 08:06:56] "POST /verify HTTP/1.1" 200 -
+2025-06-24 08:07:16,380 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-24 08:07:16,400 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-24 08:07:19,118 - DEBUG - Verification result: {'verified': False, 'distance': 0.5926727302384016, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 158, 'y': 343, 'w': 66, 'h': 66, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 2.71}
+2025-06-24 08:07:19,118 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-24 08:07:19,119 - INFO - 127.0.0.1 - - [24/Jun/2025 08:07:19] "POST /verify HTTP/1.1" 200 -
+2025-06-24 08:07:21,079 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-24 08:07:21,098 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-24 08:07:24,176 - DEBUG - Verification result: {'verified': True, 'distance': 0.38377192353707923, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 185, 'y': 225, 'w': 232, 'h': 232, 'left_eye': (346, 316), 'right_eye': (255, 314)}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 3.07}
+2025-06-24 08:07:24,176 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-24 08:07:24,177 - INFO - 127.0.0.1 - - [24/Jun/2025 08:07:24] "POST /verify HTTP/1.1" 200 -
+2025-06-24 08:10:42,082 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-24 08:10:42,101 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-24 08:10:44,881 - DEBUG - Verification result: {'verified': True, 'distance': 0.2856134634517359, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 182, 'y': 198, 'w': 256, 'h': 256, 'left_eye': (350, 302), 'right_eye': (259, 302)}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 2.77}
+2025-06-24 08:10:44,881 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-24 08:10:44,882 - INFO - 127.0.0.1 - - [24/Jun/2025 08:10:44] "POST /verify HTTP/1.1" 200 -
+2025-06-24 08:11:18,185 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-24 08:11:18,208 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-24 08:11:21,136 - DEBUG - Verification result: {'verified': True, 'distance': 0.2673209639525287, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 153, 'y': 236, 'w': 238, 'h': 238, 'left_eye': (313, 335), 'right_eye': (225, 330)}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 2.92}
+2025-06-24 08:11:21,137 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-24 08:11:21,138 - INFO - 127.0.0.1 - - [24/Jun/2025 08:11:21] "POST /verify HTTP/1.1" 200 -
+2025-06-24 08:12:26,351 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-24 08:12:26,371 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-24 08:12:30,396 - DEBUG - Verification result: {'verified': True, 'distance': 0.35460945562236657, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 153, 'y': 245, 'w': 237, 'h': 234, 'left_eye': (311, 341), 'right_eye': (225, 339)}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 4.01}
+2025-06-24 08:12:30,397 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-24 08:12:30,404 - INFO - 127.0.0.1 - - [24/Jun/2025 08:12:30] "POST /verify HTTP/1.1" 200 -
+2025-06-24 08:12:49,831 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-24 08:12:49,852 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-24 08:12:49,938 - ERROR - DeepFace verification failed: Exception while processing img1_path
+2025-06-24 08:12:49,938 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-24 08:12:49,939 - INFO - 127.0.0.1 - - [24/Jun/2025 08:12:49] "[31m[1mPOST /verify HTTP/1.1[0m" 400 -
+2025-06-24 08:12:52,620 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-24 08:12:52,639 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-24 08:12:55,532 - DEBUG - Verification result: {'verified': True, 'distance': 0.3134144239695489, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 151, 'y': 236, 'w': 261, 'h': 243, 'left_eye': (330, 345), 'right_eye': (235, 335)}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 2.88}
+2025-06-24 08:12:55,533 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-24 08:12:55,537 - INFO - 127.0.0.1 - - [24/Jun/2025 08:12:55] "POST /verify HTTP/1.1" 200 -
+2025-06-24 08:14:20,282 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-24 08:14:20,305 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-24 08:14:23,116 - DEBUG - Verification result: {'verified': False, 'distance': 0.4076035112818026, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 138, 'y': 242, 'w': 247, 'h': 237, 'left_eye': (310, 345), 'right_eye': (214, 339)}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 2.8}
+2025-06-24 08:14:23,117 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-24 08:14:23,119 - INFO - 127.0.0.1 - - [24/Jun/2025 08:14:23] "POST /verify HTTP/1.1" 200 -
+2025-06-24 08:14:24,700 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-24 08:14:24,718 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-24 08:14:28,457 - DEBUG - Verification result: {'verified': True, 'distance': 0.30830976299042123, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 119, 'y': 201, 'w': 249, 'h': 249, 'left_eye': (290, 303), 'right_eye': (199, 299)}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 3.73}
+2025-06-24 08:14:28,458 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-24 08:14:28,460 - INFO - 127.0.0.1 - - [24/Jun/2025 08:14:28] "POST /verify HTTP/1.1" 200 -
+2025-06-29 13:26:13,086 - INFO - Starting Flask application on port 5000...
+2025-06-29 13:26:13,112 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.11:5000
+2025-06-29 13:26:13,112 - INFO - [33mPress CTRL+C to quit[0m
+2025-06-29 13:26:13,114 - INFO -  * Restarting with stat
+2025-06-29 13:26:20,324 - INFO - Starting Flask application on port 5000...
+2025-06-29 13:26:20,333 - WARNING -  * Debugger is active!
+2025-06-29 13:26:20,342 - INFO -  * Debugger PIN: 106-271-136
+2025-06-29 13:26:43,759 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-29 13:26:43,806 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-29 13:26:47,277 - DEBUG - Creating converter from 3 to 5
+2025-06-29 13:26:54,294 - DEBUG - Verification result: {'verified': True, 'distance': 0.251073524750285, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 277, 'y': 180, 'w': 282, 'h': 282, 'left_eye': (465, 292), 'right_eye': (363, 291)}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 10.48}
+2025-06-29 13:26:54,295 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-29 13:26:54,296 - INFO - 127.0.0.1 - - [29/Jun/2025 13:26:54] "POST /verify HTTP/1.1" 200 -
+2025-06-29 13:27:01,093 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-29 13:27:01,142 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-29 13:27:04,426 - DEBUG - Verification result: {'verified': False, 'distance': 0.6512370281854593, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 106, 'y': 161, 'w': 180, 'h': 180, 'left_eye': (236, 220), 'right_eye': (148, 228)}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 3.28}
+2025-06-29 13:27:04,449 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-29 13:27:04,450 - INFO - 127.0.0.1 - - [29/Jun/2025 13:27:04] "POST /verify HTTP/1.1" 200 -
+2025-06-29 13:27:10,176 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-29 13:27:10,198 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-29 13:27:14,497 - DEBUG - Verification result: {'verified': False, 'distance': 0.5204195707451704, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 320, 'y': 249, 'w': 179, 'h': 179, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 4.29}
+2025-06-29 13:27:14,497 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-29 13:27:14,499 - INFO - 127.0.0.1 - - [29/Jun/2025 13:27:14] "POST /verify HTTP/1.1" 200 -
+2025-06-29 13:27:17,703 - DEBUG - Processing image: temp.jpg, reference_path: D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces\1.jpg
+2025-06-29 13:27:17,724 - DEBUG - Saved temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-29 13:27:20,747 - DEBUG - Verification result: {'verified': True, 'distance': 0.2512018789439596, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 325, 'y': 227, 'w': 233, 'h': 233, 'left_eye': (483, 317), 'right_eye': (395, 317)}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 3.01}
+2025-06-29 13:27:20,747 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
+2025-06-29 13:27:20,748 - INFO - 127.0.0.1 - - [29/Jun/2025 13:27:20] "POST /verify HTTP/1.1" 200 -
