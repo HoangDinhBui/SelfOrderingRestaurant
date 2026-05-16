@@ -63,7 +63,7 @@ public class SecurityConfig {
                                 "/api/dishes/**",
                                 "/api/images/**",
                                 "/api/notifications/**",
-                                "/api/category/**",
+                                "/api/categories/**",
                                 "/api/feedback/**",
                                 "/uploads/**",
                                 "/api/receipts/**",
