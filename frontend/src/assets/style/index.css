@@ -1,0 +1,5 @@
+@import "tailwindcss";
+
+body {
+    display: block !important; /* Ghi đè mọi flex trước đó */
+  }
