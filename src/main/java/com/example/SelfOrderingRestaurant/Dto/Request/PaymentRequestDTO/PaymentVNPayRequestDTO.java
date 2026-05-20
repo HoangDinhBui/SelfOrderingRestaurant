@@ -14,4 +14,5 @@ public class PaymentVNPayRequestDTO {
     private String orderInfo;
     private String returnUrl;
     private Integer orderId;
+    private Integer pointsToUse;
 }

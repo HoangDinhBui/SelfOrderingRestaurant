@@ -44,6 +44,7 @@ import java.util.*;
 public class AuthService {
     private final UserRepository userRepository;
     private final StaffRepository staffRepository;
+    private final CustomerRepository customerRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenService jwtTokenService;
     private final AuthenticationManager authenticationManager;
@@ -53,6 +54,55 @@ public class AuthService {
     private String googleClientId;
 
     private final Logger log = LoggerFactory.getLogger(AuthService.class);
+
+    @Transactional
+    public AuthResponseDto registerCustomer(CustomerRegisterRequestDto request) {
+        // Check if username or email already exists
+        if (userRepository.existsByUsername(request.getUsername())) {
+            throw new RuntimeException("Username already exists");
+        }
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new RuntimeException("Email already exists");
+        }
+
+        // Create new user
+        User user = new User();
+        user.setUsername(request.getUsername());
+        user.setEmail(request.getEmail());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setPhone(request.getPhone());
+        user.setUserType(UserType.CUSTOMER);
+        user.setUserStatus(UserStatus.ACTIVE);
+        user.setCreatedAt(LocalDateTime.now());
+
+        User savedUser = userRepository.save(user);
+
+        // Create customer profile
+        Customer customer = new Customer();
+        customer.setUser(savedUser);
+        customer.setFullname(request.getFullname());
+        customer.setJoinDate(new Date());
+        customer.setPoints(0);
+
+        Customer savedCustomer = customerRepository.save(customer);
+
+        // Generate tokens
+        String accessToken = jwtTokenService.generateAccessToken(savedUser);
+        String refreshToken = jwtTokenService.generateRefreshToken(savedUser);
+
+        // Return response
+        AuthResponseDto response = new AuthResponseDto();
+        response.setAccessToken(accessToken);
+        response.setRefreshToken(refreshToken);
+        response.setUsername(savedUser.getUsername());
+        response.setEmail(savedUser.getEmail());
+        response.setUserType(savedUser.getUserType().name());
+        response.setCustomerId(savedCustomer.getCustomerId());
+        response.setFullname(savedCustomer.getFullname());
+        response.setPoints(savedCustomer.getPoints());
+
+        return response;
+    }
 
     @Transactional
     public AuthResponseDto registerStaff(RegisterRequestDto request, MultipartFile image) {
@@ -144,6 +194,20 @@ public class AuthService {
         response.setUsername(user.getUsername());
         response.setEmail(user.getEmail());
         response.setUserType(user.getUserType().name());
+
+        // Set customer/staff specific details
+        if (user.getUserType() == UserType.CUSTOMER) {
+            customerRepository.findByUser(user).ifPresent(customer -> {
+                response.setCustomerId(customer.getCustomerId());
+                response.setFullname(customer.getFullname());
+                response.setPoints(customer.getPoints());
+            });
+        } else if (user.getUserType() == UserType.STAFF || user.getUserType() == UserType.ADMIN) {
+            Optional.ofNullable(staffRepository.findByUser(user)).ifPresent(staff -> {
+                response.setStaffId(staff.getStaffId());
+                response.setFullname(staff.getFullname());
+            });
+        }
 
         return response;
     }

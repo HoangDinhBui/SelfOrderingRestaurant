@@ -14,4 +14,5 @@ public class ProcessPaymentRequestDTO {
     private String paymentMethod;
     private BigDecimal amount;
     private boolean confirmPayment;
+    private Integer pointsToUse;
 }

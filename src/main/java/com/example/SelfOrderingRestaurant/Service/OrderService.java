@@ -904,4 +904,43 @@ public class OrderService implements IOrderService {
                     order.getOrderId(), orderItem.getId().getDishId(), e.getMessage(), e);
         }
     }
+
+    @Override
+    public List<OrderResponseDTO> getCustomerOrderHistory(String username) {
+        if (username == null || username.trim().isEmpty()) {
+            throw new ValidationException("Username cannot be empty");
+        }
+
+        Customer customer = customerRepository.findByUserUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("Customer not found for username: " + username));
+
+        List<Order> orders = orderRepository.findByCustomerCustomerIdOrderByOrderDateDesc(customer.getCustomerId());
+
+        return orders.stream()
+                .map(order -> {
+                    List<OrderItem> orderItems = orderItemRepository.findByOrder(order);
+
+                    List<OrderItemDTO> items = orderItems.stream()
+                            .map(item -> {
+                                OrderItemDTO dto = new OrderItemDTO();
+                                dto.setDishId(item.getId().getDishId());
+                                dto.setQuantity(item.getQuantity());
+                                dto.setNotes(item.getNotes());
+                                dto.setDishName(item.getDish().getName());
+                                dto.setPrice(item.getDish().getPrice());
+                                dto.setStatus(item.getStatus() != null ? item.getStatus().name() : OrderItemStatus.PENDING.name());
+                                return dto;
+                            }).collect(Collectors.toList());
+
+                    return new OrderResponseDTO(
+                            order.getOrderId(),
+                            order.getCustomer().getFullname(),
+                            order.getTables() != null ? order.getTables().getTableNumber() : null,
+                            order.getStatus().name(),
+                            order.getTotalAmount(),
+                            order.getPaymentStatus().name(),
+                            items
+                    );
+                }).collect(Collectors.toList());
+    }
 }

@@ -3,6 +3,10 @@ package com.example.SelfOrderingRestaurant.Controller;
 import com.example.SelfOrderingRestaurant.Dto.Response.CustomerResponseDTO.CustomerResponseDTO;
 import com.example.SelfOrderingRestaurant.Dto.Request.CustomerRequestDTO.CustomerRequestDTO;
 import com.example.SelfOrderingRestaurant.Service.CustomerService;
+import com.example.SelfOrderingRestaurant.Dto.Response.OrderResponseDTO.OrderResponseDTO;
+import com.example.SelfOrderingRestaurant.Security.SecurityUtils;
+import com.example.SelfOrderingRestaurant.Service.OrderService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
@@ -12,9 +16,27 @@ import java.util.List;
 public class CustomerController {
 
     private final CustomerService customerService;
+    private final OrderService orderService;
+    private final SecurityUtils securityUtils;
 
-    public CustomerController(CustomerService customerService) {
+    public CustomerController(CustomerService customerService, OrderService orderService, SecurityUtils securityUtils) {
         this.customerService = customerService;
+        this.orderService = orderService;
+        this.securityUtils = securityUtils;
+    }
+
+    @GetMapping("/history")
+    public ResponseEntity<?> getOrderHistory() {
+        try {
+            if (!securityUtils.isAuthenticated()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("User must be logged in to view history");
+            }
+            String username = securityUtils.getCurrentUsername();
+            List<OrderResponseDTO> history = orderService.getCustomerOrderHistory(username);
+            return ResponseEntity.ok(history);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @GetMapping

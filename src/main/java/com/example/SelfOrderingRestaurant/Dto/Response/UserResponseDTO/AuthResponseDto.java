@@ -10,4 +10,7 @@ public class AuthResponseDto {
     private String email;
     private String userType;
     private Integer staffId;
+    private Integer customerId;
+    private Integer points;
+    private String fullname;
 }

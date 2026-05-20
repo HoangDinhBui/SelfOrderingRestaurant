@@ -219,6 +219,8 @@ public class PaymentController {
                 order.setPaymentStatus(PaymentStatus.PAID);
                 orderRepository.save(order);
 
+                paymentService.finalizePoints(order, payment.getAmount());
+
                 DinningTable table = order.getTables();
                 if (table != null) {
                     boolean hasUnpaidOrders = orderRepository.existsByTablesTableNumberAndPaymentStatus(
@@ -396,6 +398,8 @@ public class PaymentController {
         order.setPaymentStatus(PaymentStatus.PAID);
         orderRepository.save(order);
 
+        paymentService.finalizePoints(order, payment.getAmount());
+
         DinningTable table = order.getTables();
         if (table != null) {
             log.info("Before update: Table {} status is {} for order {}",
@@ -449,6 +453,8 @@ public class PaymentController {
         Order order = payment.getOrder();
         order.setPaymentStatus(PaymentStatus.PAID);
         orderRepository.save(order);
+
+        paymentService.finalizePoints(order, payment.getAmount());
 
         DinningTable table = order.getTables();
         if (table != null) {

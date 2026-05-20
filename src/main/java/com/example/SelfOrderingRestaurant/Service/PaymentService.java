@@ -7,6 +7,7 @@ import com.example.SelfOrderingRestaurant.Dto.Response.PaymentResponseDTO.OrderP
 import com.example.SelfOrderingRestaurant.Dto.Response.PaymentResponseDTO.PaymentItemDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.PaymentResponseDTO.PaymentNotificationStatusDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.PaymentResponseDTO.PaymentResponseDTO;
+import com.example.SelfOrderingRestaurant.Entity.Customer;
 import com.example.SelfOrderingRestaurant.Entity.DinningTable;
 import com.example.SelfOrderingRestaurant.Entity.Order;
 import com.example.SelfOrderingRestaurant.Entity.OrderItem;
@@ -44,6 +45,7 @@ public class PaymentService {
     final NotificationRepository notificationRepository;
     final DinningTableRepository tableRepository;
     final WebSocketService webSocketService;
+    final CustomerRepository customerRepository;
 
     @Transactional
     public PaymentResponseDTO processPayment(ProcessPaymentRequestDTO request) {
@@ -78,20 +80,77 @@ public class PaymentService {
             throw new IllegalStateException("Order has already been paid or cancelled");
         }
 
+        // Apply points discount if specified
+        if (request.getPointsToUse() != null && request.getPointsToUse() > 0) {
+            applyPointsDiscount(order.getOrderId(), request.getPointsToUse());
+        }
+
+        BigDecimal payableAmount = order.getTotalAmount();
+        if (order.getDiscount() != null) {
+            payableAmount = payableAmount.subtract(order.getDiscount());
+        }
+
         // Process payment based on method
         PaymentResponseDTO response = new PaymentResponseDTO();
         response.setOrderId(order.getOrderId());
-        response.setAmount(request.getAmount());
+        response.setAmount(payableAmount);
         response.setPaymentMethod(paymentMethod.name());
 
         if (paymentMethod == PaymentMethod.CASH) {
-            return processCashPaymentInternal(order, request.getAmount());
+            return processCashPaymentInternal(order, payableAmount);
         } else if (paymentMethod == PaymentMethod.ONLINE) {
-            return processOnlinePaymentInternal(order, request.getAmount());
+            return processOnlinePaymentInternal(order, payableAmount);
         } else if (paymentMethod == PaymentMethod.CARD) {
-            return processCardPaymentInternal(order, request.getAmount());
+            return processCardPaymentInternal(order, payableAmount);
         } else {
             throw new UnsupportedOperationException("Payment method not supported: " + paymentMethod);
+        }
+    }
+
+    @Transactional
+    public void applyPointsDiscount(Integer orderId, Integer pointsToUse) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new EntityNotFoundException("Order not found with ID: " + orderId));
+        Customer customer = order.getCustomer();
+        if (customer != null && customer.getUser() != null) {
+            int availablePoints = customer.getPoints() != null ? customer.getPoints() : 0;
+            if (pointsToUse > availablePoints) {
+                throw new IllegalArgumentException("Not enough points. Available: " + availablePoints);
+            }
+            order.setDiscount(BigDecimal.valueOf(pointsToUse));
+            orderRepository.save(order);
+            log.info("Applied points discount of {} to order {}", pointsToUse, orderId);
+        }
+    }
+
+    @Transactional
+    public void finalizePoints(Order order, BigDecimal paidAmount) {
+        if (order == null || order.getCustomer() == null) {
+            return;
+        }
+        Customer customer = order.getCustomer();
+        if (customer.getUser() != null) {
+            // Deduct points used
+            if (order.getDiscount() != null && order.getDiscount().compareTo(BigDecimal.ZERO) > 0) {
+                int pointsUsed = order.getDiscount().intValue();
+                int currentPoints = customer.getPoints() != null ? customer.getPoints() : 0;
+                customer.setPoints(Math.max(0, currentPoints - pointsUsed));
+                log.info("Deducted {} points from customer {} (ID: {}). Remaining: {}",
+                        pointsUsed, customer.getFullname(), customer.getCustomerId(), customer.getPoints());
+            }
+
+            // Accumulate new points
+            if (paidAmount != null && paidAmount.compareTo(BigDecimal.ZERO) > 0) {
+                int pointsEarned = (paidAmount.intValue() / 100000) * 1000;
+                if (pointsEarned > 0) {
+                    int currentPoints = customer.getPoints() != null ? customer.getPoints() : 0;
+                    customer.setPoints(currentPoints + pointsEarned);
+                    log.info("Customer {} (ID: {}) earned {} points from payment of {}. New balance: {}",
+                            customer.getFullname(), customer.getCustomerId(), pointsEarned, paidAmount, customer.getPoints());
+                }
+            }
+
+            customerRepository.save(customer);
         }
     }
 
@@ -112,6 +171,8 @@ public class PaymentService {
 
         order.setPaymentStatus(PaymentStatus.PAID);
         orderRepository.save(order);
+
+        finalizePoints(order, amount);
 
         DinningTable table = order.getTables();
         if (table != null) {
@@ -161,6 +222,8 @@ public class PaymentService {
 
             order.setPaymentStatus(PaymentStatus.PAID);
             orderRepository.save(order);
+
+            finalizePoints(order, amount);
 
             DinningTable table = order.getTables();
             if (table != null) {
@@ -240,11 +303,28 @@ public class PaymentService {
 
     @Transactional
     public String createVNPayOrder(int total, String orderInfo, String urlReturn) throws Exception {
+        // Parse the order ID from orderInfo
+        Integer orderId = extractOrderIdFromOrderInfo(orderInfo);
+
+        if (orderId != null) {
+            Order order = orderRepository.findById(orderId)
+                    .orElseThrow(() -> new IllegalArgumentException("Order not found with ID: " + orderId));
+
+            // Check if the order is already paid
+            if (order.getPaymentStatus() == PaymentStatus.PAID) {
+                throw new IllegalStateException("Order is already paid");
+            }
+
+            BigDecimal payable = order.getTotalAmount();
+            if (order.getDiscount() != null) {
+                payable = payable.subtract(order.getDiscount());
+            }
+            total = payable.intValue();
+        }
+
         if (total <= 0) {
             throw new IllegalArgumentException("Payment amount must be greater than zero");
         }
-        // Parse the order ID from orderInfo
-        Integer orderId = extractOrderIdFromOrderInfo(orderInfo);
 
         String vnp_Version = "2.1.0";
         String vnp_Command = "pay";
@@ -413,6 +493,8 @@ public class PaymentService {
                     Order order = payment.getOrder();
                     order.setPaymentStatus(PaymentStatus.PAID);
                     orderRepository.save(order);
+
+                    finalizePoints(order, payment.getAmount());
 
                     DinningTable table = order.getTables();
                     if (table != null) {

@@ -21,5 +21,6 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     List<Order> findByTableNumberAndPaymentStatus(@Param("tableNumber") Integer tableNumber, @Param("paymentStatus") PaymentStatus paymentStatus);
     @Query("SELECT CASE WHEN COUNT(o) > 0 THEN true ELSE false END FROM Order o WHERE o.tables.tableNumber = :tableNumber AND o.paymentStatus = :paymentStatus")
     boolean existsByTablesTableNumberAndPaymentStatus(@Param("tableNumber") Integer tableNumber, @Param("paymentStatus") PaymentStatus paymentStatus);
-
+    
+    List<Order> findByCustomerCustomerIdOrderByOrderDateDesc(Integer customerId);
 }

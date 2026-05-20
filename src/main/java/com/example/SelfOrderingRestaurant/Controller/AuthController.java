@@ -20,6 +20,13 @@ import java.security.GeneralSecurityException;
 public class AuthController {
     private final AuthService authService;
 
+    @PostMapping("/customer/register")
+    public ResponseEntity<AuthResponseDto> registerCustomer(
+            @Valid @RequestBody CustomerRegisterRequestDto request
+    ) {
+        return ResponseEntity.ok(authService.registerCustomer(request));
+    }
+
     @PostMapping("/staff/google-login")
     public ResponseEntity<AuthResponseDto> staffGoogleLogin(
             @Valid @RequestBody GoogleLoginRequestDto request
@@ -35,7 +42,7 @@ public class AuthController {
         // Lưu trạng thái kết nối vào session
         session.setAttribute("isConnected", true);
         session.setAttribute("tableNumber", "1");
-        return ResponseEntity.ok(authService.login(request));
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/logout")

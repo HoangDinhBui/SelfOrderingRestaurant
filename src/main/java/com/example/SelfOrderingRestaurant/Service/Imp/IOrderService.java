@@ -19,4 +19,5 @@ public interface IOrderService {
     OrderCartResponseDTO updateItemQuantity(Integer dishId, int quantity);
     OrderCartResponseDTO updateItemNotes(Integer dishId, String notes);
     OrderResponseDTO updateOrderItemStatus(Integer orderId, Integer dishId, String status);
+    List<OrderResponseDTO> getCustomerOrderHistory(String username);
 }
