@@ -77,7 +77,7 @@ const Attendance = () => {
 
       try {
         const response = await axios.post(
-          "http://localhost:8080/api/attendance/check-in-camera",
+          "http://localhost:8081/api/attendance/check-in-camera",
           formData,
           {
             headers: {

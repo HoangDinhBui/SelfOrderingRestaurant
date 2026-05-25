@@ -25,7 +25,7 @@ const Order = () => {
     updateItemNotes,
   } = useContext(CartContext);
 
-  const API_BASE_URL = "http://localhost:8080";
+  const API_BASE_URL = "http://localhost:8081";
 
   const getImageUrl = (imageName) => {
     if (!imageName) return "/src/assets/img/placeholder.jpg";

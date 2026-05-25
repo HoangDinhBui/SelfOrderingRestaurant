@@ -2,7 +2,7 @@ import axios from "axios";
 
 // Lấy URL cơ sở của API từ biến môi trường
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:8081/api";
 
 // Tạo instance axios cho các yêu cầu cần xác thực
 const authAPI = axios.create({
@@ -181,7 +181,7 @@ export const login = async (login, password) => {
 export const googleLogin = async (tokenId) => {
   try {
     const response = await publicAPI.post("auth/staff/google-login", {
-      tokenId,
+      idToken: tokenId,
     });
     return response.data;
   } catch (error) {

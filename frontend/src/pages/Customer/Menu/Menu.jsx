@@ -44,7 +44,7 @@ const Menu = () => {
         setLoading(true);
 
         // Fetch dishes
-        const dishesResponse = await fetch("http://localhost:8080/api/dishes");
+        const dishesResponse = await fetch("http://localhost:8081/api/dishes");
         if (!dishesResponse.ok) {
           throw new Error(`HTTP error! Status: ${dishesResponse.status}`);
         }
@@ -52,7 +52,7 @@ const Menu = () => {
 
         // Fetch available inventory
         const inventoryResponse = await fetch(
-          "http://localhost:8080/api/inventory/available"
+          "http://localhost:8081/api/inventory/available"
         );
         if (!inventoryResponse.ok) {
           throw new Error(`HTTP error! Status: ${inventoryResponse.status}`);
@@ -61,7 +61,7 @@ const Menu = () => {
 
         // Fetch dish-ingredients
         const dishIngredientsResponse = await fetch(
-          "http://localhost:8080/api/dish_ingredients"
+          "http://localhost:8081/api/dish_ingredients"
         );
         if (!dishIngredientsResponse.ok) {
           throw new Error(
@@ -223,7 +223,7 @@ const Menu = () => {
           },
         };
 
-        const response = await fetch("http://localhost:8080/graphql", {
+        const response = await fetch("http://localhost:8081/graphql", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

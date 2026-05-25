@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:8080/api";
+  import.meta.env.VITE_API_BASE_URL || "/api";
 
 const authAPI = axios.create({
   baseURL: API_BASE_URL,
@@ -31,7 +31,7 @@ authAPI.interceptors.request.use(
       "/api/categories",
     ];
     const isPublicEndpoint = publicEndpoints.some((endpoint) =>
-      config.url.startsWith(endpoint)
+      config.url.startsWith(endpoint),
     );
     if (token && !isPublicEndpoint) {
       config.headers.Authorization = `Bearer ${token}`;
@@ -53,7 +53,7 @@ authAPI.interceptors.request.use(
   (error) => {
     console.error("authAPI Request Interceptor Error:", error);
     return Promise.reject(error);
-  }
+  },
 );
 
 publicAPI.interceptors.request.use(
@@ -75,7 +75,7 @@ publicAPI.interceptors.request.use(
   (error) => {
     console.error("publicAPI Request Interceptor Error:", error);
     return Promise.reject(error);
-  }
+  },
 );
 
 authAPI.interceptors.response.use(
@@ -101,7 +101,7 @@ authAPI.interceptors.response.use(
       "/api/attendance/check-out",
     ];
     const isPublicEndpoint = publicEndpoints.some((endpoint) =>
-      originalRequest.url.startsWith(endpoint)
+      originalRequest.url.startsWith(endpoint),
     );
     if (
       error.response?.status === 401 &&
@@ -121,14 +121,14 @@ authAPI.interceptors.response.use(
         }
         const refreshResponse = await publicAPI.post(
           "/api/auth/refresh-token",
-          { refreshToken }
+          { refreshToken },
         );
         if (refreshResponse.data.accessToken) {
           localStorage.setItem("accessToken", refreshResponse.data.accessToken);
           if (refreshResponse.data.refreshToken) {
             localStorage.setItem(
               "refreshToken",
-              refreshResponse.data.refreshToken
+              refreshResponse.data.refreshToken,
             );
           }
           originalRequest.headers.Authorization = `Bearer ${refreshResponse.data.accessToken}`;
@@ -157,7 +157,7 @@ authAPI.interceptors.response.use(
       });
     }
     return Promise.reject(error);
-  }
+  },
 );
 
 // Authentication
@@ -174,7 +174,7 @@ export const login = async (login, password) => {
 export const googleLogin = async (tokenId) => {
   try {
     const response = await publicAPI.post("auth/staff/google-login", {
-      tokenId,
+      idToken: tokenId,
     });
     return response.data;
   } catch (error) {
@@ -205,7 +205,7 @@ export const forgotPassword = async ({ username, email }) => {
     console.error(
       "Forgot password error:",
       error.response?.data,
-      error.response?.status
+      error.response?.status,
     );
     throw error;
   }
@@ -443,7 +443,7 @@ export const initiateVNPayPayment = async (paymentData) => {
   try {
     const response = await publicAPI.post(
       "/api/payment/vnpay_payment",
-      paymentData
+      paymentData,
     );
     return response.data;
   } catch (error) {

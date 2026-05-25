@@ -16,7 +16,7 @@ const Note = () => {
   const { cartItems, updateItemNotes, fetchCartData } = useContext(CartContext);
 
   // API base URL
-  const API_BASE_URL = "http://localhost:8080";
+  const API_BASE_URL = "http://localhost:8081";
 
   // Ensure cart data is loaded
   useEffect(() => {

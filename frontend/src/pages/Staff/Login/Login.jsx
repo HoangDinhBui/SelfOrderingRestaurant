@@ -76,10 +76,10 @@ const Login = () => {
       let idKey, idValue, endpoint;
       if (response.userType === "ADMIN") {
         idKey = "adminId";
-        endpoint = `http://localhost:8080/api/admin/by-username/${response.username}`;
+        endpoint = `http://localhost:8081/api/admin/by-username/${response.username}`;
       } else if (response.userType === "STAFF") {
         idKey = "staffId";
-        endpoint = `http://localhost:8080/api/staff/by-username/${response.username}`;
+        endpoint = `http://localhost:8081/api/staff/by-username/${response.username}`;
       } else {
         setError("Unknown user type. Please contact support.");
         toast.error("Unknown user type. Please contact support.");
@@ -178,10 +178,10 @@ const Login = () => {
       let idKey, idValue, endpoint;
       if (response.userType === "ADMIN") {
         idKey = "adminId";
-        endpoint = `http://localhost:8080/api/admin/by-username/${response.username}`;
+        endpoint = `http://localhost:8081/api/admin/by-username/${response.username}`;
       } else if (response.userType === "STAFF") {
         idKey = "staffId";
-        endpoint = `http://localhost:8080/api/staff/by-username/${response.username}`;
+        endpoint = `http://localhost:8081/api/staff/by-username/${response.username}`;
       } else {
         setError("Unknown user type. Please contact support.");
         toast.error("Unknown user type. Please contact support.");

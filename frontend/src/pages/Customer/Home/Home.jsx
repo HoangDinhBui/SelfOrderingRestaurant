@@ -39,7 +39,7 @@ const Home = () => {
   const [socketError, setSocketError] = useState(null);
   const [validationError, setValidationError] = useState(null);
 
-  const API_BASE_URL = "http://localhost:8080";
+  const API_BASE_URL = "http://localhost:8081";
 
   // Apollo Lazy Query for Table Validation
   const [
@@ -93,7 +93,7 @@ const Home = () => {
         `Attempting WebSocket connection (Attempt ${reconnectAttempts + 1})`
       );
       ws = new WebSocket(
-        `ws://localhost:8080/ws/notifications?userType=CUSTOMER&tableNumber=${tableNumber}`
+        `ws://localhost:8081/ws/notifications?userType=CUSTOMER&tableNumber=${tableNumber}`
       );
 
       ws.onopen = () => {

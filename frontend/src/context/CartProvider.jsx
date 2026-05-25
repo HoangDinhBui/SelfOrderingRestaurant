@@ -4,7 +4,7 @@ import { CartContext } from "./CartContext"; // Import from separate file
 
 // Create a base API instance with consistent configuration
 const API = axios.create({
-  baseURL: "http://localhost:8080",
+  baseURL: "http://localhost:8081",
   withCredentials: true,
 });
 

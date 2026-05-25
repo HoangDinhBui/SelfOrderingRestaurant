@@ -47,7 +47,7 @@ const NotificationManagementStaff = () => {
       try {
         const userId = localStorage.getItem("userId") || "123";
         const userType = "STAFF";
-        const wsUrl = `ws://localhost:8080/ws/notifications?userId=${userId}&userType=${userType}`;
+        const wsUrl = `ws://localhost:8081/ws/notifications?userId=${userId}&userType=${userType}`;
         socket = new WebSocket(wsUrl);
 
         socket.onopen = () => {

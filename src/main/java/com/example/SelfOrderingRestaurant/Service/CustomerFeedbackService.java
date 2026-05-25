@@ -69,9 +69,20 @@ public class CustomerFeedbackService {
     // Lấy tất cả đánh giá với bộ lọc
     public List<CustomerFeedbackDTO> getAllFeedbacks(String search, String filterRating, String filterDate) {
         Integer rating = "All".equals(filterRating) ? null : Integer.parseInt(filterRating);
-        String date = "All".equals(filterDate) ? null : filterDate;
+        
+        java.time.LocalDateTime startDate = null;
+        java.time.LocalDateTime endDate = null;
+        if (filterDate != null && !"All".equals(filterDate)) {
+            try {
+                java.time.LocalDate parsedDate = java.time.LocalDate.parse(filterDate, DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+                startDate = parsedDate.atStartOfDay();
+                endDate = parsedDate.atTime(23, 59, 59, 999999999);
+            } catch (Exception e) {
+                System.err.println("Invalid date format: " + filterDate);
+            }
+        }
 
-        List<CustomerFeedback> feedbacks = feedbackRepository.findFeedbacksWithFilters(search, rating, date);
+        List<CustomerFeedback> feedbacks = feedbackRepository.findFeedbacksWithFilters(search, rating, startDate, endDate);
         return feedbacks.stream().map(this::mapToDTO).collect(Collectors.toList());
     }
 

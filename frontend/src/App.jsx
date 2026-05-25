@@ -96,6 +96,22 @@ function App() {
                 element={<StaffManagement />}
               />
               <Route
+                path="/admin-information_admin"
+                element={
+                  <ProtectedRoute>
+                    <AdminInformation />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/dish-management_admin"
+                element={<DishManagementAdmin />}
+              />
+              <Route
+                path="/order-history_admin"
+                element={<OrderHistoryAdmin />}
+              />
+              <Route
                 path="/inventory-management_admin"
                 element={<InventoryManagement />}
               />

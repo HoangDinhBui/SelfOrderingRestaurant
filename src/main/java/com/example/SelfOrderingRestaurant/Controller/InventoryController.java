@@ -23,7 +23,7 @@ public class InventoryController {
         return inventoryService.getAvailableInventories();
     }
 
-    @GetMapping("/inventory")
+    @GetMapping("/admin/inventory")
     public ResponseEntity<?> getAllInventories() {
         return ResponseEntity.ok(inventoryService.getAllInventories());
     }

@@ -75,7 +75,7 @@ const Banner = () => {
         console.log(
           "Context functions not available or failed, using direct API calls"
         );
-        const API_BASE_URL = "http://localhost:8080";
+        const API_BASE_URL = "http://localhost:8081";
 
         // First try GraphQL
         try {

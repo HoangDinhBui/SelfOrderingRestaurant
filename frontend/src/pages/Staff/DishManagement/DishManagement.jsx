@@ -144,7 +144,7 @@ const DishManagementStaff = () => {
         };
 
         // Call /inventory/update-by-order
-        const response = await fetch("http://localhost:8080/api/inventory/update-by-order", {
+        const response = await fetch("http://localhost:8081/api/inventory/update-by-order", {
           method: "POST",
           headers: {
             Authorization: `Bearer ${accessToken}`,

@@ -10,7 +10,7 @@ const CreateTable = () => {
   const [error, setError] = useState(null);
   const [uploading, setUploading] = useState(false);
 
-  const API_BASE_URL = "http://localhost:8080";
+  const API_BASE_URL = "http://localhost:8081";
   const APP_BASE_URL = "http://localhost:5173"; // URL ứng dụng frontend
   const QR_API_URL = "http://api.qrserver.com/v1/create-qr-code/";
 

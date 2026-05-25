@@ -4,7 +4,7 @@ import MenuBar from "../../../components/layout/MenuBar";
 import logoRemoveBg from "../../../assets/img/logoremovebg.png";
 
 // Cấu hình Axios
-const API_BASE_URL = "http://localhost:8080";
+const API_BASE_URL = "http://localhost:8081";
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {

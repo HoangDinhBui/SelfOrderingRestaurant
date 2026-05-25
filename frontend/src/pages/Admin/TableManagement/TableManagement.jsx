@@ -67,7 +67,7 @@ const TableManagementAdmin = () => {
         })`
       );
       ws = new WebSocket(
-        `ws://localhost:8080/ws/notifications?userType=ADMIN&userId=${userId}`
+        `ws://localhost:8081/ws/notifications?userType=ADMIN&userId=${userId}`
       );
 
       ws.onopen = () => {
@@ -310,17 +310,17 @@ const TableManagementAdmin = () => {
 
   // API Configuration
   const API = {
-    get: (url) => axios.get(`http://localhost:8080${url}`),
-    post: (url, data) => axios.post(`http://localhost:8080${url}`, data),
-    put: (url, data) => axios.put(`http://localhost:8080${url}`, data),
-    delete: (url) => axios.delete(`http://localhost:8080${url}`),
+    get: (url) => axios.get(`http://localhost:8081${url}`),
+    post: (url, data) => axios.post(`http://localhost:8081${url}`, data),
+    put: (url, data) => axios.put(`http://localhost:8081${url}`, data),
+    delete: (url) => axios.delete(`http://localhost:8081${url}`),
   };
 
   // GraphQL Executor
   const executeGraphQL = async (query, variables = {}) => {
     try {
       const response = await axios.post(
-        "http://localhost:8080/graphql",
+        "http://localhost:8081/graphql",
         { query, variables },
         { headers: { "Content-Type": "application/json" } }
       );
@@ -682,7 +682,7 @@ const TableManagementAdmin = () => {
       formData.append("tableNumber", newTableId.toString());
 
       const res = await axios.post(
-        "http://localhost:8080/api/qr/upload",
+        "http://localhost:8081/api/qr/upload",
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },

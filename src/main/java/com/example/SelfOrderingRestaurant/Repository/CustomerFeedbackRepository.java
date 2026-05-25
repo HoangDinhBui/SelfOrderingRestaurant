@@ -14,9 +14,10 @@ public interface CustomerFeedbackRepository extends JpaRepository<CustomerFeedba
             "LEFT JOIN cf.customer c " +
             "WHERE (:search IS NULL OR LOWER(c.fullname) LIKE LOWER(CONCAT('%', :search, '%'))) " +
             "AND (:rating IS NULL OR cf.rating = :rating) " +
-            "AND (:date IS NULL OR DATE_FORMAT(cf.feedbackDate, '%d/%m/%Y') = :date)")
+            "AND (cast(:startDate as timestamp) IS NULL OR (cf.feedbackDate >= :startDate AND cf.feedbackDate <= :endDate))")
     List<CustomerFeedback> findFeedbacksWithFilters(
             @Param("search") String search,
             @Param("rating") Integer rating,
-            @Param("date") String date);
+            @Param("startDate") java.time.LocalDateTime startDate,
+            @Param("endDate") java.time.LocalDateTime endDate);
 }

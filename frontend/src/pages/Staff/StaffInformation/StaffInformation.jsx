@@ -87,7 +87,7 @@ const StaffInformation = () => {
         throw new Error("No refresh token available");
       }
       const response = await axios.post(
-        "http://localhost:8080/api/auth/refresh-token",
+        "http://localhost:8081/api/auth/refresh-token",
         { refreshToken }
       );
       const newAccessToken = response.data.accessToken;
@@ -113,7 +113,7 @@ const StaffInformation = () => {
     try {
       console.log("Fetching staff info for username:", username);
       const response = await axios.get(
-        `http://localhost:8080/api/staff/by-username/${username}`,
+        `http://localhost:8081/api/staff/by-username/${username}`,
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -143,7 +143,7 @@ const StaffInformation = () => {
         if (newToken) {
           try {
             const retryResponse = await axios.get(
-              `http://localhost:8080/api/staff/by-username/${username}`,
+              `http://localhost:8081/api/staff/by-username/${username}`,
               {
                 headers: {
                   Authorization: `Bearer ${newToken}`,
@@ -193,7 +193,7 @@ const StaffInformation = () => {
     try {
       console.log("Fetching schedule");
       const response = await axios.get(
-        "http://localhost:8080/api/staff/shifts/my-schedule",
+        "http://localhost:8081/api/staff/shifts/my-schedule",
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -213,7 +213,7 @@ const StaffInformation = () => {
         if (newToken) {
           try {
             const retryResponse = await axios.get(
-              "http://localhost:8080/api/staff/shifts/my-schedule",
+              "http://localhost:8081/api/staff/shifts/my-schedule",
               {
                 headers: {
                   Authorization: `Bearer ${newToken}`,
@@ -352,7 +352,7 @@ const StaffInformation = () => {
 
     try {
       await axios.post(
-        "http://localhost:8080/api/staff/shifts/register",
+        "http://localhost:8081/api/staff/shifts/register",
         shiftRegistration,
         {
           headers: {
@@ -377,7 +377,7 @@ const StaffInformation = () => {
         if (newToken) {
           try {
             await axios.post(
-              "http://localhost:8080/api/staff/shifts/register",
+              "http://localhost:8081/api/staff/shifts/register",
               shiftRegistration,
               {
                 headers: {
@@ -422,7 +422,7 @@ const StaffInformation = () => {
 
     try {
       await axios.delete(
-        `http://localhost:8080/api/staff/shifts/${staffShiftId}`,
+        `http://localhost:8081/api/staff/shifts/${staffShiftId}`,
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -441,7 +441,7 @@ const StaffInformation = () => {
         if (newToken) {
           try {
             await axios.delete(
-              `http://localhost:8080/api/staff/shifts/${staffShiftId}`,
+              `http://localhost:8081/api/staff/shifts/${staffShiftId}`,
               {
                 headers: {
                   Authorization: `Bearer ${newToken}`,

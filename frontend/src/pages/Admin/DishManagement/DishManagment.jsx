@@ -12,7 +12,7 @@ const DishManagementAdmin = () => {
   const [successMessage, setSuccessMessage] = useState(null);
   const [staff, setStaff] = useState([]);
 
-  const API_BASE_URL = "http://localhost:8080";
+  const API_BASE_URL = "http://localhost:8081";
 
   // Lấy token từ localStorage (hoặc hệ thống xác thực của bạn)
   const getAuthToken = () => {

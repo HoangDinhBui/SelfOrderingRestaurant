@@ -62,7 +62,7 @@ const TableManagementStaff = () => {
         `Attempting WebSocket connection (Attempt ${reconnectAttempts + 1})`
       );
       ws = new WebSocket(
-        `ws://localhost:8080/ws/notifications?userType=STAFF&userId=${userId}`
+        `ws://localhost:8081/ws/notifications?userType=STAFF&userId=${userId}`
       );
 
       ws.onopen = () => {
@@ -130,7 +130,7 @@ const TableManagementStaff = () => {
                 );
                 axios
                   .put(
-                    "http://localhost:8080/api/staff/tables/${message.tableNumber}",
+                    "http://localhost:8081/api/staff/tables/${message.tableNumber}",
                     {
                       status: message.tableStatus.toLowerCase(),
                     }
@@ -481,7 +481,7 @@ const TableManagementStaff = () => {
   const executeGraphQL = async (query, variables = {}) => {
     try {
       const response = await axios.post(
-        "http://localhost:8080/graphql",
+        "http://localhost:8081/graphql",
         { query, variables },
         { headers: { "Content-Type": "application/json" } }
       );
@@ -498,10 +498,10 @@ const TableManagementStaff = () => {
   };
 
   const API = {
-    get: (url) => axios.get(`http://localhost:8080${url}`),
-    post: (url, data) => axios.post(`http://localhost:8080${url}`, data),
-    put: (url, data) => axios.put(`http://localhost:8080${url}`, data),
-    delete: (url) => axios.delete(`http://localhost:8080${url}`),
+    get: (url) => axios.get(`http://localhost:8081${url}`),
+    post: (url, data) => axios.post(`http://localhost:8081${url}`, data),
+    put: (url, data) => axios.put(`http://localhost:8081${url}`, data),
+    delete: (url) => axios.delete(`http://localhost:8081${url}`),
   };
 
   const fetchOrdersGraphQL = useCallback(async () => {
