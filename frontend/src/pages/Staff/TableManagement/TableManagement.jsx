@@ -4,6 +4,7 @@ import MenuBar from "../../../components/layout/MenuBar.jsx";
 import axios from "axios";
 import { debounce } from "lodash";
 import { useMemo } from "react";
+import QuickOrderModal from "./QuickOrderModal";
 
 const TableManagementStaff = () => {
   const [selectedTable, setSelectedTable] = useState(null);
@@ -39,6 +40,7 @@ const TableManagementStaff = () => {
     useState(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false); // Used for transfer error handling
+  const [isQuickOrderModalOpen, setIsQuickOrderModalOpen] = useState(false);
 
   // Assume userId is stored in localStorage or fetched from auth context
   const userId = localStorage.getItem("userId") || "1"; // Replace with actual userId retrieval logic
@@ -2662,6 +2664,14 @@ const TableManagementStaff = () => {
                       alt="transfer"
                     />
                   </button>
+                  <button
+                    className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-4 mt-4 rounded-lg shadow-md transition-colors duration-200"
+                    onClick={() => setIsQuickOrderModalOpen(true)}
+                  >
+                    <b className="text-lg">
+                      Đặt Đơn Nhanh
+                    </b>
+                  </button>
                 </div>
               </div>
             </div>
@@ -2680,6 +2690,14 @@ const TableManagementStaff = () => {
       {renderTransferConfirmModal()}
       {renderTransferSuccessModal()}
       {renderPrintModal()}
+      <QuickOrderModal
+        isOpen={isQuickOrderModalOpen}
+        onClose={() => setIsQuickOrderModalOpen(false)}
+        tables={tables}
+        onOrderSuccess={() => {
+          window.location.reload();
+        }}
+      />
     </div>
   );
 };

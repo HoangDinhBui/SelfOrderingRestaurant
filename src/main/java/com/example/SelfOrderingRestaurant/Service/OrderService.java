@@ -98,7 +98,13 @@ public class OrderService implements IOrderService {
         Order newOrder = new Order();
         newOrder.setCustomer(customer);
         newOrder.setTables(dinningTable);
-        newOrder.setStatus(OrderStatus.PENDING);
+        if (request.getReservationTime() != null) {
+            newOrder.setStatus(OrderStatus.SCHEDULED);
+            newOrder.setReservationTime(request.getReservationTime());
+        } else {
+            newOrder.setStatus(OrderStatus.PENDING);
+        }
+        
         newOrder.setPaymentStatus(PaymentStatus.UNPAID);
         newOrder.setNotes(request.getNotes());
         newOrder.setOrderDate(new Date());
@@ -140,7 +146,11 @@ public class OrderService implements IOrderService {
         orderRepository.save(order);
         log.info("Set total amount for order {} to {}", order.getOrderId(), totalAmount);
 
-        dinningTable.setTableStatus(TableStatus.OCCUPIED);
+        if (request.getReservationTime() != null) {
+            dinningTable.setTableStatus(TableStatus.RESERVED);
+        } else {
+            dinningTable.setTableStatus(TableStatus.OCCUPIED);
+        }
         dinningTableRepository.save(dinningTable);
 
         orderCartService.clearCart();
@@ -352,9 +362,9 @@ public class OrderService implements IOrderService {
             errors.add("Table ID must be a positive integer");
         }
 
-        if (request.getItems() == null || request.getItems().isEmpty()) {
-            errors.add("Order must contain at least one item");
-        } else {
+        if ((request.getItems() == null || request.getItems().isEmpty()) && request.getReservationTime() == null) {
+            errors.add("Order must contain at least one item unless it is a reservation");
+        } else if (request.getItems() != null && !request.getItems().isEmpty()) {
             for (int i = 0; i < request.getItems().size(); i++) {
                 OrderItemDTO item = request.getItems().get(i);
                 if (item.getDishId() == null || item.getDishId() <= 0) {
@@ -434,7 +444,8 @@ public class OrderService implements IOrderService {
                                 order.getStatus().name(),
                                 order.getTotalAmount(),
                                 order.getPaymentStatus().name(),
-                                items
+                                items,
+                                order.getReservationTime()
                         );
                     }).collect(Collectors.toList());
         } catch (Exception e) {
@@ -473,7 +484,8 @@ public class OrderService implements IOrderService {
                 order.getStatus().name(),
                 order.getTotalAmount(),
                 order.getPaymentStatus().name(),
-                items
+                items,
+                order.getReservationTime()
         );
     }
 
@@ -593,7 +605,8 @@ public class OrderService implements IOrderService {
                 order.getStatus().name(),
                 order.getTotalAmount(),
                 order.getPaymentStatus().name(),
-                items
+                items,
+                order.getReservationTime()
         );
     }
 
@@ -811,7 +824,8 @@ public class OrderService implements IOrderService {
                     newOrderStatus.name(), // Use updated order status
                     order.getTotalAmount(),
                     order.getPaymentStatus().name(),
-                    items
+                    items,
+                    order.getReservationTime()
             );
         } catch (IllegalArgumentException e) {
             throw new ValidationException("Invalid order item status: " + status);
@@ -939,7 +953,8 @@ public class OrderService implements IOrderService {
                             order.getStatus().name(),
                             order.getTotalAmount(),
                             order.getPaymentStatus().name(),
-                            items
+                            items,
+                            order.getReservationTime()
                     );
                 }).collect(Collectors.toList());
     }

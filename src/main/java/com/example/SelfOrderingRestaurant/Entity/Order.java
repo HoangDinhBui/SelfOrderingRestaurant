@@ -10,6 +10,7 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.util.Date;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "orders")
@@ -55,4 +56,7 @@ public class Order {
     @Enumerated(EnumType.STRING)
     @Column(name = "payment_status")
     private PaymentStatus paymentStatus;
+
+    @Column(name = "reservation_time")
+    private LocalDateTime reservationTime;
 }

@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Min;
 
 import java.util.List;
+import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
@@ -22,8 +23,9 @@ public class OrderRequestDTO {
     private Integer tableId;
 
     @NotNull(message = "Order items cannot be null")
-    @NotEmpty(message = "Order must contain at least one item")
     private List<OrderItemDTO> items;
 
     private String notes;
+
+    private LocalDateTime reservationTime;
 }
