@@ -1,0 +1,66 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: buidinhhoang1910@gmail.com
+    password: kiflurzibulqhzzy
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${google.client-id}
+            client-secret: ${GOOGLE_CLIENT_SECRET:DEFAULT_SECRET}
+            scope:
+              - email
+              - profile
+
+jwt:
+  secret: dGhpcy1pcy1hLXNlY3JldC1rZXktZm9yLWp3dC10b2tlbi1nZW5lcmF0aW9uLXdpdGgtYXQta2Vhc3QtMjU2LWJpdHM=
+  access-token:
+    expiration: 3600000 # 1 hour
+  refresh-token:
+    expiration: 604800000 # 7 days
+
+google:
+  client-id: ${GOOGLE_CLIENT_ID:DEFAULT_ID}
+
+app:
+  frontend-url: http://localhost:3000
+
+file:
+  upload-dir: uploads
+
+restaurant:
+  network:
+    cidr: 172.20.10.0/24
+
+server:
+  port: ${PORT:8081}
+
+logging:
+  level:
+    org.springframework.security: DEBUG
+    org.springframework.web: INFO
