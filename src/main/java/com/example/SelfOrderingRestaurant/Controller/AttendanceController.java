@@ -56,17 +56,31 @@ public class AttendanceController {
 
     public AttendanceController() {
         try {
-            URL resource = getClass().getResource("/cascade/haarcascade_frontalface_default.xml");
-            if (resource == null) {
+            // Đọc tệp cascade từ classpath/resources dưới dạng InputStream
+            java.io.InputStream is = getClass().getResourceAsStream("/cascade/haarcascade_frontalface_default.xml");
+            if (is == null) {
                 throw new RuntimeException("Không tìm thấy file haarcascade_frontalface_default.xml trong resources.");
             }
 
-            String cascadePath = Paths.get(resource.toURI()).toString();
+            // Tạo file tạm thời trên hệ thống tệp vật lý
+            File tempCascadeFile = File.createTempFile("haarcascade_frontalface_default", ".xml");
+            tempCascadeFile.deleteOnExit(); // Đảm bảo tự động xóa khi ứng dụng tắt
 
-            faceDetector = new CascadeClassifier(cascadePath);
-            if (faceDetector.empty()) {
-                throw new RuntimeException("Không thể load file cascade: " + cascadePath);
+            // Sao chép luồng dữ liệu sang file tạm thời
+            try (java.io.FileOutputStream os = new java.io.FileOutputStream(tempCascadeFile)) {
+                byte[] buffer = new byte[4096];
+                int bytesRead;
+                while ((bytesRead = is.read(buffer)) != -1) {
+                    os.write(buffer, 0, bytesRead);
+                }
             }
+
+            // Nạp CascadeClassifier từ đường dẫn của file tạm thời
+            faceDetector = new CascadeClassifier(tempCascadeFile.getAbsolutePath());
+            if (faceDetector.empty()) {
+                throw new RuntimeException("Không thể load file cascade từ file tạm: " + tempCascadeFile.getAbsolutePath());
+            }
+            System.out.println("Đã nạp thành công Haar Cascade từ file tạm thời: " + tempCascadeFile.getAbsolutePath());
 
         } catch (Exception e) {
             throw new RuntimeException("Lỗi khi khởi tạo AttendanceController: " + e.getMessage(), e);
