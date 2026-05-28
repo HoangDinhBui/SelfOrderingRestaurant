@@ -41,4 +41,26 @@ public class EmailService {
             throw new RuntimeException("Failed to send password reset email", e);
         }
     }
+
+    public void sendRegistrationOtpEmail(String toEmail, String otp) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(toEmail);
+            message.setSubject("Account Registration OTP");
+
+            message.setText(
+                    "Welcome to our Restaurant!\n\n" +
+                            "To complete your registration, please verify your email address.\n" +
+                            "Your OTP is: " + otp + "\n\n" +
+                            "This OTP will expire in 10 minutes.\n" +
+                            "If you did not initiate this request, please ignore this email."
+            );
+
+            javaMailSender.send(message);
+        } catch (Exception e) {
+            System.err.println("Failed to send registration OTP email: " + e.getMessage());
+            throw new RuntimeException("Failed to send registration OTP email", e);
+        }
+    }
 }

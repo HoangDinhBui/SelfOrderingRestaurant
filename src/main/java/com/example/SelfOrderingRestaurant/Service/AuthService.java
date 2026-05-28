@@ -57,51 +57,143 @@ public class AuthService {
 
     @Transactional
     public AuthResponseDto registerCustomer(CustomerRegisterRequestDto request) {
-        // Check if username or email already exists
-        if (userRepository.existsByUsername(request.getUsername())) {
-            throw new RuntimeException("Username already exists");
-        }
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already exists");
+        // Check if username already exists
+        Optional<User> existingUserByUsername = userRepository.findByUsername(request.getUsername());
+        if (existingUserByUsername.isPresent()) {
+            User u = existingUserByUsername.get();
+            if (u.getUserStatus() == UserStatus.ACTIVE) {
+                throw new RuntimeException("Username already exists");
+            }
         }
 
-        // Create new user
-        User user = new User();
+        // Check if email already exists
+        Optional<User> existingUserByEmail = userRepository.findByEmail(request.getEmail());
+        if (existingUserByEmail.isPresent()) {
+            User u = existingUserByEmail.get();
+            if (u.getUserStatus() == UserStatus.ACTIVE) {
+                throw new RuntimeException("Email already exists");
+            }
+        }
+
+        // Create or update inactive user
+        User user;
+        if (existingUserByEmail.isPresent()) {
+            user = existingUserByEmail.get();
+        } else if (existingUserByUsername.isPresent()) {
+            user = existingUserByUsername.get();
+        } else {
+            user = new User();
+        }
+
         user.setUsername(request.getUsername());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setPhone(request.getPhone());
         user.setUserType(UserType.CUSTOMER);
-        user.setUserStatus(UserStatus.ACTIVE);
+        user.setUserStatus(UserStatus.INACTIVE);
         user.setCreatedAt(LocalDateTime.now());
+
+        // Generate 6-digit random OTP
+        String otp = String.format("%06d", new Random().nextInt(999999));
+        user.setVerificationToken(otp);
+        user.setVerificationTokenExpiry(LocalDateTime.now().plusMinutes(10));
 
         User savedUser = userRepository.save(user);
 
-        // Create customer profile
-        Customer customer = new Customer();
+        // Create or update customer profile
+        Customer customer = customerRepository.findByUser(savedUser).orElse(new Customer());
         customer.setUser(savedUser);
         customer.setFullname(request.getFullname());
         customer.setJoinDate(new Date());
         customer.setPoints(0);
 
-        Customer savedCustomer = customerRepository.save(customer);
+        customerRepository.save(customer);
+
+        // Send registration OTP email
+        try {
+            emailService.sendRegistrationOtpEmail(savedUser.getEmail(), otp);
+        } catch (Exception e) {
+            log.error("Failed to send registration OTP email to {}: {}. OTP is: {}", savedUser.getEmail(), e.getMessage(), otp);
+            System.out.println("====== [TEST / DEV ONLY] REGISTRATION OTP FOR " + savedUser.getEmail() + " IS: " + otp + " ======");
+        }
+
+        // Return response indicating OTP is sent
+        AuthResponseDto response = new AuthResponseDto();
+        response.setUsername(savedUser.getUsername());
+        response.setEmail(savedUser.getEmail());
+        response.setUserType(savedUser.getUserType().name());
+        response.setMessage("OTP_SENT_TO_EMAIL");
+
+        return response;
+    }
+
+    @Transactional
+    public AuthResponseDto verifyRegisterOtp(VerifyOtpRequestDto request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + request.getEmail()));
+
+        if (user.getUserStatus() == UserStatus.ACTIVE) {
+            throw new RuntimeException("Account is already verified");
+        }
+
+        if (user.getVerificationToken() == null || !user.getVerificationToken().equals(request.getOtp())) {
+            throw new RuntimeException("Invalid OTP");
+        }
+
+        if (user.getVerificationTokenExpiry().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("OTP has expired");
+        }
+
+        // Activate user
+        user.setUserStatus(UserStatus.ACTIVE);
+        user.setVerificationToken(null);
+        user.setVerificationTokenExpiry(null);
+        User savedUser = userRepository.save(user);
+
+        // Find customer profile
+        Customer customer = customerRepository.findByUser(savedUser)
+                .orElseThrow(() -> new RuntimeException("Customer profile not found"));
 
         // Generate tokens
         String accessToken = jwtTokenService.generateAccessToken(savedUser);
         String refreshToken = jwtTokenService.generateRefreshToken(savedUser);
 
-        // Return response
+        // Return successful authentication response
         AuthResponseDto response = new AuthResponseDto();
         response.setAccessToken(accessToken);
         response.setRefreshToken(refreshToken);
         response.setUsername(savedUser.getUsername());
         response.setEmail(savedUser.getEmail());
         response.setUserType(savedUser.getUserType().name());
-        response.setCustomerId(savedCustomer.getCustomerId());
-        response.setFullname(savedCustomer.getFullname());
-        response.setPoints(savedCustomer.getPoints());
+        response.setCustomerId(customer.getCustomerId());
+        response.setFullname(customer.getFullname());
+        response.setPoints(customer.getPoints());
+        response.setMessage("VERIFICATION_SUCCESSFUL");
 
         return response;
+    }
+
+    @Transactional
+    public void resendRegisterOtp(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+
+        if (user.getUserStatus() == UserStatus.ACTIVE) {
+            throw new RuntimeException("Account is already verified");
+        }
+
+        // Generate new OTP
+        String otp = String.format("%06d", new Random().nextInt(999999));
+        user.setVerificationToken(otp);
+        user.setVerificationTokenExpiry(LocalDateTime.now().plusMinutes(10));
+        userRepository.save(user);
+
+        try {
+            emailService.sendRegistrationOtpEmail(user.getEmail(), otp);
+        } catch (Exception e) {
+            log.error("Failed to resend registration OTP email to {}: {}. OTP is: {}", user.getEmail(), e.getMessage(), otp);
+            System.out.println("====== [TEST / DEV ONLY] RESEND REGISTRATION OTP FOR " + user.getEmail() + " IS: " + otp + " ======");
+        }
     }
 
     @Transactional

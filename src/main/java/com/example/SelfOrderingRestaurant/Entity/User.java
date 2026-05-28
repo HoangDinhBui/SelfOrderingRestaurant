@@ -58,4 +58,10 @@ public class User {
 
     @Column(name = "reset_password_expiry")
     private LocalDateTime resetPasswordExpiry;
+
+    @Column(name = "verification_token")
+    private String verificationToken;
+
+    @Column(name = "verification_token_expiry")
+    private LocalDateTime verificationTokenExpiry;
 }

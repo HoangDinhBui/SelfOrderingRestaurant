@@ -13,4 +13,5 @@ public class AuthResponseDto {
     private Integer customerId;
     private Integer points;
     private String fullname;
+    private String message;
 }

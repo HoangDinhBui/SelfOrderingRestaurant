@@ -9,6 +9,8 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import com.example.SelfOrderingRestaurant.Enum.UserStatus;
+import org.springframework.security.authentication.DisabledException;
 import java.util.Collections;
 import lombok.AllArgsConstructor;
 
@@ -23,6 +25,10 @@ public class CustomUserDetailsService implements UserDetailsService {
 
         User user = userRepository.findByUsernameOrEmail(usernameOrEmail, usernameOrEmail)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+        if (user.getUserStatus() == UserStatus.INACTIVE) {
+            throw new DisabledException("Account is not active/verified. Please verify your OTP.");
+        }
 
         return new org.springframework.security.core.userdetails.User(
                 user.getUsername(),

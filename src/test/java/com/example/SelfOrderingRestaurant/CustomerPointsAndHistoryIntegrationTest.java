@@ -1,6 +1,7 @@
 package com.example.SelfOrderingRestaurant;
 
 import com.example.SelfOrderingRestaurant.Dto.Request.PaymentRequestDTO.ProcessPaymentRequestDTO;
+import com.example.SelfOrderingRestaurant.Dto.Request.UserRequestDTO.VerifyOtpRequestDto;
 import com.example.SelfOrderingRestaurant.Dto.Request.UserRequestDTO.CustomerRegisterRequestDto;
 import com.example.SelfOrderingRestaurant.Dto.Request.UserRequestDTO.LoginRequestDto;
 import com.example.SelfOrderingRestaurant.Dto.Response.OrderResponseDTO.OrderResponseDTO;
@@ -82,12 +83,27 @@ public class CustomerPointsAndHistoryIntegrationTest {
 
         AuthResponseDto registerResponse = authService.registerCustomer(registerDto);
         assertNotNull(registerResponse);
-        assertNotNull(registerResponse.getCustomerId());
-        assertEquals("Bùi Đình Hoàng", registerResponse.getFullname());
-        assertEquals(0, registerResponse.getPoints());
+        assertEquals("OTP_SENT_TO_EMAIL", registerResponse.getMessage());
+
+        // Find user to retrieve OTP
+        User user = userRepository.findByEmail("testcustomer@gmail.com").orElse(null);
+        assertNotNull(user);
+        assertNotNull(user.getVerificationToken());
+
+        // Verify OTP
+        VerifyOtpRequestDto verifyDto = new VerifyOtpRequestDto();
+        verifyDto.setEmail("testcustomer@gmail.com");
+        verifyDto.setOtp(user.getVerificationToken());
+
+        AuthResponseDto verifyResponse = authService.verifyRegisterOtp(verifyDto);
+        assertNotNull(verifyResponse);
+        assertNotNull(verifyResponse.getCustomerId());
+        assertEquals("Bùi Đình Hoàng", verifyResponse.getFullname());
+        assertEquals(0, verifyResponse.getPoints());
+        assertEquals("VERIFICATION_SUCCESSFUL", verifyResponse.getMessage());
 
         // 2. Fetch Customer from DB
-        Customer customer = customerRepository.findById(registerResponse.getCustomerId()).orElse(null);
+        Customer customer = customerRepository.findById(verifyResponse.getCustomerId()).orElse(null);
         assertNotNull(customer);
         assertEquals(0, customer.getPoints());
         assertNotNull(customer.getUser());

@@ -27,6 +27,21 @@ public class AuthController {
         return ResponseEntity.ok(authService.registerCustomer(request));
     }
 
+    @PostMapping("/customer/verify-register-otp")
+    public ResponseEntity<AuthResponseDto> verifyRegisterOtp(
+            @Valid @RequestBody VerifyOtpRequestDto request
+    ) {
+        return ResponseEntity.ok(authService.verifyRegisterOtp(request));
+    }
+
+    @PostMapping("/customer/resend-register-otp")
+    public ResponseEntity<Void> resendRegisterOtp(
+            @RequestParam String email
+    ) {
+        authService.resendRegisterOtp(email);
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/staff/google-login")
     public ResponseEntity<AuthResponseDto> staffGoogleLogin(
             @Valid @RequestBody GoogleLoginRequestDto request
