@@ -13,7 +13,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @EnableTransactionManagement
 public class SelfOrderingRestaurantApplication {
 	static {
-		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+		nu.pattern.OpenCV.loadShared();
 	}
 
 	public static void main(String[] args) {
