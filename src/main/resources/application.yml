@@ -63,3 +63,7 @@ logging:
   level:
     org.springframework.security: DEBUG
     org.springframework.web: INFO
+
+resend:
+  api-key: ${RESEND_API_KEY:re_WhVHk8Vc_MccxCgbinesGVCXeXbvndt3s}
+  from-email: ${RESEND_FROM_EMAIL:onboarding@resend.dev}
