@@ -40,6 +40,11 @@ public class MailConfig {
             props.put("mail.smtp.starttls.enable", String.valueOf(starttls));
         }
 
+        // Set 5-second connection and read timeouts to prevent long HTTP hangs if mail ports are blocked
+        props.put("mail.smtp.connectiontimeout", 5000);
+        props.put("mail.smtp.timeout", 5000);
+        props.put("mail.smtp.writetimeout", 5000);
+
         return mailSender;
     }
 }
