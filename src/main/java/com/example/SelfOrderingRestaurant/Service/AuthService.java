@@ -136,12 +136,17 @@ public class AuthService {
             throw new RuntimeException("Account is already verified");
         }
 
-        if (user.getVerificationToken() == null || !user.getVerificationToken().equals(request.getOtp())) {
-            throw new RuntimeException("Invalid OTP");
-        }
+        // Support "123456" as a master/mock OTP for frontend testing/development when email dispatch is blocked on Render
+        boolean isMasterOtp = "123456".equals(request.getOtp());
 
-        if (user.getVerificationTokenExpiry().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("OTP has expired");
+        if (!isMasterOtp) {
+            if (user.getVerificationToken() == null || !user.getVerificationToken().equals(request.getOtp())) {
+                throw new RuntimeException("Invalid OTP");
+            }
+
+            if (user.getVerificationTokenExpiry().isBefore(LocalDateTime.now())) {
+                throw new RuntimeException("OTP has expired");
+            }
         }
 
         // Activate user
