@@ -241,6 +241,22 @@ public class OrderGraphQLController {
         orderDTO.setTableId(Integer.valueOf(input.getTableId()));
         orderDTO.setNotes(input.getNotes());
 
+        if (input.getReservationTime() != null && !input.getReservationTime().isEmpty()) {
+            try {
+                String resTime = input.getReservationTime();
+                if (resTime.endsWith("Z")) {
+                    resTime = resTime.substring(0, resTime.length() - 1);
+                }
+                orderDTO.setReservationTime(java.time.LocalDateTime.parse(resTime));
+            } catch (Exception e) {
+                try {
+                    orderDTO.setReservationTime(java.time.ZonedDateTime.parse(input.getReservationTime()).toLocalDateTime());
+                } catch (Exception ex) {
+                    log.error("Failed to parse reservationTime '{}': {}", input.getReservationTime(), ex.getMessage());
+                }
+            }
+        }
+
         List<OrderItemDTO> items = input.getItems().stream()
                 .map(item -> {
                     OrderItemDTO itemDTO = new OrderItemDTO();

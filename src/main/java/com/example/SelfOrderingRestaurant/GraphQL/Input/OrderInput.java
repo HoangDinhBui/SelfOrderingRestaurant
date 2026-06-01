@@ -12,4 +12,5 @@ public class OrderInput {
     private Integer tableId;
     private List<OrderItemInput> items;
     private String notes;
+    private String reservationTime;
 }

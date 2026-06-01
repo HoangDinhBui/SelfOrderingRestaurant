@@ -25,6 +25,7 @@ type Order {
   totalAmount: Float!
   paymentStatus: String
   items: [OrderItem!]!
+  reservationTime: String
 }
 
 type OrderCart {
@@ -60,6 +61,7 @@ input OrderInput {
   tableId: ID!
   items: [OrderItemInput!]!
   notes: String
+  reservationTime: String
 }
 
 input UpdateOrderStatusInput {
