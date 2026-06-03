@@ -359,6 +359,127 @@ public class AttendanceController {
         }
     }
 
+    @PreAuthorize("hasRole('STAFF')")
+    @PostMapping("/check-out-camera")
+    public ResponseEntity<?> checkOutCamera(@RequestParam("image") MultipartFile image, Authentication authentication) throws IOException {
+        File tempFile = new File("temp_out.jpg");
+        Files.write(tempFile.toPath(), image.getBytes());
+
+        // Phát hiện khuôn mặt bằng OpenCV
+        Mat matImage = Imgcodecs.imread(tempFile.getAbsolutePath());
+        MatOfRect faceDetections = new MatOfRect();
+        faceDetector.detectMultiScale(matImage, faceDetections);
+
+        if (faceDetections.toArray().length == 0) {
+            Files.deleteIfExists(tempFile.toPath());
+            return ResponseEntity.badRequest().body(Map.of("message", "Không phát hiện khuôn mặt"));
+        }
+
+        // Lấy staffId từ JWT
+        String username = authentication.getName();
+        Staff staff = staffRepository.findByUserUsername(username)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy nhân viên với tên đăng nhập: " + username));
+        Integer staffId = staff.getStaffId();
+
+        String referencePath = staff.getFaceImagePath();
+        if (referencePath == null || !Files.exists(Paths.get(referencePath))) {
+            Files.deleteIfExists(tempFile.toPath());
+            return ResponseEntity.badRequest().body(Map.of("message", "Đường dẫn ảnh khuôn mặt không hợp lệ cho " + staff.getFullname()));
+        }
+
+        // Kiểm tra bản ghi check-in hôm nay
+        LocalDate today = LocalDate.now();
+        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime startOfDay = today.atStartOfDay();
+        LocalDateTime endOfDay = today.atTime(23, 59, 59);
+
+        List<Attendance> checkInRecords = attendanceRepository.findByStaffIdAndCheckInTimeBetweenAndStatus(
+                staffId, startOfDay, endOfDay, Attendance.AttendanceStatus.CHECK_IN);
+        if (checkInRecords.isEmpty()) {
+            Files.deleteIfExists(tempFile.toPath());
+            return ResponseEntity.badRequest().body(Map.of("message", "Không tìm thấy bản ghi check-in cho " + staff.getFullname() + " hôm nay"));
+        }
+
+        // Kiểm tra bản ghi check-out hôm nay
+        List<Attendance> checkOutRecords = attendanceRepository.findByStaffIdAndCheckInTimeBetweenAndStatus(
+                staffId, startOfDay, endOfDay, Attendance.AttendanceStatus.CHECK_OUT);
+
+        // Gửi ảnh đến DeepFace microservice
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.add("image", new FileSystemResource(tempFile));
+        body.set("reference_path", referencePath);
+
+        try {
+            ResponseEntity<Map> response = restTemplate.postForEntity("http://localhost:5000/verify", new HttpEntity<>(body, headers), Map.class);
+            if (response.getStatusCode().is2xxSuccessful() && (Boolean) response.getBody().get("verified")) {
+                // Lấy bản ghi check-in mới nhất
+                Attendance attendance = checkInRecords.stream()
+                        .max((a1, a2) -> a1.getCreatedAt().compareTo(a2.getCreatedAt()))
+                        .orElse(checkInRecords.get(0));
+
+                LocalDateTime checkInTime = attendance.getCreatedAt();
+                LocalDateTime checkOutTime = now;
+                Duration duration = Duration.between(checkInTime, checkOutTime);
+                double workingHours = duration.toMinutes() / 60.0;
+
+                String message = "Check-out thành công cho " + staff.getFullname();
+                LocalDateTime effectiveCheckOutTime = checkOutTime;
+
+                // Kiểm tra bản ghi check-out trước đó
+                if (!checkOutRecords.isEmpty()) {
+                    Attendance latestCheckOut = checkOutRecords.stream()
+                            .max((a1, a2) -> a1.getUpdatedAt().compareTo(a2.getUpdatedAt()))
+                            .orElse(checkOutRecords.get(0));
+                    double previousWorkingHours = latestCheckOut.getWorkingHours() != null ? latestCheckOut.getWorkingHours() : 0.0;
+
+                    if (previousWorkingHours >= 5.0) {
+                        // Đã đủ 5 tiếng, xem như spam
+                        message = "Cảnh báo: Check-out được xem là spam vì đã đủ 5 tiếng làm việc trước đó.";
+                        effectiveCheckOutTime = checkInTime.plusHours(5); // Giữ thời gian tại 5 tiếng
+                        workingHours = 5.0;
+                    } else {
+                        // Chưa đủ 5 tiếng trước đó, cập nhật bình thường
+                        if (workingHours >= 5.0) {
+                            effectiveCheckOutTime = checkInTime.plusHours(5); // Lưu tại 5 tiếng
+                            workingHours = 5.0;
+                            message = "Check-out thành công cho " + staff.getFullname() + ", thời gian làm việc được điều chỉnh về 5 tiếng.";
+                        }
+                    }
+                } else {
+                    // Chưa có check-out, xử lý lần đầu
+                    if (workingHours >= 5.0) {
+                        effectiveCheckOutTime = checkInTime.plusHours(5); // Lưu tại 5 tiếng
+                        workingHours = 5.0;
+                        message = "Check-out thành công cho " + staff.getFullname() + ", thời gian làm việc được điều chỉnh về 5 tiếng.";
+                    }
+                }
+
+                attendance.setCheckOutTime(effectiveCheckOutTime);
+                attendance.setStatus(Attendance.AttendanceStatus.CHECK_OUT);
+                attendance.setUpdatedAt(now);
+                attendance.setWorkingHours(workingHours);
+                attendanceRepository.save(attendance);
+
+                Files.deleteIfExists(tempFile.toPath());
+                return ResponseEntity.ok(Map.of(
+                        "message", message,
+                        "working_hours", workingHours,
+                        "total_working_hours", staff.getTotalWorkingHours()
+                ));
+            } else {
+                Files.deleteIfExists(tempFile.toPath());
+                return ResponseEntity.badRequest().body(Map.of("message", "Khuôn mặt không được nhận diện"));
+            }
+        } catch (HttpClientErrorException e) {
+            System.out.println("Lỗi DeepFace: " + e.getResponseBodyAsString());
+            Files.deleteIfExists(tempFile.toPath());
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .body(Map.of("message", "Dịch vụ xác thực khuôn mặt không khả dụng"));
+        }
+    }
+
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/add-face")
     public ResponseEntity<?> addFace(@RequestParam("staffId") Integer staffId,

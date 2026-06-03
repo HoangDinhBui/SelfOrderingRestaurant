@@ -148,6 +148,12 @@ public class PaymentController {
             Order order = orderRepository.findById(request.getOrderId())
                     .orElseThrow(() -> new IllegalArgumentException("Order not found with ID: " + request.getOrderId()));
 
+            if (request.getPointsToUse() != null && request.getPointsToUse() > 0) {
+                paymentService.applyPointsDiscount(order.getOrderId(), request.getPointsToUse());
+                // Refresh order after applying discount
+                order = orderRepository.findById(request.getOrderId()).orElse(order);
+            }
+
             // Kiểm tra trạng thái đơn hàng
             if (order.getPaymentStatus() == PaymentStatus.PAID) {
                 return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
@@ -194,10 +200,17 @@ public class PaymentController {
                 payment = new Payment();
                 payment.setOrder(order);
                 payment.setCustomer(order.getCustomer());
-                if (order.getTotalAmount() == null || order.getTotalAmount().compareTo(BigDecimal.ZERO) <= 0) {
-                    throw new IllegalArgumentException("Order total amount must be greater than zero");
+                BigDecimal payableAmount = order.getTotalAmount();
+                if (order.getDiscount() != null) {
+                    payableAmount = payableAmount.subtract(order.getDiscount());
                 }
-                payment.setAmount(order.getTotalAmount());
+                if (payableAmount.compareTo(BigDecimal.ZERO) < 0) {
+                    payableAmount = BigDecimal.ZERO;
+                }
+                if (payableAmount.compareTo(BigDecimal.ZERO) <= 0 && request.getPaymentMethod().equalsIgnoreCase("ONLINE")) {
+                    throw new IllegalArgumentException("Payable amount must be greater than zero for online payments");
+                }
+                payment.setAmount(payableAmount);
                 payment.setPaymentMethod(method);
                 payment.setStatus(confirmPayment ? PaymentStatus.PAID : PaymentStatus.UNPAID);
                 payment.setTransactionId(txnRef);
@@ -247,6 +260,36 @@ public class PaymentController {
             response.put("success", false);
             response.put("message", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        }
+    }
+
+    @PostMapping("/apply-points")
+    public ResponseEntity<?> applyPoints(@RequestBody Map<String, Integer> request) {
+        try {
+            Integer orderId = request.get("orderId");
+            Integer pointsToUse = request.get("pointsToUse");
+            
+            if (orderId == null || pointsToUse == null || pointsToUse <= 0) {
+                return ResponseEntity.badRequest().body(Map.of("success", false, "message", "Invalid orderId or pointsToUse"));
+            }
+            
+            paymentService.applyPointsDiscount(orderId, pointsToUse);
+            
+            Order order = orderRepository.findById(orderId).orElseThrow();
+            BigDecimal payableAmount = order.getTotalAmount();
+            if (order.getDiscount() != null) {
+                payableAmount = payableAmount.subtract(order.getDiscount());
+            }
+            
+            return ResponseEntity.ok(Map.of(
+                "success", true,
+                "message", "Points applied successfully",
+                "discount", order.getDiscount(),
+                "payableAmount", payableAmount
+            ));
+        } catch (Exception e) {
+            log.error("Error applying points: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("success", false, "message", e.getMessage()));
         }
     }
 
