@@ -23,4 +23,5 @@ public class GetAllOrdersResponseDTO {
     private String paymentStatus;
     private List<OrderItemDTO> items;
     private LocalDateTime reservationTime;
+    private LocalDateTime orderDate;
 }

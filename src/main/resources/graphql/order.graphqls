@@ -26,6 +26,7 @@ type Order {
   paymentStatus: String
   items: [OrderItem!]!
   reservationTime: String
+  orderDate: String
 }
 
 type OrderCart {

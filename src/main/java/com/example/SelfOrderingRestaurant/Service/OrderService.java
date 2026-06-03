@@ -445,7 +445,8 @@ public class OrderService implements IOrderService {
                                 order.getTotalAmount(),
                                 order.getPaymentStatus().name(),
                                 items,
-                                order.getReservationTime()
+                                order.getReservationTime(),
+                                order.getOrderDate() != null ? new java.sql.Timestamp(order.getOrderDate().getTime()).toLocalDateTime() : null
                         );
                     }).collect(Collectors.toList());
         } catch (Exception e) {
@@ -485,7 +486,8 @@ public class OrderService implements IOrderService {
                 order.getTotalAmount(),
                 order.getPaymentStatus().name(),
                 items,
-                order.getReservationTime()
+                order.getReservationTime(),
+                order.getOrderDate() != null ? new java.sql.Timestamp(order.getOrderDate().getTime()).toLocalDateTime() : null
         );
     }
 
@@ -606,7 +608,8 @@ public class OrderService implements IOrderService {
                 order.getTotalAmount(),
                 order.getPaymentStatus().name(),
                 items,
-                order.getReservationTime()
+                order.getReservationTime(),
+                order.getOrderDate() != null ? new java.sql.Timestamp(order.getOrderDate().getTime()).toLocalDateTime() : null
         );
     }
 
@@ -825,7 +828,8 @@ public class OrderService implements IOrderService {
                     order.getTotalAmount(),
                     order.getPaymentStatus().name(),
                     items,
-                    order.getReservationTime()
+                    order.getReservationTime(),
+                    order.getOrderDate() != null ? new java.sql.Timestamp(order.getOrderDate().getTime()).toLocalDateTime() : null
             );
         } catch (IllegalArgumentException e) {
             throw new ValidationException("Invalid order item status: " + status);
@@ -954,7 +958,8 @@ public class OrderService implements IOrderService {
                             order.getTotalAmount(),
                             order.getPaymentStatus().name(),
                             items,
-                            order.getReservationTime()
+                            order.getReservationTime(),
+                            order.getOrderDate() != null ? new java.sql.Timestamp(order.getOrderDate().getTime()).toLocalDateTime() : null
                     );
                 }).collect(Collectors.toList());
     }

@@ -19,4 +19,5 @@ public class OrderResponseDTO {
     private String paymentStatus;
     private List<OrderItemDTO> items;
     private LocalDateTime reservationTime;
+    private LocalDateTime orderDate;
 }
