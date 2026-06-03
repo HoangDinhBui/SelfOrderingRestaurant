@@ -353,6 +353,34 @@ public class OrderService implements IOrderService {
                 }
             }
         });
+        
+        webSocketService.sendNotificationToCustomer(dinningTable.getTableNumber(), new NotificationResponseDTO() {
+            @Override
+            public Integer getNotificationId() { return null; }
+            @Override
+            public String getTitle() { return "Order Status Updated"; }
+            @Override
+            public String getContent() { return "Order status updated to " + order.getStatus().name(); }
+            @Override
+            public Boolean getIsRead() { return false; }
+            @Override
+            public NotificationType getType() { return NotificationType.OTHER; }
+            @Override
+            public LocalDateTime getCreateAt() { return LocalDateTime.now(); }
+            @Override
+            public Integer getTableNumber() { return dinningTable.getTableNumber(); }
+            @Override
+            public Integer getOrderId() { return order.getOrderId(); }
+            @Override
+            public String toJson() {
+                try {
+                    return new ObjectMapper().writeValueAsString(message);
+                } catch (Exception e) {
+                    log.error("Error serializing order message: {}", e.getMessage());
+                    return "{}";
+                }
+            }
+        });
     }
 
     private void validateOrderRequest(OrderRequestDTO request) {
@@ -530,6 +558,10 @@ public class OrderService implements IOrderService {
                     }
                 }
             }
+            
+            // Send WebSocket notification
+            sendOrderStatusNotification(order, newStatus);
+            
         } catch (IllegalArgumentException e) {
             throw new ValidationException("Invalid order status: " + status);
         }
@@ -915,11 +947,58 @@ public class OrderService implements IOrderService {
 
         try {
             webSocketService.sendNotificationToActiveStaff(notification);
+            webSocketService.sendNotificationToCustomer(order.getTables().getTableNumber(), notification);
             log.info("Sent WebSocket notification for order {}, dish {}, status: {}",
                     order.getOrderId(), orderItem.getId().getDishId(), newStatus.name());
         } catch (Exception e) {
             log.error("Failed to send WebSocket notification for order {}, dish {}: {}",
                     order.getOrderId(), orderItem.getId().getDishId(), e.getMessage(), e);
+        }
+    }
+    
+    private void sendOrderStatusNotification(Order order, OrderStatus newStatus) {
+        Map<String, Object> message = new HashMap<>();
+        message.put("type", "ORDER_STATUS_UPDATED");
+        Map<String, Object> orderDetails = new HashMap<>();
+        orderDetails.put("orderId", order.getOrderId());
+        orderDetails.put("tableNumber", order.getTables().getTableNumber());
+        orderDetails.put("status", newStatus.name());
+        message.put("order", orderDetails);
+
+        NotificationResponseDTO notification = new NotificationResponseDTO() {
+            @Override
+            public Integer getNotificationId() { return null; }
+            @Override
+            public String getTitle() { return "Order Status Updated"; }
+            @Override
+            public String getContent() { return "Order " + order.getOrderId() + " status updated to " + newStatus.name(); }
+            @Override
+            public Boolean getIsRead() { return false; }
+            @Override
+            public NotificationType getType() { return NotificationType.OTHER; }
+            @Override
+            public LocalDateTime getCreateAt() { return LocalDateTime.now(); }
+            @Override
+            public Integer getTableNumber() { return order.getTables().getTableNumber(); }
+            @Override
+            public Integer getOrderId() { return order.getOrderId(); }
+            @Override
+            public String toJson() {
+                try {
+                    return new ObjectMapper().writeValueAsString(message);
+                } catch (Exception e) {
+                    log.error("Error serializing order status notification: {}", e.getMessage(), e);
+                    return "{}";
+                }
+            }
+        };
+
+        try {
+            webSocketService.sendNotificationToActiveStaff(notification);
+            webSocketService.sendNotificationToCustomer(order.getTables().getTableNumber(), notification);
+            log.info("Sent WebSocket notification for order {} status: {}", order.getOrderId(), newStatus.name());
+        } catch (Exception e) {
+            log.error("Failed to send WebSocket notification for order {}: {}", order.getOrderId(), e.getMessage(), e);
         }
     }
 

@@ -170,6 +170,26 @@ public class NotificationWebSocketHandler extends TextWebSocketHandler {
         }
     }
 
+    public void sendNotificationToCustomer(Integer tableNumber, NotificationResponseDTO notification) {
+        try {
+            String jsonNotification = notification.toJson();
+            Set<WebSocketSession> sessions = customerSessions.get(tableNumber);
+            if (sessions != null && !sessions.isEmpty()) {
+                for (WebSocketSession session : sessions) {
+                    if (session.isOpen()) {
+                        session.sendMessage(new TextMessage(jsonNotification));
+                        log.info("Sent notification to customer session {} for table {}: {}", session.getId(), tableNumber, jsonNotification);
+                    }
+                }
+                log.info("Notification sent to customers at table {}: {}", tableNumber, notification.getTitle() != null ? notification.getTitle() : "Custom message");
+            } else {
+                log.warn("No active sessions found for customer at table {}", tableNumber);
+            }
+        } catch (IOException e) {
+            log.error("Error sending notification to customers at table {}: {}", tableNumber, e.getMessage());
+        }
+    }
+
     public void sendTableTransferNotification(TableTransferNotificationDTO notification) {
         try {
             String jsonNotification = objectMapper.writeValueAsString(notification);

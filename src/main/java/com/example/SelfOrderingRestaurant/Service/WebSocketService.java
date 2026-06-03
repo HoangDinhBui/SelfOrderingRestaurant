@@ -41,4 +41,12 @@ public class WebSocketService {
                     sourceTableId, destinationTableId, e.getMessage());
         }
     }
+
+    public void sendNotificationToCustomer(Integer tableNumber, NotificationResponseDTO notification) {
+        try {
+            webSocketHandler.sendNotificationToCustomer(tableNumber, notification);
+        } catch (Exception e) {
+            log.error("Error sending notification to customer at table {}: {}", tableNumber, e.getMessage());
+        }
+    }
 }
