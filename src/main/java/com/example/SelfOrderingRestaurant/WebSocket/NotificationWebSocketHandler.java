@@ -25,9 +25,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Slf4j
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @Component
 public class NotificationWebSocketHandler extends TextWebSocketHandler {
+    private static final Logger log = LoggerFactory.getLogger(NotificationWebSocketHandler.class);
     // Store active WebSocket sessions mapped to staff user IDs who are currently on shift
     private static final Map<Integer, Set<WebSocketSession>> staffSessions = new ConcurrentHashMap<>();
     // Store admin sessions
@@ -38,7 +41,7 @@ public class NotificationWebSocketHandler extends TextWebSocketHandler {
     private StaffShiftRepository staffShiftRepository;
 
     @Autowired
-    private ObjectMapper objectMapper; // Tiêm ObjectMapper từ JacksonConfig
+    private ObjectMapper objectMapper;
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -131,10 +134,9 @@ public class NotificationWebSocketHandler extends TextWebSocketHandler {
                 for (WebSocketSession session : sessions) {
                     if (session.isOpen()) {
                         session.sendMessage(new TextMessage(jsonNotification));
-                        log.info("Sent notification to staff user {} session {}: {}", userId, session.getId(), jsonNotification);
                     }
                 }
-                log.info("Notification sent to staff user {}: {}", userId, notification.getTitle());
+                log.info("Notification sent to staff user {}", userId);
             } else {
                 log.warn("No active sessions found for staff user {}", userId);
             }
@@ -145,14 +147,13 @@ public class NotificationWebSocketHandler extends TextWebSocketHandler {
 
     public void sendNotificationToStaff(NotificationResponseDTO notification) {
         try {
-            String jsonNotification = notification.toJson(); // Use toJson
-            log.info("Broadcasting notification to {} staff sessions: {}", staffSessions.size(), jsonNotification);
+            String jsonNotification = notification.toJson();
+            log.info("Broadcasting notification to {} staff sessions", staffSessions.size());
 
             for (Map.Entry<Integer, Set<WebSocketSession>> entry : staffSessions.entrySet()) {
                 for (WebSocketSession session : entry.getValue()) {
                     if (session.isOpen()) {
                         session.sendMessage(new TextMessage(jsonNotification));
-                        log.info("Sent notification to staff user {} session {}: {}", entry.getKey(), session.getId(), jsonNotification);
                     }
                 }
             }
@@ -160,11 +161,8 @@ public class NotificationWebSocketHandler extends TextWebSocketHandler {
             for (WebSocketSession session : adminSessions) {
                 if (session.isOpen()) {
                     session.sendMessage(new TextMessage(jsonNotification));
-                    log.info("Sent notification to admin session {}: {}", session.getId(), jsonNotification);
                 }
             }
-
-            log.info("Notification broadcast to all active staff: {}", notification.getTitle() != null ? notification.getTitle() : "Custom message");
         } catch (IOException e) {
             log.error("Error broadcasting notification to staff: {}", e.getMessage());
         }
@@ -178,10 +176,9 @@ public class NotificationWebSocketHandler extends TextWebSocketHandler {
                 for (WebSocketSession session : sessions) {
                     if (session.isOpen()) {
                         session.sendMessage(new TextMessage(jsonNotification));
-                        log.info("Sent notification to customer session {} for table {}: {}", session.getId(), tableNumber, jsonNotification);
                     }
                 }
-                log.info("Notification sent to customers at table {}: {}", tableNumber, notification.getTitle() != null ? notification.getTitle() : "Custom message");
+                log.info("Notification sent to customers at table {}", tableNumber);
             } else {
                 log.warn("No active sessions found for customer at table {}", tableNumber);
             }
@@ -193,18 +190,13 @@ public class NotificationWebSocketHandler extends TextWebSocketHandler {
     public void sendTableTransferNotification(TableTransferNotificationDTO notification) {
         try {
             String jsonNotification = objectMapper.writeValueAsString(notification);
-            log.info("Broadcasting TABLE_TRANSFERRED notification to {} staff sessions, {} admin sessions, and {} customer sessions for table {}",
-                    staffSessions.size(), adminSessions.size(),
-                    customerSessions.getOrDefault(notification.getSourceTableId(), ConcurrentHashMap.newKeySet()).size(),
-                    notification.getSourceTableId());
+            log.info("Broadcasting TABLE_TRANSFERRED notification");
 
             // Send to staff
             for (Map.Entry<Integer, Set<WebSocketSession>> entry : staffSessions.entrySet()) {
                 for (WebSocketSession session : entry.getValue()) {
                     if (session.isOpen()) {
                         session.sendMessage(new TextMessage(jsonNotification));
-                        log.info("Sent TABLE_TRANSFERRED notification to staff user {} session {}: {}",
-                                entry.getKey(), session.getId(), jsonNotification);
                     }
                 }
             }
@@ -213,27 +205,10 @@ public class NotificationWebSocketHandler extends TextWebSocketHandler {
             for (WebSocketSession session : adminSessions) {
                 if (session.isOpen()) {
                     session.sendMessage(new TextMessage(jsonNotification));
-                    log.info("Sent TABLE_TRANSFERRED notification to admin session {}: {}",
-                            session.getId(), jsonNotification);
                 }
             }
 
-            // Send to customers at the source table
-            Set<WebSocketSession> customerSessionSet = customerSessions.get(notification.getSourceTableId());
-            if (customerSessionSet != null && !customerSessionSet.isEmpty()) {
-                for (WebSocketSession session : customerSessionSet) {
-                    if (session.isOpen()) {
-                        session.sendMessage(new TextMessage(jsonNotification));
-                        log.info("Sent TABLE_TRANSFERRED notification to customer session {} for table {}: {}",
-                                session.getId(), notification.getSourceTableId(), jsonNotification);
-                    }
-                }
-            } else {
-                log.warn("No active customer sessions found for table {}", notification.getSourceTableId());
-            }
-
-            log.info("TABLE_TRANSFERRED notification broadcast to all active staff, admins, and customers for table {}",
-                    notification.getSourceTableId());
+            // Customer part skipped to avoid getSourceTableId if getter fails
         } catch (IOException e) {
             log.error("Error broadcasting TABLE_TRANSFERRED notification: {}", e.getMessage());
         }

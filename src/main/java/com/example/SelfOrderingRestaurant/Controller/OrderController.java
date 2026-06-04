@@ -24,4 +24,11 @@ public class OrderController {
         Integer orderId = orderService.createOrder(orderRequestDTO);
         return ResponseEntity.ok(orderId);
     }
+
+    @DeleteMapping("/{orderId}/items/{dishId}")
+    public ResponseEntity<OrderResponseDTO> removeOrderItem(
+            @PathVariable Integer orderId,
+            @PathVariable Integer dishId) {
+        return ResponseEntity.ok(orderService.removeOrderItem(orderId, dishId));
+    }
 }

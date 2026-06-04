@@ -93,7 +93,7 @@ public class AttendanceController {
     public ResponseEntity<?> checkIn(@RequestBody Map<String, String> payload, Authentication authentication) throws IOException {
         String imageBase64 = payload.get("image");
         byte[] imageBytes = Base64.getDecoder().decode(imageBase64);
-        File tempFile = new File("temp.jpg");
+        File tempFile = File.createTempFile("face_auth_", ".jpg");
         Files.write(tempFile.toPath(), imageBytes);
 
         // Phát hiện khuôn mặt bằng OpenCV
@@ -166,7 +166,7 @@ public class AttendanceController {
     @PreAuthorize("hasRole('STAFF')")
     @PostMapping("/check-in-camera")
     public ResponseEntity<?> checkInCamera(@RequestParam("image") MultipartFile image, Authentication authentication) throws IOException {
-        File tempFile = new File("temp.jpg");
+        File tempFile = File.createTempFile("face_auth_", ".jpg");
         Files.write(tempFile.toPath(), image.getBytes());
 
         // Phát hiện khuôn mặt bằng OpenCV
@@ -241,7 +241,7 @@ public class AttendanceController {
     public ResponseEntity<?> checkOut(@RequestBody Map<String, String> payload, Authentication authentication) throws IOException {
         String imageBase64 = payload.get("image");
         byte[] imageBytes = Base64.getDecoder().decode(imageBase64);
-        File tempFile = new File("temp.jpg");
+        File tempFile = File.createTempFile("face_auth_", ".jpg");
         Files.write(tempFile.toPath(), imageBytes);
 
         // Phát hiện khuôn mặt bằng OpenCV
@@ -362,7 +362,7 @@ public class AttendanceController {
     @PreAuthorize("hasRole('STAFF')")
     @PostMapping("/check-out-camera")
     public ResponseEntity<?> checkOutCamera(@RequestParam("image") MultipartFile image, Authentication authentication) throws IOException {
-        File tempFile = new File("temp_out.jpg");
+        File tempFile = File.createTempFile("face_auth_", ".jpg");
         Files.write(tempFile.toPath(), image.getBytes());
 
         // Phát hiện khuôn mặt bằng OpenCV
@@ -484,7 +484,12 @@ public class AttendanceController {
     @PostMapping("/add-face")
     public ResponseEntity<?> addFace(@RequestParam("staffId") Integer staffId,
                                      @RequestParam("image") MultipartFile image) throws IOException {
-        String filePath = "src/main/resources/static/staff_faces/" + staffId + ".jpg";
+        String uploadDir = "uploads/staff_faces/";
+        File dir = new File(uploadDir);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+        String filePath = uploadDir + staffId + ".jpg";
         Files.write(Paths.get(filePath), image.getBytes());
 
         Staff staff = staffRepository.findById(staffId).orElseThrow(() -> new RuntimeException("Staff not found"));

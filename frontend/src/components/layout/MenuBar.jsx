@@ -232,6 +232,11 @@ const MenuBar = ({
       path: "/staff-management_admin",
     },
     {
+      label: "User Management",
+      icon: "https://img.icons8.com/ios-filled/50/1C2E4A/group.png",
+      path: "/user-management_admin",
+    },
+    {
       label: "Revenue Management",
       icon: "https://img.icons8.com/ios-filled/50/1C2E4A/money.png",
       path: "/revenue-management_admin",

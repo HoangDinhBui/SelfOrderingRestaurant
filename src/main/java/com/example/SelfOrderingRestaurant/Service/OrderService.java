@@ -569,8 +569,8 @@ public class OrderService implements IOrderService {
 
     @Transactional
     public OrderResponseDTO removeOrderItem(Integer orderId, Integer dishId) {
-        if (!securityUtils.isAuthenticated() || !securityUtils.hasRole("STAFF")) {
-            throw new AuthorizationException("Only staff members can remove order items");
+        if (!securityUtils.isAuthenticated() || (!securityUtils.isStaff() && !securityUtils.isCustomer())) {
+            throw new AuthorizationException("Not authorized to remove order items");
         }
 
         if (orderId == null || orderId <= 0) {
@@ -583,6 +583,10 @@ public class OrderService implements IOrderService {
 
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + orderId));
+
+        if (order.getPaymentStatus() != PaymentStatus.UNPAID) {
+            throw new ValidationException("Can only cancel items for UNPAID orders");
+        }
 
         OrderItemKey key = new OrderItemKey();
         key.setOrderId(orderId);
