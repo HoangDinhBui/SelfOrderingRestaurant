@@ -94,60 +94,43 @@ const DishManagementAdmin = () => {
 
     console.log("Processing order for table:", tableId, "Items:", items);
 
-    const mappedItems = await Promise.all(
+    await Promise.all(
       items.map(async (item) => {
-        try {
-          const response = await axios.get(
-            `${API_BASE_URL}/api/dishes/name-to-id?name=${encodeURIComponent(item.name)}`,
-            {
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${getAuthToken()}`,
-              },
-              validateStatus: false,
+        // Extract orderId and dishId from item.id (format: "orderId-dishId-index")
+        const [orderId, dishId] = item.id.split('-');
+        
+        const mutation = {
+          query: `
+            mutation UpdateOrderItemStatus($orderId: ID!, $dishId: ID!, $status: String!) {
+              updateOrderItemStatus(orderId: $orderId, dishId: $dishId, status: $status) {
+                orderId
+                status
+              }
             }
-          );
-          console.log(`Response for dish "${item.name}":`, response.data, response.status);
-          if (response.status !== 200 || !Number.isInteger(response.data.dishId)) {
-            throw new Error(`Invalid dishId for "${item.name}": ${JSON.stringify(response.data)}`);
+          `,
+          variables: {
+            orderId: orderId,
+            dishId: dishId,
+            status: "PROCESSING"
           }
-          if (!Number.isInteger(item.quantity) || item.quantity <= 0) {
-            throw new Error(`Invalid quantity for "${item.name}": ${item.quantity}`);
-          }
-          return {
-            dishId: response.data.dishId,
-            quantity: item.quantity,
-          };
-        } catch (error) {
-          console.error(`Error fetching dishId for "${item.name}":`, error.message);
-          throw error;
+        };
+
+        const response = await axios.post(`${API_BASE_URL}/graphql`, mutation, {
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${getAuthToken()}`,
+          },
+        });
+
+        if (response.data.errors) {
+          throw new Error(response.data.errors[0].message);
         }
       })
     );
 
-    const inventoryUpdateRequest = { items: mappedItems };
-    console.log("Sending inventory update request:", JSON.stringify(inventoryUpdateRequest, null, 2));
-
-    const inventoryResponse = await axios.post(
-      `${API_BASE_URL}/api/inventory/update-by-order`,
-      inventoryUpdateRequest,
-      {
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${getAuthToken()}`,
-        },
-        validateStatus: false,
-      }
-    );
-    console.log("Inventory update response:", inventoryResponse.data, inventoryResponse.status);
-
-    if (inventoryResponse.status !== 200) {
-      throw new Error(`Failed to update inventory: ${inventoryResponse.data.message || inventoryResponse.statusText}`);
-    }
-
     setStaff((prevStaff) => prevStaff.filter((dish) => String(dish.table) !== String(tableId)));
     console.log("Updated staff:", staff.filter((dish) => String(dish.table) !== String(tableId)));
-    setSuccessMessage("Cập nhật kho thành công!");
+    setSuccessMessage("Cập nhật trạng thái thành công!");
   } catch (error) {
     console.error("Error in handleAcceptOrder:", error.message, error.stack);
     setError(`Lỗi xử lý đơn hàng: ${error.message}`);

@@ -123,42 +123,6 @@ const DishManagementStaff = () => {
     );
 
     try {
-      // If transitioning to PROCESSING, call the inventory update API
-      if (newStatus === "PROCESSING") {
-        const accessToken = "eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6WyJST0xFX0FETUlOIl0sInVzZXJUeXBlIjoiQURNSU4iLCJ1c2VySWQiOjcsImVtYWlsIjoiYWRtaW4xQHJlc3RhdXJhbnQuY29tIiwidXNlcm5hbWUiOiJhZG1pbjEiLCJzdWIiOiJhZG1pbjEiLCJpYXQiOjE3NTA2ODQyOTEsImV4cCI6MTc1MDY4Nzg5MX0.XtmEnDd8yXwuqiGvzvAfXWxH8itkvOkCfHuqUuKbcaA";
-        const dishName = item.name;
-        const quantity = item.quantity;
-        const tableNumber = item.table;
-        const note = item.note || "";
-
-        // Prepare payload with a list of items
-        const payload = {
-          tableNumber,
-          note,
-          items: [
-            {
-              dishName,
-              quantity,
-            },
-          ],
-        };
-
-        // Call /inventory/update-by-order
-        const response = await fetch("http://localhost:8081/api/inventory/update-by-order", {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(`Failed to update inventory: ${errorText}`);
-        }
-      }
-
       // Update order item status
       await updateOrderItemStatus({
         variables: {
