@@ -57,7 +57,7 @@ public class AttendanceController {
     @Value("${deepface.api.url:http://localhost:5000/verify}")
     private String deepfaceApiUrl;
 
-    private final CascadeClassifier faceDetector;
+    private CascadeClassifier faceDetector;
 
     public AttendanceController() {
         try {
@@ -87,8 +87,9 @@ public class AttendanceController {
             }
             System.out.println("Đã nạp thành công Haar Cascade từ file tạm thời: " + tempCascadeFile.getAbsolutePath());
 
-        } catch (Exception e) {
-            throw new RuntimeException("Lỗi khi khởi tạo AttendanceController: " + e.getMessage(), e);
+        } catch (Throwable e) {
+            System.err.println("Lỗi khi khởi tạo AttendanceController: " + e.getMessage());
+            faceDetector = null;
         }
     }
 
