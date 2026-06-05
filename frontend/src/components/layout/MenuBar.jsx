@@ -214,12 +214,13 @@ const MenuBar = ({
       label: "Dish Management",
       icon: "https://img.icons8.com/?size=100&id=99345&format=png&color=1C2E4A",
       path:
-        userType === "STAFF" ? "/dish-management_staff" : "/dish-management",
+        userType === "STAFF" ? "/dish-management" : "/dish-management_admin",
     },
     {
       label: "Order History",
       icon: "https://img.icons8.com/?size=100&id=24874&format=png&color=1C2E4A",
-      path: "/order-history",
+      path:
+        userType === "STAFF" ? "/order-history" : "/order-history_admin",
     },
     {
       label: "Menu Management",
