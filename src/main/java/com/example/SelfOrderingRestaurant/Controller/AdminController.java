@@ -115,7 +115,7 @@ public class AdminController {
     // Staff Management Endpoints
     @PostMapping(value = "/staff/register", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> registerStaff(
-            @RequestPart("request") RegisterRequestDto request,
+            @ModelAttribute @Valid RegisterRequestDto request,
             @RequestPart(value = "image", required = false) MultipartFile image) {
         try {
             logger.info("Registering new staff: {}", request.getUsername());
