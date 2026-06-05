@@ -2,7 +2,7 @@ import axios from "axios";
 
 // Lấy URL cơ sở của API từ biến môi trường
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "https://selforderingrestaurant-635x.onrender.com/api";
+  import.meta.env.VITE_API_BASE_URL || "https://selforderingrestaurant-635x.onrender.com";
 
 // Tạo instance axios cho các yêu cầu cần xác thực
 const authAPI = axios.create({

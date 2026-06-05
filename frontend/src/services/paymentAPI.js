@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "https://selforderingrestaurant-635x.onrender.com/api";
+  import.meta.env.VITE_API_BASE_URL || "https://selforderingrestaurant-635x.onrender.com";
 
 const paymentAPI = axios.create({
   baseURL: API_BASE_URL,
@@ -41,7 +41,7 @@ export const confirmPayment = async (orderId) => {
       throw new Error("Invalid order ID");
     }
     console.log("Confirming payment for orderId:", orderId);
-    const response = await paymentAPI.post("/payment/confirm", { orderId });
+    const response = await paymentAPI.post("/api/payment/confirm", { orderId });
     return response.data;
   } catch (error) {
     return handleApiError(error);
@@ -53,7 +53,7 @@ export const getPaymentStatus = async (orderId) => {
     if (!orderId) {
       throw new Error("Invalid order ID");
     }
-    const response = await paymentAPI.get(`/payment/payment/status/${orderId}`);
+    const response = await paymentAPI.get(`/api/payment/payment/status/${orderId}`);
     return response.data;
   } catch (error) {
     return handleApiError(error);

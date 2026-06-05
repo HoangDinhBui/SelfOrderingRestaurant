@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "https://selforderingrestaurant-635x.onrender.com/api";
+  import.meta.env.VITE_API_BASE_URL || "https://selforderingrestaurant-635x.onrender.com";
 
 // Create axios instance for notification API calls
 const notificationAPI = axios.create({
@@ -41,7 +41,7 @@ const handleApiError = (error) => {
 // Get all notifications for current shift (for staff)
 export const getCurrentShiftNotifications = async () => {
   try {
-    const response = await notificationAPI.get("/notifications/shift/current");
+    const response = await notificationAPI.get("/api/notifications/shift/current");
     return response.data;
   } catch (error) {
     return handleApiError(error);
@@ -58,7 +58,7 @@ export const markNotificationAsRead = async (notificationId) => {
     }
 
     const response = await notificationAPI.put(
-      `/notifications/${notificationId}/read`
+      `/api/notifications/${notificationId}/read`
     );
     return response.data;
   } catch (error) {
@@ -76,7 +76,7 @@ export const deleteNotification = async (notificationId) => {
     }
 
     const response = await notificationAPI.delete(
-      `/notifications/${notificationId}`
+      `/api/notifications/${notificationId}`
     );
     return response.data;
   } catch (error) {
@@ -93,7 +93,7 @@ export const getNotificationsByTable = async (tableId) => {
     }
 
     const response = await notificationAPI.get(
-      `/notifications/table/${tableId}`
+      `/api/notifications/table/${tableId}`
     );
     return response.data;
   } catch (error) {

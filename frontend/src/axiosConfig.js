@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "/api";
+  import.meta.env.VITE_API_BASE_URL || "https://selforderingrestaurant-635x.onrender.com";
 
 const authAPI = axios.create({
   baseURL: API_BASE_URL,
