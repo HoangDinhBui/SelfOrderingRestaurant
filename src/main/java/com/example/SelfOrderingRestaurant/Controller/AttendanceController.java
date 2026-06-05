@@ -39,7 +39,6 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/attendance")
-@RequiredArgsConstructor
 public class AttendanceController {
 
     @Autowired
