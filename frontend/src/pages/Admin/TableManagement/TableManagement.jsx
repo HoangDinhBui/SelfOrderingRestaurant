@@ -925,7 +925,7 @@ const renderPrintModal = () => {
           <img
             alt="Logo"
             className="w-24 h-24"
-            src="../../src/assets/img/logoremovebg.png"
+            src="/img/logoremovebg.png"
           />
         </div>
         <h3 className="text-xl font-bold mb-4 text-center">
@@ -1835,7 +1835,7 @@ const renderPrintModal = () => {
             <img
               alt="Logo"
               className="w-24 h-24"
-              src="../../src/assets/img/logoremovebg.png"
+              src="/img/logoremovebg.png"
             />
           </div>
           <p className="text-lg mb-6 text-green-600 font-medium">
@@ -1868,7 +1868,7 @@ const renderPrintModal = () => {
             <img
               alt="Logo"
               className="w-24 h-24"
-              src="../../src/assets/img/logoremovebg.png"
+              src="/img/logoremovebg.png"
             />
           </div>
           <p className="text-lg mb-6">ARE YOU SURE?</p>
@@ -2437,7 +2437,7 @@ const renderPrintModal = () => {
             <img
               alt="Logo"
               className="w-24 h-24"
-              src="../../src/assets/img/logoremovebg.png"
+              src="/img/logoremovebg.png"
             />
           </div>
           <p className="text-lg mb-6">
@@ -2479,7 +2479,7 @@ const renderPrintModal = () => {
             <img
               alt="Logo"
               className="w-24 h-24"
-              src="../../src/assets/img/logoremovebg.png"
+              src="/img/logoremovebg.png"
             />
           </div>
           <p className="text-lg mb-6 text-green-600 font-medium">

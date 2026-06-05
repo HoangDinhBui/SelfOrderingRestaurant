@@ -126,7 +126,7 @@ const Evaluate = () => {
         <>
           <div>
             <img
-              src="./src/assets/img/logoremovebg.png"
+              src="/img/logoremovebg.png"
               alt="Thank You"
               className="w-40 h-40 mt-2"
             />
@@ -143,7 +143,7 @@ const Evaluate = () => {
             </h3>
           </div>
           <div className="text-center mb-4 w-60 max-w-sm p-4">
-            <img src="./src/assets/img/thanks.png" alt="Thanks" />
+            <img src="/img/thanks.png" alt="Thanks" />
           </div>
           <button
             onClick={handleDone}

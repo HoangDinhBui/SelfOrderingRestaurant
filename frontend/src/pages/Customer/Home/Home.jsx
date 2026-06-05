@@ -503,7 +503,7 @@ const Home = () => {
                 disabled={sendingNotification}
                 className="w-20 h-20 flex items-center justify-center text-black font-bold rounded-lg"
                 style={{
-                  backgroundImage: "url('/src/assets/img/callstaff.png')",
+                  backgroundImage: "url('/img/callstaff.png')",
                   backgroundSize: "cover",
                   backgroundPosition: "center top",
                 }}
@@ -522,7 +522,7 @@ const Home = () => {
                 disabled={processingPayment || sendingNotification}
                 className="w-20 h-20 flex items-center justify-center font-bold rounded-lg"
                 style={{
-                  backgroundImage: "url('/src/assets/img/callpayment.png')",
+                  backgroundImage: "url('/img/callpayment.png')",
                   backgroundSize: "cover",
                   backgroundPosition: "center top",
                 }}
@@ -544,7 +544,7 @@ const Home = () => {
             onClick={handleViewMenu}
             className="absolute inset-0 flex items-center justify-center gap-2 text-black font-bold rounded-lg overflow-hidden"
             style={{
-              backgroundImage: "url('/src/assets/img/viewmenu.jpg')",
+              backgroundImage: "url('/img/viewmenu.jpg')",
               backgroundSize: "cover",
               backgroundPosition: "center",
             }}
@@ -556,7 +556,7 @@ const Home = () => {
             >
               View menu - Order
               <img
-                src="/src/assets/img/viewmenu.png"
+                src="/img/viewmenu.png"
                 alt="Menu icon"
                 className="w-15 h-15"
               />

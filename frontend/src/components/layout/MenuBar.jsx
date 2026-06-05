@@ -259,7 +259,7 @@ const MenuBar = ({
       <div style={styles.menuBar}>
         <div style={styles.menuLeft}>
           <img
-            src="./src/assets/img/listicon.png"
+            src="/img/listicon.png"
             alt="Menu"
             style={styles.menuIcon}
             onClick={handleToggleMiniList}
@@ -271,7 +271,7 @@ const MenuBar = ({
         </div>
 
         <img
-          src="./src/assets/img/MyDung.jpg"
+          src="/img/MyDung.jpg"
           alt="User Avatar"
           style={styles.menuAvatar}
           onClick={handleToggleProfileDropdown}

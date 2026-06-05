@@ -509,7 +509,7 @@ const StaffInformation = () => {
               </div>
               <div className="flex flex-col items-center">
                 <img
-                  src="./src/assets/img/MyDung.jpg"
+                  src="/img/MyDung.jpg"
                   alt="User Avatar Large"
                   className="w-48 h-48 rounded-full border-2 border-gray-200 mb-4 object-cover"
                 />
@@ -937,7 +937,7 @@ const StaffInformation = () => {
             <div
               className="w-full h-50 bg-cover bg-center relative"
               style={{
-                backgroundImage: "url('./src/assets/img/StaffInforBG.jpg')",
+                backgroundImage: "url('/img/StaffInforBG.jpg')",
               }}
             >
               <div className="absolute bottom-0 left-64 text-white pb-1">
@@ -952,7 +952,7 @@ const StaffInformation = () => {
                   onClick={handleAvatarClick} // Changed to handleAvatarClick for dropdown
                 >
                   <img
-                    src="./src/assets/img/MyDung.jpg"
+                    src="/img/MyDung.jpg"
                     alt="Staff Avatar"
                     className="w-32 h-32 rounded-full border-2 border-white object-cover"
                   />

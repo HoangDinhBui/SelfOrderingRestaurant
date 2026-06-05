@@ -751,7 +751,7 @@ const MenuManagementAdmin = () => {
                   </button>
                 </div>
                 <img
-                  src="./src/assets/img/chefmouse.png"
+                  src="/img/chefmouse.png"
                   alt="Chef Mouse"
                   style={styles.chefMouseImage}
                 />

@@ -328,7 +328,7 @@ const OrderHistory = () => {
               <img
                 alt="Logo"
                 className="w-24 h-24"
-                src="../../src/assets/img/logoremovebg.png"
+                src="/img/logoremovebg.png"
               />
             </div>
             <h3 className="text-xl font-bold mb-4 text-center">

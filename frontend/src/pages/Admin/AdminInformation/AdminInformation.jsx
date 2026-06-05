@@ -122,7 +122,7 @@ const AdminInformation = () => {
             
             <div className="flex flex-col items-center">
               <img
-                src="./src/assets/img/MyDung.jpg"
+                src="/img/MyDung.jpg"
                 alt="User Avatar Large"
                 className="w-48 h-48 rounded-full border-2 border-gray-200 mb-4"
               />
@@ -469,7 +469,7 @@ const AdminInformation = () => {
           <div
             className="w-full h-50 bg-cover bg-center relative"
             style={{
-              backgroundImage: "url('./src/assets/img/StaffInforBG.jpg')",
+              backgroundImage: "url('/img/StaffInforBG.jpg')",
             }}
           >
             {/* Name and position overlay on the image */}
@@ -485,7 +485,7 @@ const AdminInformation = () => {
             <div className="absolute -top-16 left-24">
               <div className="p-1 bg-white rounded-full shadow-lg">
                 <img
-                  src="./src/assets/img/MyDung.jpg"
+                  src="/img/MyDung.jpg"
                   alt="Staff Avatar"
                   className="w-32 h-32 rounded-full border-2 border-white"
                 />

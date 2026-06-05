@@ -58,7 +58,7 @@ const MenuBarStaff = () => {
       {/* Logo và tiêu đề */}
       <div style={styles.menuLeft}>
         <img
-          src="./src/assets/img/logoremovebg.png"
+          src="/img/logoremovebg.png"
           alt="Logo"
           style={styles.menuIcon}
         />
@@ -97,7 +97,7 @@ const MenuBarStaff = () => {
           onClick={() => handleNavigation("dish", "/dish-management")} // Điều hướng sang trang Dish Management
         >
           <img
-            src="./src/assets/img/mealicon.png"
+            src="/img/mealicon.png"
             alt="Plate icon"
             style={styles.menuIcon}
           />
@@ -124,7 +124,7 @@ const MenuBarStaff = () => {
 
       {/* Avatar */}
       <img
-        src="./src/assets/img/MyDung.jpg"
+        src="/img/MyDung.jpg"
         alt="Avatar"
         style={styles.menuAvatar}
       />
