@@ -201,6 +201,9 @@ public class AuthService {
         }
     }
 
+    @Autowired
+    private CloudinaryService cloudinaryService;
+
     @Transactional
     public AuthResponseDto registerStaff(RegisterRequestDto request, MultipartFile image) {
         // Check if username or email already exists
@@ -228,18 +231,17 @@ public class AuthService {
         staff.setUser(savedUser);
         staff.setFullname(request.getFullname());
         staff.setHireDate(LocalDate.now());
-        staff.setPosition("New Staff");
-        staff.setSalary(BigDecimal.ZERO);
+        staff.setPosition(request.getPosition());
+        staff.setSalary(request.getSalary());
         staff.setStatus(UserStatus.ACTIVE);
 
         // Handle image if provided
         if (image != null && !image.isEmpty()) {
-            String filePath = "src/main/resources/static/staff_faces/" + savedUser.getUserId() + ".jpg";
             try {
-                Files.write(Paths.get(filePath), image.getBytes());
-                staff.setFaceImagePath(filePath);
+                String secureUrl = cloudinaryService.uploadImage(image);
+                staff.setFaceImagePath(secureUrl);
             } catch (IOException e) {
-                throw new RuntimeException("Failed to save image: " + e.getMessage());
+                throw new RuntimeException("Failed to upload image to Cloudinary: " + e.getMessage());
             }
         }
 

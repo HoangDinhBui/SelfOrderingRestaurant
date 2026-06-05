@@ -91,6 +91,25 @@ public class AttendanceController {
         }
     }
 
+    private File getReferenceImageFile(String referencePath) throws IOException {
+        if (referencePath == null || referencePath.isEmpty()) {
+            return null;
+        }
+        if (referencePath.startsWith("http")) {
+            File refTempFile = File.createTempFile("ref_face_", ".jpg");
+            byte[] refBytes = restTemplate.getForObject(referencePath, byte[].class);
+            if (refBytes != null) {
+                Files.write(refTempFile.toPath(), refBytes);
+                return refTempFile;
+            }
+            return null;
+        } else {
+            if (Files.exists(Paths.get(referencePath))) {
+                return new File(referencePath);
+            }
+            return null;
+        }
+    }
 
     @PreAuthorize("hasRole('STAFF')")
     @PostMapping("/check-in")
@@ -117,7 +136,8 @@ public class AttendanceController {
         Integer staffId = staff.getStaffId();
 
         String referencePath = staff.getFaceImagePath();
-        if (referencePath == null || !Files.exists(Paths.get(referencePath))) {
+        File referenceFile = getReferenceImageFile(referencePath);
+        if (referenceFile == null) {
             Files.deleteIfExists(tempFile.toPath());
             return ResponseEntity.badRequest().body(Map.of("message", "Đường dẫn ảnh khuôn mặt không hợp lệ cho " + staff.getFullname()));
         }
@@ -132,6 +152,7 @@ public class AttendanceController {
                 staffId, startOfDay, endOfDay, Attendance.AttendanceStatus.CHECK_IN);
         if (!existingCheckIns.isEmpty()) {
             Files.deleteIfExists(tempFile.toPath());
+            if (referencePath != null && referencePath.startsWith("http")) referenceFile.delete();
             return ResponseEntity.ok(Map.of("message", "Đã ghi nhận check-in cho " + staff.getFullname() + " hôm nay lúc " + existingCheckIns.get(0).getCreatedAt()));
         }
 
@@ -140,7 +161,7 @@ public class AttendanceController {
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("image", new FileSystemResource(tempFile));
-        body.add("reference_image", new FileSystemResource(new File(referencePath)));
+        body.add("reference_image", new FileSystemResource(referenceFile));
 
         try {
             ResponseEntity<Map> response = restTemplate.postForEntity(deepfaceApiUrl, new HttpEntity<>(body, headers), Map.class);
@@ -154,14 +175,17 @@ public class AttendanceController {
                 attendanceRepository.save(attendance);
 
                 Files.deleteIfExists(tempFile.toPath());
+                if (referencePath != null && referencePath.startsWith("http")) referenceFile.delete();
                 return ResponseEntity.ok(Map.of("message", "Check-in thành công cho " + staff.getFullname()));
             } else {
                 Files.deleteIfExists(tempFile.toPath());
+                if (referencePath != null && referencePath.startsWith("http")) referenceFile.delete();
                 return ResponseEntity.badRequest().body(Map.of("message", "Khuôn mặt không được nhận diện"));
             }
         } catch (HttpClientErrorException e) {
             System.out.println("Lỗi DeepFace: " + e.getResponseBodyAsString());
             Files.deleteIfExists(tempFile.toPath());
+            if (referencePath != null && referencePath.startsWith("http")) referenceFile.delete();
             return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                     .body(Map.of("message", "Dịch vụ xác thực khuôn mặt không khả dụng"));
         }
@@ -190,7 +214,8 @@ public class AttendanceController {
         Integer staffId = staff.getStaffId();
 
         String referencePath = staff.getFaceImagePath();
-        if (referencePath == null || !Files.exists(Paths.get(referencePath))) {
+        File referenceFile = getReferenceImageFile(referencePath);
+        if (referenceFile == null) {
             Files.deleteIfExists(tempFile.toPath());
             return ResponseEntity.badRequest().body(Map.of("message", "Đường dẫn ảnh khuôn mặt không hợp lệ cho " + staff.getFullname()));
         }
@@ -205,6 +230,7 @@ public class AttendanceController {
                 staffId, startOfDay, endOfDay, Attendance.AttendanceStatus.CHECK_IN);
         if (!existingCheckIns.isEmpty()) {
             Files.deleteIfExists(tempFile.toPath());
+            if (referencePath != null && referencePath.startsWith("http")) referenceFile.delete();
             return ResponseEntity.ok(Map.of("message", "Đã ghi nhận check-in cho " + staff.getFullname() + " hôm nay lúc " + existingCheckIns.get(0).getCreatedAt()));
         }
 
@@ -213,7 +239,7 @@ public class AttendanceController {
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("image", new FileSystemResource(tempFile));
-        body.add("reference_image", new FileSystemResource(new File(referencePath)));
+        body.add("reference_image", new FileSystemResource(referenceFile));
 
         try {
             ResponseEntity<Map> response = restTemplate.postForEntity(deepfaceApiUrl, new HttpEntity<>(body, headers), Map.class);
@@ -227,14 +253,17 @@ public class AttendanceController {
                 attendanceRepository.save(attendance);
 
                 Files.deleteIfExists(tempFile.toPath());
+                if (referencePath != null && referencePath.startsWith("http")) referenceFile.delete();
                 return ResponseEntity.ok(Map.of("message", "Check-in thành công cho " + staff.getFullname()));
             } else {
                 Files.deleteIfExists(tempFile.toPath());
+                if (referencePath != null && referencePath.startsWith("http")) referenceFile.delete();
                 return ResponseEntity.badRequest().body(Map.of("message", "Khuôn mặt không được nhận diện"));
             }
         } catch (HttpClientErrorException e) {
             System.out.println("Lỗi DeepFace: " + e.getResponseBodyAsString());
             Files.deleteIfExists(tempFile.toPath());
+            if (referencePath != null && referencePath.startsWith("http")) referenceFile.delete();
             return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                     .body(Map.of("message", "Dịch vụ xác thực khuôn mặt không khả dụng"));
         }
@@ -265,7 +294,8 @@ public class AttendanceController {
         Integer staffId = staff.getStaffId();
 
         String referencePath = staff.getFaceImagePath();
-        if (referencePath == null || !Files.exists(Paths.get(referencePath))) {
+        File referenceFile = getReferenceImageFile(referencePath);
+        if (referenceFile == null) {
             Files.deleteIfExists(tempFile.toPath());
             return ResponseEntity.badRequest().body(Map.of("message", "Đường dẫn ảnh khuôn mặt không hợp lệ cho " + staff.getFullname()));
         }
@@ -280,6 +310,7 @@ public class AttendanceController {
                 staffId, startOfDay, endOfDay, Attendance.AttendanceStatus.CHECK_IN);
         if (checkInRecords.isEmpty()) {
             Files.deleteIfExists(tempFile.toPath());
+            if (referencePath != null && referencePath.startsWith("http")) referenceFile.delete();
             return ResponseEntity.badRequest().body(Map.of("message", "Không tìm thấy bản ghi check-in cho " + staff.getFullname() + " hôm nay"));
         }
 
@@ -292,7 +323,7 @@ public class AttendanceController {
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("image", new FileSystemResource(tempFile));
-        body.add("reference_image", new FileSystemResource(new File(referencePath)));
+        body.add("reference_image", new FileSystemResource(referenceFile));
 
         try {
             ResponseEntity<Map> response = restTemplate.postForEntity(deepfaceApiUrl, new HttpEntity<>(body, headers), Map.class);
@@ -346,6 +377,7 @@ public class AttendanceController {
                 attendanceRepository.save(attendance);
 
                 Files.deleteIfExists(tempFile.toPath());
+                if (referencePath != null && referencePath.startsWith("http")) referenceFile.delete();
                 return ResponseEntity.ok(Map.of(
                         "message", message,
                         "working_hours", workingHours,
@@ -353,11 +385,13 @@ public class AttendanceController {
                 ));
             } else {
                 Files.deleteIfExists(tempFile.toPath());
+                if (referencePath != null && referencePath.startsWith("http")) referenceFile.delete();
                 return ResponseEntity.badRequest().body(Map.of("message", "Khuôn mặt không được nhận diện"));
             }
         } catch (HttpClientErrorException e) {
             System.out.println("Lỗi DeepFace: " + e.getResponseBodyAsString());
             Files.deleteIfExists(tempFile.toPath());
+            if (referencePath != null && referencePath.startsWith("http")) referenceFile.delete();
             return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                     .body(Map.of("message", "Dịch vụ xác thực khuôn mặt không khả dụng"));
         }
@@ -386,7 +420,8 @@ public class AttendanceController {
         Integer staffId = staff.getStaffId();
 
         String referencePath = staff.getFaceImagePath();
-        if (referencePath == null || !Files.exists(Paths.get(referencePath))) {
+        File referenceFile = getReferenceImageFile(referencePath);
+        if (referenceFile == null) {
             Files.deleteIfExists(tempFile.toPath());
             return ResponseEntity.badRequest().body(Map.of("message", "Đường dẫn ảnh khuôn mặt không hợp lệ cho " + staff.getFullname()));
         }
@@ -401,6 +436,7 @@ public class AttendanceController {
                 staffId, startOfDay, endOfDay, Attendance.AttendanceStatus.CHECK_IN);
         if (checkInRecords.isEmpty()) {
             Files.deleteIfExists(tempFile.toPath());
+            if (referencePath != null && referencePath.startsWith("http")) referenceFile.delete();
             return ResponseEntity.badRequest().body(Map.of("message", "Không tìm thấy bản ghi check-in cho " + staff.getFullname() + " hôm nay"));
         }
 
@@ -413,7 +449,7 @@ public class AttendanceController {
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("image", new FileSystemResource(tempFile));
-        body.add("reference_image", new FileSystemResource(new File(referencePath)));
+        body.add("reference_image", new FileSystemResource(referenceFile));
 
         try {
             ResponseEntity<Map> response = restTemplate.postForEntity(deepfaceApiUrl, new HttpEntity<>(body, headers), Map.class);
@@ -467,6 +503,7 @@ public class AttendanceController {
                 attendanceRepository.save(attendance);
 
                 Files.deleteIfExists(tempFile.toPath());
+                if (referencePath != null && referencePath.startsWith("http")) referenceFile.delete();
                 return ResponseEntity.ok(Map.of(
                         "message", message,
                         "working_hours", workingHours,
@@ -474,11 +511,13 @@ public class AttendanceController {
                 ));
             } else {
                 Files.deleteIfExists(tempFile.toPath());
+                if (referencePath != null && referencePath.startsWith("http")) referenceFile.delete();
                 return ResponseEntity.badRequest().body(Map.of("message", "Khuôn mặt không được nhận diện"));
             }
         } catch (HttpClientErrorException e) {
             System.out.println("Lỗi DeepFace: " + e.getResponseBodyAsString());
             Files.deleteIfExists(tempFile.toPath());
+            if (referencePath != null && referencePath.startsWith("http")) referenceFile.delete();
             return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                     .body(Map.of("message", "Dịch vụ xác thực khuôn mặt không khả dụng"));
         }

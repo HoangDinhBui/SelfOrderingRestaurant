@@ -67,3 +67,7 @@ logging:
 resend:
   api-key: ${RESEND_API_KEY:re_WhVHk8Vc_MccxCgbinesGVCXeXbvndt3s}
   from-email: ${RESEND_FROM_EMAIL:onboarding@resend.dev}
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME:your_cloud_name_here}
+  api-key: ${CLOUDINARY_API_KEY:your_api_key_here}
+  api-secret: ${CLOUDINARY_API_SECRET:your_api_secret_here}
