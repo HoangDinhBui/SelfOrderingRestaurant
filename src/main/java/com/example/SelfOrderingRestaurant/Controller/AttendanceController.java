@@ -12,6 +12,7 @@ import org.opencv.core.MatOfRect;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.objdetect.CascadeClassifier;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -51,6 +52,9 @@ public class AttendanceController {
 
     @Autowired
     private RestTemplate restTemplate;
+
+    @Value("${deepface.api.url:http://localhost:5000/verify}")
+    private String deepfaceApiUrl;
 
     private final CascadeClassifier faceDetector;
 
@@ -136,10 +140,10 @@ public class AttendanceController {
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("image", new FileSystemResource(tempFile));
-        body.set("reference_path", referencePath);
+        body.add("reference_image", new FileSystemResource(new File(referencePath)));
 
         try {
-            ResponseEntity<Map> response = restTemplate.postForEntity("http://localhost:5000/verify", new HttpEntity<>(body, headers), Map.class);
+            ResponseEntity<Map> response = restTemplate.postForEntity(deepfaceApiUrl, new HttpEntity<>(body, headers), Map.class);
             if (response.getStatusCode().is2xxSuccessful() && (Boolean) response.getBody().get("verified")) {
                 Attendance attendance = new Attendance();
                 attendance.setStaffId(staffId);
@@ -209,10 +213,10 @@ public class AttendanceController {
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("image", new FileSystemResource(tempFile));
-        body.set("reference_path", referencePath);
+        body.add("reference_image", new FileSystemResource(new File(referencePath)));
 
         try {
-            ResponseEntity<Map> response = restTemplate.postForEntity("http://localhost:5000/verify", new HttpEntity<>(body, headers), Map.class);
+            ResponseEntity<Map> response = restTemplate.postForEntity(deepfaceApiUrl, new HttpEntity<>(body, headers), Map.class);
             if (response.getStatusCode().is2xxSuccessful() && (Boolean) response.getBody().get("verified")) {
                 Attendance attendance = new Attendance();
                 attendance.setStaffId(staffId);
@@ -288,10 +292,10 @@ public class AttendanceController {
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("image", new FileSystemResource(tempFile));
-        body.set("reference_path", referencePath);
+        body.add("reference_image", new FileSystemResource(new File(referencePath)));
 
         try {
-            ResponseEntity<Map> response = restTemplate.postForEntity("http://localhost:5000/verify", new HttpEntity<>(body, headers), Map.class);
+            ResponseEntity<Map> response = restTemplate.postForEntity(deepfaceApiUrl, new HttpEntity<>(body, headers), Map.class);
             if (response.getStatusCode().is2xxSuccessful() && (Boolean) response.getBody().get("verified")) {
                 // Lấy bản ghi check-in mới nhất
                 Attendance attendance = checkInRecords.stream()
@@ -409,10 +413,10 @@ public class AttendanceController {
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("image", new FileSystemResource(tempFile));
-        body.set("reference_path", referencePath);
+        body.add("reference_image", new FileSystemResource(new File(referencePath)));
 
         try {
-            ResponseEntity<Map> response = restTemplate.postForEntity("http://localhost:5000/verify", new HttpEntity<>(body, headers), Map.class);
+            ResponseEntity<Map> response = restTemplate.postForEntity(deepfaceApiUrl, new HttpEntity<>(body, headers), Map.class);
             if (response.getStatusCode().is2xxSuccessful() && (Boolean) response.getBody().get("verified")) {
                 // Lấy bản ghi check-in mới nhất
                 Attendance attendance = checkInRecords.stream()

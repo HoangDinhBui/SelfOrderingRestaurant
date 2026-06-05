@@ -4,6 +4,7 @@ import cv2
 import os
 import logging
 from pathlib import Path
+import tempfile
 
 app = Flask(__name__)
 
@@ -17,49 +18,42 @@ logging.basicConfig(
 )
 logger = app.logger
 
-BASE_IMAGE_DIR = r"D:\UTC2\SelfOrderingRestaurant\src\main\resources\static\staff_faces"
-if not os.path.exists(BASE_IMAGE_DIR):
-    logger.error(f"Image directory not found: {BASE_IMAGE_DIR}")
-    raise RuntimeError(f"Image directory not found: {BASE_IMAGE_DIR}")
-
 @app.route('/verify', methods=['POST'])
 def verify_face():
     try:
-        if 'image' not in request.files or 'reference_path' not in request.form:
-            logger.error("Missing image or reference_path in request")
-            return jsonify({"error": "Image and reference_path are required"}), 400
+        if 'image' not in request.files or 'reference_image' not in request.files:
+            logger.error("Missing image or reference_image in request")
+            return jsonify({"error": "image and reference_image are required"}), 400
 
         image_file = request.files['image']
-        reference_filename = request.form['reference_path']
+        reference_file = request.files['reference_image']
 
-        reference_filename = os.path.basename(reference_filename)
-        reference_path = os.path.join(BASE_IMAGE_DIR, reference_filename)
-        logger.debug(f"Processing image: {image_file.filename}, reference_path: {reference_path}")
+        logger.debug(f"Processing image: {image_file.filename}, reference_image: {reference_file.filename}")
 
-        if not os.path.exists(reference_path):
-            logger.error(f"Reference path does not exist: {reference_path}. Available files: {os.listdir(BASE_IMAGE_DIR)}")
-            return jsonify({"error": f"Reference image not found: {reference_filename}"}), 400
-
-        img = cv2.imread(reference_path)
-        if img is None:
-            logger.error(f"Invalid reference image: {reference_path}")
-            return jsonify({"error": f"Invalid reference image: {reference_filename}"}), 400
-
-        temp_image_path = os.path.join(os.path.dirname(__file__), 'temp.jpg')
-        image_file.save(temp_image_path)
-        logger.debug(f"Saved temporary image: {temp_image_path}")
-
-        temp_img = cv2.imread(temp_image_path)
-        if temp_img is None:
-            logger.error(f"Invalid temporary image: {temp_image_path}")
-            if os.path.exists(temp_image_path):
-                os.remove(temp_image_path)
-            return jsonify({"error": "Invalid uploaded image"}), 400
+        # Create temporary files
+        fd_temp, temp_image_path = tempfile.mkstemp(suffix='.jpg')
+        fd_ref, temp_reference_path = tempfile.mkstemp(suffix='.jpg')
+        os.close(fd_temp)
+        os.close(fd_ref)
 
         try:
+            image_file.save(temp_image_path)
+            reference_file.save(temp_reference_path)
+            logger.debug(f"Saved temporary files: {temp_image_path}, {temp_reference_path}")
+
+            temp_img = cv2.imread(temp_image_path)
+            if temp_img is None:
+                logger.error(f"Invalid uploaded image: {temp_image_path}")
+                return jsonify({"error": "Invalid uploaded image"}), 400
+
+            ref_img = cv2.imread(temp_reference_path)
+            if ref_img is None:
+                logger.error(f"Invalid reference image: {temp_reference_path}")
+                return jsonify({"error": "Invalid reference image"}), 400
+
             result = DeepFace.verify(
                 img1_path=temp_image_path,
-                img2_path=reference_path,
+                img2_path=temp_reference_path,
                 model_name="Facenet",
                 detector_backend="opencv"
             )
@@ -68,22 +62,24 @@ def verify_face():
                 "verified": result["verified"],
                 "distance": result["distance"]
             }
+
+            return jsonify(response), 200
+
         except ValueError as ve:
             logger.error(f"DeepFace verification failed: {str(ve)}")
-            response = {"error": f"Face verification failed: {str(ve)}"}
-            return jsonify(response), 400
+            return jsonify({"error": f"Face verification failed: {str(ve)}"}), 400
+
         finally:
+            # Clean up temporary files
             if os.path.exists(temp_image_path):
                 os.remove(temp_image_path)
                 logger.debug(f"Removed temporary image: {temp_image_path}")
-
-        return jsonify(response), 200
+            if os.path.exists(temp_reference_path):
+                os.remove(temp_reference_path)
+                logger.debug(f"Removed temporary reference image: {temp_reference_path}")
 
     except Exception as e:
         logger.error(f"Unexpected error: {str(e)}")
-        temp_image_path = os.path.join(os.path.dirname(__file__), 'temp.jpg')
-        if os.path.exists(temp_image_path):
-            os.remove(temp_image_path)
         return jsonify({"error": f"Server error: {str(e)}"}), 500
 
 if __name__ == '__main__':
