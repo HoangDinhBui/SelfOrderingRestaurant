@@ -207,9 +207,13 @@ const NotificationManagementStaff = () => {
           );
         });
         setError(null);
+      } else if (data && data.error) {
+        console.error("Server returned error:", data.error);
+        setError(`Server Error: ${data.error}`);
+        toast.error(`Server Error: ${data.error}`);
       } else {
         console.error("Invalid notification data format received:", data);
-        setError("Invalid notification data received from server");
+        setError(`Invalid format: ${JSON.stringify(data).substring(0, 50)}`);
         toast.error("Invalid notification data format");
       }
     } catch (err) {
@@ -612,7 +616,7 @@ const NotificationManagementStaff = () => {
               <img
                 alt="Logo"
                 className="w-24 h-24"
-                src="../../src/assets/img/logoremovebg.png"
+                src="/img/logoremovebg.png"
               />
             </div>
             <h3 className="text-xl font-bold mb-4 text-center">
