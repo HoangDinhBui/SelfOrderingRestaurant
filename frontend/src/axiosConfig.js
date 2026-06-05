@@ -163,7 +163,7 @@ authAPI.interceptors.response.use(
 // Authentication
 export const login = async (login, password) => {
   try {
-    const response = await publicAPI.post("/auth/login", { login, password });
+    const response = await publicAPI.post("/api/auth/login", { login, password });
     return response.data;
   } catch (error) {
     handleApiError(error);
@@ -173,7 +173,7 @@ export const login = async (login, password) => {
 
 export const googleLogin = async (tokenId) => {
   try {
-    const response = await publicAPI.post("auth/staff/google-login", {
+    const response = await publicAPI.post("/api/auth/staff/google-login", {
       idToken: tokenId,
     });
     return response.data;
@@ -185,7 +185,7 @@ export const googleLogin = async (tokenId) => {
 
 export const logout = async () => {
   try {
-    const response = await authAPI.post("/auth/logout");
+    const response = await authAPI.post("/api/auth/logout");
     return response.data;
   } catch (error) {
     console.error("Logout error:", error);
@@ -196,7 +196,7 @@ export const logout = async () => {
 
 export const forgotPassword = async ({ username, email }) => {
   try {
-    const response = await publicAPI.post("/auth/forgot-password", {
+    const response = await publicAPI.post("/api/auth/forgot-password", {
       username,
       email,
     });
@@ -226,7 +226,7 @@ export const resetPassword = async ({ otp, newPassword }) => {
 
 export const refreshToken = async (refreshToken) => {
   try {
-    const response = await publicAPI.post("/auth/refresh-token", {
+    const response = await publicAPI.post("/api/auth/refresh-token", {
       refreshToken,
     });
     return response.data;
