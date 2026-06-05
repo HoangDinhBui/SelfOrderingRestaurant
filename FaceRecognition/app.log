@@ -661,3 +661,33 @@
 2026-06-05 14:49:08,493 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmpvnre5smj.jpg
 2026-06-05 14:49:08,495 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmph0jzi5mz.jpg
 2026-06-05 14:49:08,496 - INFO - 127.0.0.1 - - [05/Jun/2026 14:49:08] "POST /verify HTTP/1.1" 200 -
+2026-06-05 21:36:46,801 - DEBUG - Processing image: face_auth_14181837005085505836.jpg, reference_image: ref_face_15181306692730455589.jpg
+2026-06-05 21:36:46,810 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmp8_zhv289.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmpdo01_ezs.jpg
+2026-06-05 21:36:50,934 - DEBUG - Verification result: {'verified': True, 'distance': 0.15413869259071533, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 254, 'y': 197, 'w': 216, 'h': 216, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 312, 'y': 294, 'w': 511, 'h': 511, 'left_eye': (625, 647), 'right_eye': (560, 645)}}, 'time': 4.0}
+2026-06-05 21:36:50,935 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmp8_zhv289.jpg
+2026-06-05 21:36:50,937 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmpdo01_ezs.jpg
+2026-06-05 21:36:50,941 - INFO - 127.0.0.1 - - [05/Jun/2026 21:36:50] "POST /verify HTTP/1.1" 200 -
+2026-06-05 21:47:00,822 - DEBUG - Processing image: face_auth_15541241693393039670.jpg, reference_image: ref_face_3396980937235519764.jpg
+2026-06-05 21:47:00,827 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmpfr3d8wkr.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmpofw151sk.jpg
+2026-06-05 21:47:03,348 - DEBUG - Verification result: {'verified': False, 'distance': 0.7058912930459282, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 295, 'y': 216, 'w': 86, 'h': 86, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 513, 'y': 220, 'w': 300, 'h': 300, 'left_eye': (715, 337), 'right_eye': (601, 332)}}, 'time': 2.46}
+2026-06-05 21:47:03,349 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmpfr3d8wkr.jpg
+2026-06-05 21:47:03,349 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmpofw151sk.jpg
+2026-06-05 21:47:03,352 - INFO - 127.0.0.1 - - [05/Jun/2026 21:47:03] "POST /verify HTTP/1.1" 200 -
+2026-06-05 21:47:23,465 - DEBUG - Processing image: face_auth_9081623267114011656.jpg, reference_image: ref_face_964644712532680148.jpg
+2026-06-05 21:47:23,467 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmpzmzmswzd.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmpxq6ra9ri.jpg
+2026-06-05 21:47:25,766 - DEBUG - Verification result: {'verified': True, 'distance': 0.10418462248478466, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 243, 'y': 141, 'w': 239, 'h': 239, 'left_eye': (406, 225), 'right_eye': (311, 228)}, 'img2': {'x': 513, 'y': 220, 'w': 300, 'h': 300, 'left_eye': (715, 337), 'right_eye': (601, 332)}}, 'time': 2.27}
+2026-06-05 21:47:25,767 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmpzmzmswzd.jpg
+2026-06-05 21:47:25,768 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmpxq6ra9ri.jpg
+2026-06-05 21:47:25,769 - INFO - 127.0.0.1 - - [05/Jun/2026 21:47:25] "POST /verify HTTP/1.1" 200 -
+2026-06-05 22:31:20,537 - DEBUG - Processing image: face_auth_18426255169772769267.jpg, reference_image: ref_face_12921940890498725009.jpg
+2026-06-05 22:31:20,547 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmphgp1hfbr.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmpw70upjxq.jpg
+2026-06-05 22:31:25,634 - DEBUG - Verification result: {'verified': True, 'distance': 0.12981415472123725, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 273, 'y': 152, 'w': 231, 'h': 231, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 312, 'y': 294, 'w': 511, 'h': 511, 'left_eye': (625, 647), 'right_eye': (560, 645)}}, 'time': 4.96}
+2026-06-05 22:31:25,635 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmphgp1hfbr.jpg
+2026-06-05 22:31:25,636 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmpw70upjxq.jpg
+2026-06-05 22:31:25,639 - INFO - 127.0.0.1 - - [05/Jun/2026 22:31:25] "POST /verify HTTP/1.1" 200 -
+2026-06-05 22:38:04,348 - DEBUG - Processing image: face_auth_15011599755364942652.jpg, reference_image: ref_face_2256608159751094087.jpg
+2026-06-05 22:38:04,350 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmpuzghzr_8.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmpkcdvxq_w.jpg
+2026-06-05 22:38:06,779 - DEBUG - Verification result: {'verified': True, 'distance': 0.10191750581194237, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 205, 'y': 111, 'w': 304, 'h': 304, 'left_eye': (410, 215), 'right_eye': (295, 219)}, 'img2': {'x': 513, 'y': 220, 'w': 300, 'h': 300, 'left_eye': (715, 337), 'right_eye': (601, 332)}}, 'time': 2.4}
+2026-06-05 22:38:06,780 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmpuzghzr_8.jpg
+2026-06-05 22:38:06,781 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmpkcdvxq_w.jpg
+2026-06-05 22:38:06,782 - INFO - 127.0.0.1 - - [05/Jun/2026 22:38:06] "POST /verify HTTP/1.1" 200 -
