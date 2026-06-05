@@ -637,3 +637,27 @@
 2025-06-29 13:27:20,747 - DEBUG - Verification result: {'verified': True, 'distance': 0.2512018789439596, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 325, 'y': 227, 'w': 233, 'h': 233, 'left_eye': (483, 317), 'right_eye': (395, 317)}, 'img2': {'x': 328, 'y': 839, 'w': 1037, 'h': 1037, 'left_eye': (1004, 1263), 'right_eye': (531, 1254)}}, 'time': 3.01}
 2025-06-29 13:27:20,747 - DEBUG - Removed temporary image: D:\UTC2\FaceRecognition\temp.jpg
 2025-06-29 13:27:20,748 - INFO - 127.0.0.1 - - [29/Jun/2025 13:27:20] "POST /verify HTTP/1.1" 200 -
+2026-06-05 12:35:23,510 - INFO - Starting Flask application on port 5000...
+2026-06-05 12:35:24,830 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.2:5000
+2026-06-05 12:35:24,830 - INFO - [33mPress CTRL+C to quit[0m
+2026-06-05 12:35:24,833 - INFO -  * Restarting with stat
+2026-06-05 12:35:32,260 - INFO - Starting Flask application on port 5000...
+2026-06-05 12:35:32,276 - WARNING -  * Debugger is active!
+2026-06-05 12:35:32,285 - INFO -  * Debugger PIN: 574-771-262
+2026-06-05 12:37:46,054 - INFO - 127.0.0.1 - - [05/Jun/2026 12:37:46] "[31m[1mGET /verify HTTP/1.1[0m" 405 -
+2026-06-05 12:43:53,069 - DEBUG - Processing image: face_auth_7292695850406517550.jpg, reference_image: ref_face_16731040966269926663.jpg
+2026-06-05 12:43:53,079 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmpl9i04g2a.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmp4uava_r5.jpg
+2026-06-05 12:43:57,952 - DEBUG - Creating converter from 3 to 5
+2026-06-05 12:44:02,117 - DEBUG - Verification result: {'verified': True, 'distance': 0.2039724509739489, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 212, 'y': 161, 'w': 232, 'h': 232, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 63, 'y': 149, 'w': 209, 'h': 209, 'left_eye': (203, 232), 'right_eye': (133, 232)}}, 'time': 8.95}
+2026-06-05 12:44:02,119 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmpl9i04g2a.jpg
+2026-06-05 12:44:02,121 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmp4uava_r5.jpg
+2026-06-05 12:44:02,122 - INFO - 127.0.0.1 - - [05/Jun/2026 12:44:02] "POST /verify HTTP/1.1" 200 -
+2026-06-05 14:49:05,202 - DEBUG - Processing image: face_auth_15586114822297611630.jpg, reference_image: ref_face_8340549749590822370.jpg
+2026-06-05 14:49:05,209 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmpvnre5smj.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmph0jzi5mz.jpg
+2026-06-05 14:49:08,493 - DEBUG - Verification result: {'verified': True, 'distance': 0.022009511520945324, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 265, 'y': 139, 'w': 193, 'h': 193, 'left_eye': (398, 211), 'right_eye': (319, 213)}, 'img2': {'x': 513, 'y': 220, 'w': 300, 'h': 300, 'left_eye': (715, 337), 'right_eye': (601, 332)}}, 'time': 3.13}
+2026-06-05 14:49:08,493 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmpvnre5smj.jpg
+2026-06-05 14:49:08,495 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmph0jzi5mz.jpg
+2026-06-05 14:49:08,496 - INFO - 127.0.0.1 - - [05/Jun/2026 14:49:08] "POST /verify HTTP/1.1" 200 -

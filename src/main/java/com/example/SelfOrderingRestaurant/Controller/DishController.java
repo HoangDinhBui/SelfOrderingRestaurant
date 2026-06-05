@@ -57,7 +57,7 @@ public class DishController {
         List<GetAllDishesResponseDTO> dishes = dishService.getAllDishes();
         String baseUrl = "http://localhost:8080/uploads/dishes/";
         dishes.forEach(dish -> {
-            if (dish.getImageUrl() != null) {
+            if (dish.getImageUrl() != null && !dish.getImageUrl().startsWith("http")) {
                 dish.setImageUrl(baseUrl + dish.getImageUrl());
             }
         });
@@ -69,7 +69,7 @@ public class DishController {
         logger.info("Fetching dish with id: {}", dishId);
         try {
             DishResponseDTO dish = dishService.getDishById(dishId);
-            if (dish.getImageUrl() != null) {
+            if (dish.getImageUrl() != null && !dish.getImageUrl().startsWith("http")) {
                 dish.setImageUrl("http://localhost:8080/uploads/" + dish.getImageUrl());
             }
             return ResponseEntity.ok(dish);

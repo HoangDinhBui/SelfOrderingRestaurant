@@ -40,6 +40,7 @@ public class DishService implements IDishService {
     private final DishRepository dishRepository;
     private final CategoryRepository categoryRepository;
     private final FileStorageService fileStorageService;
+    private final CloudinaryService cloudinaryService;
     private static final String DISH_IMAGE_DIR = "dishes";
     private final PendingDishUpdateRepository pendingDishUpdateRepository;
 
@@ -64,8 +65,13 @@ public class DishService implements IDishService {
         dish.setDescription(request.getDescription());
 
         if (request.getImage() != null && !request.getImage().isEmpty()) {
-            String imagePath = fileStorageService.saveFile(request.getImage(), DISH_IMAGE_DIR);
-            dish.setImage(imagePath);
+            try {
+                String imagePath = cloudinaryService.uploadImage(request.getImage());
+                dish.setImage(imagePath);
+            } catch (Exception e) {
+                logger.error("Lỗi khi tải ảnh lên Cloudinary: {}", e.getMessage(), e);
+                throw new ValidationException("Lỗi khi tải ảnh lên: " + e.getMessage());
+            }
         }
 
         dishRepository.save(dish);
@@ -90,8 +96,8 @@ public class DishService implements IDishService {
         String imagePath = dish.getImage();
         if (request.getImage() != null && !request.getImage().isEmpty()) {
             try {
-                imagePath = fileStorageService.saveFile(request.getImage(), DISH_IMAGE_DIR);
-            } catch (RuntimeException e) {
+                imagePath = cloudinaryService.uploadImage(request.getImage());
+            } catch (Exception e) {
                 logger.error("Lỗi khi tải ảnh lên cho món ăn {}: {}", dishId, e.getMessage(), e);
                 throw new ValidationException("Lỗi khi tải ảnh lên: " + e.getMessage());
             }
@@ -124,7 +130,7 @@ public class DishService implements IDishService {
             dish.setImage(imagePath);
             dishRepository.save(dish);
 
-            if (oldImage != null && !oldImage.equals(imagePath)) {
+            if (oldImage != null && !oldImage.equals(imagePath) && !oldImage.startsWith("http")) {
                 try {
                     fileStorageService.deleteFile(oldImage);
                 } catch (RuntimeException e) {
@@ -257,7 +263,7 @@ public class DishService implements IDishService {
         Dish dish = dishRepository.findById(dishId)
                 .orElseThrow(() -> new IllegalArgumentException("Dish not found with id: " + dishId));
 
-        if (dish.getImage() != null && !dish.getImage().isEmpty()) {
+        if (dish.getImage() != null && !dish.getImage().isEmpty() && !dish.getImage().startsWith("http")) {
             fileStorageService.deleteFile(dish.getImage());
         }
 
@@ -341,7 +347,7 @@ public class DishService implements IDishService {
                 dishRepository.save(dish);
                 logger.info("Applied update for dish id: {}", update.getDishId());
 
-                if (oldImage != null && !oldImage.equals(update.getImage())) {
+                if (oldImage != null && !oldImage.equals(update.getImage()) && !oldImage.startsWith("http")) {
                     try {
                         fileStorageService.deleteFile(oldImage);
                         logger.info("Deleted old image: {}", oldImage);
