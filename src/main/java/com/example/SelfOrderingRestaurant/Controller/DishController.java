@@ -36,6 +36,8 @@ public class DishController {
     private static final Logger logger = LoggerFactory.getLogger(DishController.class);
     private static final String DISH_IMAGE_DIR = "uploads/dishes";
     private final DishService dishService;
+    private final com.example.SelfOrderingRestaurant.Repository.DishRepository dishRepository;
+    private final com.example.SelfOrderingRestaurant.Service.CloudinaryService cloudinaryService;
 
     @PostMapping(path = "/admin/dishes", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> createDish(@Valid @ModelAttribute DishRequestDTO dishDTO, Authentication authentication) {
@@ -150,5 +152,36 @@ public class DishController {
             logger.error("Error reading image {}: {}", imageName, e.getMessage(), e);
             return ResponseEntity.status(500).build();
         }
+    }
+
+    @GetMapping("/admin/dishes/migrate-images")
+    public ResponseEntity<?> migrateImages() {
+        logger.info("Bắt đầu tự động chuyển ảnh lên Cloudinary...");
+        int count = 0;
+        List<com.example.SelfOrderingRestaurant.Entity.Dish> dishes = dishRepository.findAll();
+        for (com.example.SelfOrderingRestaurant.Entity.Dish dish : dishes) {
+            String url = dish.getImage();
+            if (url != null && !url.startsWith("http") && !url.contains("cloudinary")) {
+                // If it is just a filename
+                String filename = url;
+                if (url.contains("/")) {
+                    filename = url.substring(url.lastIndexOf("/") + 1);
+                }
+                Path imagePath = Paths.get(DISH_IMAGE_DIR, filename).normalize();
+                if (imagePath.toFile().exists()) {
+                    try {
+                        byte[] bytes = Files.readAllBytes(imagePath);
+                        String newUrl = cloudinaryService.uploadImage(bytes);
+                        dish.setImage(newUrl);
+                        dishRepository.save(dish);
+                        count++;
+                        logger.info("Migrated image for dish: {}", dish.getName());
+                    } catch (Exception e) {
+                        logger.error("Error migrating image for dish {}", dish.getName(), e);
+                    }
+                }
+            }
+        }
+        return ResponseEntity.ok("Đã chuyển thành công " + count + " ảnh lên Cloudinary!");
     }
 }
