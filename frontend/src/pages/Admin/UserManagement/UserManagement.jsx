@@ -39,7 +39,7 @@ const UserManagement = () => {
 
   const fetchUsers = async () => {
     try {
-      const response = await authAPI.get("/admin/users", {
+      const response = await authAPI.get("/api/admin/users", {
         headers: getAuthHeaders(),
       });
       setUsers(response.data.filter(u => u.userStatus !== "INACTIVE"));
@@ -59,7 +59,7 @@ const UserManagement = () => {
       return;
     }
     try {
-      await authAPI.post("/admin/users", newUser, {
+      await authAPI.post("/api/admin/users", newUser, {
         headers: getAuthHeaders(),
       });
       setShowAddForm(false);
@@ -87,7 +87,7 @@ const UserManagement = () => {
         payload.password = userToEdit.password;
       }
       
-      await authAPI.put(`/admin/users/${userToEdit.userId}`, payload, {
+      await authAPI.put(`/api/admin/users/${userToEdit.userId}`, payload, {
         headers: getAuthHeaders(),
       });
       setShowEditForm(false);
@@ -103,7 +103,7 @@ const UserManagement = () => {
 
   const confirmDeleteUser = async () => {
     try {
-      await authAPI.delete(`/admin/users/${userToDelete.userId}`, {
+      await authAPI.delete(`/api/admin/users/${userToDelete.userId}`, {
         headers: getAuthHeaders(),
       });
       setShowDeletePopup(false);

@@ -35,6 +35,7 @@ import TableManagementAdmin from "./pages/Admin/TableManagement/TableManagement"
 import MenuManagementAdmin from "./pages/Admin/MenuManagement/MenuManagement";
 import RevenueManagement from "./pages/Admin/RevenueManagement/RevenueManagement";
 import StaffManagement from "./pages/Admin/StaffManagement/StaffManagement";
+import UserManagementAdmin from "./pages/Admin/UserManagement/UserManagement";
 
 import DishManagementStaff from "./pages/Staff/DishManagement/DishManagement";
 import OrderHistoryStaff from "./pages/Staff/OrderHistory/OrderHistory";
@@ -94,6 +95,10 @@ function App() {
               <Route
                 path="/staff-management_admin"
                 element={<StaffManagement />}
+              />
+              <Route
+                path="/user-management_admin"
+                element={<UserManagementAdmin />}
               />
               <Route
                 path="/admin-information_admin"

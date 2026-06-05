@@ -55,8 +55,8 @@ const StaffManagementAdmin = () => {
   // State cho bộ lọc tháng/năm
   const [selectedMonthYear, setSelectedMonthYear] = useState("");
 
-  const API_BASE_URL = "/admin";
-  const SALARY_API_URL = "/salary";
+  const API_BASE_URL = "/api/admin";
+  const SALARY_API_URL = "/api/salary";
 
   // Kiểm tra quyền admin khi component mount
   useEffect(() => {
