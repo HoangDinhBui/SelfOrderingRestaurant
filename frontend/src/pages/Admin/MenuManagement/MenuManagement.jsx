@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import MenuBar from "../../../components/layout/MenuBar";
-import logoRemoveBg from "../../../assets/img/logoremovebg.png";
 
 // Cấu hình Axios
 const API_BASE_URL = "https://selforderingrestaurant-635x.onrender.com";
@@ -683,7 +682,7 @@ const MenuManagementAdmin = () => {
                             <img
                               src={
                                 dish.imageUrl ||
-                                "./src/assets/img/placeholder.jpg"
+                                "/img/placeholder.jpg"
                               }
                               alt={dish.dishName}
                               style={{
@@ -997,7 +996,7 @@ const MenuManagementAdmin = () => {
           {showSuccessPopup && (
             <div style={styles.successPopup}>
               <img
-                src={logoRemoveBg}
+                src="/img/logoremovebg.png"
                 alt="Bon Appétit"
                 style={styles.successImage}
               />
@@ -1011,7 +1010,7 @@ const MenuManagementAdmin = () => {
           {showDeletePopup && hasAdminAccess && (
             <div style={styles.successPopup}>
               <img
-                src={logoRemoveBg}
+                src="/img/logoremovebg.png"
                 alt="Bon Appétit"
                 style={styles.successImage}
               />

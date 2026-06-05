@@ -286,7 +286,7 @@ const DishManagementStaff = () => {
                 <img
                   alt="Logo"
                   className="w-24 h-16"
-                  src="/assets/img/logo.png"
+                  src="/img/logo.png"
                 />
               </div>
               <p className="text-gray-600 mb-4">ARE YOU SURE?</p>

@@ -427,13 +427,13 @@ const Home = () => {
     {
       name: "Lemon Macarons",
       price: "109,000",
-      image: "/src/assets/img/TodaySpeacial1.jpg",
+      image: "/img/TodaySpeacial1.jpg",
       type: "Cake",
     },
     {
       name: "Beef-steak",
       price: "109,000",
-      image: "/src/assets/img/TodaySpecial2.jpg",
+      image: "/img/TodaySpecial2.jpg",
       type: "Meat",
     },
   ];

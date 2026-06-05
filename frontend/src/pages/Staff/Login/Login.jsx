@@ -4,9 +4,6 @@ import { login, googleLogin, forgotPassword } from "../../../services/api";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import loginBg from "../../../assets/img/loginBGNew.jpg";
-import logo from "../../../assets/img/logoremovebg.png";
-import googleLogo from "../../../assets/img/gg.webp";
 
 const decodeJwt = (token) => {
   try {
@@ -371,7 +368,7 @@ const Login = () => {
     <div
       className="h-screen w-screen flex items-center justify-center bg-cover bg-center"
       style={{
-        backgroundImage: `url(${loginBg})`,
+        backgroundImage: `url(/img/loginBGNew.jpg)`,
         backgroundSize: "cover",
         backgroundPosition: "center",
         filter: "none",
@@ -395,7 +392,7 @@ const Login = () => {
           <div className="flex justify-center mb-4">
             <div className="w-20 h-20 rounded-full border border-gray-400 flex items-center justify-center relative">
               <img
-                src={logo}
+                src="/img/logoremovebg.png"
                 alt="Fork and knife"
                 className="w-24 h-20 absolute"
               />
@@ -545,7 +542,7 @@ const Login = () => {
                   disabled={loading}
                 >
                   <img
-                    src={googleLogo}
+                    src="/img/gg.webp"
                     alt="Google"
                     className="w-4 h-4 mr-2"
                   />
@@ -558,7 +555,7 @@ const Login = () => {
 
         <div
           className="w-1/2 border-white border-1 bg-cover bg-center relative flex items-start justify-center rounded-3xl overflow-hidden shadow-md"
-          style={{ backgroundImage: `url(${loginBg})` }}
+          style={{ backgroundImage: `url(/img/loginBGNew.jpg)` }}
         >
           <div className="absolute top-6 text-center text-white">
             <h2 className="text-xl font-bold p-6">

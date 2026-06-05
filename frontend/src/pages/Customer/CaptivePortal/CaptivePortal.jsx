@@ -2,9 +2,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { publicAPI } from "../../../axiosConfig"; // Import publicAPI
-import Bg1 from "../../../assets/img/CaptiveBg.jpg";
-import Bg2 from "../../../assets/img/CaptiveBg2.jpg";
-import logoCap from "../../../assets/img/CaptiveLogo.png";
 
 const CaptivePortal = () => {
   const [currentSlide, setCurrentSlide] = useState(0);

@@ -13,17 +13,17 @@ const Banner = () => {
 
   const banners = [
     {
-      image: "/src/assets/img/banner2.jpg",
+      image: "/img/banner2.jpg",
       title: "Up to 40% OFF",
       subtitle: "ON YOUR FIRST ORDER",
     },
     {
-      image: "/src/assets/img/promofood.jpg",
+      image: "/img/promofood.jpg",
       title: "Free Delivery",
       subtitle: "FOR ORDERS OVER $50",
     },
     {
-      image: "/src/assets/img/promo.jpg",
+      image: "/img/promo.jpg",
       title: "New Arrivals",
       subtitle: "CHECK OUT OUR LATEST MENU",
     },

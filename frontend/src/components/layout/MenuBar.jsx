@@ -5,7 +5,7 @@ import MiniList from "./MiniList";
 
 const MenuBar = ({
   title = "Profile",
-  icon = "./src/assets/img/mealicon.png",
+  icon = "/img/mealicon.png",
   iconStyle = {},
   titleStyle = {},
   isProfilePage = false,

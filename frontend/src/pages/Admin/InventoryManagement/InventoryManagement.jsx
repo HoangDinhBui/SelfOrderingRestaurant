@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { FaCheck, FaTrash, FaEdit } from "react-icons/fa";
 import MenuBar from "../../../components/layout/MenuBar";
 import axios from "axios";
-import logoRemoveBg from "../../../assets/img/logoremovebg.png";
 
 const InventoryManagement = () => {
   const [inventory, setInventory] = useState([]);
@@ -485,7 +484,7 @@ const InventoryManagement = () => {
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8 mx-4 transform transition-all duration-300 scale-100">
             <div className="flex justify-center mb-6">
-              <img alt="Logo" className="w-24 h-24" src={logoRemoveBg} />
+              <img alt="Logo" className="w-24 h-24" src="/img/logoremovebg.png" />
             </div>
             <h3 className="text-2xl font-bold mb-6 text-center text-gray-800">
               Add Inventory Item
@@ -605,7 +604,7 @@ const InventoryManagement = () => {
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg p-8 mx-4 transform transition-all duration-300 scale-100">
             <div className="flex justify-center mb-6">
-              <img alt="Logo" className="w-24 h-24" src={logoRemoveBg} />
+              <img alt="Logo" className="w-24 h-24" src="/img/logoremovebg.png" />
             </div>
             <h3 className="text-2xl font-bold mb-6 text-center text-gray-800">
               Edit Inventory Item
@@ -726,7 +725,7 @@ const InventoryManagement = () => {
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
           <div className="relative bg-white rounded-2xl shadow-2xl w-96 p-8 mx-4 transform transition-all duration-300 scale-100">
             <div className="flex justify-center mb-6">
-              <img alt="Logo" className="w-24 h-24" src={logoRemoveBg} />
+              <img alt="Logo" className="w-24 h-24" src="/img/logoremovebg.png" />
             </div>
             <h3 className="text-2xl font-bold mb-6 text-center text-gray-800">
               Success
@@ -744,7 +743,7 @@ const InventoryManagement = () => {
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
           <div className="relative bg-white rounded-2xl shadow-2xl w-96 p-8 mx-4 transform transition-all duration-300 scale-100">
             <div className="flex justify-center mb-6">
-              <img alt="Logo" className="w-24 h-24" src={logoRemoveBg} />
+              <img alt="Logo" className="w-24 h-24" src="/img/logoremovebg.png" />
             </div>
             <h3 className="text-2xl font-bold mb-6 text-center text-gray-800">
               ARE YOU SURE?

@@ -28,7 +28,7 @@ const Order = () => {
   const API_BASE_URL = "https://selforderingrestaurant-635x.onrender.com";
 
   const getImageUrl = (imageName) => {
-    if (!imageName) return "/src/assets/img/placeholder.jpg";
+    if (!imageName) return "/img/placeholder.jpg";
     return `${API_BASE_URL}/api/images/${imageName}`;
   };
 
@@ -366,7 +366,7 @@ const Order = () => {
                   className="w-24 h-24 object-cover rounded-lg"
                   onError={(e) => {
                     e.target.onerror = null;
-                    e.target.src = "/src/assets/img/placeholder.jpg";
+                    e.target.src = "/img/placeholder.jpg";
                   }}
                 />
                 <p className="text-sm text-center mt-2 font-medium">
@@ -444,7 +444,7 @@ const Order = () => {
                   className="w-24 h-24 object-cover rounded-lg"
                   onError={(e) => {
                     e.target.onerror = null;
-                    e.target.src = "/src/assets/img/placeholder.jpg";
+                    e.target.src = "/img/placeholder.jpg";
                   }}
                 />
 

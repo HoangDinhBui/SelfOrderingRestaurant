@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
 import MenuBar from "../../../components/layout/MenuBar";
-import logoRemoveBg from "../../../assets/img/logoremovebg.png";
-import chefImage from "../../../assets/img/chef.png";
 import { authAPI } from "../../../services/api";
 
 const StaffManagementAdmin = () => {
@@ -943,7 +941,7 @@ const StaffManagementAdmin = () => {
                   ⏰ Timekeeping
                 </button>
               </div>
-              <img src={chefImage} alt="Chef" style={styles.chefMouseImage} />
+              <img src="/img/chef.png" alt="Chef" style={styles.chefMouseImage} />
             </div>
           </div>
 
@@ -1185,7 +1183,7 @@ const StaffManagementAdmin = () => {
           {showSuccessPopup && (
             <div style={styles.successPopup}>
               <img
-                src={logoRemoveBg}
+                src="/img/logoremovebg.png"
                 alt="Success"
                 style={styles.successImage}
               />
@@ -1198,7 +1196,7 @@ const StaffManagementAdmin = () => {
           {showDeletePopup && (
             <div style={styles.successPopup}>
               <img
-                src={logoRemoveBg}
+                src="/img/logoremovebg.png"
                 alt="Confirm Delete"
                 style={styles.successImage}
               />

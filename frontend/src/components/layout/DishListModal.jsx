@@ -101,7 +101,7 @@ const DishListModal = ({ isOpen, onClose, Staff, tableId }) => {
                     >
                       <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-md border border-gray-200">
                         <img
-                          src={dish.image || "/src/assets/img/placeholder.jpg"}
+                          src={dish.image || "/img/placeholder.jpg"}
                           alt={dish.name}
                           className="h-full w-full object-cover object-center"
                         />
