@@ -103,7 +103,7 @@ public class DishService implements IDishService {
             }
         }
 
-        LocalTime currentTime = LocalTime.now();
+        LocalTime currentTime = LocalTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
         LocalTime startBusinessHour = LocalTime.of(7, 0);
         LocalTime endBusinessHour = LocalTime.of(23, 0);
 
@@ -117,7 +117,7 @@ public class DishService implements IDishService {
             pending.setStatus(request.getStatus().name());
             pending.setDescription(request.getDescription());
             pending.setImage(imagePath);
-            pending.setEffectiveDateTime(LocalDate.now().atTime(23, 0));
+            pending.setEffectiveDateTime(java.time.LocalDate.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh")).atTime(23, 0));
             pendingDishUpdateRepository.save(pending);
         } else {
             logger.info("Ngoài giờ làm việc (23h-7h), áp dụng cập nhật ngay cho món ăn id: {}", dishId);
@@ -303,11 +303,11 @@ public class DishService implements IDishService {
         return dishDTO;
     }
 
-    @Scheduled(cron = "0 0 23 * * *") // Chạy lúc 23:00 hàng ngàygit
+    @Scheduled(cron = "0 0 23 * * *", zone = "Asia/Ho_Chi_Minh") // Chạy lúc 23:00 hàng ngày theo giờ VN
     @Transactional
     public void applyPendingDishUpdates() {
         logger.info("Bắt đầu áp dụng các cập nhật món ăn đang chờ xử lý");
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
         logger.info("Current time: {}", now);
         List<PendingDishUpdate> updates = pendingDishUpdateRepository.findByEffectiveDateTimeBefore(now);
         logger.info("Found {} pending updates", updates.size());
