@@ -11,6 +11,7 @@ import org.opencv.core.Mat;
 import org.opencv.core.MatOfRect;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.objdetect.CascadeClassifier;
+import org.opencv.core.Size;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.FileSystemResource;
@@ -119,14 +120,14 @@ public class AttendanceController {
         File tempFile = File.createTempFile("face_auth_", ".jpg");
         Files.write(tempFile.toPath(), imageBytes);
 
-        // Phát hiện khuôn mặt bằng OpenCV
+        // Phát hiện khuôn mặt bằng OpenCV (Tăng độ khó để không nhận nhầm bàn tay)
         Mat image = Imgcodecs.imread(tempFile.getAbsolutePath());
         MatOfRect faceDetections = new MatOfRect();
-        faceDetector.detectMultiScale(image, faceDetections);
+        faceDetector.detectMultiScale(image, faceDetections, 1.1, 7, 0, new Size(100, 100), new Size());
 
         if (faceDetections.toArray().length == 0) {
             Files.deleteIfExists(tempFile.toPath());
-            return ResponseEntity.badRequest().body(Map.of("message", "Không phát hiện khuôn mặt"));
+            return ResponseEntity.badRequest().body(Map.of("message", "Không phát hiện khuôn mặt hợp lệ (Vui lòng để rõ mặt)"));
         }
 
         // Lấy staffId từ JWT
@@ -142,21 +143,7 @@ public class AttendanceController {
             return ResponseEntity.badRequest().body(Map.of("message", "Đường dẫn ảnh khuôn mặt không hợp lệ cho " + staff.getFullname()));
         }
 
-        // Kiểm tra xem nhân viên đã check-in hôm nay chưa
-        LocalDate today = LocalDate.now();
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime startOfDay = today.atStartOfDay();
-        LocalDateTime endOfDay = today.atTime(23, 59, 59);
-
-        List<Attendance> existingCheckIns = attendanceRepository.findByStaffIdAndCheckInTimeBetweenAndStatus(
-                staffId, startOfDay, endOfDay, Attendance.AttendanceStatus.CHECK_IN);
-        if (!existingCheckIns.isEmpty()) {
-            Files.deleteIfExists(tempFile.toPath());
-            if (referencePath != null && referencePath.startsWith("http")) referenceFile.delete();
-            return ResponseEntity.ok(Map.of("message", "Đã ghi nhận check-in cho " + staff.getFullname() + " hôm nay lúc " + existingCheckIns.get(0).getCreatedAt()));
-        }
-
-        // Gửi ảnh đến DeepFace microservice
+        // Gửi ảnh đến DeepFace microservice trước
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
@@ -166,6 +153,21 @@ public class AttendanceController {
         try {
             ResponseEntity<Map> response = restTemplate.postForEntity(deepfaceApiUrl, new HttpEntity<>(body, headers), Map.class);
             if (response.getStatusCode().is2xxSuccessful() && (Boolean) response.getBody().get("verified")) {
+                
+                // Nếu đúng là mặt nhân viên, mới kiểm tra xem đã check-in chưa
+                LocalDate today = LocalDate.now();
+                LocalDateTime now = LocalDateTime.now();
+                LocalDateTime startOfDay = today.atStartOfDay();
+                LocalDateTime endOfDay = today.atTime(23, 59, 59);
+
+                List<Attendance> existingCheckIns = attendanceRepository.findByStaffIdAndCheckInTimeBetweenAndStatus(
+                        staffId, startOfDay, endOfDay, Attendance.AttendanceStatus.CHECK_IN);
+                if (!existingCheckIns.isEmpty()) {
+                    Files.deleteIfExists(tempFile.toPath());
+                    if (referencePath != null && referencePath.startsWith("http")) referenceFile.delete();
+                    return ResponseEntity.ok(Map.of("message", "Đã ghi nhận check-in cho " + staff.getFullname() + " hôm nay lúc " + existingCheckIns.get(0).getCreatedAt()));
+                }
+
                 Attendance attendance = new Attendance();
                 attendance.setStaffId(staffId);
                 attendance.setCheckInTime(now);
@@ -180,7 +182,7 @@ public class AttendanceController {
             } else {
                 Files.deleteIfExists(tempFile.toPath());
                 if (referencePath != null && referencePath.startsWith("http")) referenceFile.delete();
-                return ResponseEntity.badRequest().body(Map.of("message", "Khuôn mặt không được nhận diện"));
+                return ResponseEntity.badRequest().body(Map.of("message", "Khuôn mặt không khớp với hồ sơ nhân viên"));
             }
         } catch (HttpClientErrorException e) {
             System.out.println("Lỗi DeepFace: " + e.getResponseBodyAsString());
@@ -197,14 +199,14 @@ public class AttendanceController {
         File tempFile = File.createTempFile("face_auth_", ".jpg");
         Files.write(tempFile.toPath(), image.getBytes());
 
-        // Phát hiện khuôn mặt bằng OpenCV
+        // Phát hiện khuôn mặt bằng OpenCV (Tăng độ khó)
         Mat matImage = Imgcodecs.imread(tempFile.getAbsolutePath());
         MatOfRect faceDetections = new MatOfRect();
-        faceDetector.detectMultiScale(matImage, faceDetections);
+        faceDetector.detectMultiScale(matImage, faceDetections, 1.1, 7, 0, new Size(100, 100), new Size());
 
         if (faceDetections.toArray().length == 0) {
             Files.deleteIfExists(tempFile.toPath());
-            return ResponseEntity.badRequest().body(Map.of("message", "Không phát hiện khuôn mặt"));
+            return ResponseEntity.badRequest().body(Map.of("message", "Không phát hiện khuôn mặt hợp lệ (Vui lòng để rõ mặt)"));
         }
 
         // Lấy staffId từ JWT
@@ -220,21 +222,7 @@ public class AttendanceController {
             return ResponseEntity.badRequest().body(Map.of("message", "Đường dẫn ảnh khuôn mặt không hợp lệ cho " + staff.getFullname()));
         }
 
-        // Kiểm tra xem nhân viên đã check-in hôm nay chưa
-        LocalDate today = LocalDate.now();
-        LocalDateTime now = LocalDateTime.now();
-        LocalDateTime startOfDay = today.atStartOfDay();
-        LocalDateTime endOfDay = today.atTime(23, 59, 59);
-
-        List<Attendance> existingCheckIns = attendanceRepository.findByStaffIdAndCheckInTimeBetweenAndStatus(
-                staffId, startOfDay, endOfDay, Attendance.AttendanceStatus.CHECK_IN);
-        if (!existingCheckIns.isEmpty()) {
-            Files.deleteIfExists(tempFile.toPath());
-            if (referencePath != null && referencePath.startsWith("http")) referenceFile.delete();
-            return ResponseEntity.ok(Map.of("message", "Đã ghi nhận check-in cho " + staff.getFullname() + " hôm nay lúc " + existingCheckIns.get(0).getCreatedAt()));
-        }
-
-        // Gửi ảnh đến DeepFace microservice
+        // Gửi ảnh đến DeepFace microservice trước khi check xem đã check-in chưa
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
@@ -244,6 +232,21 @@ public class AttendanceController {
         try {
             ResponseEntity<Map> response = restTemplate.postForEntity(deepfaceApiUrl, new HttpEntity<>(body, headers), Map.class);
             if (response.getStatusCode().is2xxSuccessful() && (Boolean) response.getBody().get("verified")) {
+                
+                // AI xác nhận đúng người, giờ mới check CSDL
+                LocalDate today = LocalDate.now();
+                LocalDateTime now = LocalDateTime.now();
+                LocalDateTime startOfDay = today.atStartOfDay();
+                LocalDateTime endOfDay = today.atTime(23, 59, 59);
+
+                List<Attendance> existingCheckIns = attendanceRepository.findByStaffIdAndCheckInTimeBetweenAndStatus(
+                        staffId, startOfDay, endOfDay, Attendance.AttendanceStatus.CHECK_IN);
+                if (!existingCheckIns.isEmpty()) {
+                    Files.deleteIfExists(tempFile.toPath());
+                    if (referencePath != null && referencePath.startsWith("http")) referenceFile.delete();
+                    return ResponseEntity.ok(Map.of("message", "Đã ghi nhận check-in cho " + staff.getFullname() + " hôm nay lúc " + existingCheckIns.get(0).getCreatedAt()));
+                }
+
                 Attendance attendance = new Attendance();
                 attendance.setStaffId(staffId);
                 attendance.setCheckInTime(now);
@@ -258,7 +261,7 @@ public class AttendanceController {
             } else {
                 Files.deleteIfExists(tempFile.toPath());
                 if (referencePath != null && referencePath.startsWith("http")) referenceFile.delete();
-                return ResponseEntity.badRequest().body(Map.of("message", "Khuôn mặt không được nhận diện"));
+                return ResponseEntity.badRequest().body(Map.of("message", "Khuôn mặt không khớp với hồ sơ nhân viên"));
             }
         } catch (HttpClientErrorException e) {
             System.out.println("Lỗi DeepFace: " + e.getResponseBodyAsString());
