@@ -161,8 +161,8 @@ public class DishController {
         List<com.example.SelfOrderingRestaurant.Entity.Dish> dishes = dishRepository.findAll();
         for (com.example.SelfOrderingRestaurant.Entity.Dish dish : dishes) {
             String url = dish.getImage();
-            if (url != null && !url.startsWith("http") && !url.contains("cloudinary")) {
-                // If it is just a filename
+            if (url != null && !url.contains("cloudinary") && (!url.startsWith("http") || url.contains("localhost"))) {
+                // Extract filename whether it's a full URL or a relative path
                 String filename = url;
                 if (url.contains("/")) {
                     filename = url.substring(url.lastIndexOf("/") + 1);
