@@ -78,6 +78,7 @@ public class SecurityConfig {
                                 "/api/dish_ingredients/**",
                                 "/api/inventory/**",
                                 "/api/captive/**",
+                                "/api/chatbot/**",
                                 "/error").permitAll()
                         .requestMatchers("/api/staff/**").hasAnyRole("STAFF", "ADMIN")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")

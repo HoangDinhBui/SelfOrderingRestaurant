@@ -691,3 +691,251 @@
 2026-06-05 22:38:06,780 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmpuzghzr_8.jpg
 2026-06-05 22:38:06,781 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmpkcdvxq_w.jpg
 2026-06-05 22:38:06,782 - INFO - 127.0.0.1 - - [05/Jun/2026 22:38:06] "POST /verify HTTP/1.1" 200 -
+2026-06-05 22:57:28,865 - DEBUG - Processing image: face_auth_3652796575667445991.jpg, reference_image: ref_face_3019346577536685748.jpg
+2026-06-05 22:57:28,868 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmpjiao8oto.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmp5opng7wq.jpg
+2026-06-05 22:57:30,723 - DEBUG - Verification result: {'verified': True, 'distance': 0.13766446277731847, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 239, 'y': 147, 'w': 263, 'h': 263, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 312, 'y': 294, 'w': 511, 'h': 511, 'left_eye': (625, 647), 'right_eye': (560, 645)}}, 'time': 1.8}
+2026-06-05 22:57:30,724 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmpjiao8oto.jpg
+2026-06-05 22:57:30,725 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmp5opng7wq.jpg
+2026-06-05 22:57:30,726 - INFO - 127.0.0.1 - - [05/Jun/2026 22:57:30] "POST /verify HTTP/1.1" 200 -
+2026-06-05 23:11:52,300 - DEBUG - Processing image: face_auth_2018688681314670826.jpg, reference_image: ref_face_784866520912240877.jpg
+2026-06-05 23:11:52,302 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmpn7m6e021.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmplh6kbmf2.jpg
+2026-06-05 23:11:54,067 - DEBUG - Verification result: {'verified': True, 'distance': 0.06654393019641203, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 185, 'y': 110, 'w': 310, 'h': 310, 'left_eye': (387, 221), 'right_eye': (280, 231)}, 'img2': {'x': 513, 'y': 220, 'w': 300, 'h': 300, 'left_eye': (715, 337), 'right_eye': (601, 332)}}, 'time': 1.74}
+2026-06-05 23:11:54,068 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmpn7m6e021.jpg
+2026-06-05 23:11:54,069 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmplh6kbmf2.jpg
+2026-06-05 23:11:54,070 - INFO - 127.0.0.1 - - [05/Jun/2026 23:11:54] "POST /verify HTTP/1.1" 200 -
+2026-06-05 23:43:41,519 - DEBUG - Processing image: face_auth_2024199827828333270.jpg, reference_image: ref_face_17132906569359948785.jpg
+2026-06-05 23:43:41,522 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmprmykoe2f.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmpr491i72c.jpg
+2026-06-05 23:43:43,679 - DEBUG - Verification result: {'verified': True, 'distance': 0.08027680870736553, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 192, 'y': 64, 'w': 387, 'h': 387, 'left_eye': (439, 199), 'right_eye': (307, 216)}, 'img2': {'x': 513, 'y': 220, 'w': 300, 'h': 300, 'left_eye': (715, 337), 'right_eye': (601, 332)}}, 'time': 2.13}
+2026-06-05 23:43:43,680 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmprmykoe2f.jpg
+2026-06-05 23:43:43,681 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmpr491i72c.jpg
+2026-06-05 23:43:43,682 - INFO - 127.0.0.1 - - [05/Jun/2026 23:43:43] "POST /verify HTTP/1.1" 200 -
+2026-06-06 02:01:06,684 - DEBUG - Processing image: face_auth_6983042217657661904.jpg, reference_image: ref_face_16987502228135138331.jpg
+2026-06-06 02:01:06,692 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmpdgx_sv2f.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmpqqf1qny2.jpg
+2026-06-06 02:01:10,381 - DEBUG - Verification result: {'verified': True, 'distance': 0.06650906752409835, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 220, 'y': 118, 'w': 268, 'h': 268, 'left_eye': (401, 220), 'right_eye': (299, 220)}, 'img2': {'x': 513, 'y': 220, 'w': 300, 'h': 300, 'left_eye': (715, 337), 'right_eye': (601, 332)}}, 'time': 3.62}
+2026-06-06 02:01:10,382 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmpdgx_sv2f.jpg
+2026-06-06 02:01:10,383 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmpqqf1qny2.jpg
+2026-06-06 02:01:10,386 - INFO - 127.0.0.1 - - [06/Jun/2026 02:01:10] "POST /verify HTTP/1.1" 200 -
+2026-06-06 02:05:11,434 - DEBUG - Processing image: face_auth_6174131279015811825.jpg, reference_image: ref_face_9668466078389298455.jpg
+2026-06-06 02:05:11,448 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmpsw0m3xyo.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmp0zrvegsd.jpg
+2026-06-06 02:05:12,775 - DEBUG - Verification result: {'verified': False, 'distance': 0.7180187719084938, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 333, 'y': 185, 'w': 142, 'h': 142, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 63, 'y': 149, 'w': 209, 'h': 209, 'left_eye': (203, 232), 'right_eye': (133, 232)}}, 'time': 1.29}
+2026-06-06 02:05:12,777 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmpsw0m3xyo.jpg
+2026-06-06 02:05:12,778 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmp0zrvegsd.jpg
+2026-06-06 02:05:12,779 - INFO - 127.0.0.1 - - [06/Jun/2026 02:05:12] "POST /verify HTTP/1.1" 200 -
+2026-06-06 02:05:38,947 - DEBUG - Processing image: face_auth_13326944428512069475.jpg, reference_image: ref_face_9830498194548855879.jpg
+2026-06-06 02:05:38,963 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmpm_j4qnme.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmp41tr7j58.jpg
+2026-06-06 02:05:40,135 - DEBUG - Verification result: {'verified': False, 'distance': 0.6149027393477978, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 315, 'y': 187, 'w': 138, 'h': 138, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 63, 'y': 149, 'w': 209, 'h': 209, 'left_eye': (203, 232), 'right_eye': (133, 232)}}, 'time': 1.14}
+2026-06-06 02:05:40,135 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmpm_j4qnme.jpg
+2026-06-06 02:05:40,136 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmp41tr7j58.jpg
+2026-06-06 02:05:40,136 - INFO - 127.0.0.1 - - [06/Jun/2026 02:05:40] "POST /verify HTTP/1.1" 200 -
+2026-06-06 02:06:29,537 - DEBUG - Processing image: face_auth_11848027860089013692.jpg, reference_image: ref_face_1811513649133026348.jpg
+2026-06-06 02:06:29,540 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmpwa4ljqjs.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmp8n95f_5q.jpg
+2026-06-06 02:06:30,668 - DEBUG - Verification result: {'verified': True, 'distance': 0.26520458986741036, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 259, 'y': 185, 'w': 162, 'h': 162, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 63, 'y': 149, 'w': 209, 'h': 209, 'left_eye': (203, 232), 'right_eye': (133, 232)}}, 'time': 1.1}
+2026-06-06 02:06:30,669 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmpwa4ljqjs.jpg
+2026-06-06 02:06:30,670 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmp8n95f_5q.jpg
+2026-06-06 02:06:30,671 - INFO - 127.0.0.1 - - [06/Jun/2026 02:06:30] "POST /verify HTTP/1.1" 200 -
+2026-06-06 02:19:56,264 - DEBUG - Processing image: face_auth_7264829079680291630.jpg, reference_image: ref_face_8192543166862689914.jpg
+2026-06-06 02:19:56,268 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmpw1ebjgyw.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmp__rq27cy.jpg
+2026-06-06 02:19:58,531 - DEBUG - Verification result: {'verified': True, 'distance': 0.06596950494379883, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 207, 'y': 114, 'w': 260, 'h': 260, 'left_eye': (381, 208), 'right_eye': (283, 218)}, 'img2': {'x': 513, 'y': 220, 'w': 300, 'h': 300, 'left_eye': (715, 337), 'right_eye': (601, 332)}}, 'time': 2.23}
+2026-06-06 02:19:58,532 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmpw1ebjgyw.jpg
+2026-06-06 02:19:58,533 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmp__rq27cy.jpg
+2026-06-06 02:19:58,533 - INFO - 127.0.0.1 - - [06/Jun/2026 02:19:58] "POST /verify HTTP/1.1" 200 -
+2026-06-06 10:17:22,726 - DEBUG - Processing image: face_auth_7765752911555155598.jpg, reference_image: ref_face_5927706289519923960.jpg
+2026-06-06 10:17:22,728 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmpoo2ikxp_.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmpzpuy1b2o.jpg
+2026-06-06 10:17:25,393 - DEBUG - Verification result: {'verified': True, 'distance': 0.06865695465878874, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 245, 'y': 148, 'w': 233, 'h': 233, 'left_eye': (400, 237), 'right_eye': (315, 238)}, 'img2': {'x': 513, 'y': 220, 'w': 300, 'h': 300, 'left_eye': (715, 337), 'right_eye': (601, 332)}}, 'time': 2.13}
+2026-06-06 10:17:25,394 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmpoo2ikxp_.jpg
+2026-06-06 10:17:25,395 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmpzpuy1b2o.jpg
+2026-06-06 10:17:25,396 - INFO - 127.0.0.1 - - [06/Jun/2026 10:17:25] "POST /verify HTTP/1.1" 200 -
+2026-06-06 10:26:03,576 - DEBUG - Processing image: face_auth_2388427082751666383.jpg, reference_image: ref_face_2971497517648886851.jpg
+2026-06-06 10:26:03,591 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmp90l_3sb3.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmp0u387j1f.jpg
+2026-06-06 10:26:05,298 - DEBUG - Verification result: {'verified': True, 'distance': 0.06466355511618027, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 246, 'y': 132, 'w': 258, 'h': 258, 'left_eye': (420, 230), 'right_eye': (323, 232)}, 'img2': {'x': 513, 'y': 220, 'w': 300, 'h': 300, 'left_eye': (715, 337), 'right_eye': (601, 332)}}, 'time': 1.68}
+2026-06-06 10:26:05,310 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmp90l_3sb3.jpg
+2026-06-06 10:26:05,311 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmp0u387j1f.jpg
+2026-06-06 10:26:05,312 - INFO - 127.0.0.1 - - [06/Jun/2026 10:26:05] "POST /verify HTTP/1.1" 200 -
+2026-06-06 10:34:06,863 - DEBUG - Processing image: face_auth_6899404891430389324.jpg, reference_image: ref_face_450722950591488430.jpg
+2026-06-06 10:34:06,866 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmpmi0ypcfq.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmpql4vynhe.jpg
+2026-06-06 10:34:09,313 - DEBUG - Verification result: {'verified': True, 'distance': 0.06150067997708186, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 254, 'y': 97, 'w': 227, 'h': 227, 'left_eye': (406, 183), 'right_eye': (321, 186)}, 'img2': {'x': 513, 'y': 220, 'w': 300, 'h': 300, 'left_eye': (715, 337), 'right_eye': (601, 332)}}, 'time': 2.42}
+2026-06-06 10:34:09,314 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmpmi0ypcfq.jpg
+2026-06-06 10:34:09,315 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmpql4vynhe.jpg
+2026-06-06 10:34:09,316 - INFO - 127.0.0.1 - - [06/Jun/2026 10:34:09] "POST /verify HTTP/1.1" 200 -
+2026-06-06 12:22:13,150 - DEBUG - Processing image: face_auth_16358263023880637838.jpg, reference_image: ref_face_5784145895264099312.jpg
+2026-06-06 12:22:13,154 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmpfr2h5mam.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmp2rn16d86.jpg
+2026-06-06 12:22:15,689 - DEBUG - Verification result: {'verified': True, 'distance': 0.07265272695395486, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 179, 'y': 112, 'w': 333, 'h': 333, 'left_eye': (400, 233), 'right_eye': (273, 245)}, 'img2': {'x': 513, 'y': 220, 'w': 300, 'h': 300, 'left_eye': (715, 337), 'right_eye': (601, 332)}}, 'time': 2.5}
+2026-06-06 12:22:15,691 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmpfr2h5mam.jpg
+2026-06-06 12:22:15,691 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmp2rn16d86.jpg
+2026-06-06 12:22:15,692 - INFO - 127.0.0.1 - - [06/Jun/2026 12:22:15] "POST /verify HTTP/1.1" 200 -
+2026-06-06 12:31:32,908 - DEBUG - Processing image: face_auth_12805274650688055854.jpg, reference_image: ref_face_10417450166195268118.jpg
+2026-06-06 12:31:32,913 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmpmuobkkq8.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmpxb775fl4.jpg
+2026-06-06 12:31:35,265 - DEBUG - Verification result: {'verified': True, 'distance': 0.15521201613445745, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 22, 'y': 194, 'w': 434, 'h': 434, 'left_eye': (325, 359), 'right_eye': (144, 361)}, 'img2': {'x': 513, 'y': 220, 'w': 300, 'h': 300, 'left_eye': (715, 337), 'right_eye': (601, 332)}}, 'time': 2.32}
+2026-06-06 12:31:35,266 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmpmuobkkq8.jpg
+2026-06-06 12:31:35,267 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmpxb775fl4.jpg
+2026-06-06 12:31:35,268 - INFO - 127.0.0.1 - - [06/Jun/2026 12:31:35] "POST /verify HTTP/1.1" 200 -
+2026-06-06 13:40:51,720 - DEBUG - Processing image: face_auth_5852612777882835951.jpg, reference_image: ref_face_1597640082123082494.jpg
+2026-06-06 13:40:51,729 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmpkx_5kw4r.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmpam2jtuwe.jpg
+2026-06-06 13:40:57,156 - DEBUG - Verification result: {'verified': True, 'distance': 0.2803030352678666, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 83, 'y': 245, 'w': 377, 'h': 377, 'left_eye': (328, 388), 'right_eye': (201, 396)}, 'img2': {'x': 312, 'y': 294, 'w': 511, 'h': 511, 'left_eye': (625, 647), 'right_eye': (560, 645)}}, 'time': 5.3}
+2026-06-06 13:40:57,157 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmpkx_5kw4r.jpg
+2026-06-06 13:40:57,158 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmpam2jtuwe.jpg
+2026-06-06 13:40:57,162 - INFO - 127.0.0.1 - - [06/Jun/2026 13:40:57] "POST /verify HTTP/1.1" 200 -
+2026-06-06 13:40:59,151 - DEBUG - Processing image: face_auth_7619294800400711420.jpg, reference_image: ref_face_2886543008835915814.jpg
+2026-06-06 13:40:59,156 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmpg1kdb8y4.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmp3sd0jnd3.jpg
+2026-06-06 13:41:01,904 - DEBUG - Verification result: {'verified': True, 'distance': 0.27704282492321675, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 110, 'y': 358, 'w': 290, 'h': 290, 'left_eye': (305, 460), 'right_eye': (191, 465)}, 'img2': {'x': 513, 'y': 220, 'w': 300, 'h': 300, 'left_eye': (715, 337), 'right_eye': (601, 332)}}, 'time': 2.69}
+2026-06-06 13:41:01,905 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmpg1kdb8y4.jpg
+2026-06-06 13:41:01,906 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmp3sd0jnd3.jpg
+2026-06-06 13:41:01,907 - INFO - 127.0.0.1 - - [06/Jun/2026 13:41:01] "POST /verify HTTP/1.1" 200 -
+2026-06-06 14:03:55,840 - DEBUG - Processing image: face_auth_3269370609715231909.jpg, reference_image: ref_face_1473284377700549008.jpg
+2026-06-06 14:03:55,852 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmptyjj5wve.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmpgsor3ohc.jpg
+2026-06-06 14:04:01,063 - DEBUG - Verification result: {'verified': True, 'distance': 0.37067329794669035, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 78, 'y': 296, 'w': 290, 'h': 290, 'left_eye': (267, 409), 'right_eye': (162, 411)}, 'img2': {'x': 513, 'y': 220, 'w': 300, 'h': 300, 'left_eye': (715, 337), 'right_eye': (601, 332)}}, 'time': 5.11}
+2026-06-06 14:04:01,065 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmptyjj5wve.jpg
+2026-06-06 14:04:01,065 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmpgsor3ohc.jpg
+2026-06-06 14:04:01,066 - INFO - 127.0.0.1 - - [06/Jun/2026 14:04:01] "POST /verify HTTP/1.1" 200 -
+2026-06-06 14:05:22,842 - DEBUG - Processing image: face_auth_13233089447316152118.jpg, reference_image: ref_face_3225977265355806019.jpg
+2026-06-06 14:05:22,848 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmp8wuy4ztb.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmpdxw3m71n.jpg
+2026-06-06 14:05:25,057 - DEBUG - Verification result: {'verified': True, 'distance': 0.28959010932806406, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 68, 'y': 200, 'w': 298, 'h': 298, 'left_eye': (275, 315), 'right_eye': (160, 312)}, 'img2': {'x': 513, 'y': 220, 'w': 300, 'h': 300, 'left_eye': (715, 337), 'right_eye': (601, 332)}}, 'time': 2.16}
+2026-06-06 14:05:25,058 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmp8wuy4ztb.jpg
+2026-06-06 14:05:25,058 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmpdxw3m71n.jpg
+2026-06-06 14:05:25,059 - INFO - 127.0.0.1 - - [06/Jun/2026 14:05:25] "POST /verify HTTP/1.1" 200 -
+2026-06-06 14:06:00,900 - DEBUG - Processing image: face_auth_1555051619257236751.jpg, reference_image: ref_face_2524537370908035200.jpg
+2026-06-06 14:06:00,905 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmpc7oqk7t3.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmpue0jhdc5.jpg
+2026-06-06 14:06:03,348 - DEBUG - Verification result: {'verified': False, 'distance': 0.42696211632321335, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 165, 'y': 376, 'w': 249, 'h': 249, 'left_eye': (328, 470), 'right_eye': (282, 565)}, 'img2': {'x': 420, 'y': 338, 'w': 149, 'h': 149, 'left_eye': None, 'right_eye': None}}, 'time': 2.39}
+2026-06-06 14:06:03,349 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmpc7oqk7t3.jpg
+2026-06-06 14:06:03,350 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmpue0jhdc5.jpg
+2026-06-06 14:06:03,351 - INFO - 127.0.0.1 - - [06/Jun/2026 14:06:03] "POST /verify HTTP/1.1" 200 -
+2026-06-06 14:07:15,210 - DEBUG - Processing image: face_auth_2302693978442955689.jpg, reference_image: ref_face_13104824345143609555.jpg
+2026-06-06 14:07:15,214 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmp5hwmonh6.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmpjexul8_o.jpg
+2026-06-06 14:07:17,330 - DEBUG - Verification result: {'verified': True, 'distance': 0.3192136365365621, 'threshold': 0.4, 'model': 'Facenet', 'detector_backend': 'opencv', 'similarity_metric': 'cosine', 'facial_areas': {'img1': {'x': 141, 'y': 229, 'w': 277, 'h': 277, 'left_eye': (323, 334), 'right_eye': (218, 337)}, 'img2': {'x': 513, 'y': 220, 'w': 300, 'h': 300, 'left_eye': (715, 337), 'right_eye': (601, 332)}}, 'time': 2.09}
+2026-06-06 14:07:17,331 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmp5hwmonh6.jpg
+2026-06-06 14:07:17,332 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmpjexul8_o.jpg
+2026-06-06 14:07:17,333 - INFO - 127.0.0.1 - - [06/Jun/2026 14:07:17] "POST /verify HTTP/1.1" 200 -
+2026-06-06 14:11:20,717 - DEBUG - Processing image: img1.jpg, reference_image: img2.jpg
+2026-06-06 14:11:20,722 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmpnpj5x7en.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmpcj2dfnf_.jpg
+2026-06-06 14:11:20,747 - ERROR - Invalid uploaded image: C:\Users\ADMIN\AppData\Local\Temp\tmpnpj5x7en.jpg
+2026-06-06 14:11:20,749 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmpnpj5x7en.jpg
+2026-06-06 14:11:20,751 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmpcj2dfnf_.jpg
+2026-06-06 14:11:20,753 - INFO - 127.0.0.1 - - [06/Jun/2026 14:11:20] "[31m[1mPOST /verify HTTP/1.1[0m" 400 -
+2026-06-06 14:15:06,576 - INFO -  * Detected change in 'D:\\UTC2\\SelfOrderingRestaurant\\FaceRecognition\\face_recognition.py', reloading
+2026-06-06 14:15:14,250 - INFO -  * Restarting with stat
+2026-06-06 14:15:44,559 - INFO - Starting Flask application on port 5000...
+2026-06-06 14:15:44,606 - WARNING -  * Debugger is active!
+2026-06-06 14:15:44,620 - INFO -  * Debugger PIN: 574-771-262
+2026-06-06 14:18:46,528 - INFO - Starting Flask application on port 5000...
+2026-06-06 14:18:46,724 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.8:5000
+2026-06-06 14:18:46,725 - INFO - [33mPress CTRL+C to quit[0m
+2026-06-06 14:18:46,729 - INFO -  * Restarting with stat
+2026-06-06 14:19:04,582 - INFO - Starting Flask application on port 5000...
+2026-06-06 14:19:04,598 - WARNING -  * Debugger is active!
+2026-06-06 14:19:04,606 - INFO -  * Debugger PIN: 574-771-262
+2026-06-06 14:20:06,404 - DEBUG - Processing image: face_auth_2183878652946101687.jpg, reference_image: ref_face_17092360698307680427.jpg
+2026-06-06 14:20:06,413 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmp5jkte_9s.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmp19i_y8vf.jpg
+2026-06-06 14:20:10,744 - DEBUG - Starting new HTTPS connection (1): github.com:443
+2026-06-06 14:20:12,509 - DEBUG - https://github.com:443 "GET /serengil/deepface_models/releases/download/v1.0/arcface_weights.h5 HTTP/1.1" 302 0
+2026-06-06 14:20:12,518 - DEBUG - Starting new HTTPS connection (1): release-assets.githubusercontent.com:443
+2026-06-06 14:20:13,301 - DEBUG - https://release-assets.githubusercontent.com:443 "GET /github-production-release-asset/382368840/3ae8ac80-db91-11eb-8c64-7f76a6a7028e?sp=r&sv=2018-11-09&sr=b&spr=https&se=2026-06-06T08%3A01%3A59Z&rscd=attachment%3B+filename%3Darcface_weights.h5&rsct=application%2Foctet-stream&skoid=96c2d410-5711-43a1-aedd-ab1947aa7ab0&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skt=2026-06-06T07%3A01%3A27Z&ske=2026-06-06T08%3A01%3A59Z&sks=b&skv=2018-11-09&sig=Nl21IjFq37vEhLxyTSeGuafCSv%2BKg8aAVB%2BdDFmexow%3D&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmVsZWFzZS1hc3NldHMuZ2l0aHVidXNlcmNvbnRlbnQuY29tIiwia2V5Ijoia2V5MSIsImV4cCI6MTc4MDczNDAxMywibmJmIjoxNzgwNzMwNDEzLCJwYXRoIjoicmVsZWFzZWFzc2V0cHJvZHVjdGlvbi5ibG9iLmNvcmUud2luZG93cy5uZXQifQ.e0pSE7a-uaFjGIDdkfa4-2rq5tTsqWEPixMjdKw7ssw&response-content-disposition=attachment%3B%20filename%3Darcface_weights.h5&response-content-type=application%2Foctet-stream HTTP/1.1" 200 137026640
+2026-06-06 14:22:53,573 - DEBUG - Processing image: face_auth_2501619512534631244.jpg, reference_image: ref_face_1078271957372790002.jpg
+2026-06-06 14:22:53,577 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmpsm25p0yr.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmpw351slc2.jpg
+2026-06-06 14:22:55,749 - DEBUG - Starting new HTTPS connection (1): github.com:443
+2026-06-06 14:22:57,055 - DEBUG - https://github.com:443 "GET /serengil/deepface_models/releases/download/v1.0/arcface_weights.h5 HTTP/1.1" 302 0
+2026-06-06 14:22:57,062 - DEBUG - Starting new HTTPS connection (1): release-assets.githubusercontent.com:443
+2026-06-06 14:22:57,667 - DEBUG - https://release-assets.githubusercontent.com:443 "GET /github-production-release-asset/382368840/3ae8ac80-db91-11eb-8c64-7f76a6a7028e?sp=r&sv=2018-11-09&sr=b&spr=https&se=2026-06-06T08%3A22%3A16Z&rscd=attachment%3B+filename%3Darcface_weights.h5&rsct=application%2Foctet-stream&skoid=96c2d410-5711-43a1-aedd-ab1947aa7ab0&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skt=2026-06-06T07%3A21%3A18Z&ske=2026-06-06T08%3A22%3A16Z&sks=b&skv=2018-11-09&sig=HegNt1r3wB0lIQT90N%2FT2K0DomFK%2B3e%2FoadhhRAXtZc%3D&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmVsZWFzZS1hc3NldHMuZ2l0aHVidXNlcmNvbnRlbnQuY29tIiwia2V5Ijoia2V5MSIsImV4cCI6MTc4MDczNDE3NywibmJmIjoxNzgwNzMwNTc3LCJwYXRoIjoicmVsZWFzZWFzc2V0cHJvZHVjdGlvbi5ibG9iLmNvcmUud2luZG93cy5uZXQifQ.oOYL-lJ3EInFDm9dOLF6RpefPMwwT17MBfMgLXpoHkE&response-content-disposition=attachment%3B%20filename%3Darcface_weights.h5&response-content-type=application%2Foctet-stream HTTP/1.1" 200 137026640
+2026-06-06 14:24:56,247 - DEBUG - Processing image: face_auth_13996657685469019375.jpg, reference_image: ref_face_4013268099987079938.jpg
+2026-06-06 14:24:56,250 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmppl7hfj2m.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmpzdvu41v2.jpg
+2026-06-06 14:24:57,643 - DEBUG - Starting new HTTPS connection (1): github.com:443
+2026-06-06 14:24:59,297 - DEBUG - https://github.com:443 "GET /serengil/deepface_models/releases/download/v1.0/arcface_weights.h5 HTTP/1.1" 302 0
+2026-06-06 14:24:59,300 - DEBUG - Starting new HTTPS connection (1): release-assets.githubusercontent.com:443
+2026-06-06 14:24:59,754 - DEBUG - https://release-assets.githubusercontent.com:443 "GET /github-production-release-asset/382368840/3ae8ac80-db91-11eb-8c64-7f76a6a7028e?sp=r&sv=2018-11-09&sr=b&spr=https&se=2026-06-06T08%3A22%3A16Z&rscd=attachment%3B+filename%3Darcface_weights.h5&rsct=application%2Foctet-stream&skoid=96c2d410-5711-43a1-aedd-ab1947aa7ab0&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skt=2026-06-06T07%3A21%3A18Z&ske=2026-06-06T08%3A22%3A16Z&sks=b&skv=2018-11-09&sig=HegNt1r3wB0lIQT90N%2FT2K0DomFK%2B3e%2FoadhhRAXtZc%3D&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmVsZWFzZS1hc3NldHMuZ2l0aHVidXNlcmNvbnRlbnQuY29tIiwia2V5Ijoia2V5MSIsImV4cCI6MTc4MDczNDE3NywibmJmIjoxNzgwNzMwNTc3LCJwYXRoIjoicmVsZWFzZWFzc2V0cHJvZHVjdGlvbi5ibG9iLmNvcmUud2luZG93cy5uZXQifQ.oOYL-lJ3EInFDm9dOLF6RpefPMwwT17MBfMgLXpoHkE&response-content-disposition=attachment%3B%20filename%3Darcface_weights.h5&response-content-type=application%2Foctet-stream HTTP/1.1" 200 137026640
+2026-06-06 14:27:35,673 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmpsm25p0yr.jpg
+2026-06-06 14:27:35,675 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmpw351slc2.jpg
+2026-06-06 14:27:35,675 - ERROR - Unexpected error: ('Connection broken: IncompleteRead(423098 bytes read, 136603542 more expected)', IncompleteRead(423098 bytes read, 136603542 more expected))
+2026-06-06 14:27:35,684 - INFO - 127.0.0.1 - - [06/Jun/2026 14:27:35] "[35m[1mPOST /verify HTTP/1.1[0m" 500 -
+2026-06-06 14:28:13,440 - DEBUG - Processing image: face_auth_1091452008642436916.jpg, reference_image: ref_face_11912561562806307112.jpg
+2026-06-06 14:28:13,446 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmppk8nin5r.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmpqxt66a_c.jpg
+2026-06-06 14:28:16,105 - DEBUG - Starting new HTTPS connection (1): github.com:443
+2026-06-06 14:28:17,119 - DEBUG - https://github.com:443 "GET /serengil/deepface_models/releases/download/v1.0/arcface_weights.h5 HTTP/1.1" 302 0
+2026-06-06 14:28:17,123 - DEBUG - Starting new HTTPS connection (1): release-assets.githubusercontent.com:443
+2026-06-06 14:28:18,115 - DEBUG - https://release-assets.githubusercontent.com:443 "GET /github-production-release-asset/382368840/3ae8ac80-db91-11eb-8c64-7f76a6a7028e?sp=r&sv=2018-11-09&sr=b&spr=https&se=2026-06-06T08%3A22%3A31Z&rscd=attachment%3B+filename%3Darcface_weights.h5&rsct=application%2Foctet-stream&skoid=96c2d410-5711-43a1-aedd-ab1947aa7ab0&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skt=2026-06-06T07%3A21%3A35Z&ske=2026-06-06T08%3A22%3A31Z&sks=b&skv=2018-11-09&sig=bx%2FTZSrfU%2FM8G1oVfeH1SkTtWi0M5pW98HgSDf%2FGpcU%3D&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmVsZWFzZS1hc3NldHMuZ2l0aHVidXNlcmNvbnRlbnQuY29tIiwia2V5Ijoia2V5MSIsImV4cCI6MTc4MDczNDQ5NywibmJmIjoxNzgwNzMwODk3LCJwYXRoIjoicmVsZWFzZWFzc2V0cHJvZHVjdGlvbi5ibG9iLmNvcmUud2luZG93cy5uZXQifQ.P0qmAfd_FSXv37g67As4b-SgVuMIDrfbbgFHDTxpvm8&response-content-disposition=attachment%3B%20filename%3Darcface_weights.h5&response-content-type=application%2Foctet-stream HTTP/1.1" 200 137026640
+2026-06-06 14:30:42,811 - INFO - Starting Flask application on port 5000...
+2026-06-06 14:30:43,324 - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.8:5000
+2026-06-06 14:30:43,326 - INFO - [33mPress CTRL+C to quit[0m
+2026-06-06 14:30:43,334 - INFO -  * Restarting with stat
+2026-06-06 14:30:58,911 - INFO - Starting Flask application on port 5000...
+2026-06-06 14:30:58,931 - WARNING -  * Debugger is active!
+2026-06-06 14:30:58,938 - INFO -  * Debugger PIN: 574-771-262
+2026-06-06 14:34:29,808 - DEBUG - Processing image: face_auth_17986769301501716853.jpg, reference_image: ref_face_12846575912599122234.jpg
+2026-06-06 14:34:29,822 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmpbw9mk3wj.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmp0xpg8osn.jpg
+2026-06-06 14:34:34,733 - DEBUG - Starting new HTTPS connection (1): github.com:443
+2026-06-06 14:34:37,658 - DEBUG - https://github.com:443 "GET /serengil/deepface_models/releases/download/v1.0/arcface_weights.h5 HTTP/1.1" 302 0
+2026-06-06 14:34:37,666 - DEBUG - Starting new HTTPS connection (1): release-assets.githubusercontent.com:443
+2026-06-06 14:34:38,483 - DEBUG - https://release-assets.githubusercontent.com:443 "GET /github-production-release-asset/382368840/3ae8ac80-db91-11eb-8c64-7f76a6a7028e?sp=r&sv=2018-11-09&sr=b&spr=https&se=2026-06-06T08%3A30%3A27Z&rscd=attachment%3B+filename%3Darcface_weights.h5&rsct=application%2Foctet-stream&skoid=96c2d410-5711-43a1-aedd-ab1947aa7ab0&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skt=2026-06-06T07%3A29%3A53Z&ske=2026-06-06T08%3A30%3A27Z&sks=b&skv=2018-11-09&sig=IlziFRm53t%2FfrZvd%2B6gSzRycq0BrDof84LlWjd3oVFc%3D&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmVsZWFzZS1hc3NldHMuZ2l0aHVidXNlcmNvbnRlbnQuY29tIiwia2V5Ijoia2V5MSIsImV4cCI6MTc4MDczNDg3OCwibmJmIjoxNzgwNzMxMjc4LCJwYXRoIjoicmVsZWFzZWFzc2V0cHJvZHVjdGlvbi5ibG9iLmNvcmUud2luZG93cy5uZXQifQ.tI4pgyNoBLxpy8a-agPqrFZDD4RJA2clEL_it6i846g&response-content-disposition=attachment%3B%20filename%3Darcface_weights.h5&response-content-type=application%2Foctet-stream HTTP/1.1" 200 137026640
+2026-06-06 14:58:33,968 - DEBUG - Processing image: face_auth_12054483760346137123.jpg, reference_image: ref_face_8594909804582875746.jpg
+2026-06-06 14:58:33,976 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmpis9lv48h.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmpxcotnpnh.jpg
+2026-06-06 14:58:36,202 - DEBUG - Starting new HTTPS connection (1): github.com:443
+2026-06-06 14:58:37,081 - DEBUG - https://github.com:443 "GET /serengil/deepface_models/releases/download/v1.0/arcface_weights.h5 HTTP/1.1" 302 0
+2026-06-06 14:58:37,084 - DEBUG - Starting new HTTPS connection (1): release-assets.githubusercontent.com:443
+2026-06-06 14:58:37,567 - DEBUG - https://release-assets.githubusercontent.com:443 "GET /github-production-release-asset/382368840/3ae8ac80-db91-11eb-8c64-7f76a6a7028e?sp=r&sv=2018-11-09&sr=b&spr=https&se=2026-06-06T08%3A32%3A07Z&rscd=attachment%3B+filename%3Darcface_weights.h5&rsct=application%2Foctet-stream&skoid=96c2d410-5711-43a1-aedd-ab1947aa7ab0&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skt=2026-06-06T07%3A31%3A43Z&ske=2026-06-06T08%3A32%3A07Z&sks=b&skv=2018-11-09&sig=eEx9ccvODi95c0MIYJ55zGT9YiOOHHRqULfhcSFJJTg%3D&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmVsZWFzZS1hc3NldHMuZ2l0aHVidXNlcmNvbnRlbnQuY29tIiwia2V5Ijoia2V5MSIsImV4cCI6MTc4MDczNjMxNywibmJmIjoxNzgwNzMyNzE3LCJwYXRoIjoicmVsZWFzZWFzc2V0cHJvZHVjdGlvbi5ibG9iLmNvcmUud2luZG93cy5uZXQifQ.VTXjEz3tHI13dFS4KQB4gq8haCw5AzW0aX371o7SurY&response-content-disposition=attachment%3B%20filename%3Darcface_weights.h5&response-content-type=application%2Foctet-stream HTTP/1.1" 200 137026640
+2026-06-06 15:00:16,969 - DEBUG - Creating converter from 3 to 5
+2026-06-06 15:00:22,419 - DEBUG - Verification result: {'verified': True, 'distance': 0.6204506037530282, 'threshold': 1.13, 'model': 'ArcFace', 'detector_backend': 'opencv', 'similarity_metric': 'euclidean_l2', 'facial_areas': {'img1': {'x': 78, 'y': 244, 'w': 345, 'h': 345, 'left_eye': (308, 373), 'right_eye': (180, 372)}, 'img2': {'x': 513, 'y': 220, 'w': 300, 'h': 300, 'left_eye': (715, 337), 'right_eye': (601, 332)}}, 'time': 1552.44}
+2026-06-06 15:00:22,427 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmpbw9mk3wj.jpg
+2026-06-06 15:00:22,429 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmp0xpg8osn.jpg
+2026-06-06 15:00:22,449 - INFO - 127.0.0.1 - - [06/Jun/2026 15:00:22] "POST /verify HTTP/1.1" 200 -
+2026-06-06 15:01:05,093 - ERROR - DeepFace verification failed: Exception while processing img1_path
+2026-06-06 15:01:05,094 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmpis9lv48h.jpg
+2026-06-06 15:01:05,095 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmpxcotnpnh.jpg
+2026-06-06 15:01:05,098 - INFO - 127.0.0.1 - - [06/Jun/2026 15:01:05] "[31m[1mPOST /verify HTTP/1.1[0m" 400 -
+2026-06-06 15:02:05,159 - DEBUG - Processing image: face_auth_5529524054442545269.jpg, reference_image: ref_face_11860674238789114655.jpg
+2026-06-06 15:02:05,162 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmpalf4oast.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmpc7z88vet.jpg
+2026-06-06 15:02:06,917 - DEBUG - Verification result: {'verified': True, 'distance': 0.8284123312996373, 'threshold': 1.13, 'model': 'ArcFace', 'detector_backend': 'opencv', 'similarity_metric': 'euclidean_l2', 'facial_areas': {'img1': {'x': 98, 'y': 264, 'w': 267, 'h': 267, 'left_eye': (283, 369), 'right_eye': (182, 364)}, 'img2': {'x': 420, 'y': 338, 'w': 149, 'h': 149, 'left_eye': None, 'right_eye': None}}, 'time': 1.73}
+2026-06-06 15:02:06,918 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmpalf4oast.jpg
+2026-06-06 15:02:06,919 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmpc7z88vet.jpg
+2026-06-06 15:02:06,922 - INFO - 127.0.0.1 - - [06/Jun/2026 15:02:06] "POST /verify HTTP/1.1" 200 -
+2026-06-06 15:02:41,313 - DEBUG - Processing image: face_auth_3586744077730117513.jpg, reference_image: ref_face_3540776636751909560.jpg
+2026-06-06 15:02:41,316 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmplsnh80w2.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmple3lc6f3.jpg
+2026-06-06 15:02:43,125 - DEBUG - Verification result: {'verified': False, 'distance': 1.2442620508399527, 'threshold': 1.13, 'model': 'ArcFace', 'detector_backend': 'opencv', 'similarity_metric': 'euclidean_l2', 'facial_areas': {'img1': {'x': 111, 'y': 234, 'w': 279, 'h': 279, 'left_eye': (299, 340), 'right_eye': (194, 340)}, 'img2': {'x': 513, 'y': 220, 'w': 300, 'h': 300, 'left_eye': (715, 337), 'right_eye': (601, 332)}}, 'time': 1.78}
+2026-06-06 15:02:43,127 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmplsnh80w2.jpg
+2026-06-06 15:02:43,127 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmple3lc6f3.jpg
+2026-06-06 15:02:43,129 - INFO - 127.0.0.1 - - [06/Jun/2026 15:02:43] "POST /verify HTTP/1.1" 200 -
+2026-06-06 15:02:49,362 - DEBUG - Processing image: face_auth_16366381086127924062.jpg, reference_image: ref_face_5161005318143064902.jpg
+2026-06-06 15:02:49,365 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmppbxqb2ko.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmpq4i_2ild.jpg
+2026-06-06 15:02:50,942 - DEBUG - Verification result: {'verified': False, 'distance': 1.2468289084199666, 'threshold': 1.13, 'model': 'ArcFace', 'detector_backend': 'opencv', 'similarity_metric': 'euclidean_l2', 'facial_areas': {'img1': {'x': 104, 'y': 269, 'w': 299, 'h': 299, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 513, 'y': 220, 'w': 300, 'h': 300, 'left_eye': (715, 337), 'right_eye': (601, 332)}}, 'time': 1.55}
+2026-06-06 15:02:50,943 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmppbxqb2ko.jpg
+2026-06-06 15:02:50,944 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmpq4i_2ild.jpg
+2026-06-06 15:02:50,946 - INFO - 127.0.0.1 - - [06/Jun/2026 15:02:50] "POST /verify HTTP/1.1" 200 -
+2026-06-06 15:02:54,887 - DEBUG - Processing image: face_auth_10945082042454393074.jpg, reference_image: ref_face_17988303944145029555.jpg
+2026-06-06 15:02:54,890 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmp2vxvdr1u.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmpej9_m97_.jpg
+2026-06-06 15:02:56,707 - DEBUG - Verification result: {'verified': True, 'distance': 0.7981337785911512, 'threshold': 1.13, 'model': 'ArcFace', 'detector_backend': 'opencv', 'similarity_metric': 'euclidean_l2', 'facial_areas': {'img1': {'x': 35, 'y': 202, 'w': 331, 'h': 331, 'left_eye': (264, 327), 'right_eye': (134, 330)}, 'img2': {'x': 513, 'y': 220, 'w': 300, 'h': 300, 'left_eye': (715, 337), 'right_eye': (601, 332)}}, 'time': 1.79}
+2026-06-06 15:02:56,708 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmp2vxvdr1u.jpg
+2026-06-06 15:02:56,709 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmpej9_m97_.jpg
+2026-06-06 15:02:56,710 - INFO - 127.0.0.1 - - [06/Jun/2026 15:02:56] "POST /verify HTTP/1.1" 200 -
+2026-06-06 15:04:13,489 - DEBUG - Processing image: face_auth_1312159370716719823.jpg, reference_image: ref_face_11857614650280232934.jpg
+2026-06-06 15:04:13,494 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmpzjoszrtn.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmplece2qm1.jpg
+2026-06-06 15:04:13,676 - ERROR - DeepFace verification failed: Exception while processing img1_path
+2026-06-06 15:04:13,677 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmpzjoszrtn.jpg
+2026-06-06 15:04:13,679 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmplece2qm1.jpg
+2026-06-06 15:04:13,681 - INFO - 127.0.0.1 - - [06/Jun/2026 15:04:13] "[31m[1mPOST /verify HTTP/1.1[0m" 400 -
+2026-06-06 15:04:18,078 - DEBUG - Processing image: face_auth_14193415744021259367.jpg, reference_image: ref_face_18225489126210632188.jpg
+2026-06-06 15:04:18,083 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmpf4f6vn6v.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmp_5464opg.jpg
+2026-06-06 15:04:20,466 - DEBUG - Verification result: {'verified': True, 'distance': 1.0423640790582829, 'threshold': 1.13, 'model': 'ArcFace', 'detector_backend': 'opencv', 'similarity_metric': 'euclidean_l2', 'facial_areas': {'img1': {'x': 106, 'y': 286, 'w': 288, 'h': 288, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 312, 'y': 294, 'w': 511, 'h': 511, 'left_eye': (625, 647), 'right_eye': (560, 645)}}, 'time': 2.32}
+2026-06-06 15:04:20,468 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmpf4f6vn6v.jpg
+2026-06-06 15:04:20,469 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmp_5464opg.jpg
+2026-06-06 15:04:20,471 - INFO - 127.0.0.1 - - [06/Jun/2026 15:04:20] "POST /verify HTTP/1.1" 200 -
+2026-06-06 15:18:25,062 - DEBUG - Processing image: face_auth_9265738131129616134.jpg, reference_image: ref_face_8374344398133682358.jpg
+2026-06-06 15:18:25,067 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmp2fp6xy58.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmpbckitq2t.jpg
+2026-06-06 15:18:27,781 - DEBUG - Verification result: {'verified': True, 'distance': 0.9620683380891685, 'threshold': 1.13, 'model': 'ArcFace', 'detector_backend': 'opencv', 'similarity_metric': 'euclidean_l2', 'facial_areas': {'img1': {'x': 115, 'y': 206, 'w': 312, 'h': 312, 'left_eye': (313, 324), 'right_eye': (198, 333)}, 'img2': {'x': 312, 'y': 294, 'w': 511, 'h': 511, 'left_eye': (625, 647), 'right_eye': (560, 645)}}, 'time': 2.64}
+2026-06-06 15:18:27,782 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmp2fp6xy58.jpg
+2026-06-06 15:18:27,783 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmpbckitq2t.jpg
+2026-06-06 15:18:27,785 - INFO - 127.0.0.1 - - [06/Jun/2026 15:18:27] "POST /verify HTTP/1.1" 200 -
+2026-06-06 15:47:28,251 - DEBUG - Processing image: face_auth_6979630026665495967.jpg, reference_image: ref_face_14581102656453375341.jpg
+2026-06-06 15:47:28,274 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmpoc61fi5t.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmpcnxwiy26.jpg
+2026-06-06 15:47:36,144 - DEBUG - Verification result: {'verified': True, 'distance': 1.0028224076930028, 'threshold': 1.13, 'model': 'ArcFace', 'detector_backend': 'opencv', 'similarity_metric': 'euclidean_l2', 'facial_areas': {'img1': {'x': 84, 'y': 265, 'w': 312, 'h': 312, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 312, 'y': 294, 'w': 511, 'h': 511, 'left_eye': (625, 647), 'right_eye': (560, 645)}}, 'time': 7.73}
+2026-06-06 15:47:36,155 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmpoc61fi5t.jpg
+2026-06-06 15:47:36,158 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmpcnxwiy26.jpg
+2026-06-06 15:47:36,171 - INFO - 127.0.0.1 - - [06/Jun/2026 15:47:36] "POST /verify HTTP/1.1" 200 -
+2026-06-06 15:48:30,951 - DEBUG - Processing image: face_auth_11168382720952237871.jpg, reference_image: ref_face_10847476527088188643.jpg
+2026-06-06 15:48:30,954 - DEBUG - Saved temporary files: C:\Users\ADMIN\AppData\Local\Temp\tmp1nwjbxi4.jpg, C:\Users\ADMIN\AppData\Local\Temp\tmponi96lbe.jpg
+2026-06-06 15:48:32,483 - DEBUG - Verification result: {'verified': True, 'distance': 1.0462788667232827, 'threshold': 1.13, 'model': 'ArcFace', 'detector_backend': 'opencv', 'similarity_metric': 'euclidean_l2', 'facial_areas': {'img1': {'x': 87, 'y': 319, 'w': 305, 'h': 305, 'left_eye': None, 'right_eye': None}, 'img2': {'x': 312, 'y': 294, 'w': 511, 'h': 511, 'left_eye': (625, 647), 'right_eye': (560, 645)}}, 'time': 1.49}
+2026-06-06 15:48:32,484 - DEBUG - Removed temporary image: C:\Users\ADMIN\AppData\Local\Temp\tmp1nwjbxi4.jpg
+2026-06-06 15:48:32,485 - DEBUG - Removed temporary reference image: C:\Users\ADMIN\AppData\Local\Temp\tmponi96lbe.jpg
+2026-06-06 15:48:32,487 - INFO - 127.0.0.1 - - [06/Jun/2026 15:48:32] "POST /verify HTTP/1.1" 200 -
