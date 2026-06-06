@@ -54,8 +54,10 @@ def verify_face():
             result = DeepFace.verify(
                 img1_path=temp_image_path,
                 img2_path=temp_reference_path,
-                model_name="Facenet",
-                detector_backend="opencv"
+                model_name="ArcFace",
+                detector_backend="opencv",
+                distance_metric="euclidean_l2",
+                enforce_detection=True
             )
             logger.debug(f"Verification result: {result}")
             response = {

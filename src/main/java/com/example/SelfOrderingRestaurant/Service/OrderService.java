@@ -83,7 +83,8 @@ public class OrderService implements IOrderService {
         DinningTable dinningTable = dinningTableRepository.findById(request.getTableId())
                 .orElseThrow(() -> new ResourceNotFoundException("Table not found with ID: " + request.getTableId()));
 
-        if (TableStatus.OCCUPIED.equals(dinningTable.getTableStatus())) {
+        // Only merge into existing unpaid order if this is an immediate walk-in order (not a future reservation)
+        if (request.getReservationTime() == null && TableStatus.OCCUPIED.equals(dinningTable.getTableStatus())) {
             List<Order> existingOrders = orderRepository.findByTableNumberAndPaymentStatus(
                     dinningTable.getTableNumber(), PaymentStatus.UNPAID);
             if (!existingOrders.isEmpty()) {
@@ -292,7 +293,11 @@ public class OrderService implements IOrderService {
 
     private void sendOrderNotification(Order order, DinningTable dinningTable) {
         Map<String, Object> message = new HashMap<>();
-        message.put("type", "NEW_ORDER");
+        if (order.getReservationTime() != null) {
+            message.put("type", "NEW_RESERVATION");
+        } else {
+            message.put("type", "NEW_ORDER");
+        }
         Map<String, Object> orderDetails = new HashMap<>();
         orderDetails.put("orderId", order.getOrderId());
         orderDetails.put("tableNumber", dinningTable.getTableNumber());
@@ -300,6 +305,9 @@ public class OrderService implements IOrderService {
         orderDetails.put("totalAmount", order.getTotalAmount());
         orderDetails.put("status", order.getStatus().name());
         orderDetails.put("customerName", order.getCustomer().getFullname());
+        if (order.getReservationTime() != null) {
+            orderDetails.put("reservationTime", order.getReservationTime().toString());
+        }
         message.put("order", orderDetails);
 
         webSocketService.sendNotificationToActiveStaff(new NotificationResponseDTO() {
