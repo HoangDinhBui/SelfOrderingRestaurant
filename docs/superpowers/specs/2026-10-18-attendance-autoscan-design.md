@@ -53,7 +53,7 @@ Nút Đăng xuất (STAFF, đang check-in chưa check-out)
 ### 4.1 Component `FaceScanner` (mới, dùng chung)
 
 - Vị trí: `frontend/src/components/attendance/FaceScanner.jsx`.
-- Props: `mode: "CHECK_IN" | "CHECK_OUT"`, `onSuccess(result)`, `onManual(result)`, `onCancel?()`.
+- Props: `mode: "CHECK_IN" | "CHECK_OUT"`, `onSuccess(result)`, `onCancel?()`. Form chấm công thủ công (ô lý do + nút) nằm ngay trong `FaceScanner` ở trạng thái `FAILED`; thành công cũng gọi `onSuccess`.
 - Phát hiện khuôn mặt **phía client** bằng MediaPipe Face Detector (`@mediapipe/tasks-vision`, model short-range, chạy CPU/WebGL). Chỉ phát hiện *có mặt*, không định danh.
 - Điều kiện tự chụp: đúng 1 khuôn mặt, độ tin cậy ≥ 0.8, bbox chiếm ≥ 20% chiều rộng khung, giữ ổn định ≥ 500ms. Chụp 1 frame JPEG (chất lượng 0.9) → `multipart/form-data`.
 - Trạng thái UI: `INIT` (xin quyền camera) → `SEARCHING` (khung oval, gợi ý "Đưa mặt vào khung") → `VERIFYING` (spinner) → `SUCCESS` (lời chào) | `RETRY` (thông báo lỗi, đếm lần) → sau 3 lần `FAILED` (hiện nút thủ công).
