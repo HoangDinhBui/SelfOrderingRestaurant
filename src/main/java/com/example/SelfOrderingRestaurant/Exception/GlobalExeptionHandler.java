@@ -2,9 +2,13 @@ package com.example.SelfOrderingRestaurant.Exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -59,6 +63,26 @@ public class GlobalExeptionHandler {
         body.put("message", ex.getBindingResult().getFieldErrors().stream()
                 .map(e -> e.getField() + ": " + e.getDefaultMessage())
                 .findFirst().orElse("Dữ liệu không hợp lệ"));
+        body.put("status", HttpStatus.BAD_REQUEST.value());
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler({
+            MethodArgumentTypeMismatchException.class,
+            HttpMessageNotReadableException.class,
+            MissingServletRequestParameterException.class,
+            MissingServletRequestPartException.class})
+    public ResponseEntity<Object> handleMalformedRequest(Exception ex) {
+        String message = switch (ex) {
+            case MethodArgumentTypeMismatchException e -> "Giá trị không hợp lệ cho tham số " + e.getName();
+            case MissingServletRequestParameterException e -> "Thiếu tham số " + e.getParameterName();
+            case MissingServletRequestPartException e -> "Thiếu phần dữ liệu " + e.getRequestPartName();
+            default -> "Dữ liệu gửi lên không đúng định dạng";
+        };
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("code", "VALIDATION_ERROR");
+        body.put("message", message);
         body.put("status", HttpStatus.BAD_REQUEST.value());
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }

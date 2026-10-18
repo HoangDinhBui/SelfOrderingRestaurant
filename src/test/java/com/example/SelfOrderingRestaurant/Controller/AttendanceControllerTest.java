@@ -89,4 +89,45 @@ class AttendanceControllerTest {
                 .andExpect(status().isNoContent());
         verify(service).review(7, true);
     }
+
+    @Test
+    void scan_unknownType_returns400ValidationError() throws Exception {
+        mvc.perform(multipart("/api/attendance/scan")
+                        .file(new MockMultipartFile("image", "c.jpg", "image/jpeg", new byte[]{1}))
+                        .param("type", "BOGUS")
+                        .principal(staff))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.status").value(400))
+                .andExpect(jsonPath("$.message").exists())
+                .andExpect(jsonPath("$.timestamp").exists());
+        verifyNoInteractions(service);
+    }
+
+    @Test
+    void scan_missingTypeOrImage_returns400ValidationError() throws Exception {
+        mvc.perform(multipart("/api/attendance/scan")
+                        .file(new MockMultipartFile("image", "c.jpg", "image/jpeg", new byte[]{1}))
+                        .principal(staff))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+        mvc.perform(multipart("/api/attendance/scan")
+                        .param("type", "CHECK_IN")
+                        .principal(staff))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+        verifyNoInteractions(service);
+    }
+
+    @Test
+    void manual_malformedJson_returns400ValidationError() throws Exception {
+        mvc.perform(post("/api/attendance/manual")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"type\":\"CHECK_IN\",")
+                        .principal(staff))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"))
+                .andExpect(jsonPath("$.status").value(400));
+        verifyNoInteractions(service);
+    }
 }
