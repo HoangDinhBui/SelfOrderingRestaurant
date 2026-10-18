@@ -57,7 +57,8 @@ def verify_face():
                 model_name="ArcFace",
                 detector_backend="opencv",
                 distance_metric="euclidean_l2",
-                enforce_detection=True
+                enforce_detection=True,
+                anti_spoofing=True
             )
             logger.debug(f"Verification result: {result}")
             response = {
@@ -68,8 +69,15 @@ def verify_face():
             return jsonify(response), 200
 
         except ValueError as ve:
-            logger.error(f"DeepFace verification failed: {str(ve)}")
-            return jsonify({"error": f"Face verification failed: {str(ve)}"}), 400
+            message = str(ve)
+            if "spoof" in message.lower():
+                logger.warning(f"Spoof detected: {message}")
+                return jsonify({"verified": False, "spoof": True}), 200
+            if "could not be detected" in message.lower():
+                logger.info(f"No face detected: {message}")
+                return jsonify({"verified": False, "no_face": True}), 200
+            logger.error(f"DeepFace verification failed: {message}")
+            return jsonify({"error": f"Face verification failed: {message}"}), 400
 
         finally:
             # Clean up temporary files
