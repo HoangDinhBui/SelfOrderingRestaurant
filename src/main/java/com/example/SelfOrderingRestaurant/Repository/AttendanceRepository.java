@@ -27,6 +27,8 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Integer>
     Double sumWorkingHoursByStaffIdAndCheckInTimeBetween(
             Integer staffId, LocalDateTime startDateTime, LocalDateTime endDateTime);
 
+    List<Attendance> findByManualTrueAndApprovedIsNullOrderByCheckInTimeDesc();
+
     List<Attendance> findByCheckInTimeBetween(LocalDateTime startOfDay, LocalDateTime endOfDay);
 
     @Query("SELECT a FROM Attendance a WHERE a.staffId = :staffId AND DATE(a.checkInTime) = :date")
