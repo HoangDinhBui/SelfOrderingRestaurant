@@ -3,8 +3,8 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import useStaffLogout from "../../../components/attendance/useStaffLogout";
 import MenuBar from "../../../components/layout/MenuBar";
-import { useNavigate } from "react-router-dom";
 
 const shiftModels = {
   "Full-time": {
@@ -48,6 +48,7 @@ const dayToDate = (day) => {
 };
 
 const StaffInformation = () => {
+  const { requestLogout, logoutModal } = useStaffLogout();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
@@ -55,7 +56,6 @@ const StaffInformation = () => {
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
 
   const [staffData, setStaffData] = useState({
     staff_id: "",
@@ -253,36 +253,7 @@ const StaffInformation = () => {
   }, []);
 
   const handleLogout = () => {
-    console.log("handleLogout: Clicked logout button");
-    console.log("localStorage before navigation:", {
-      accessToken: localStorage.getItem("accessToken"),
-      username: localStorage.getItem("username"),
-      userType: localStorage.getItem("userType"),
-      refreshToken: localStorage.getItem("refreshToken"),
-      staffId: localStorage.getItem("staffId"),
-    });
-
-    toast.info("Proceeding to check-out.");
-    console.log("Navigating to /check-out");
-    navigate("/check-out", { replace: true });
-
-    setTimeout(() => {
-      console.log(
-        "Fallback navigation check: current path =",
-        window.location.pathname
-      );
-      console.log("localStorage after navigation attempt:", {
-        accessToken: localStorage.getItem("accessToken"),
-        username: localStorage.getItem("username"),
-        userType: localStorage.getItem("userType"),
-        refreshToken: localStorage.getItem("refreshToken"),
-        staffId: localStorage.getItem("staffId"),
-      });
-      if (window.location.pathname !== "/check-out") {
-        console.log("Forcing navigation to /check-out");
-        window.location.replace("/check-out");
-      }
-    }, 200);
+    requestLogout();
   };
 
   const handleAvatarClick = (e) => {
@@ -1129,6 +1100,7 @@ const StaffInformation = () => {
             </div>
           </div>
         </div>
+        {logoutModal}
       </div>
     );
   } catch (error) {
