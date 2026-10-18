@@ -58,7 +58,9 @@ class AttendanceServiceTest {
         when(staffRepository.findByUserUsername("hoang")).thenReturn(Optional.of(staff));
         when(attendanceRepository.findByStaffIdAndCheckInTimeBetween(eq(1), any(), any())).thenReturn(records);
         when(attendanceRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
-        when(staffShiftRepository.findByStaffAndDate(eq(staff), any())).thenReturn(shifts);
+        when(staffShiftRepository.findByStaffAndDate(eq(staff), any())).thenAnswer(inv -> shifts.stream()
+                .filter(ss -> ss.getDate().equals(inv.getArgument(1)))
+                .toList());
         when(faceClient.verify(any(), any())).thenReturn(new VerifyResult(true, false, false));
     }
 
@@ -71,14 +73,18 @@ class AttendanceServiceTest {
     }
 
     private void morningShift() {
+        shift("Ca sáng", D, LocalTime.of(8, 0), LocalTime.of(14, 0));
+    }
+
+    private void shift(String name, LocalDate date, LocalTime start, LocalTime end) {
         Shift shift = new Shift();
-        shift.setName("Ca sáng");
-        shift.setStartTime(LocalTime.of(8, 0));
-        shift.setEndTime(LocalTime.of(14, 0));
+        shift.setName(name);
+        shift.setStartTime(start);
+        shift.setEndTime(end);
         StaffShift ss = new StaffShift();
         ss.setShift(shift);
         ss.setStaff(staff);
-        ss.setDate(D);
+        ss.setDate(date);
         ss.setStatus(StaffShiftStatus.ASSIGNED);
         shifts.add(ss);
     }
@@ -168,10 +174,44 @@ class AttendanceServiceTest {
 
     @Test
     void checkOut_afterMidnight_findsOpenRecordFromYesterday() {
+        shift("Ca đêm", D, LocalTime.of(22, 0), LocalTime.of(6, 0));
         openRecord(D.atTime(22, 0));
         now(D.plusDays(1).atTime(6, 0));
         AttendanceResultDTO r = service.scan("hoang", AttendanceStatus.CHECK_OUT, IMG);
         assertEquals(8.0, r.workingHours());
+        assertEquals(18.0, staff.getTotalWorkingHours());
+    }
+
+    @Test
+    void forgotCheckOutYesterday_dayShift_isAbandoned_todayCheckInSucceeds() {
+        LocalDate yesterday = D.minusDays(1);
+        shift("Ca sáng", yesterday, LocalTime.of(8, 0), LocalTime.of(14, 0));
+        morningShift();
+        Attendance stale = openRecord(yesterday.atTime(7, 58));
+        now(D.atTime(7, 55));
+
+        AttendanceTodayDTO t = service.today("hoang");
+        assertEquals("NONE", t.status());
+        assertNull(t.attendance());
+        assertEquals("08:00", t.shift().start());
+
+        AttendanceResultDTO r = service.scan("hoang", AttendanceStatus.CHECK_IN, IMG);
+        assertEquals("CHECK_IN", r.type());
+        assertEquals(D.atTime(7, 55), r.time());
+        assertNull(stale.getCheckOutTime());
+        assertEquals(10.0, staff.getTotalWorkingHours());
+    }
+
+    @Test
+    void yesterdayOpenRecord_withoutShifts_isAbandoned() {
+        Attendance stale = openRecord(D.minusDays(1).atTime(23, 0));
+        now(D.atTime(1, 0));
+
+        assertEquals("NONE", service.today("hoang").status());
+        assertEquals(AttendanceError.NOT_CHECKED_IN, assertThrows(AttendanceException.class,
+                () -> service.scan("hoang", AttendanceStatus.CHECK_OUT, IMG)).getError());
+        assertNull(stale.getCheckOutTime());
+        assertEquals("CHECK_IN", service.scan("hoang", AttendanceStatus.CHECK_IN, IMG).type());
     }
 
     @Test

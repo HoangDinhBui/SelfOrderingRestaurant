@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -33,6 +34,7 @@ import java.util.Optional;
 public class AttendanceService implements IAttendanceService {
 
     private static final DateTimeFormatter HH_MM = DateTimeFormatter.ofPattern("HH:mm");
+    private static final Duration OPEN_AFTER_SHIFT_END = Duration.ofHours(2);
 
     private final AttendanceRepository attendanceRepository;
     private final StaffRepository staffRepository;
@@ -146,11 +148,25 @@ public class AttendanceService implements IAttendanceService {
         Comparator<Attendance> byCheckIn = Comparator.comparing(Attendance::getCheckInTime);
         Attendance open = recent.stream()
                 .filter(a -> a.getCheckInTime() != null && a.getCheckOutTime() == null)
+                .filter(a -> !isAbandoned(staff, a, now))
                 .max(byCheckIn).orElse(null);
         Attendance today = recent.stream()
                 .filter(a -> a.getCheckInTime() != null && a.getCheckInTime().toLocalDate().equals(now.toLocalDate()))
                 .max(byCheckIn).orElse(null);
         return new Records(open, today);
+    }
+
+    /**
+     * Bản ghi chưa check-out từ ngày trước chỉ còn "mở" khi một ca của ngày đó (ca qua đêm kết thúc hôm sau)
+     * chưa quá giờ kết thúc + {@link #OPEN_AFTER_SHIFT_END}; ngược lại là bị bỏ quên (nhân viên đóng tab thay vì đăng xuất).
+     */
+    private boolean isAbandoned(Staff staff, Attendance a, LocalDateTime now) {
+        LocalDate checkInDate = a.getCheckInTime().toLocalDate();
+        if (!checkInDate.isBefore(now.toLocalDate())) {
+            return false;
+        }
+        return shiftWindows(staff, checkInDate).stream()
+                .noneMatch(w -> w.end().plus(OPEN_AFTER_SHIFT_END).isAfter(now));
     }
 
     private void validateTransition(AttendanceStatus type, Records recs) {
