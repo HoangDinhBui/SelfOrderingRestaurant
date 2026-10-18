@@ -51,14 +51,24 @@ def verify_face():
                 logger.error(f"Invalid reference image: {temp_reference_path}")
                 return jsonify({"error": "Invalid reference image"}), 400
 
+            # Spoof-check only the live capture; the stored reference photo is not liveness-checked.
+            faces = DeepFace.extract_faces(
+                img_path=temp_image_path,
+                detector_backend="opencv",
+                enforce_detection=True,
+                anti_spoofing=True
+            )
+            if any(face.get("is_real") is False for face in faces):
+                logger.warning("Spoof detected in captured image")
+                return jsonify({"verified": False, "spoof": True}), 200
+
             result = DeepFace.verify(
                 img1_path=temp_image_path,
                 img2_path=temp_reference_path,
                 model_name="ArcFace",
                 detector_backend="opencv",
                 distance_metric="euclidean_l2",
-                enforce_detection=True,
-                anti_spoofing=True
+                enforce_detection=True
             )
             logger.debug(f"Verification result: {result}")
             response = {
@@ -68,6 +78,7 @@ def verify_face():
 
             return jsonify(response), 200
 
+        # DeepFace 0.0.93 messages matched below: "Spoof detected in the given image." / "Face could not be detected in ..."
         except ValueError as ve:
             message = str(ve)
             if "spoof" in message.lower():
