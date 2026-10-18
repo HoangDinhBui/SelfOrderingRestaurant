@@ -102,10 +102,14 @@ authAPI.interceptors.response.use(
     const isPublicEndpoint = publicEndpoints.some((endpoint) =>
       originalRequest.url.startsWith(endpoint),
     );
+    // 401 kèm `code` là lỗi nghiệp vụ (vd. FACE_MISMATCH, SPOOF_DETECTED), không phải phiên hết hạn:
+    // không làm mới token / đăng xuất, để nơi gọi tự xử lý.
+    const isBusinessError = Boolean(error.response?.data?.code);
     if (
       error.response?.status === 401 &&
       !originalRequest._retry &&
-      !isPublicEndpoint
+      !isPublicEndpoint &&
+      !isBusinessError
     ) {
       originalRequest._retry = true;
       try {
