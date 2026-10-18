@@ -82,8 +82,9 @@ public class SecurityConfig {
                                 "/error").permitAll()
                         .requestMatchers("/api/staff/**").hasAnyRole("STAFF", "ADMIN")
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/api/attendance/check-in", "/api/attendance/check-in-camera").hasRole("STAFF")
-                        .requestMatchers("/api/attendance/add-face", "/api/attendance/history").hasRole("ADMIN")
+                        .requestMatchers("/api/attendance/scan", "/api/attendance/manual", "/api/attendance/today").hasRole("STAFF")
+                        .requestMatchers("/api/attendance/add-face", "/api/attendance/history",
+                                "/api/attendance/pending", "/api/attendance/*/approval").hasRole("ADMIN")
                         //.requestMatchers("/staff/attendance").hasRole("STAFF")
                         .anyRequest().authenticated()
                 )
