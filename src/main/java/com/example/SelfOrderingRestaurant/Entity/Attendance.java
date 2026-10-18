@@ -51,7 +51,7 @@ public class Attendance {
     @Column(name = "early_leave")
     private Boolean earlyLeave = false;
 
-    @Column(name = "manual_reason", length = 255)
+    @Column(name = "manual_reason", length = 520)
     private String manualReason;
 
     public enum AttendanceStatus {

@@ -235,6 +235,28 @@ class AttendanceServiceTest {
     }
 
     @Test
+    void manualCheckInThenCheckOut_keepsBothMaxLengthReasons() {
+        String inReason = "a".repeat(255);
+        String outReason = "b".repeat(255);
+        when(attendanceRepository.save(any())).thenAnswer(inv -> {
+            Attendance saved = inv.getArgument(0);
+            if (!records.contains(saved)) {
+                records.add(saved);
+            }
+            return saved;
+        });
+        now(D.atTime(8, 0));
+        service.manual("hoang", AttendanceStatus.CHECK_IN, inReason);
+        now(D.atTime(12, 0));
+        service.manual("hoang", AttendanceStatus.CHECK_OUT, outReason);
+
+        String stored = records.get(0).getManualReason();
+        assertTrue(stored.contains(inReason));
+        assertTrue(stored.contains(outReason));
+        assertTrue(stored.length() <= 520);
+    }
+
+    @Test
     void today_reportsStatus() {
         now(D.atTime(7, 0));
         assertEquals("NONE", service.today("hoang").status());
