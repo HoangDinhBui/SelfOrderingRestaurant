@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import MenuBar from "../../../components/layout/MenuBar";
 import { authAPI } from "../../../services/api";
+import PendingAttendancePanel from "../../../components/attendance/PendingAttendancePanel";
 
 const StaffManagementAdmin = () => {
   // State quản lý danh sách nhân viên
@@ -857,6 +858,7 @@ const StaffManagementAdmin = () => {
       <div style={styles.outerContainer}>
         <div style={styles.innerContainer}>
           <h1 style={styles.title}>Staff</h1>
+          <PendingAttendancePanel />
           <div style={styles.tableAndControls}>
             <div style={styles.tableContainer}>
               <table style={styles.table}>
