@@ -12,6 +12,7 @@ const MIN_CONFIDENCE = 0.8;
 const MIN_FACE_RATIO = 0.2;
 const RETRY_DELAY_MS = 1500;
 const MAX_CAPTURE_WIDTH = 640;
+const DETECTOR_TIMEOUT_MS = 10000;
 
 // Trạng thái: INIT | SEARCHING | VERIFYING | SUCCESS | RETRY | FAILED
 const HINTS = {
@@ -124,13 +125,25 @@ export default function FaceScanner({ mode, onSuccess, onCancel }) {
         }
         return;
       }
+      let timer;
       try {
-        const vision = await FilesetResolver.forVisionTasks(WASM_URL);
-        const detector = await FaceDetector.createFromOptions(vision, {
-          baseOptions: { modelAssetPath: MODEL_URL },
-          runningMode: "VIDEO",
-          minDetectionConfidence: 0.5,
+        const load = (async () => {
+          const vision = await FilesetResolver.forVisionTasks(WASM_URL);
+          return FaceDetector.createFromOptions(vision, {
+            baseOptions: { modelAssetPath: MODEL_URL },
+            runningMode: "VIDEO",
+            minDetectionConfidence: 0.5,
+          });
+        })();
+        const timeout = new Promise((resolve) => {
+          timer = setTimeout(() => resolve(null), DETECTOR_TIMEOUT_MS);
         });
+        const detector = await Promise.race([load, timeout]);
+        if (!detector) {
+          // Hết giờ: nếu detector nạp xong muộn thì đóng lại, không lưu
+          load.then((late) => late.close()).catch(() => {});
+          throw new Error("detector timeout");
+        }
         if (cancelled) {
           detector.close();
           return;
@@ -138,6 +151,8 @@ export default function FaceScanner({ mode, onSuccess, onCancel }) {
         detectorRef.current = detector;
       } catch {
         if (!cancelled) setDetectorFailed(true); // vẫn cho chụp bằng nút
+      } finally {
+        clearTimeout(timer);
       }
       if (!cancelled && stateRef.current === "INIT") setState("SEARCHING");
     })();
@@ -157,7 +172,13 @@ export default function FaceScanner({ mode, onSuccess, onCancel }) {
       const video = videoRef.current;
       const detector = detectorRef.current;
       if (video && detector && video.readyState >= 2 && !busyRef.current) {
-        const { detections } = detector.detectForVideo(video, performance.now());
+        let detections;
+        try {
+          ({ detections } = detector.detectForVideo(video, performance.now()));
+        } catch {
+          setDetectorFailed(true); // dừng vòng lặp, hiện nút chụp thủ công
+          return;
+        }
         if (isFaceReady(detections, video.videoWidth)) {
           stableSinceRef.current ??= performance.now();
           if (performance.now() - stableSinceRef.current >= STABLE_MS) {
