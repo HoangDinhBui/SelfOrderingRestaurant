@@ -58,6 +58,10 @@ restaurant:
 server:
   port: ${PORT:8081}
 
+attendance:
+  # Múi giờ của giờ ca làm (server production chạy UTC)
+  zone: ${ATTENDANCE_ZONE:Asia/Ho_Chi_Minh}
+
 logging:
   level:
     org.springframework.security: DEBUG

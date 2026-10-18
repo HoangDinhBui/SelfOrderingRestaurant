@@ -38,19 +38,17 @@ public class AttendanceService implements IAttendanceService {
     private final StaffRepository staffRepository;
     private final StaffShiftRepository staffShiftRepository;
     private final FaceVerificationClient faceClient;
-    private Clock clock = Clock.systemDefaultZone();
+    private final Clock clock;
 
     public AttendanceService(AttendanceRepository attendanceRepository,
                              StaffRepository staffRepository,
                              StaffShiftRepository staffShiftRepository,
-                             FaceVerificationClient faceClient) {
+                             FaceVerificationClient faceClient,
+                             Clock clock) {
         this.attendanceRepository = attendanceRepository;
         this.staffRepository = staffRepository;
         this.staffShiftRepository = staffShiftRepository;
         this.faceClient = faceClient;
-    }
-
-    void setClock(Clock clock) {
         this.clock = clock;
     }
 

@@ -47,7 +47,7 @@ class AttendanceServiceTest {
         staffRepository = mock(StaffRepository.class);
         staffShiftRepository = mock(StaffShiftRepository.class);
         faceClient = mock(FaceVerificationClient.class);
-        service = new AttendanceService(attendanceRepository, staffRepository, staffShiftRepository, faceClient);
+        now(D.atTime(12, 0));
 
         staff = new Staff();
         staff.setStaffId(1);
@@ -63,7 +63,11 @@ class AttendanceServiceTest {
     }
 
     private void now(LocalDateTime t) {
-        service.setClock(Clock.fixed(t.atZone(ZONE).toInstant(), ZONE));
+        useClock(Clock.fixed(t.atZone(ZONE).toInstant(), ZONE));
+    }
+
+    private void useClock(Clock clock) {
+        service = new AttendanceService(attendanceRepository, staffRepository, staffShiftRepository, faceClient, clock);
     }
 
     private void morningShift() {
@@ -102,6 +106,16 @@ class AttendanceServiceTest {
         assertFalse(r.manual());
         verify(attendanceRepository).save(argThat(a -> a.getCheckInTime().equals(D.atTime(7, 58))
                 && a.getStatus() == AttendanceStatus.CHECK_IN && !Boolean.TRUE.equals(a.getManual())));
+    }
+
+    @Test
+    void checkIn_usesInjectedClockZone_utcInstantBecomesVietnamWallClock() {
+        morningShift();
+        useClock(Clock.fixed(Instant.parse("2026-10-18T00:58:00Z"), ZONE));
+        AttendanceResultDTO r = service.scan("hoang", AttendanceStatus.CHECK_IN, IMG);
+        assertEquals(D.atTime(7, 58), r.time());
+        assertFalse(r.late());
+        assertEquals("Ca sáng", r.shift().name());
     }
 
     @Test
