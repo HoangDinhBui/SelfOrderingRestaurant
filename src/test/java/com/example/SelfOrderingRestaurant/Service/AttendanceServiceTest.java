@@ -16,6 +16,10 @@ import com.example.SelfOrderingRestaurant.Repository.StaffShiftRepository;
 import com.example.SelfOrderingRestaurant.Service.FaceVerificationClient.VerifyResult;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.SimpleTransactionStatus;
+import jakarta.persistence.EntityManager;
 
 import java.time.*;
 import java.util.ArrayList;
@@ -36,6 +40,8 @@ class AttendanceServiceTest {
     private StaffRepository staffRepository;
     private StaffShiftRepository staffShiftRepository;
     private FaceVerificationClient faceClient;
+    private PlatformTransactionManager txManager;
+    private EntityManager entityManager;
     private AttendanceService service;
     private Staff staff;
     private final List<Attendance> records = new ArrayList<>();
@@ -47,6 +53,9 @@ class AttendanceServiceTest {
         staffRepository = mock(StaffRepository.class);
         staffShiftRepository = mock(StaffShiftRepository.class);
         faceClient = mock(FaceVerificationClient.class);
+        txManager = mock(PlatformTransactionManager.class);
+        entityManager = mock(EntityManager.class);
+        when(txManager.getTransaction(any())).thenAnswer(inv -> new SimpleTransactionStatus());
         now(D.atTime(12, 0));
 
         staff = new Staff();
@@ -56,6 +65,7 @@ class AttendanceServiceTest {
         staff.setTotalWorkingHours(10.0);
 
         when(staffRepository.findByUserUsername("hoang")).thenReturn(Optional.of(staff));
+        when(staffRepository.findWithLockByStaffId(1)).thenReturn(Optional.of(staff));
         when(attendanceRepository.findByStaffIdAndCheckInTimeBetween(eq(1), any(), any())).thenReturn(records);
         when(attendanceRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(staffShiftRepository.findByStaffAndDate(eq(staff), any())).thenAnswer(inv -> shifts.stream()
@@ -69,7 +79,8 @@ class AttendanceServiceTest {
     }
 
     private void useClock(Clock clock) {
-        service = new AttendanceService(attendanceRepository, staffRepository, staffShiftRepository, faceClient, clock);
+        service = new AttendanceService(attendanceRepository, staffRepository, staffShiftRepository, faceClient,
+                clock, txManager, entityManager);
     }
 
     private void morningShift() {
@@ -212,6 +223,41 @@ class AttendanceServiceTest {
                 () -> service.scan("hoang", AttendanceStatus.CHECK_OUT, IMG)).getError());
         assertNull(stale.getCheckOutTime());
         assertEquals("CHECK_IN", service.scan("hoang", AttendanceStatus.CHECK_IN, IMG).type());
+    }
+
+    @Test
+    void scan_callsFaceServiceOutsideAnyTransaction_thenWritesUnderStaffLock() {
+        morningShift();
+        now(D.atTime(7, 58));
+        service.scan("hoang", AttendanceStatus.CHECK_IN, IMG);
+
+        InOrder order = inOrder(txManager, faceClient, staffRepository, attendanceRepository);
+        order.verify(txManager).getTransaction(argThat(def -> def.isReadOnly()));
+        order.verify(txManager).commit(any());
+        order.verify(faceClient).verify(IMG, "ref.jpg");
+        order.verify(txManager).getTransaction(argThat(def -> !def.isReadOnly()));
+        order.verify(staffRepository).findWithLockByStaffId(1);
+        order.verify(attendanceRepository).findByStaffIdAndCheckInTimeBetween(eq(1), any(), any());
+        order.verify(attendanceRepository).save(any());
+        order.verify(txManager).commit(any());
+    }
+
+    @Test
+    void scan_recordClosedDuringFaceCall_revalidatesAndDoesNotAddHoursTwice() {
+        morningShift();
+        Attendance a = openRecord(D.atTime(7, 58));
+        now(D.atTime(14, 5));
+        when(faceClient.verify(any(), any())).thenAnswer(inv -> {
+            // tab khác check-out trong lúc đang gọi dịch vụ khuôn mặt
+            a.setCheckOutTime(D.atTime(14, 4));
+            a.setStatus(AttendanceStatus.CHECK_OUT);
+            return new VerifyResult(true, false, false);
+        });
+        assertEquals(AttendanceError.ALREADY_CHECKED_OUT, assertThrows(AttendanceException.class,
+                () -> service.scan("hoang", AttendanceStatus.CHECK_OUT, IMG)).getError());
+        assertEquals(D.atTime(14, 4), a.getCheckOutTime());
+        assertEquals(10.0, staff.getTotalWorkingHours());
+        verify(attendanceRepository, never()).save(any());
     }
 
     @Test

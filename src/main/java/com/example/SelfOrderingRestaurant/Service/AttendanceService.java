@@ -18,8 +18,11 @@ import com.example.SelfOrderingRestaurant.Repository.StaffShiftRepository;
 import com.example.SelfOrderingRestaurant.Service.FaceVerificationClient.VerifyResult;
 import com.example.SelfOrderingRestaurant.Service.Imp.IAttendanceService;
 import com.example.SelfOrderingRestaurant.Service.WorkingHoursCalculator.ShiftWindow;
+import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -41,26 +44,41 @@ public class AttendanceService implements IAttendanceService {
     private final StaffShiftRepository staffShiftRepository;
     private final FaceVerificationClient faceClient;
     private final Clock clock;
+    private final EntityManager entityManager;
+    private final TransactionTemplate readTx;
+    private final TransactionTemplate writeTx;
 
     public AttendanceService(AttendanceRepository attendanceRepository,
                              StaffRepository staffRepository,
                              StaffShiftRepository staffShiftRepository,
                              FaceVerificationClient faceClient,
-                             Clock clock) {
+                             Clock clock,
+                             PlatformTransactionManager transactionManager,
+                             EntityManager entityManager) {
         this.attendanceRepository = attendanceRepository;
         this.staffRepository = staffRepository;
         this.staffShiftRepository = staffShiftRepository;
         this.faceClient = faceClient;
         this.clock = clock;
+        this.entityManager = entityManager;
+        this.readTx = new TransactionTemplate(transactionManager);
+        this.readTx.setReadOnly(true);
+        this.writeTx = new TransactionTemplate(transactionManager);
     }
 
+    /**
+     * Không bọc trong một transaction: lần gọi dịch vụ khuôn mặt (tới ~20s) không được giữ kết nối DB.
+     * Đọc + kiểm tra trước (transaction chỉ đọc), gọi dịch vụ, rồi ghi trong transaction riêng có khóa dòng Staff
+     * và kiểm tra lại trạng thái (một tab khác có thể đã chấm công trong lúc chờ).
+     */
     @Override
-    @Transactional
     public AttendanceResultDTO scan(String username, AttendanceStatus type, byte[] image) {
-        Staff staff = findStaff(username);
         LocalDateTime now = LocalDateTime.now(clock);
-        Records recs = loadRecords(staff, now);
-        validateTransition(type, recs);
+        Staff staff = readTx.execute(status -> {
+            Staff s = findStaff(username);
+            validateTransition(type, loadRecords(s, now));
+            return s;
+        });
 
         VerifyResult result = faceClient.verify(image, staff.getFaceImagePath());
         if (result.noFace()) {
@@ -72,13 +90,21 @@ public class AttendanceService implements IAttendanceService {
         if (!result.verified()) {
             throw new AttendanceException(AttendanceError.FACE_MISMATCH);
         }
-        return record(staff, type, recs, now, null);
+        return writeTx.execute(status -> {
+            // Open-in-view giữ chung persistence context cho cả request: bỏ các entity đọc ở pha đầu
+            // để sau khi khóa thì đọc lại trạng thái mới nhất từ DB thay vì bản cũ trong cache.
+            entityManager.clear();
+            Staff locked = lockStaff(staff.getStaffId());
+            Records recs = loadRecords(locked, now);
+            validateTransition(type, recs);
+            return record(locked, type, recs, now, null);
+        });
     }
 
     @Override
     @Transactional
     public AttendanceResultDTO manual(String username, AttendanceStatus type, String reason) {
-        Staff staff = findStaff(username);
+        Staff staff = lockStaff(findStaff(username).getStaffId());
         LocalDateTime now = LocalDateTime.now(clock);
         Records recs = loadRecords(staff, now);
         validateTransition(type, recs);
@@ -140,6 +166,12 @@ public class AttendanceService implements IAttendanceService {
     private Staff findStaff(String username) {
         return staffRepository.findByUserUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy nhân viên: " + username));
+    }
+
+    /** Khóa dòng Staff (SELECT ... FOR UPDATE) tới hết transaction để hai tab không cùng check-in/check-out. */
+    private Staff lockStaff(Integer staffId) {
+        return staffRepository.findWithLockByStaffId(staffId)
+                .orElseThrow(() -> new ResourceNotFoundException("Không tìm thấy nhân viên #" + staffId));
     }
 
     private Records loadRecords(Staff staff, LocalDateTime now) {
