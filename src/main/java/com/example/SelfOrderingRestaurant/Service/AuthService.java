@@ -1,5 +1,7 @@
 package com.example.SelfOrderingRestaurant.Service;
 
+
+import com.example.SelfOrderingRestaurant.Exception.ResourceNotFoundException;
 import com.example.SelfOrderingRestaurant.Dto.Request.UserRequestDTO.RegisterRequestDto;
 import com.example.SelfOrderingRestaurant.Dto.Request.UserRequestDTO.*;
 import com.example.SelfOrderingRestaurant.Dto.Response.UserResponseDTO.AuthResponseDto;
@@ -22,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -35,6 +38,7 @@ import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -130,7 +134,7 @@ public class AuthService {
     @Transactional
     public AuthResponseDto verifyRegisterOtp(VerifyOtpRequestDto request) {
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + request.getEmail()));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + request.getEmail()));
 
         if (user.getUserStatus() == UserStatus.ACTIVE) {
             throw new RuntimeException("Account is already verified");
@@ -157,7 +161,7 @@ public class AuthService {
 
         // Find customer profile
         Customer customer = customerRepository.findByUser(savedUser)
-                .orElseThrow(() -> new RuntimeException("Customer profile not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Customer profile not found"));
 
         // Generate tokens
         String accessToken = jwtTokenService.generateAccessToken(savedUser);
@@ -181,7 +185,7 @@ public class AuthService {
     @Transactional
     public void resendRegisterOtp(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
 
         if (user.getUserStatus() == UserStatus.ACTIVE) {
             throw new RuntimeException("Account is already verified");
@@ -276,20 +280,19 @@ public class AuthService {
         User user = userRepository.findByUsernameOrEmail(
                 request.getLogin(),
                 request.getLogin()
-        ).orElseThrow(() -> new RuntimeException("User not found"));
+        ).orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         // Update last login
         user.setLastLogin(new Date());
         userRepository.save(user);
 
-        // Generate tokens
-        String accessToken = jwtTokenService.generateAccessToken(user);
-        String refreshToken = jwtTokenService.generateRefreshToken(user);
+        return buildAuthResponse(user);
+    }
 
-        // Return response
+    private AuthResponseDto buildAuthResponse(User user) {
         AuthResponseDto response = new AuthResponseDto();
-        response.setAccessToken(accessToken);
-        response.setRefreshToken(refreshToken);
+        response.setAccessToken(jwtTokenService.generateAccessToken(user));
+        response.setRefreshToken(jwtTokenService.generateRefreshToken(user));
         response.setUsername(user.getUsername());
         response.setEmail(user.getEmail());
         response.setUserType(user.getUserType().name());
@@ -343,6 +346,8 @@ public class AuthService {
             newUser.setGoogleId(googleId);
             newUser.setEmail(email);
             newUser.setUsername(email.split("@")[0]);
+            // password column is NOT NULL; Google users never log in with it
+            newUser.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
             newUser.setUserType(UserType.STAFF); // Default staff
             newUser.setUserStatus(UserStatus.ACTIVE);
             newUser.setCreatedAt(LocalDateTime.now());
@@ -351,18 +356,7 @@ public class AuthService {
             return userRepository.save(newUser);
         });
 
-        // Tạo token
-        String accessToken = jwtTokenService.generateAccessToken(user);
-        String refreshToken = jwtTokenService.generateRefreshToken(user);
-
-        AuthResponseDto response = new AuthResponseDto();
-        response.setAccessToken(accessToken);
-        response.setRefreshToken(refreshToken);
-        response.setUsername(user.getUsername());
-        response.setEmail(user.getEmail());
-        response.setUserType(user.getUserType().name());
-
-        return response;
+        return buildAuthResponse(user);
     }
 
     private void validateTokenPayload(GoogleIdToken.Payload payload) {
@@ -388,35 +382,40 @@ public class AuthService {
         }
     }
 
-    public void logout() {
-        // Clear security context
+    /**
+     * Revokes every token of the user owning {@code token} (access or refresh).
+     * An invalid or missing token is ignored: logout must always succeed for the client.
+     */
+    @Transactional
+    public void logout(String token) {
         SecurityContextHolder.clearContext();
+        if (token == null || token.isBlank()) {
+            return;
+        }
+        try {
+            String username = jwtTokenService.extractUsername(token);
+            userRepository.findByUsername(username).ifPresent(user -> {
+                // Round up to the next second so tokens issued in the current second are revoked too
+                user.setTokensValidAfter(Instant.now().plusSeconds(1));
+                userRepository.save(user);
+            });
+        } catch (Exception ignored) {
+            // expired/forged token: nothing to revoke
+        }
     }
 
     public AuthResponseDto refreshToken(RefreshTokenRequestDto request) {
-        // Validate refresh token
-        String username = jwtTokenService.extractUsername(request.getRefreshToken());
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        // Verify refresh token
-        if (!jwtTokenService.validateRefreshToken(request.getRefreshToken(), user)) {
-            throw new RuntimeException("Invalid refresh token");
+        User user;
+        try {
+            String username = jwtTokenService.extractUsername(request.getRefreshToken());
+            user = userRepository.findByUsername(username).orElse(null);
+        } catch (Exception e) {
+            user = null;
         }
-
-        // Generate new tokens
-        String newAccessToken = jwtTokenService.generateAccessToken(user);
-        String newRefreshToken = jwtTokenService.generateRefreshToken(user);
-
-        // Return response
-        AuthResponseDto response = new AuthResponseDto();
-        response.setAccessToken(newAccessToken);
-        response.setRefreshToken(newRefreshToken);
-        response.setUsername(user.getUsername());
-        response.setEmail(user.getEmail());
-        response.setUserType(user.getUserType().name());
-
-        return response;
+        if (user == null || !jwtTokenService.validateRefreshToken(request.getRefreshToken(), user)) {
+            throw new BadCredentialsException("Invalid refresh token");
+        }
+        return buildAuthResponse(user);
     }
 
     @Transactional
@@ -436,7 +435,7 @@ public class AuthService {
         }
 
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + request.getEmail()));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + request.getEmail()));
 
         // Validate that username matches the email owner
         if (!user.getUsername().equalsIgnoreCase(request.getUsername().trim())) {

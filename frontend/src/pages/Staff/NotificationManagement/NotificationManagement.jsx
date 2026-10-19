@@ -18,6 +18,7 @@ import {
 import { confirmPayment, getPaymentStatus } from "../../../services/paymentAPI";
 import { format, parseISO, isToday } from "date-fns";
 
+import { BACKEND_WS_URL } from "../../../config";
 const NotificationManagementStaff = () => {
   const [activeTab, setActiveTab] = useState("Notification Management");
   const [notifications, setNotifications] = useState([]);
@@ -47,7 +48,7 @@ const NotificationManagementStaff = () => {
       try {
         const userId = localStorage.getItem("userId") || "123";
         const userType = "STAFF";
-        const wsUrl = `wss://selforderingrestaurant-635x.onrender.com/ws/notifications?userId=${userId}&userType=${userType}`;
+        const wsUrl = `${BACKEND_WS_URL}/ws/notifications?userId=${userId}&userType=${userType}`;
         socket = new WebSocket(wsUrl);
 
         socket.onopen = () => {

@@ -2,6 +2,7 @@ import { useState, useEffect, useContext } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CartContext } from "../../../context/CartContext";
 
+import { BACKEND_URL } from "../../../config";
 const Menu = () => {
   const [dishes, setDishes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -44,7 +45,7 @@ const Menu = () => {
         setLoading(true);
 
         // Fetch dishes
-        const dishesResponse = await fetch("https://selforderingrestaurant-635x.onrender.com/api/dishes");
+        const dishesResponse = await fetch(`${BACKEND_URL}/api/dishes`);
         if (!dishesResponse.ok) {
           throw new Error(`HTTP error! Status: ${dishesResponse.status}`);
         }
@@ -52,7 +53,7 @@ const Menu = () => {
 
         // Fetch available inventory
         const inventoryResponse = await fetch(
-          "https://selforderingrestaurant-635x.onrender.com/api/inventory/available"
+          `${BACKEND_URL}/api/inventory/available`
         );
         if (!inventoryResponse.ok) {
           throw new Error(`HTTP error! Status: ${inventoryResponse.status}`);
@@ -61,7 +62,7 @@ const Menu = () => {
 
         // Fetch dish-ingredients
         const dishIngredientsResponse = await fetch(
-          "https://selforderingrestaurant-635x.onrender.com/api/dish_ingredients"
+          `${BACKEND_URL}/api/dish_ingredients`
         );
         if (!dishIngredientsResponse.ok) {
           throw new Error(
@@ -223,7 +224,7 @@ const Menu = () => {
           },
         };
 
-        const response = await fetch("https://selforderingrestaurant-635x.onrender.com/graphql", {
+        const response = await fetch(`${BACKEND_URL}/graphql`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",

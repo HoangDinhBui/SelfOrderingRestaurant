@@ -7,9 +7,10 @@ import React, {
 } from "react";
 import axios from "axios";
 
+import { BACKEND_URL, authHeaders } from "../config";
 // Create a base API instance with consistent configuration
 const API = axios.create({
-  baseURL: "https://selforderingrestaurant-635x.onrender.com",
+  baseURL: BACKEND_URL,
   withCredentials: true,
   timeout: 5000, // Add timeout to prevent long-hanging requests
 });
@@ -119,7 +120,7 @@ export const CartProvider = ({ children }) => {
       const response = await fetch(`${API.defaults.baseURL}/graphql`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "application/json", ...authHeaders(),
         },
         credentials: "include",
         body: JSON.stringify({ query, variables }),

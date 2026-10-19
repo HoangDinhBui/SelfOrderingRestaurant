@@ -1,8 +1,9 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { authAPI, publicAPI } from "../../../services/api";
-import { confirmPayment, getPaymentStatus } from "../../../services/paymentAPI";
+import { getPaymentStatus } from "../../../services/paymentAPI";
 
+import { BACKEND_URL } from "../../../config";
 const Payment = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -19,7 +20,7 @@ const Payment = () => {
   const momoPhoneNumber = "0329914143";
   const queryParams = new URLSearchParams(location.search);
   const orderId = queryParams.get("orderId");
-  const API_BASE_URL = "https://selforderingrestaurant-635x.onrender.com";
+  const API_BASE_URL = BACKEND_URL;
 
   useEffect(() => {
     const fetchOrderDetails = async () => {
@@ -128,7 +129,7 @@ const Payment = () => {
 
   const resetPayment = async () => {
     try {
-      const response = await authAPI.post(`/payment/reset/${orderId}`);
+      const response = await authAPI.post(`/api/payment/reset/${orderId}`);
       if (response.data.success) {
         setTransactionStatus(null);
         setExistingPaymentDetails(null);
@@ -215,7 +216,7 @@ const Payment = () => {
 
       switch (paymentMethod) {
         case "VNPAY":
-          const vnpayResponse = await authAPI.post(`/payment/vnpay`, {
+          const vnpayResponse = await authAPI.post(`/api/payment/vnpay`, {
             orderId: parseInt(orderId),
             total: Math.round(orderTotal),
             orderInfo: `Payment for Order: ${orderId}`,
@@ -230,7 +231,7 @@ const Payment = () => {
           }
 
         case "MOMO":
-          await authAPI.post(`/payment/process`, {
+          await authAPI.post(`/api/payment/process`, {
             orderId: parseInt(orderId),
             paymentMethod: "MOMO",
             confirmPayment: false,
@@ -240,7 +241,7 @@ const Payment = () => {
 
         case "CASH":
         case "CREDIT":
-          await authAPI.post(`/payment/process`, {
+          await authAPI.post(`/api/payment/process`, {
             orderId: parseInt(orderId),
             paymentMethod: paymentMethod,
             confirmPayment: false,
@@ -292,19 +293,39 @@ const Payment = () => {
     }
   };
 
+  // A guest cannot settle a bill: we notify the staff (PAYMENT_REQUEST) and wait until they
+  // confirm it; the backend refuses /payment/confirm from guests.
+  const [awaitingStaff, setAwaitingStaff] = useState(false);
+
+  useEffect(() => {
+    if (!awaitingStaff) return undefined;
+    const timer = setInterval(async () => {
+      const status = await getPaymentStatus(orderId);
+      if (!status.error && status.paymentStatus === "PAID") {
+        clearInterval(timer);
+        setAwaitingStaff(false);
+        localStorage.removeItem("latestOrderInfo");
+        sessionStorage.removeItem("latestOrderInfo");
+        setShowModal(false);
+        navigate(`/evaluate_cus?orderId=${orderId}`);
+      }
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [awaitingStaff, orderId, navigate]);
+
   const confirmPayment = async () => {
     if (existingPaymentDetected) {
       localStorage.removeItem("latestOrderInfo");
       sessionStorage.removeItem("latestOrderInfo");
       setShowModal(false);
       setTimeout(() => {
-        navigate("/evaluate_cus");
+        navigate(`/evaluate_cus?orderId=${orderId}`);
       }, 1000);
       return;
     }
 
     if (transactionStatus === "PENDING") {
-      setError("Transaction is still pending. Please check its status.");
+      setError("Giao dịch đang được xử lý, vui lòng kiểm tra lại trạng thái.");
       setShowModal(true);
       return;
     }
@@ -314,153 +335,40 @@ const Payment = () => {
 
       const statusResponse = await getPaymentStatus(orderId);
       if (statusResponse.error) {
-        throw new Error(
-          statusResponse.message || "Failed to check payment status"
-        );
+        throw new Error(statusResponse.message || "Failed to check payment status");
       }
-      console.log("Payment status before confirmation:", statusResponse);
 
       if (statusResponse.paymentStatus === "PAID") {
         setExistingPaymentDetected(true);
         setExistingPaymentDetails({
           method: statusResponse.paymentMethod || paymentMethod,
           date: statusResponse.paymentDate || new Date().toISOString(),
-          amount: statusResponse.totalAmount || orderTotal,
+          amount: statusResponse.totalAmount || 0,
         });
         setOrderDetails(statusResponse);
         setShowModal(true);
         return;
       }
 
-      if (statusResponse.paymentStatus === "PENDING") {
-        setTransactionStatus("PENDING");
-        setError(
-          "A pending payment transaction exists. Please wait for it to complete or try again later."
-        );
-        setShowModal(true);
-        return;
-      }
-
-      const response = await authAPI.post(`/payment/confirm`, {
+      const customerInfo = JSON.parse(localStorage.getItem("customerInfo") || "null");
+      await authAPI.post(`/api/notifications`, {
+        ...(customerInfo?.id ? { customerId: customerInfo.id } : {}),
+        tableNumber: orderDetails?.tableId,
+        type: "PAYMENT_REQUEST",
         orderId: parseInt(orderId),
+        additionalMessage: `Khách yêu cầu thanh toán bằng ${getPaymentMethodDisplayText(paymentMethod)}`,
       });
-      if (response.data.success) {
-        try {
-          const customerInfo = JSON.parse(
-            localStorage.getItem("customerInfo")
-          ) || {
-            id: 1,
-            fullname: "Guest Customer",
-          };
-          const tableNumberNumeric = orderDetails?.tableId || 1;
-          const paymentMethodText = getPaymentMethodDisplayText(paymentMethod);
-          const notificationMessage = `Customer has completed payment using ${paymentMethodText}`;
 
-          if (!customerInfo.id || !tableNumberNumeric || !orderId) {
-            console.error("Invalid notification data:", {
-              customerId: customerInfo.id,
-              tableNumber: tableNumberNumeric,
-              orderId,
-            });
-            throw new Error("Invalid notification data");
-          }
-
-          await authAPI.post(`/notifications`, {
-            customerId: customerInfo.id,
-            tableNumber: tableNumberNumeric,
-            type: "PAYMENT_REQUEST",
-            orderId: parseInt(orderId),
-            additionalMessage: notificationMessage,
-          });
-        } catch (notifError) {
-          console.error(
-            "Error sending notification after payment:",
-            notifError
-          );
-          setError(
-            "Payment confirmed, but failed to send notification. Please contact support."
-          );
-        }
-
-        localStorage.removeItem("latestOrderInfo");
-        sessionStorage.removeItem("latestOrderInfo");
-        setShowModal(false);
-
-        const refreshResponse = await getPaymentStatus(orderId);
-        if (refreshResponse.error) {
-          throw new Error(
-            refreshResponse.message || "Failed to refresh payment status"
-          );
-        }
-        setOrderDetails(refreshResponse);
-        setExistingPaymentDetected(true);
-        setExistingPaymentDetails({
-          method: refreshResponse.paymentMethod || paymentMethod,
-          date: refreshResponse.paymentDate || new Date().toISOString(),
-          amount: refreshResponse.totalAmount || orderTotal,
-        });
-
-        setTimeout(() => {
-          navigate("/evaluate_cus");
-        }, 1000);
-      } else {
-        setError("Failed to confirm payment: " + response.data.message);
-        setShowModal(true);
-      }
+      setError(null);
+      setAwaitingStaff(true);
+      setShowModal(false);
     } catch (err) {
-      console.error("Error confirming payment:", err);
-      if (
-        err.response?.status === 400 &&
-        err.response?.data?.message.includes("No pending payment found")
-      ) {
-        setError(
-          `No pending payment found for order ${orderId}. Please initiate a payment first.`
-        );
-        setShowModal(true);
-      } else if (
-        err.response?.status === 400 &&
-        err.response?.data?.message.includes("Payment is still PENDING")
-      ) {
-        setTransactionStatus("PENDING");
-        setError(
-          "Payment is still pending. Please wait for it to complete or try again later."
-        );
-        setShowModal(true);
-      } else if (err.response?.status === 409) {
-        setExistingPaymentDetected(true);
-        try {
-          const refreshResponse = await getPaymentStatus(orderId);
-          if (refreshResponse.error) {
-            throw new Error(
-              refreshResponse.message || "Failed to refresh payment status"
-            );
-          }
-          setOrderDetails(refreshResponse);
-          setExistingPaymentDetails({
-            method: refreshResponse.paymentMethod || paymentMethod,
-            date: refreshResponse.paymentDate || new Date().toISOString(),
-            amount: refreshResponse.totalAmount || orderTotal,
-          });
-          if (refreshResponse.transactionStatus === "PENDING") {
-            setTransactionStatus("PENDING");
-            setError("Transaction is still pending. Please check its status.");
-          } else {
-            setError("This order has already been paid. No need to confirm.");
-          }
-          setShowModal(true);
-        } catch (refreshErr) {
-          console.error("Error refreshing order data:", refreshErr);
-          setError(
-            "Failed to verify existing payment. Please contact support."
-          );
-        }
-      } else {
-        setError(
-          err.response?.data?.message ||
-            "Failed to confirm payment. Please try again!"
-        );
-        setShowModal(true);
-      }
+      console.error("Error requesting payment:", err);
+      setError(
+        err.response?.data?.message ||
+          "Không gửi được yêu cầu thanh toán, vui lòng gọi nhân viên."
+      );
+      setShowModal(true);
     } finally {
       setProcessingPayment(false);
     }
@@ -851,7 +759,7 @@ const Payment = () => {
             existingPaymentDetected) && (
             <button
               className="w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition"
-              onClick={() => navigate("/evaluate_cus")}
+              onClick={() => navigate(`/evaluate_cus?orderId=${orderId}`)}
             >
               COMPLETE
             </button>
@@ -930,7 +838,7 @@ const Payment = () => {
                   <button
                     onClick={() => {
                       setShowModal(false);
-                      navigate("/evaluate_cus");
+                      navigate(`/evaluate_cus?orderId=${orderId}`);
                     }}
                     className="w-1/2 !bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition"
                   >

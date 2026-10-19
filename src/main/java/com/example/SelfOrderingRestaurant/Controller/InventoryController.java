@@ -33,7 +33,7 @@ public class InventoryController {
         return ResponseEntity.ok(inventoryService.getInventoryById(id));
     }
 
-    @PostMapping
+    @PostMapping("/admin/inventory")
     public ResponseEntity<?> createInventory(@RequestBody CreateInventoryRequestDTO request) {
         inventoryService.createInventory(request);
         return ResponseEntity.ok("Inventory created successfully");

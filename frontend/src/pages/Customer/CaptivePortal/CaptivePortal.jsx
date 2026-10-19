@@ -2,6 +2,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { publicAPI } from "../../../axiosConfig"; // Import publicAPI
+import Bg1 from "../../../assets/img/CaptiveBg.jpg";
+import Bg2 from "../../../assets/img/CaptiveBg2.jpg";
+import logoCap from "../../../assets/img/CaptiveLogo.png";
 
 const CaptivePortal = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -32,7 +35,7 @@ const CaptivePortal = () => {
 
     // Kiểm tra IP cho khách hàng (không có token)
     publicAPI
-      .get(`/captive/check-ip?tableNumber=${tableNumber}`)
+      .get(`/api/captive/check-ip?tableNumber=${tableNumber}`)
       .then((response) => {
         setClientIp(response.data.ip);
         // Chỉ chuyển hướng nếu API trả về đường dẫn hợp lệ và không phải STAFF/ADMIN
@@ -92,7 +95,7 @@ const CaptivePortal = () => {
     setIsLoading(true);
 
     publicAPI
-      .post(`/captive/connect?tableNumber=${tableNumber}`)
+      .post(`/api/captive/connect?tableNumber=${tableNumber}`)
       .then((response) => {
         setIsLoading(false);
         if (response.data.status === "connected") {

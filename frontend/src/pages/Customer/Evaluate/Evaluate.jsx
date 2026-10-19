@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 
+import { BACKEND_URL } from "../../../config";
 const Evaluate = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [rating, setRating] = useState(0);
   const [selectedTags, setSelectedTags] = useState([]);
   const [feedback, setFeedback] = useState("");
@@ -33,30 +35,23 @@ const Evaluate = () => {
   };
 
   const handleSubmit = async () => {
-    // Lấy customerInfo từ localStorage
-    const customerInfo = JSON.parse(localStorage.getItem("customerInfo")) || {
-      id: 1, // Guest customer ID
-      fullname: "Guest Customer",
-    };
-    const customerId = customerInfo.id;
+    // Guests have no customer account: the backend takes the customer from the order
+    const customerInfo = JSON.parse(localStorage.getItem("customerInfo") || "null");
+    const orderId =
+      new URLSearchParams(location.search).get("orderId") || localStorage.getItem("orderId");
 
-    // Lấy orderId từ localStorage (nếu có)
-    const orderId = localStorage.getItem("orderId") || null;
-
-    // Kiểm tra dữ liệu đầu vào
     if (!rating) {
       setError("Please select a rating.");
       return;
     }
-    if (!customerId) {
-      setError("Customer ID is required.");
+    if (!orderId && !customerInfo?.id) {
+      setError("Không tìm thấy đơn hàng để đánh giá.");
       return;
     }
 
-    // Tạo payload cho API
     const payload = {
-      customerId: parseInt(customerId), // Chuyển thành số nguyên
-      orderId: orderId ? parseInt(orderId) : null, // Chuyển thành số nguyên hoặc null
+      ...(customerInfo?.id ? { customerId: parseInt(customerInfo.id) } : {}),
+      orderId: orderId ? parseInt(orderId) : null,
       rating: rating,
       feedback: feedback,
       selectedTags: selectedTags,
@@ -65,7 +60,7 @@ const Evaluate = () => {
     try {
       // Gửi yêu cầu POST tới backend
       const response = await axios.post(
-        "https://selforderingrestaurant-635x.onrender.com/api/feedback",
+        `${BACKEND_URL}/api/feedback`,
         payload,
         {
           headers: {
@@ -81,7 +76,7 @@ const Evaluate = () => {
       }
     } catch (error) {
       console.error("Error submitting feedback:", error);
-      setError("Failed to submit feedback. Please try again.");
+      setError(error.response?.data?.message || "Failed to submit feedback. Please try again.");
     }
   };
 

@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import axios from "axios";
+import { BACKEND_URL, authHeaders } from "../config";
 import { CartContext } from "./CartContext"; // Import from separate file
 
 // Create a base API instance with consistent configuration
 const API = axios.create({
-  baseURL: "https://selforderingrestaurant-635x.onrender.com",
+  baseURL: BACKEND_URL,
   withCredentials: true,
 });
 
@@ -247,7 +248,7 @@ export const CartProvider = ({ children }) => {
         const response = await fetch(`${API.defaults.baseURL}/graphql`, {
           method: "POST",
           headers: {
-            "Content-Type": "application/json",
+            "Content-Type": "application/json", ...authHeaders(),
           },
           credentials: "include",
           body: JSON.stringify(graphqlQuery),

@@ -1,5 +1,7 @@
 package com.example.SelfOrderingRestaurant.Service;
 
+
+import com.example.SelfOrderingRestaurant.Exception.ResourceNotFoundException;
 import com.example.SelfOrderingRestaurant.Dto.Request.CustomerRequestDTO.CustomerRequestDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.CustomerResponseDTO.CustomerResponseDTO;
 import com.example.SelfOrderingRestaurant.Entity.Customer;
@@ -26,7 +28,7 @@ public class CustomerService implements ICustomerService {
     @Override
     public CustomerResponseDTO getCustomerById(Integer id) {
         Customer customer = customerRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Customer not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
         return mapToDTO(customer);
     }
 
@@ -42,7 +44,7 @@ public class CustomerService implements ICustomerService {
     @Override
     public CustomerResponseDTO updateCustomer(Integer id, CustomerRequestDTO requestDTO) {
         Customer customer = customerRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Customer not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
         customer.setFullname(requestDTO.getFullname());
         customer.setJoinDate(requestDTO.getJoinDate());
         return mapToDTO(customerRepository.save(customer));
@@ -51,7 +53,7 @@ public class CustomerService implements ICustomerService {
     @Override
     public void deleteCustomer(Integer id) {
         if (!customerRepository.existsById(id)) {
-            throw new RuntimeException("Customer not found");
+            throw new ResourceNotFoundException("Customer not found");
         }
         customerRepository.deleteById(id);
     }

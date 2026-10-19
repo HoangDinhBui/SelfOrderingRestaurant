@@ -164,7 +164,7 @@ public class AdminController {
             logger.info("Fetching staff with ID: {}", id);
             GetAllStaffResponseDTO staff = staffService.getStaffById(id);
             return ResponseEntity.ok(staff);
-        } catch (EntityNotFoundException e) {
+        } catch (EntityNotFoundException | ResourceNotFoundException e) {
             logger.warn("Staff not found with ID: {}", id);
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         } catch (Exception e) {

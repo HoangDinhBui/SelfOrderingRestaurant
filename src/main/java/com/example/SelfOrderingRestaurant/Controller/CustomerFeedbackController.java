@@ -3,6 +3,7 @@ package com.example.SelfOrderingRestaurant.Controller;
 import com.example.SelfOrderingRestaurant.Dto.Request.CustomerRequestDTO.CreateFeedbackRequest;
 import com.example.SelfOrderingRestaurant.Dto.Response.CustomerResponseDTO.CustomerFeedbackDTO;
 import com.example.SelfOrderingRestaurant.Service.CustomerFeedbackService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,7 +18,7 @@ public class CustomerFeedbackController {
 
     // Tạo mới đánh giá
     @PostMapping
-    public ResponseEntity<CustomerFeedbackDTO> createFeedback(@RequestBody CreateFeedbackRequest request) {
+    public ResponseEntity<CustomerFeedbackDTO> createFeedback(@Valid @RequestBody CreateFeedbackRequest request) {
         CustomerFeedbackDTO feedback = feedbackService.createFeedback(request);
         return ResponseEntity.status(201).body(feedback);
     }

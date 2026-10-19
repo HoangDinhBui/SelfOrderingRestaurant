@@ -12,12 +12,12 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: ${SPRING_JPA_SHOW_SQL:false}
   mail:
     host: smtp.gmail.com
     port: 465
-    username: buidinhhoang1910@gmail.com
-    password: kiflurzibulqhzzy
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
@@ -36,7 +36,8 @@ spring:
               - profile
 
 jwt:
-  secret: dGhpcy1pcy1hLXNlY3JldC1rZXktZm9yLWp3dC10b2tlbi1nZW5lcmF0aW9uLXdpdGgtYXQta2Vhc3QtMjU2LWJpdHM=
+  # Base64 key, >= 64 bytes. Unset -> a random key is generated at startup (tokens die on restart)
+  secret: ${JWT_SECRET:}
   access-token:
     expiration: 3600000 # 1 hour
   refresh-token:
@@ -64,7 +65,7 @@ attendance:
 
 logging:
   level:
-    org.springframework.security: DEBUG
+    org.springframework.security: ${SECURITY_LOG_LEVEL:INFO}
     org.springframework.web: INFO
 
 resend:
@@ -72,7 +73,15 @@ resend:
   from-email: ${RESEND_FROM_EMAIL:onboarding@resend.dev}
 gemini:
   api-key: ${GEMINI_API_KEY:}
+  model: ${GEMINI_MODEL:gemini-2.5-flash}
 cloudinary:
   cloud-name: ${CLOUDINARY_CLOUD_NAME:your_cloud_name_here}
   api-key: ${CLOUDINARY_API_KEY:your_api_key_here}
   api-secret: ${CLOUDINARY_API_SECRET:your_api_secret_here}
+
+# First admin account, created at startup only when no ADMIN exists and both values are set
+bootstrap:
+  admin:
+    username: ${BOOTSTRAP_ADMIN_USERNAME:}
+    password: ${BOOTSTRAP_ADMIN_PASSWORD:}
+    email: ${BOOTSTRAP_ADMIN_EMAIL:}

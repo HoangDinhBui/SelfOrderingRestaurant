@@ -24,10 +24,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -192,7 +195,8 @@ public class PaymentController {
                 method = PaymentMethod.CASH;
             }
 
-            boolean confirmPayment = request.isConfirmPayment();
+            // Only staff may settle a bill; a customer request just opens an UNPAID payment
+            boolean confirmPayment = request.isConfirmPayment() && isStaffOrAdmin();
 
             // Nếu không có giao dịch hợp lệ, tạo mới
             if (payment == null) {
@@ -229,10 +233,7 @@ public class PaymentController {
             }
 
             if (confirmPayment) {
-                order.setPaymentStatus(PaymentStatus.PAID);
-                orderRepository.save(order);
-
-                paymentService.finalizePoints(order, payment.getAmount());
+                paymentService.markOrderPaid(order, payment.getAmount());
 
                 DinningTable table = order.getTables();
                 if (table != null) {
@@ -302,6 +303,13 @@ public class PaymentController {
             // Tìm đơn hàng
             Order order = orderRepository.findById(orderId)
                     .orElseThrow(() -> new IllegalArgumentException("Order not found with ID: " + orderId));
+
+            // A guest may retry a stuck payment, but only staff may reopen a settled bill
+            if (order.getPaymentStatus() == PaymentStatus.PAID && !isStaffOrAdmin()) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
+                        "success", false,
+                        "message", "Order has already been paid"));
+            }
 
             // Kiểm tra và hủy các giao dịch PENDING hoặc UNPAID
             List<Payment> existingPayments = paymentRepository.findByOrderAndStatusIn(
@@ -438,10 +446,7 @@ public class PaymentController {
         payment.setStatus(PaymentStatus.PAID);
         paymentRepository.save(payment);
 
-        order.setPaymentStatus(PaymentStatus.PAID);
-        orderRepository.save(order);
-
-        paymentService.finalizePoints(order, payment.getAmount());
+        paymentService.markOrderPaid(order, payment.getAmount());
 
         DinningTable table = order.getTables();
         if (table != null) {
@@ -494,10 +499,7 @@ public class PaymentController {
         paymentRepository.save(payment);
 
         Order order = payment.getOrder();
-        order.setPaymentStatus(PaymentStatus.PAID);
-        orderRepository.save(order);
-
-        paymentService.finalizePoints(order, payment.getAmount());
+        paymentService.markOrderPaid(order, payment.getAmount());
 
         DinningTable table = order.getTables();
         if (table != null) {
@@ -561,8 +563,14 @@ public class PaymentController {
         }
     }
 
+    private static boolean isStaffOrAdmin() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return auth != null && auth.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_STAFF".equals(a.getAuthority()) || "ROLE_ADMIN".equals(a.getAuthority()));
+    }
+
     private String generateTransactionId() {
-        Random rand = new Random();
+        Random rand = new SecureRandom();
         StringBuilder sb = new StringBuilder();
         for (int i = 0; i < 8; i++) {
             sb.append(rand.nextInt(10));

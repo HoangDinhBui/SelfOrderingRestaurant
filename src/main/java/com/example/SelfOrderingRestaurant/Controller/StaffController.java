@@ -150,7 +150,7 @@ public class StaffController {
     @GetMapping("/by-username/{username}")
     public ResponseEntity<Staff> getStaffByUsername(@PathVariable String username) {
         Staff staff = staffRepository.findByUserUsername(username)
-                .orElseThrow(() -> new RuntimeException("Staff not found for username: " + username));
+                .orElseThrow(() -> new ResourceNotFoundException("Staff not found for username: " + username));
         return ResponseEntity.ok(staff);
     }
 }

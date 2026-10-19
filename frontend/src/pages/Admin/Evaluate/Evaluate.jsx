@@ -11,6 +11,7 @@ import MenuBarStaff from "../../../components/layout/MenuBar_Staff.jsx";
 import MenuBar from "../../../components/layout/MenuBar.jsx";
 import axios from "axios";
 
+import { BACKEND_URL, authHeaders } from "../../../config";
 const EvaluteAdmin = () => {
   const [activeTab, setActiveTab] = useState("Notification Management");
   const [reviews, setReviews] = useState([]);
@@ -29,7 +30,7 @@ const EvaluteAdmin = () => {
     "Dish Management",
   ];
   const navigate = useNavigate();
-  const API_BASE_URL = "https://selforderingrestaurant-635x.onrender.com";
+  const API_BASE_URL = BACKEND_URL;
 
   // Check user role on component mount
   useEffect(() => {
@@ -43,6 +44,7 @@ const EvaluteAdmin = () => {
     setError(null);
     try {
       const response = await axios.get(`${API_BASE_URL}/api/feedback`, {
+        headers: authHeaders(),
         params: {
           search: searchTerm.trim() || undefined,
           filterRating: filterRating === "All" ? undefined : filterRating,
@@ -90,7 +92,9 @@ const EvaluteAdmin = () => {
     if (userRole !== "ADMIN") return; // Prevent action for non-ADMIN
     try {
       const response = await axios.put(
-        `${API_BASE_URL}/api/feedback/${id}/mark-as-read`
+        `${API_BASE_URL}/api/feedback/${id}/mark-as-read`,
+        null,
+        { headers: authHeaders() }
       );
       setReviews(
         reviews.map((rev) => (rev.id === id ? { ...rev, checked: true } : rev))
@@ -112,7 +116,9 @@ const EvaluteAdmin = () => {
     if (userRole !== "ADMIN") return; // Prevent action for non-ADMIN
     if (reviewToDelete) {
       try {
-        await axios.delete(`${API_BASE_URL}/api/feedback/${reviewToDelete}`);
+        await axios.delete(`${API_BASE_URL}/api/feedback/${reviewToDelete}`, {
+          headers: authHeaders(),
+        });
         setReviews(reviews.filter((rev) => rev.id !== reviewToDelete));
       } catch (error) {
         console.error("Error deleting feedback:", error);

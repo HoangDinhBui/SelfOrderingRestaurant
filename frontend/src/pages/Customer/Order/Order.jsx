@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { CartContext } from "../../../context/CartContext";
 import axios from "axios";
 
+import { BACKEND_URL } from "../../../config";
 const Order = () => {
   const navigate = useNavigate();
   const { state } = useLocation();
@@ -25,7 +26,7 @@ const Order = () => {
     updateItemNotes,
   } = useContext(CartContext);
 
-  const API_BASE_URL = "https://selforderingrestaurant-635x.onrender.com";
+  const API_BASE_URL = BACKEND_URL;
 
   const getImageUrl = (imageName) => {
     if (!imageName) return "/img/placeholder.jpg";
@@ -224,7 +225,7 @@ const Order = () => {
         const paymentInfo = {
           orderId: orderId,
           amount: totalPrice,
-          customerId: 1,
+          customerId: null,
           createdAt: new Date().toISOString(),
           isPaid: false,
         };
@@ -234,7 +235,7 @@ const Order = () => {
         try {
           const notificationData = {
             tableNumber: Number(tableId),
-            customerId: 1,
+            customerId: null,
             orderId: Number(orderId),
             type: "NEW_ORDER",
             additionalMessage: `New order placed for Table ${tableId}`,

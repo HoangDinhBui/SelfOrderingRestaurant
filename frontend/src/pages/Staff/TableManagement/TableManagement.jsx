@@ -6,6 +6,7 @@ import { debounce } from "lodash";
 import { useMemo } from "react";
 import QuickOrderModal from "./QuickOrderModal";
 
+import { BACKEND_URL, BACKEND_WS_URL, authHeaders } from "../../../config";
 const TableManagementStaff = () => {
   const [selectedTable, setSelectedTable] = useState(null);
   const [isDishModalOpen, setIsDishModalOpen] = useState(false);
@@ -64,7 +65,7 @@ const TableManagementStaff = () => {
         `Attempting WebSocket connection (Attempt ${reconnectAttempts + 1})`
       );
       ws = new WebSocket(
-        `wss://selforderingrestaurant-635x.onrender.com/ws/notifications?userType=STAFF&userId=${userId}`
+        `${BACKEND_WS_URL}/ws/notifications?userType=STAFF&userId=${userId}`
       );
 
       ws.onopen = () => {
@@ -132,7 +133,7 @@ const TableManagementStaff = () => {
                 );
                 axios
                   .put(
-                    "https://selforderingrestaurant-635x.onrender.com/api/staff/tables/${message.tableNumber}",
+                    `${BACKEND_URL}/api/staff/tables/${message.tableNumber}`,
                     {
                       status: message.tableStatus.toLowerCase(),
                     }
@@ -483,9 +484,9 @@ const TableManagementStaff = () => {
   const executeGraphQL = async (query, variables = {}) => {
     try {
       const response = await axios.post(
-        "https://selforderingrestaurant-635x.onrender.com/graphql",
+        `${BACKEND_URL}/graphql`,
         { query, variables },
-        { headers: { "Content-Type": "application/json" } }
+        { headers: { "Content-Type": "application/json", ...authHeaders() } }
       );
 
       if (response.data.errors) {
@@ -500,10 +501,10 @@ const TableManagementStaff = () => {
   };
 
   const API = {
-    get: (url) => axios.get(`https://selforderingrestaurant-635x.onrender.com${url}`),
-    post: (url, data) => axios.post(`https://selforderingrestaurant-635x.onrender.com${url}`, data),
-    put: (url, data) => axios.put(`https://selforderingrestaurant-635x.onrender.com${url}`, data),
-    delete: (url) => axios.delete(`https://selforderingrestaurant-635x.onrender.com${url}`),
+    get: (url) => axios.get(`${BACKEND_URL}${url}`),
+    post: (url, data) => axios.post(`${BACKEND_URL}${url}`, data),
+    put: (url, data) => axios.put(`${BACKEND_URL}${url}`, data),
+    delete: (url) => axios.delete(`${BACKEND_URL}${url}`),
   };
 
   const fetchOrdersGraphQL = useCallback(async () => {
@@ -1875,10 +1876,11 @@ const TableManagementStaff = () => {
       return;
     }
     try {
-      const response = await fetch(`/api/receipts/generate/${orderId}`, {
+      const response = await fetch(`${BACKEND_URL}/api/receipts/generate/${orderId}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/pdf",
+        ...authHeaders(),
         },
       });
 
@@ -2276,16 +2278,8 @@ const TableManagementStaff = () => {
 
       console.log("Swap tables API call successful");
 
-      // Đặt timeout để kiểm tra xem WebSocket có cập nhật không
-      const websocketTimeout = setTimeout(async () => {
-        console.warn(
-          "WebSocket did not update within 5 seconds, fetching tables and orders"
-        );
-        await fetchTables();
-        await fetchOrders();
-      }, 5000);
-
-      // Lưu timeout ID để hủy nếu WebSocket cập nhật thành công
+      // Optimistic update; the TABLE_TRANSFERRED WebSocket message and the order refetch below
+      // reconcile with the server
       setTables((prevTables) => {
         const updatedTables = prevTables.map((table) => {
           if (table.id === transferSourceTable.id) {
@@ -2313,13 +2307,9 @@ const TableManagementStaff = () => {
         return [...updatedOrders];
       });
 
-      // Hủy timeout khi WebSocket cập nhật
-      ws.onmessage = (event) => {
-        const message = JSON.parse(event.data);
-        if (message.type === "TABLE_TRANSFERRED") {
-          clearTimeout(websocketTimeout);
-        }
-      };
+      // `ws` is local to the socket effect: overriding its handler here threw a ReferenceError
+      // after a successful swap (and would have hijacked notifications), so just refetch orders.
+      fetchOrders();
 
       setIsTransferConfirmModalOpen(false);
       setIsTransferSuccessModalOpen(true);

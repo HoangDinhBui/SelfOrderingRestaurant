@@ -3,6 +3,7 @@ import MenuBar from "../../../components/layout/MenuBar.jsx";
 import axios from "axios";
 import { FaTrash } from "react-icons/fa";
 
+import { BACKEND_URL, BACKEND_WS_URL, authHeaders } from "../../../config";
 const TableManagementAdmin = () => {
   const [selectedTable, setSelectedTable] = useState(null);
   const [isDishModalOpen, setIsDishModalOpen] = useState(false);
@@ -67,7 +68,7 @@ const TableManagementAdmin = () => {
         })`
       );
       ws = new WebSocket(
-        `wss://selforderingrestaurant-635x.onrender.com/ws/notifications?userType=ADMIN&userId=${userId}`
+        `${BACKEND_WS_URL}/ws/notifications?userType=ADMIN&userId=${userId}`
       );
 
       ws.onopen = () => {
@@ -310,19 +311,19 @@ const TableManagementAdmin = () => {
 
   // API Configuration
   const API = {
-    get: (url) => axios.get(`https://selforderingrestaurant-635x.onrender.com${url}`),
-    post: (url, data) => axios.post(`https://selforderingrestaurant-635x.onrender.com${url}`, data),
-    put: (url, data) => axios.put(`https://selforderingrestaurant-635x.onrender.com${url}`, data),
-    delete: (url) => axios.delete(`https://selforderingrestaurant-635x.onrender.com${url}`),
+    get: (url) => axios.get(`${BACKEND_URL}${url}`),
+    post: (url, data) => axios.post(`${BACKEND_URL}${url}`, data),
+    put: (url, data) => axios.put(`${BACKEND_URL}${url}`, data),
+    delete: (url) => axios.delete(`${BACKEND_URL}${url}`),
   };
 
   // GraphQL Executor
   const executeGraphQL = async (query, variables = {}) => {
     try {
       const response = await axios.post(
-        "https://selforderingrestaurant-635x.onrender.com/graphql",
+        `${BACKEND_URL}/graphql`,
         { query, variables },
-        { headers: { "Content-Type": "application/json" } }
+        { headers: { "Content-Type": "application/json", ...authHeaders() } }
       );
       if (response.data.errors) {
         throw new Error(response.data.errors[0].message);
@@ -682,7 +683,7 @@ const TableManagementAdmin = () => {
       formData.append("tableNumber", newTableId.toString());
 
       const res = await axios.post(
-        "https://selforderingrestaurant-635x.onrender.com/api/qr/upload",
+        `${BACKEND_URL}/api/qr/upload`,
         formData,
         {
           headers: { "Content-Type": "multipart/form-data" },
@@ -875,10 +876,11 @@ const TableManagementAdmin = () => {
     return;
   }
   try {
-    const response = await fetch(`/api/receipts/generate/${orderId}`, {
+    const response = await fetch(`${BACKEND_URL}/api/receipts/generate/${orderId}`, {
       method: "GET",
       headers: {
         "Content-Type": "application/pdf",
+        ...authHeaders(),
       },
     });
 

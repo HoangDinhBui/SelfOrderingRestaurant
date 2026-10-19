@@ -51,7 +51,7 @@ class AuthService {
   // Logout
   async logout() {
     try {
-      await api.post("/api/auth/logout");
+      await api.post("/api/auth/logout", { refreshToken: localStorage.getItem("refreshToken") });
       // Clear local storage
       this.clearLocalStorage();
       return { success: true };

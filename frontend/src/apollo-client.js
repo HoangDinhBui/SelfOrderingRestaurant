@@ -2,9 +2,10 @@
 import { ApolloClient, InMemoryCache, createHttpLink } from "@apollo/client";
 import { setContext } from "@apollo/client/link/context";
 
+import { BACKEND_URL } from "./config";
 // Create the HTTP link
 const httpLink = createHttpLink({
-  uri: "https://selforderingrestaurant-635x.onrender.com/graphql",
+  uri: `${BACKEND_URL}/graphql`,
 });
 
 // Create the auth link (if you need to add authentication headers)

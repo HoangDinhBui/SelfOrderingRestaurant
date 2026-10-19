@@ -12,6 +12,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
@@ -59,6 +60,9 @@ public class FaceVerificationClient {
                 throw new AttendanceException(AttendanceError.FACE_SERVICE_UNAVAILABLE);
             }
             return new VerifyResult(isTrue(res.get("verified")), isTrue(res.get("spoof")), isTrue(res.get("no_face")));
+        } catch (HttpClientErrorException.BadRequest e) {
+            // 400 = the service could not read the capture (corrupt/empty frame): retryable, not an outage
+            return new VerifyResult(false, false, true);
         } catch (RestClientException e) {
             throw new AttendanceException(AttendanceError.FACE_SERVICE_UNAVAILABLE);
         }

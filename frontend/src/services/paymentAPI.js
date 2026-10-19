@@ -1,7 +1,8 @@
 import axios from "axios";
 
+import { BACKEND_URL } from "../config";
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "https://selforderingrestaurant-635x.onrender.com";
+  BACKEND_URL;
 
 const paymentAPI = axios.create({
   baseURL: API_BASE_URL,

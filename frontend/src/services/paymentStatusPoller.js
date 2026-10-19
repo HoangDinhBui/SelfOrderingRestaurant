@@ -1,3 +1,4 @@
+import { BACKEND_URL } from "../config";
 // Function to poll payment status
 async function pollPaymentStatus(
   orderId,
@@ -9,7 +10,7 @@ async function pollPaymentStatus(
 
   const checkStatus = async () => {
     try {
-      const response = await fetch(`/api/payment/payment/status/${orderId}`, {
+      const response = await fetch(`${BACKEND_URL}/api/payment/payment/status/${orderId}`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,

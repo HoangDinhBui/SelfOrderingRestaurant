@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.graphql.data.method.annotation.Argument;
 import org.springframework.graphql.data.method.annotation.MutationMapping;
 import org.springframework.graphql.data.method.annotation.QueryMapping;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 
 import java.util.List;
@@ -39,6 +40,7 @@ public class OrderGraphQLController {
     }
 
     // Query Resolvers
+    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
     @QueryMapping
     public List<GetAllOrdersResponseDTO> orders() {
         try {
@@ -48,7 +50,7 @@ public class OrderGraphQLController {
             return orders;
         } catch (Exception e) {
             log.error("Error in orders query: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to fetch orders: " + e.getMessage());
+            throw new RuntimeException("Failed to fetch orders: " + e.getMessage(), e);
         }
     }
 
@@ -59,7 +61,7 @@ public class OrderGraphQLController {
             return orderService.getOrderById(Integer.valueOf(orderId));
         } catch (Exception e) {
             log.error("Error fetching order {}: {}", orderId, e.getMessage(), e);
-            throw new RuntimeException("Failed to fetch order: " + e.getMessage());
+            throw new RuntimeException("Failed to fetch order: " + e.getMessage(), e);
         }
     }
 
@@ -70,7 +72,7 @@ public class OrderGraphQLController {
             return orderService.getCurrentOrderCart();
         } catch (Exception e) {
             log.error("Error fetching order cart: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to fetch order cart: " + e.getMessage());
+            throw new RuntimeException("Failed to fetch order cart: " + e.getMessage(), e);
         }
     }
 
@@ -81,7 +83,7 @@ public class OrderGraphQLController {
             return paymentService.getOrderPaymentDetails(Integer.valueOf(orderId));
         } catch (Exception e) {
             log.error("Error fetching payment details for order {}: {}", orderId, e.getMessage(), e);
-            throw new RuntimeException("Failed to retrieve payment details: " + e.getMessage());
+            throw new RuntimeException("Failed to retrieve payment details: " + e.getMessage(), e);
         }
     }
 
@@ -92,7 +94,7 @@ public class OrderGraphQLController {
             return paymentService.checkPaymentNotificationStatus(Integer.valueOf(orderId));
         } catch (Exception e) {
             log.error("Error checking payment notification status for order {}: {}", orderId, e.getMessage(), e);
-            throw new RuntimeException("Failed to check payment notification status: " + e.getMessage());
+            throw new RuntimeException("Failed to check payment notification status: " + e.getMessage(), e);
         }
     }
 
@@ -132,10 +134,11 @@ public class OrderGraphQLController {
             return orderId;
         } catch (Exception e) {
             log.error("Error creating order: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to create order: " + e.getMessage());
+            throw new RuntimeException("Failed to create order: " + e.getMessage(), e);
         }
     }
 
+    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
     @MutationMapping
     public String updateOrderStatus(@Argument String orderId, @Argument UpdateOrderStatusInput input) {
         try {
@@ -147,7 +150,7 @@ public class OrderGraphQLController {
             return "Order updated successfully!";
         } catch (Exception e) {
             log.error("Error updating order status for {}: {}", orderId, e.getMessage(), e);
-            throw new RuntimeException("Failed to update order status: " + e.getMessage());
+            throw new RuntimeException("Failed to update order status: " + e.getMessage(), e);
         }
     }
 
@@ -164,7 +167,7 @@ public class OrderGraphQLController {
             return result;
         } catch (Exception e) {
             log.error("Error adding dish to order cart: {}", e.getMessage(), e);
-            throw new RuntimeException("Failed to add dish to order cart: " + e.getMessage());
+            throw new RuntimeException("Failed to add dish to order cart: " + e.getMessage(), e);
         }
     }
 
@@ -177,7 +180,7 @@ public class OrderGraphQLController {
             return result;
         } catch (Exception e) {
             log.error("Error removing item {} from cart: {}", dishId, e.getMessage(), e);
-            throw new RuntimeException("Failed to remove item from cart: " + e.getMessage());
+            throw new RuntimeException("Failed to remove item from cart: " + e.getMessage(), e);
         }
     }
 
@@ -190,7 +193,7 @@ public class OrderGraphQLController {
             return result;
         } catch (Exception e) {
             log.error("Error updating quantity for dish {}: {}", dishId, e.getMessage(), e);
-            throw new RuntimeException("Failed to update item quantity: " + e.getMessage());
+            throw new RuntimeException("Failed to update item quantity: " + e.getMessage(), e);
         }
     }
 
@@ -203,10 +206,11 @@ public class OrderGraphQLController {
             return result;
         } catch (Exception e) {
             log.error("Error updating notes for dish {}: {}", dishId, e.getMessage(), e);
-            throw new RuntimeException("Failed to update notes: " + e.getMessage());
+            throw new RuntimeException("Failed to update notes: " + e.getMessage(), e);
         }
     }
 
+    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
     @MutationMapping
     public OrderResponseDTO removeOrderItem(@Argument String orderId, @Argument String dishId) {
         try {
@@ -216,10 +220,11 @@ public class OrderGraphQLController {
             return result;
         } catch (Exception e) {
             log.error("Error removing item {} from order {}: {}", dishId, orderId, e.getMessage(), e);
-            throw new RuntimeException("Failed to remove item: " + e.getMessage());
+            throw new RuntimeException("Failed to remove item: " + e.getMessage(), e);
         }
     }
 
+    @PreAuthorize("hasAnyRole('STAFF', 'ADMIN')")
     @MutationMapping
     public OrderResponseDTO updateOrderItemStatus(@Argument String orderId, @Argument String dishId, @Argument String status) {
         try {
@@ -229,7 +234,7 @@ public class OrderGraphQLController {
             return result;
         } catch (Exception e) {
             log.error("Error updating order item status for order {}, dish {}: {}", orderId, dishId, e.getMessage(), e);
-            throw new RuntimeException("Failed to update order item status: " + e.getMessage());
+            throw new RuntimeException("Failed to update order item status: " + e.getMessage(), e);
         }
     }
 

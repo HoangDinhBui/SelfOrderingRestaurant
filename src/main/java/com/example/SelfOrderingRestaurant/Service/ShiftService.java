@@ -1,5 +1,7 @@
 package com.example.SelfOrderingRestaurant.Service;
 
+
+import com.example.SelfOrderingRestaurant.Exception.ResourceNotFoundException;
 import com.example.SelfOrderingRestaurant.Dto.Request.ShiftRequestDTO.ShiftRequestDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.ShiftResponseDTO.ShiftResponseDTO;
 import com.example.SelfOrderingRestaurant.Entity.Shift;
@@ -63,7 +65,7 @@ public class ShiftService implements IShiftService {
     @Override
     public void deleteShift(Integer id) {
         if(!shiftRepository.existsById(id)){
-            throw new RuntimeException("Shift not found");
+            throw new ResourceNotFoundException("Shift not found");
         }
         shiftRepository.deleteById(id);
     }

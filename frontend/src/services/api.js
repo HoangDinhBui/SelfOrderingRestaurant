@@ -1,8 +1,9 @@
 import axios from "axios";
 
+import { BACKEND_URL } from "../config";
 // Lấy URL cơ sở của API từ biến môi trường
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "https://selforderingrestaurant-635x.onrender.com";
+  BACKEND_URL;
 
 // Tạo instance axios cho các yêu cầu cần xác thực
 const authAPI = axios.create({
@@ -20,18 +21,7 @@ const publicAPI = axios.create({
 authAPI.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("accessToken");
-    const publicEndpoints = [
-      "/api/payment",
-      "/api/auth/login",
-      "/api/auth/forgot-password",
-      "/api/auth/refresh-token",
-      "/api/customers",
-      "/api/images",
-      "/api/orders",
-      "/api/dishes",
-      "/api/notifications",
-      "/api/categories",
-    ];
+    const publicEndpoints = ["/api/auth/"];
     const isPublicEndpoint = publicEndpoints.some((endpoint) =>
       config.url.startsWith(endpoint)
     );
@@ -50,7 +40,6 @@ authAPI.interceptors.request.use(
     }
     console.log("authAPI Request:", {
       url: config.url,
-      headers: config.headers,
       data: config.data instanceof FormData ? "FormData" : config.data,
     });
     return config;
@@ -73,7 +62,6 @@ publicAPI.interceptors.request.use(
     }
     console.log("publicAPI Request:", {
       url: config.url,
-      headers: config.headers,
       data: config.data instanceof FormData ? "FormData" : config.data,
     });
     return config;
@@ -95,18 +83,7 @@ authAPI.interceptors.response.use(
       originalRequest._retry = false;
     }
 
-    const publicEndpoints = [
-      "/api/payment",
-      "/api/auth/login",
-      "/api/auth/forgot-password",
-      "/api/auth/refresh-token",
-      "/api/customers",
-      "/api/images",
-      "/api/orders",
-      "/api/dishes",
-      "/api/notifications",
-      "/api/categories",
-    ];
+    const publicEndpoints = ["/api/auth/"];
     const isPublicEndpoint = publicEndpoints.some((endpoint) =>
       originalRequest.url.startsWith(endpoint)
     );
@@ -192,7 +169,7 @@ export const googleLogin = async (tokenId) => {
 
 export const logout = async () => {
   try {
-    const response = await authAPI.post("/api/auth/logout");
+    const response = await authAPI.post("/api/auth/logout", { refreshToken: localStorage.getItem("refreshToken") });
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("username");

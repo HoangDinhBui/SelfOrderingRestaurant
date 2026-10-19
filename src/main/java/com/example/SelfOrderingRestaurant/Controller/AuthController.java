@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -61,8 +62,15 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout() {
-        authService.logout();
+    public ResponseEntity<Void> logout(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @RequestBody(required = false) Map<String, String> body
+    ) {
+        String token = body != null ? body.get("refreshToken") : null;
+        if ((token == null || token.isBlank()) && authorization != null && authorization.startsWith("Bearer ")) {
+            token = authorization.substring(7);
+        }
+        authService.logout(token);
         return ResponseEntity.ok().build();
     }
 
