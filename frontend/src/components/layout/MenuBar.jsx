@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { toast } from "react-toastify";
+import useStaffLogout from "../attendance/useStaffLogout";
 import MiniList from "./MiniList";
 
 const MenuBar = ({
@@ -13,6 +13,7 @@ const MenuBar = ({
   const [isMiniListVisible, setMiniListVisible] = useState(false);
   const [isProfileDropdownVisible, setProfileDropdownVisible] = useState(false);
   const navigate = useNavigate();
+  const { requestLogout, logoutModal } = useStaffLogout();
 
   // Giả định userType được lấy từ localStorage hoặc context
   const userType = localStorage.getItem("userType") || null; // Thay bằng logic context nếu cần
@@ -139,47 +140,7 @@ const MenuBar = ({
   };
 
   const handleLogout = () => {
-    console.log("handleLogout: Clicked logout button");
-    console.log("localStorage before navigation:", {
-      accessToken: localStorage.getItem("accessToken"),
-      username: localStorage.getItem("username"),
-      userType: localStorage.getItem("userType"),
-      refreshToken: localStorage.getItem("refreshToken"),
-      staffId: localStorage.getItem("staffId"),
-    });
-
-    if (userType === "STAFF") {
-      toast.info("Proceeding to check-out.");
-      console.log("Navigating to /check-out");
-      navigate("/check-out", { replace: true });
-
-      setTimeout(() => {
-        console.log(
-          "Fallback navigation check: current path =",
-          window.location.pathname
-        );
-        console.log("localStorage after navigation attempt:", {
-          accessToken: localStorage.getItem("accessToken"),
-          username: localStorage.getItem("username"),
-          userType: localStorage.getItem("userType"),
-          refreshToken: localStorage.getItem("refreshToken"),
-          staffId: localStorage.getItem("staffId"),
-        });
-        if (window.location.pathname !== "/check-out") {
-          console.log("Forcing navigation to /check-out");
-          window.location.replace("/check-out");
-        }
-      }, 200);
-    } else if (userType === "ADMIN") {
-      console.log("Logging out directly for ADMIN");
-      localStorage.removeItem("userType");
-      toast.info("Logged out successfully.");
-      navigate("/login", { replace: true });
-    } else {
-      console.log("No valid userType, redirecting to login");
-      toast.warn("Please log in again.");
-      navigate("/login", { replace: true });
-    }
+    requestLogout();
   };
 
   const handleViewProfile = () => {
@@ -324,6 +285,7 @@ const MenuBar = ({
           />
         </div>
       )}
+      {logoutModal}
     </>
   );
 };

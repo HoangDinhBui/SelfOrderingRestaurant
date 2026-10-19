@@ -1,6 +1,8 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
 Flask==3.0.0
-deepface==0.0.84
+deepface==0.0.93
 opencv-python-headless==4.8.1.78
 tensorflow==2.15.0
 tf-keras==2.15.0
+torch==2.3.1+cpu
 Werkzeug==3.0.1

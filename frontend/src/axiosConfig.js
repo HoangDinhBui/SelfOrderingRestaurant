@@ -98,15 +98,18 @@ authAPI.interceptors.response.use(
       "/api/dishes",
       "/api/notifications",
       "/api/categories",
-      "/api/attendance/check-out",
     ];
     const isPublicEndpoint = publicEndpoints.some((endpoint) =>
       originalRequest.url.startsWith(endpoint),
     );
+    // 401 kèm `code` là lỗi nghiệp vụ (vd. FACE_MISMATCH, SPOOF_DETECTED), không phải phiên hết hạn:
+    // không làm mới token / đăng xuất, để nơi gọi tự xử lý.
+    const isBusinessError = Boolean(error.response?.data?.code);
     if (
       error.response?.status === 401 &&
       !originalRequest._retry &&
-      !isPublicEndpoint
+      !isPublicEndpoint &&
+      !isBusinessError
     ) {
       originalRequest._retry = true;
       try {
@@ -290,20 +293,6 @@ export const updateDish = async (id, dishData) => {
 export const deleteDish = async (id) => {
   try {
     const response = await authAPI.delete(`/api/staff/dishes/${id}`);
-    return response.data;
-  } catch (error) {
-    handleApiError(error);
-    throw error;
-  }
-};
-
-// Attendance
-export const attendanceCheckOut = async (imageBlob, staffId) => {
-  try {
-    const formData = new FormData();
-    formData.append("image", imageBlob, "check-out.jpg");
-    formData.append("staffId", staffId);
-    const response = await authAPI.post("/api/attendance/check-out", formData);
     return response.data;
   } catch (error) {
     handleApiError(error);

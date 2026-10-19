@@ -39,6 +39,21 @@ public class Attendance {
     @Column(name = "working_hours")
     private Double workingHours;
 
+    @Column(name = "manual")
+    private Boolean manual = false;
+
+    @Column(name = "approved")
+    private Boolean approved;
+
+    @Column(name = "late")
+    private Boolean late = false;
+
+    @Column(name = "early_leave")
+    private Boolean earlyLeave = false;
+
+    @Column(name = "manual_reason", length = 520)
+    private String manualReason;
+
     public enum AttendanceStatus {
         CHECK_IN, CHECK_OUT
     }

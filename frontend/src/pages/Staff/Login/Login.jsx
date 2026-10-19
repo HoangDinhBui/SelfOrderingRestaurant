@@ -227,7 +227,7 @@ const Login = () => {
           navigate("/table-management_admin", { replace: true });
           break;
         case "STAFF":
-          navigate("/staff-information_staff", { replace: true });
+          navigate("/attendance", { replace: true });
           break;
         default:
           setError("Unknown user type. Please contact support.");

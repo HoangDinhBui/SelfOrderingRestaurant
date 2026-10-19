@@ -17,11 +17,10 @@ const staffRoutes = [
   "/staff-management_admin",
   "/inventory-management_admin",
   "/dish-management",
-  "/check-out", // This route is added to allow access without a valid token
 ];
 
 // Routes that should always render, even without a valid token
-const bypassRoutes = ["/check-out"];
+const bypassRoutes = [];
 
 const ProtectedRoute = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(null);
@@ -34,7 +33,7 @@ const ProtectedRoute = ({ children }) => {
         isBypass: bypassRoutes.includes(location.pathname),
       });
 
-      // Allow access to bypass routes (e.g., /check-out)
+      // Allow access to bypass routes (none currently)
       if (bypassRoutes.includes(location.pathname)) {
         console.log(
           "Bypass route detected, allowing access to",

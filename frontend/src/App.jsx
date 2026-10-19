@@ -43,7 +43,6 @@ import TableManagementStaff from "./pages/Staff/TableManagement/TableManagement"
 import StaffInformation from "./pages/Staff/StaffInformation/StaffInformation";
 
 import Attendance from "./pages/Staff/Attendance/Attendance";
-import CheckOut from "./pages/Staff/CheckOut/CheckOut";
 
 function App() {
   return (
@@ -142,14 +141,6 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Attendance />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/check-out"
-                element={
-                  <ProtectedRoute>
-                    <CheckOut />
                   </ProtectedRoute>
                 }
               />
