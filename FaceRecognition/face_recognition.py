@@ -104,5 +104,9 @@ def verify_face():
         return jsonify({"error": f"Server error: {str(e)}"}), 500
 
 if __name__ == '__main__':
-    logger.info("Starting Flask application on port 5000...")
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    # Never enable the Werkzeug debugger on a public interface: it allows remote code execution.
+    debug = os.environ.get("FLASK_DEBUG", "0") == "1"
+    host = "127.0.0.1" if debug else os.environ.get("FACE_HOST", "0.0.0.0")
+    port = int(os.environ.get("PORT", "5000"))
+    logger.info(f"Starting Flask application on {host}:{port} (debug={debug})...")
+    app.run(host=host, port=port, debug=debug)

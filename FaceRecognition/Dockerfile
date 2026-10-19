@@ -11,8 +11,11 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Pre-download DeepFace weights (Facenet) to speed up first request and avoid timeouts
-RUN python -c "from deepface import DeepFace; DeepFace.build_model('Facenet')"
+# Pre-download the weights the service actually uses (ArcFace + Fasnet anti-spoofing).
+# Without this the first scan downloads them and the backend's 10s timeout reports 503.
+RUN python -c "from deepface.modules import modeling; \
+modeling.build_model(task='facial_recognition', model_name='ArcFace'); \
+modeling.build_model(task='spoofing', model_name='Fasnet')"
 
 COPY face_recognition.py .
 
