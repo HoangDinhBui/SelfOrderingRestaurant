@@ -35,7 +35,7 @@ const CaptivePortal = () => {
 
     // Kiểm tra IP cho khách hàng (không có token)
     publicAPI
-      .get(`/captive/check-ip?tableNumber=${tableNumber}`)
+      .get(`/api/captive/check-ip?tableNumber=${tableNumber}`)
       .then((response) => {
         setClientIp(response.data.ip);
         // Chỉ chuyển hướng nếu API trả về đường dẫn hợp lệ và không phải STAFF/ADMIN
@@ -95,7 +95,7 @@ const CaptivePortal = () => {
     setIsLoading(true);
 
     publicAPI
-      .post(`/captive/connect?tableNumber=${tableNumber}`)
+      .post(`/api/captive/connect?tableNumber=${tableNumber}`)
       .then((response) => {
         setIsLoading(false);
         if (response.data.status === "connected") {
