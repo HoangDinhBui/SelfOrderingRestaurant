@@ -4,6 +4,7 @@ import { FaCheck, FaTrash, FaEdit } from "react-icons/fa";
 import MenuBar from "../../../components/layout/MenuBar";
 import axios from "axios";
 
+import { BACKEND_URL } from "../../../config";
 const InventoryManagement = () => {
   const [inventory, setInventory] = useState([]);
   const [suppliers, setSuppliers] = useState([]);
@@ -28,7 +29,7 @@ const InventoryManagement = () => {
   const [userRole, setUserRole] = useState(null);
 
   const navigate = useNavigate();
-  const API_BASE_URL = "https://selforderingrestaurant-635x.onrender.com";
+  const API_BASE_URL = BACKEND_URL;
 
   // Check user role on component mount
   useEffect(() => {
@@ -118,7 +119,7 @@ const InventoryManagement = () => {
   // Refresh token function
   const refreshToken = async () => {
     try {
-      const response = await axios.post(`${API_BASE_URL}/refresh-token`, {
+      const response = await axios.post(`${API_BASE_URL}/api/auth/refresh-token`, {
         refreshToken: localStorage.getItem("refreshToken"),
       });
       const { accessToken } = response.data;

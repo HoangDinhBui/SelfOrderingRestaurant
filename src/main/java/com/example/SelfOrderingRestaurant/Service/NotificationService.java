@@ -74,10 +74,9 @@ public class NotificationService implements INotificationService {
     @Transactional
     @Override
     public void createNotification(NotificationRequestDTO requestDTO) {
-        // Get the customer who created the notification
-        Customer customer = customerRepository.findById(requestDTO.getCustomerId())
-                .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
-
+        if (requestDTO.getTableNumber() == null) {
+            throw new ValidationException("Thiếu số bàn");
+        }
         // Get the table information
         DinningTable table = dinningTableRepository.findById(requestDTO.getTableNumber())
                 .orElseThrow(() -> new ResourceNotFoundException("Table not found"));
@@ -88,6 +87,17 @@ public class NotificationService implements INotificationService {
             order = orderRepository.findById(requestDTO.getOrderId())
                     .orElse(null);
         }
+
+        // Guests have no account: use the order's customer, else just name the table
+        Customer customer = requestDTO.getCustomerId() != null
+                ? customerRepository.findById(requestDTO.getCustomerId()).orElse(null)
+                : null;
+        if (customer == null && order != null) {
+            customer = order.getCustomer();
+        }
+        String who = customer != null && customer.getFullname() != null
+                ? customer.getFullname()
+                : "at table " + table.getTableNumber();
 
         // Find staff currently on shift
         LocalDate today = LocalDate.now(clock);
@@ -108,14 +118,14 @@ public class NotificationService implements INotificationService {
             switch (requestDTO.getType()) {
                 case NEW_ORDER:
                     notification.setTitle("New Order from Table " + table.getTableNumber());
-                    notification.setContent("Customer " + customer.getFullname() +
+                    notification.setContent("Customer " + who +
                             " has placed a new order" +
                             (order != null ? " #" + order.getOrderId() : ""));
                     break;
 
                 case CALL_STAFF:
                     notification.setTitle("Staff Requested at Table " + table.getTableNumber());
-                    notification.setContent("Customer " + customer.getFullname() +
+                    notification.setContent("Customer " + who +
                             " is requesting assistance" +
                             (requestDTO.getAdditionalMessage() != null ? ": " +
                                     requestDTO.getAdditionalMessage() : ""));
@@ -123,7 +133,7 @@ public class NotificationService implements INotificationService {
 
                 case PAYMENT_REQUEST:
                     notification.setTitle("Payment Request from Table " + table.getTableNumber());
-                    notification.setContent("Customer " + customer.getFullname() +
+                    notification.setContent("Customer " + who +
                             " would like to pay for " +
                             (order != null ? "order #" + order.getOrderId() : "their order"));
                     break;

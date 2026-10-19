@@ -341,7 +341,7 @@ const StaffManagementAdmin = () => {
         const blob = await fetch(capturedImage).then((res) => res.blob());
         formData.append("image", blob, "profile.jpg");
       }
-      await authAPI.post(`/admin/staff/register`, formData);
+      await authAPI.post(`/api/admin/staff/register`, formData);
       await fetchStaff();
       setShowAddForm(false);
       setNewStaff({

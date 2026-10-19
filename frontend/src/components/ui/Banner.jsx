@@ -5,6 +5,7 @@ import axios from "axios";
 // Import CartContext with the correct path
 import { CartContext } from "../../context/CartContext";
 
+import { BACKEND_URL, authHeaders } from "../../config";
 const Banner = () => {
   const navigate = useNavigate();
   // Access CartContext safely with destructuring and default empty object
@@ -75,7 +76,7 @@ const Banner = () => {
         console.log(
           "Context functions not available or failed, using direct API calls"
         );
-        const API_BASE_URL = "https://selforderingrestaurant-635x.onrender.com";
+        const API_BASE_URL = BACKEND_URL;
 
         // First try GraphQL
         try {
@@ -100,7 +101,7 @@ const Banner = () => {
             { query },
             {
               headers: {
-                "Content-Type": "application/json",
+                "Content-Type": "application/json", ...authHeaders(),
               },
               withCredentials: true, // Important for session cookies
             }

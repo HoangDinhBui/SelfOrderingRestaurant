@@ -17,6 +17,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -53,16 +54,25 @@ public class DishController {
         }
     }
 
+    // Local uploads are served from /uploads on this server; build the URL from the current request
+    // host instead of a hardcoded localhost:8080 (broken in every deployed environment).
+    static String absoluteImageUrl(String stored) {
+        if (stored == null || stored.isBlank() || stored.startsWith("http")) {
+            return stored;
+        }
+        String base = ServletUriComponentsBuilder.fromCurrentContextPath().toUriString();
+        String path = stored.startsWith("/") ? stored.substring(1) : stored;
+        if (path.startsWith("uploads/")) {
+            return base + "/" + path;
+        }
+        return base + "/uploads/" + (path.contains("/") ? path : "dishes/" + path);
+    }
+
     @GetMapping("/dishes")
     public ResponseEntity<List<GetAllDishesResponseDTO>> getDishes() {
         logger.info("Fetching all dishes");
         List<GetAllDishesResponseDTO> dishes = dishService.getAllDishes();
-        String baseUrl = "http://localhost:8080/uploads/dishes/";
-        dishes.forEach(dish -> {
-            if (dish.getImageUrl() != null && !dish.getImageUrl().startsWith("http")) {
-                dish.setImageUrl(baseUrl + dish.getImageUrl());
-            }
-        });
+        dishes.forEach(dish -> dish.setImageUrl(absoluteImageUrl(dish.getImageUrl())));
         return ResponseEntity.ok(dishes);
     }
 
@@ -71,9 +81,7 @@ public class DishController {
         logger.info("Fetching dish with id: {}", dishId);
         try {
             DishResponseDTO dish = dishService.getDishById(dishId);
-            if (dish.getImageUrl() != null && !dish.getImageUrl().startsWith("http")) {
-                dish.setImageUrl("http://localhost:8080/uploads/" + dish.getImageUrl());
-            }
+            dish.setImageUrl(absoluteImageUrl(dish.getImageUrl()));
             return ResponseEntity.ok(dish);
         } catch (IllegalArgumentException e) {
             logger.error("Error fetching dish: {}", e.getMessage());

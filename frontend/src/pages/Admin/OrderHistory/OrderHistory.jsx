@@ -11,6 +11,7 @@ import {
 import MenuBarStaff from "../../../components/layout/MenuBar_Staff.jsx";
 import MenuBar from "../../../components/layout/MenuBar.jsx";
 
+import { BACKEND_URL, authHeaders } from "../../../config";
 // GraphQL query to fetch all orders
 const GET_ORDERS = gql`
   query Orders {
@@ -89,10 +90,11 @@ const OrderHistory = () => {
   const handlePrintBill = async (orderId) => {
     try {
       // Call the backend API to generate PDF
-      const response = await fetch(`/api/receipts/generate/${orderId}`, {
+      const response = await fetch(`${BACKEND_URL}/api/receipts/generate/${orderId}`, {
         method: "GET",
         headers: {
           "Content-Type": "application/pdf",
+        ...authHeaders(),
         },
       });
 

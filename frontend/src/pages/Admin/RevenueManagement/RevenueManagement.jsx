@@ -13,8 +13,9 @@ import moment from "moment";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
+import { BACKEND_URL } from "../../../config";
 // Cấu hình Axios
-const API_BASE_URL = "https://selforderingrestaurant-635x.onrender.com";
+const API_BASE_URL = BACKEND_URL;
 const api = axios.create({
   baseURL: API_BASE_URL,
   headers: {

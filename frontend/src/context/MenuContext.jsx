@@ -1,6 +1,7 @@
 import { createContext, useEffect, useState } from "react";
 import axios from "axios";
 
+import { BACKEND_URL } from "../config";
 export const MenuContext = createContext();
 
 export const MenuProvider = ({ children }) => {
@@ -12,7 +13,7 @@ export const MenuProvider = ({ children }) => {
   useEffect(() => {
     // Get all dishes from the API
     axios
-      .get("https://selforderingrestaurant-635x.onrender.com/api/dishes")
+      .get(`${BACKEND_URL}/api/dishes`)
       .then((response) => {
         console.log("Menu context loaded:", response.data);
         setMenuItems(response.data);
@@ -55,7 +56,7 @@ export const MenuProvider = ({ children }) => {
       // If not in cache or not matching, call the API
       console.log(`Calling API for dish ID: ${dishId}`);
       const response = await axios.get(
-        `https://selforderingrestaurant-635x.onrender.com/api/dishes/${dishId}`
+        `${BACKEND_URL}/api/dishes/${dishId}`
       );
       console.log("API Response:", response.data);
 

@@ -2,6 +2,7 @@ import { useState, useEffect, useContext } from "react";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { CartContext } from "../../../context/CartContext";
 
+import { BACKEND_URL } from "../../../config";
 const Note = () => {
   const { id } = useParams(); // Get dish ID from URL
   const navigate = useNavigate();
@@ -16,7 +17,7 @@ const Note = () => {
   const { cartItems, updateItemNotes, fetchCartData } = useContext(CartContext);
 
   // API base URL
-  const API_BASE_URL = "https://selforderingrestaurant-635x.onrender.com";
+  const API_BASE_URL = BACKEND_URL;
 
   // Ensure cart data is loaded
   useEffect(() => {

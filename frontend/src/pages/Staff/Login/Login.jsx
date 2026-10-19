@@ -5,6 +5,7 @@ import axios from "axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+import { BACKEND_URL } from "../../../config";
 const decodeJwt = (token) => {
   try {
     const base64Url = token.split(".")[1];
@@ -20,6 +21,25 @@ const decodeJwt = (token) => {
     console.error("Error decoding JWT:", error);
     return null;
   }
+};
+
+
+// Persist what the staff/admin pages read. staffId and fullname come with the login response;
+// userId is a claim of the access token (used to open the notification WebSocket).
+const storeSession = (response) => {
+  localStorage.setItem("accessToken", response.accessToken);
+  localStorage.setItem("refreshToken", response.refreshToken);
+  localStorage.setItem("username", response.username);
+  localStorage.setItem("userType", response.userType);
+  if (response.staffId != null) localStorage.setItem("staffId", response.staffId);
+  if (response.fullname) localStorage.setItem("fullname", response.fullname);
+  try {
+    const payload = JSON.parse(atob(response.accessToken.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+    if (payload.userId != null) localStorage.setItem("userId", payload.userId);
+  } catch {
+    // malformed token: the API will reject it anyway
+  }
+  axios.defaults.headers.common["Authorization"] = `Bearer ${response.accessToken}`;
 };
 
 const Login = () => {
@@ -62,60 +82,7 @@ const Login = () => {
         throw new Error("Invalid API response: Missing required fields");
       }
 
-      // Store tokens and user info in localStorage
-      localStorage.setItem("accessToken", response.accessToken);
-      localStorage.setItem("refreshToken", response.refreshToken);
-      localStorage.setItem("username", response.username);
-      localStorage.setItem("userType", response.userType);
-
-      // Configure axios with the new token
-      axios.defaults.headers.common[
-        "Authorization"
-      ] = `Bearer ${response.accessToken}`;
-
-      let idKey, idValue, endpoint;
-      if (response.userType === "ADMIN") {
-        idKey = "adminId";
-        endpoint = `https://selforderingrestaurant-635x.onrender.com/api/admin/by-username/${response.username}`;
-      } else if (response.userType === "STAFF") {
-        idKey = "staffId";
-        endpoint = `https://selforderingrestaurant-635x.onrender.com/api/staff/by-username/${response.username}`;
-      } else {
-        setError("Unknown user type. Please contact support.");
-        toast.error("Unknown user type. Please contact support.");
-        setLoading(false);
-        return;
-      }
-
-      // Fetch user-specific ID
-      try {
-        const userResponse = await axios.get(endpoint, {
-          headers: { Authorization: `Bearer ${response.accessToken}` },
-        });
-        idValue =
-          response.userType === "ADMIN"
-            ? userResponse.data.admin_id
-            : userResponse.data.staff_id;
-
-        if (idValue) {
-          localStorage.setItem(idKey, idValue);
-        } else {
-          console.warn(`No ${idKey} in response`);
-          toast.warn(`${idKey} not provided. Some features may be limited.`);
-        }
-      } catch (userError) {
-        console.warn(`Failed to fetch ${idKey}:`, userError);
-        toast.warn(`${idKey} not retrieved. Some features may be limited.`);
-      }
-
-      // Log response for debugging
-      console.log("Login response:", {
-        accessToken: response.accessToken,
-        refreshToken: response.refreshToken,
-        username: response.username,
-        userType: response.userType,
-        [idKey]: idValue,
-      });
+      storeSession(response);
 
       toast.success("Login successful!");
 
@@ -164,60 +131,7 @@ const Login = () => {
         throw new Error("Invalid API response: Missing required fields");
       }
 
-      // Store tokens and user info in localStorage
-      localStorage.setItem("accessToken", response.accessToken);
-      localStorage.setItem("refreshToken", response.refreshToken);
-      localStorage.setItem("username", response.username);
-      localStorage.setItem("userType", response.userType);
-
-      // Configure axios with the new token
-      axios.defaults.headers.common[
-        "Authorization"
-      ] = `Bearer ${response.accessToken}`;
-
-      let idKey, idValue, endpoint;
-      if (response.userType === "ADMIN") {
-        idKey = "adminId";
-        endpoint = `https://selforderingrestaurant-635x.onrender.com/api/admin/by-username/${response.username}`;
-      } else if (response.userType === "STAFF") {
-        idKey = "staffId";
-        endpoint = `https://selforderingrestaurant-635x.onrender.com/api/staff/by-username/${response.username}`;
-      } else {
-        setError("Unknown user type. Please contact support.");
-        toast.error("Unknown user type. Please contact support.");
-        setLoading(false);
-        return;
-      }
-
-      // Fetch user-specific ID
-      try {
-        const userResponse = await axios.get(endpoint, {
-          headers: { Authorization: `Bearer ${response.accessToken}` },
-        });
-        idValue =
-          response.userType === "ADMIN"
-            ? userResponse.data.admin_id
-            : userResponse.data.staff_id;
-
-        if (idValue) {
-          localStorage.setItem(idKey, idValue);
-        } else {
-          console.warn(`No ${idKey} in response`);
-          toast.warn(`${idKey} not provided. Some features may be limited.`);
-        }
-      } catch (userError) {
-        console.warn(`Failed to fetch ${idKey}:`, userError);
-        toast.warn(`${idKey} not retrieved. Some features may be limited.`);
-      }
-
-      // Log response for debugging
-      console.log("Google login response:", {
-        accessToken: response.accessToken,
-        refreshToken: response.refreshToken,
-        username: response.username,
-        userType: response.userType,
-        [idKey]: idValue,
-      });
+      storeSession(response);
 
       toast.success("Google login successful!");
 
@@ -337,7 +251,7 @@ const Login = () => {
     try {
       setLoading(true);
       const otpCode = otp.join("");
-      await axios.post("/api/auth/reset-password", {
+      await axios.post(`${BACKEND_URL}/api/auth/reset-password`, {
         otp: otpCode,
         newPassword,
       });

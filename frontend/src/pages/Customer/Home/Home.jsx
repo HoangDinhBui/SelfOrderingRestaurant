@@ -5,6 +5,7 @@ import Banner from "../../../components/ui/Banner";
 import { CartContext } from "../../../context/CartContext";
 import { gql, useLazyQuery } from "@apollo/client";
 
+import { BACKEND_URL, BACKEND_WS_URL } from "../../../config";
 // GraphQL Query for Table Validation
 const VALIDATE_TABLE_NUMBER = gql`
   query ValidateTableNumber($orderId: ID!, $tableNumber: Int!) {
@@ -39,7 +40,7 @@ const Home = () => {
   const [socketError, setSocketError] = useState(null);
   const [validationError, setValidationError] = useState(null);
 
-  const API_BASE_URL = "https://selforderingrestaurant-635x.onrender.com";
+  const API_BASE_URL = BACKEND_URL;
 
   // Apollo Lazy Query for Table Validation
   const [
@@ -93,7 +94,7 @@ const Home = () => {
         `Attempting WebSocket connection (Attempt ${reconnectAttempts + 1})`
       );
       ws = new WebSocket(
-        `wss://selforderingrestaurant-635x.onrender.com/ws/notifications?userType=CUSTOMER&tableNumber=${tableNumber}`
+        `${BACKEND_WS_URL}/ws/notifications?userType=CUSTOMER&tableNumber=${tableNumber}`
       );
 
       ws.onopen = () => {
@@ -316,15 +317,13 @@ const Home = () => {
     setNotificationSuccess(false);
 
     try {
-      const customerInfo = JSON.parse(localStorage.getItem("customerInfo")) || {
-        id: 1,
-        fullname: "Guest Customer",
-      };
+      // Guests have no account; the backend falls back to the order's customer / the table
+      const customerInfo = JSON.parse(localStorage.getItem("customerInfo") || "null");
       const orderId = lastOrderInfo?.orderId || null;
 
       const notificationRequest = {
         tableNumber: parseInt(tableNumber) || 1,
-        customerId: customerInfo.id,
+        customerId: customerInfo?.id ?? null,
         orderId: orderId,
         type: type,
         additionalMessage:
@@ -423,20 +422,27 @@ const Home = () => {
     navigate(`/menu_cus?tableNumber=${tableNumber}`);
   };
 
-  const specialStaff = [
-    {
-      name: "Lemon Macarons",
-      price: "109,000",
-      image: "/img/TodaySpeacial1.jpg",
-      type: "Cake",
-    },
-    {
-      name: "Beef-steak",
-      price: "109,000",
-      image: "/img/TodaySpecial2.jpg",
-      type: "Meat",
-    },
-  ];
+  // Today's Special shows real, orderable dishes from the menu (was a hardcoded mock)
+  const [specialStaff, setSpecialStaff] = useState([]);
+  useEffect(() => {
+    fetch(`${BACKEND_URL}/api/dishes`)
+      .then((res) => (res.ok ? res.json() : []))
+      .then((dishes) =>
+        setSpecialStaff(
+          dishes
+            .filter((d) => d.status === "AVAILABLE")
+            .slice(0, 2)
+            .map((d) => ({
+              id: d.dishId,
+              name: d.dishName,
+              price: Number(d.price || 0).toLocaleString("vi-VN"),
+              image: d.imageUrl || "/img/TodaySpeacial1.jpg",
+              type: d.categoryName || "",
+            }))
+        )
+      )
+      .catch(() => setSpecialStaff([]));
+  }, []);
 
   return (
     <div className="flex justify-center items-center min-h-screen">
@@ -569,7 +575,7 @@ const Home = () => {
             <h2 className="text-xl font-bold">Today's Special</h2>
             <button
               className="text-black text-sm font-semibold flex items-center"
-              onClick={() => navigate("/specials")}
+              onClick={handleViewMenu}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -589,19 +595,11 @@ const Home = () => {
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            {specialStaff.map((dish, index) => (
+            {specialStaff.map((dish) => (
               <div
-                key={index}
+                key={dish.id}
                 className="flex flex-col items-start cursor-pointer"
-                onClick={() => {
-                  navigate(
-                    `/menu/item/${dish.name.toLowerCase().replace(/\s+/g, "-")}`
-                  );
-                  sendNotification(
-                    "VIEW_SPECIAL",
-                    `Customer at table ${tableNumber} is viewing ${dish.name}`
-                  );
-                }}
+                onClick={() => navigate(`/viewitem/${dish.id}`)}
               >
                 <img
                   src={dish.image}

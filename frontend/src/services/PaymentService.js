@@ -1,8 +1,9 @@
 import axios from "axios";
 
+import { BACKEND_URL, authHeaders } from "../config";
 // Get API base URL from environment variable or use default
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "https://selforderingrestaurant-635x.onrender.com";
+  BACKEND_URL;
 
 // Create a configured axios instance
 const api = axios.create({
@@ -87,10 +88,11 @@ class PaymentService {
  */
 export const confirmPayment = async (orderId) => {
   try {
-    const response = await fetch("/api/payment/confirm", {
+    const response = await fetch(`${BACKEND_URL}/api/payment/confirm`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        ...authHeaders(),
       },
       body: JSON.stringify({ orderId }),
     });
@@ -114,7 +116,7 @@ export const confirmPayment = async (orderId) => {
  */
 export const processPayment = async (paymentData) => {
   try {
-    const response = await fetch("/api/payment/process", {
+    const response = await fetch(`${BACKEND_URL}/api/payment/process`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -141,7 +143,7 @@ export const processPayment = async (paymentData) => {
  */
 export const getPaymentStatus = async (orderId) => {
   try {
-    const response = await fetch(`/api/payment/payment/status/${orderId}`);
+    const response = await fetch(`${BACKEND_URL}/api/payment/payment/status/${orderId}`);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -162,8 +164,9 @@ export const getPaymentStatus = async (orderId) => {
  */
 export const processCashPayment = async (orderId) => {
   try {
-    const response = await fetch(`/api/payment/payment/cash/${orderId}`, {
+    const response = await fetch(`${BACKEND_URL}/api/payment/payment/cash/${orderId}`, {
       method: "POST",
+      headers: authHeaders(),
     });
 
     if (!response.ok) {

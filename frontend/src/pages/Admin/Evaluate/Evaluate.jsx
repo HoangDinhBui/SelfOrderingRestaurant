@@ -11,6 +11,7 @@ import MenuBarStaff from "../../../components/layout/MenuBar_Staff.jsx";
 import MenuBar from "../../../components/layout/MenuBar.jsx";
 import axios from "axios";
 
+import { BACKEND_URL } from "../../../config";
 const EvaluteAdmin = () => {
   const [activeTab, setActiveTab] = useState("Notification Management");
   const [reviews, setReviews] = useState([]);
@@ -29,7 +30,7 @@ const EvaluteAdmin = () => {
     "Dish Management",
   ];
   const navigate = useNavigate();
-  const API_BASE_URL = "https://selforderingrestaurant-635x.onrender.com";
+  const API_BASE_URL = BACKEND_URL;
 
   // Check user role on component mount
   useEffect(() => {

@@ -4,6 +4,7 @@ import { faCircleXmark } from "@fortawesome/free-solid-svg-icons";
 import MenuBar from "../../../components/layout/MenuBar";
 import axios from "axios";
 
+import { BACKEND_URL } from "../../../config";
 const DishManagementAdmin = () => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
@@ -12,7 +13,7 @@ const DishManagementAdmin = () => {
   const [successMessage, setSuccessMessage] = useState(null);
   const [staff, setStaff] = useState([]);
 
-  const API_BASE_URL = "https://selforderingrestaurant-635x.onrender.com";
+  const API_BASE_URL = BACKEND_URL;
 
   // Lấy token từ localStorage (hoặc hệ thống xác thực của bạn)
   const getAuthToken = () => {

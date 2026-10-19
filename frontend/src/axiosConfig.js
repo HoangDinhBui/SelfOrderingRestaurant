@@ -1,7 +1,8 @@
 import axios from "axios";
 
+import { BACKEND_URL } from "./config";
 const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "https://selforderingrestaurant-635x.onrender.com";
+  BACKEND_URL;
 
 const authAPI = axios.create({
   baseURL: API_BASE_URL,
@@ -16,20 +17,7 @@ const publicAPI = axios.create({
 authAPI.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("accessToken");
-    const publicEndpoints = [
-      "/api/payment",
-      "/api/auth/login",
-      "/api/auth/forgot-password",
-      "/api/auth/refresh-token",
-      "/api/auth/reset-password",
-      "/api/auth/logout",
-      "/api/customers",
-      "/api/images",
-      "/api/orders",
-      "/api/dishes",
-      "/api/notifications",
-      "/api/categories",
-    ];
+    const publicEndpoints = ["/api/auth/"];
     const isPublicEndpoint = publicEndpoints.some((endpoint) =>
       config.url.startsWith(endpoint),
     );
@@ -45,7 +33,6 @@ authAPI.interceptors.request.use(
     }
     console.log("authAPI Request:", {
       url: config.url,
-      headers: config.headers,
       data: config.data instanceof FormData ? "FormData" : config.data,
     });
     return config;
@@ -67,7 +54,6 @@ publicAPI.interceptors.request.use(
     }
     console.log("publicAPI Request:", {
       url: config.url,
-      headers: config.headers,
       data: config.data instanceof FormData ? "FormData" : config.data,
     });
     return config;
@@ -85,20 +71,7 @@ authAPI.interceptors.response.use(
     if (!originalRequest._retry) {
       originalRequest._retry = false;
     }
-    const publicEndpoints = [
-      "/api/payment",
-      "/api/auth/login",
-      "/api/auth/forgot-password",
-      "/api/auth/refresh-token",
-      "/api/auth/reset-password",
-      "/api/auth/logout",
-      "/api/customers",
-      "/api/images",
-      "/api/orders",
-      "/api/dishes",
-      "/api/notifications",
-      "/api/categories",
-    ];
+    const publicEndpoints = ["/api/auth/"];
     const isPublicEndpoint = publicEndpoints.some((endpoint) =>
       originalRequest.url.startsWith(endpoint),
     );
@@ -188,7 +161,7 @@ export const googleLogin = async (tokenId) => {
 
 export const logout = async () => {
   try {
-    const response = await authAPI.post("/api/auth/logout");
+    const response = await authAPI.post("/api/auth/logout", { refreshToken: localStorage.getItem("refreshToken") });
     return response.data;
   } catch (error) {
     console.error("Logout error:", error);

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 
+import { BACKEND_URL } from "../config";
 const CreateTable = () => {
   const { tableNumber: tableNumberFromUrl } = useParams();
   const navigate = useNavigate();
@@ -10,7 +11,7 @@ const CreateTable = () => {
   const [error, setError] = useState(null);
   const [uploading, setUploading] = useState(false);
 
-  const API_BASE_URL = "https://selforderingrestaurant-635x.onrender.com";
+  const API_BASE_URL = BACKEND_URL;
   const APP_BASE_URL = "http://localhost:5173"; // URL ứng dụng frontend
   const QR_API_URL = "http://api.qrserver.com/v1/create-qr-code/";
 

@@ -6,6 +6,7 @@ import "react-toastify/dist/ReactToastify.css";
 import useStaffLogout from "../../../components/attendance/useStaffLogout";
 import MenuBar from "../../../components/layout/MenuBar";
 
+import { BACKEND_URL } from "../../../config";
 const shiftModels = {
   "Full-time": {
     days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
@@ -87,7 +88,7 @@ const StaffInformation = () => {
         throw new Error("No refresh token available");
       }
       const response = await axios.post(
-        "https://selforderingrestaurant-635x.onrender.com/api/auth/refresh-token",
+        `${BACKEND_URL}/api/auth/refresh-token`,
         { refreshToken }
       );
       const newAccessToken = response.data.accessToken;
@@ -113,7 +114,7 @@ const StaffInformation = () => {
     try {
       console.log("Fetching staff info for username:", username);
       const response = await axios.get(
-        `https://selforderingrestaurant-635x.onrender.com/api/staff/by-username/${username}`,
+        `${BACKEND_URL}/api/staff/by-username/${username}`,
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -143,7 +144,7 @@ const StaffInformation = () => {
         if (newToken) {
           try {
             const retryResponse = await axios.get(
-              `https://selforderingrestaurant-635x.onrender.com/api/staff/by-username/${username}`,
+              `${BACKEND_URL}/api/staff/by-username/${username}`,
               {
                 headers: {
                   Authorization: `Bearer ${newToken}`,
@@ -193,7 +194,7 @@ const StaffInformation = () => {
     try {
       console.log("Fetching schedule");
       const response = await axios.get(
-        "https://selforderingrestaurant-635x.onrender.com/api/staff/shifts/my-schedule",
+        `${BACKEND_URL}/api/staff/shifts/my-schedule`,
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -213,7 +214,7 @@ const StaffInformation = () => {
         if (newToken) {
           try {
             const retryResponse = await axios.get(
-              "https://selforderingrestaurant-635x.onrender.com/api/staff/shifts/my-schedule",
+              `${BACKEND_URL}/api/staff/shifts/my-schedule`,
               {
                 headers: {
                   Authorization: `Bearer ${newToken}`,
@@ -323,7 +324,7 @@ const StaffInformation = () => {
 
     try {
       await axios.post(
-        "https://selforderingrestaurant-635x.onrender.com/api/staff/shifts/register",
+        `${BACKEND_URL}/api/staff/shifts/register`,
         shiftRegistration,
         {
           headers: {
@@ -348,7 +349,7 @@ const StaffInformation = () => {
         if (newToken) {
           try {
             await axios.post(
-              "https://selforderingrestaurant-635x.onrender.com/api/staff/shifts/register",
+              `${BACKEND_URL}/api/staff/shifts/register`,
               shiftRegistration,
               {
                 headers: {
@@ -393,7 +394,7 @@ const StaffInformation = () => {
 
     try {
       await axios.delete(
-        `https://selforderingrestaurant-635x.onrender.com/api/staff/shifts/${staffShiftId}`,
+        `${BACKEND_URL}/api/staff/shifts/${staffShiftId}`,
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -412,7 +413,7 @@ const StaffInformation = () => {
         if (newToken) {
           try {
             await axios.delete(
-              `https://selforderingrestaurant-635x.onrender.com/api/staff/shifts/${staffShiftId}`,
+              `${BACKEND_URL}/api/staff/shifts/${staffShiftId}`,
               {
                 headers: {
                   Authorization: `Bearer ${newToken}`,

@@ -12,7 +12,7 @@ import "./axiosConfig";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import ProtectedRoute from "./components/ProtectedRoute";
+import RequireRole from "./components/RequireRole";
 
 import Home from "./pages/Customer/Home/Home";
 import Menu from "./pages/Customer/Menu/Menu";
@@ -56,10 +56,10 @@ function App() {
                 element={<Navigate to="/captive-portal" replace />}
               />
               <Route path="/table/:tableNumber" element={<Home />} />
-              <Route path="/create-table" element={<CreateTable />} />
+              <Route path="/create-table" element={<RequireRole roles={["ADMIN"]}><CreateTable /></RequireRole>} />
               <Route
                 path="/create-table/:tableNumber"
-                element={<CreateTable />}
+                element={<RequireRole roles={["ADMIN"]}><CreateTable /></RequireRole>}
               />
               <Route path="/menu_cus" element={<Menu />} />
               <Route path="/order_cus" element={<Order />} />
@@ -72,76 +72,70 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route
                 path="/dish-management_staff"
-                element={<DishManagementStaff />}
+                element={<RequireRole roles={["STAFF", "ADMIN"]}><DishManagementStaff /></RequireRole>}
               />
               <Route
                 path="/notification-management"
-                element={<NotificationManagementStaff />}
+                element={<RequireRole roles={["STAFF", "ADMIN"]}><NotificationManagementStaff /></RequireRole>}
               />
               <Route
                 path="/table-management_admin"
-                element={<TableManagementAdmin />}
+                element={<RequireRole roles={["ADMIN"]}><TableManagementAdmin /></RequireRole>}
               />
-              <Route path="/evaluate_admin" element={<EvaluateAdmin />} />
+              <Route path="/evaluate_admin" element={<RequireRole roles={["ADMIN"]}><EvaluateAdmin /></RequireRole>} />
               <Route
                 path="/menu-management_admin"
-                element={<MenuManagementAdmin />}
+                element={<RequireRole roles={["ADMIN"]}><MenuManagementAdmin /></RequireRole>}
               />
               <Route
                 path="/revenue-management_admin"
-                element={<RevenueManagement />}
+                element={<RequireRole roles={["ADMIN"]}><RevenueManagement /></RequireRole>}
               />
               <Route
                 path="/staff-management_admin"
-                element={<StaffManagement />}
+                element={<RequireRole roles={["ADMIN"]}><StaffManagement /></RequireRole>}
               />
               <Route
                 path="/user-management_admin"
-                element={<UserManagementAdmin />}
+                element={<RequireRole roles={["ADMIN"]}><UserManagementAdmin /></RequireRole>}
               />
               <Route
                 path="/admin-information_admin"
                 element={
-                  <ProtectedRoute>
-                    <AdminInformation />
-                  </ProtectedRoute>
+                  <RequireRole roles={["ADMIN"]}><AdminInformation /></RequireRole>
                 }
               />
               <Route
                 path="/dish-management_admin"
-                element={<DishManagementAdmin />}
+                element={<RequireRole roles={["ADMIN"]}><DishManagementAdmin /></RequireRole>}
               />
               <Route
                 path="/order-history_admin"
-                element={<OrderHistoryAdmin />}
+                element={<RequireRole roles={["ADMIN"]}><OrderHistoryAdmin /></RequireRole>}
               />
               <Route
                 path="/inventory-management_admin"
-                element={<InventoryManagement />}
+                element={<RequireRole roles={["ADMIN"]}><InventoryManagement /></RequireRole>}
               />
               <Route
                 path="/dish-management"
-                element={<DishManagementStaff />}
+                element={<RequireRole roles={["STAFF", "ADMIN"]}><DishManagementStaff /></RequireRole>}
               />
               <Route
                 path="/staff-information_staff"
                 element={
-                  <ProtectedRoute>
-                    <StaffInformation />
-                  </ProtectedRoute>
+                  <RequireRole roles={["STAFF", "ADMIN"]}><StaffInformation /></RequireRole>
                 }
               />
               <Route
                 path="/table-management_staff"
-                element={<TableManagementStaff />}
+                element={<RequireRole roles={["STAFF", "ADMIN"]}><TableManagementStaff /></RequireRole>}
               />
-              <Route path="/order-history" element={<OrderHistoryStaff />} />
+              <Route path="/order-history" element={<RequireRole roles={["STAFF", "ADMIN"]}><OrderHistoryStaff /></RequireRole>} />
               <Route
                 path="/attendance"
                 element={
-                  <ProtectedRoute>
-                    <Attendance />
-                  </ProtectedRoute>
+                  <RequireRole roles={["STAFF"]}><Attendance /></RequireRole>
                 }
               />
             </Routes>
