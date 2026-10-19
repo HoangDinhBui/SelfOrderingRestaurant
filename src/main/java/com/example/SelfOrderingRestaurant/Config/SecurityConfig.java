@@ -3,7 +3,9 @@ package com.example.SelfOrderingRestaurant.Config;
 import com.example.SelfOrderingRestaurant.Repository.UserRepository;
 import com.example.SelfOrderingRestaurant.Security.CustomUserDetailsService;
 import com.example.SelfOrderingRestaurant.Security.JwtAuthenticationFilter;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpMethod;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -60,33 +62,48 @@ public class SecurityConfig {
                         )
                 )
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/auth/**",
-                                "/api/customer/**",
-                                "/api/payment/**",
-                                "/api/orders/**",
-                                "/api/dishes/**",
-                                "/api/images/**",
-                                "/api/notifications/**",
-                                "/api/categories/**",
-                                "/api/feedback/**",
-                                "/uploads/**",
-                                "/api/receipts/**",
-                                "/graphiql/**",
-                                "/graphql/**",
-                                "/ws/**",
-                                "/api/qr/**",
-                                "/api/dish_ingredients/**",
-                                "/api/inventory/**",
-                                "/api/captive/**",
-                                "/api/chatbot/**",
-                                "/error").permitAll()
-                        .requestMatchers("/api/staff/**").hasAnyRole("STAFF", "ADMIN")
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+                        // --- Public: guests at a table are not logged in ---
+                        .requestMatchers("/api/auth/**", "/api/captive/**", "/api/chatbot/**",
+                                "/ws/**", "/error").permitAll()
+                        // GraphQL is public at the transport level; sensitive operations are
+                        // guarded per resolver with @PreAuthorize
+                        .requestMatchers("/graphql", "/graphql/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/dishes/**", "/api/categories/**", "/api/images/**",
+                                "/uploads/**", "/api/inventory/available", "/api/dish_ingredients/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/orders").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/feedback").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/notifications").permitAll()
+                        // Payment: a guest may start a payment and watch its status, never settle it
+                        .requestMatchers(HttpMethod.POST, "/api/payment/vnpay", "/api/payment/process",
+                                "/api/payment/apply-points", "/api/payment/reset/*").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/payment/vnpay_payment",
+                                "/api/payment/payment/status/**").permitAll()
+                        .requestMatchers("/api/payment/**").hasAnyRole("STAFF", "ADMIN")
+
+                        // --- Staff & admin ---
+                        .requestMatchers(HttpMethod.DELETE, "/api/dishes/**").hasRole("ADMIN")
                         .requestMatchers("/api/attendance/scan", "/api/attendance/manual", "/api/attendance/today").hasRole("STAFF")
                         .requestMatchers("/api/attendance/add-face", "/api/attendance/history",
                                 "/api/attendance/pending", "/api/attendance/*/approval").hasRole("ADMIN")
-                        //.requestMatchers("/staff/attendance").hasRole("STAFF")
+                        .requestMatchers("/api/staff/**", "/api/orders/**", "/api/notifications/**",
+                                "/api/receipts/**", "/api/dishes/**").hasAnyRole("STAFF", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/shifts/**").hasAnyRole("STAFF", "ADMIN")
+                        .requestMatchers("/api/customers/history").authenticated()
+                        .requestMatchers("/api/customers/**").hasAnyRole("STAFF", "ADMIN")
+
+                        // --- Admin only ---
+                        .requestMatchers("/api/admin/**", "/api/shifts/**", "/api/salary/**", "/api/qr/**",
+                                "/api/feedback/**", "/api/dish_ingredients/**", "/api/inventory/**",
+                                "/api/categories/**", "/graphiql/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
+                )
+                .exceptionHandling(ex -> ex
+                        // No/expired/invalid token -> 401 so the frontend can refresh; wrong role -> 403
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setContentType("application/json");
+                            response.getWriter().write("{\"status\":401,\"error\":\"Unauthorized\"}");
+                        })
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .httpBasic(AbstractHttpConfigurer::disable);

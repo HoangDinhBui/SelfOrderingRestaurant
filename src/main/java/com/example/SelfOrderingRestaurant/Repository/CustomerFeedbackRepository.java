@@ -10,6 +10,8 @@ import java.util.List;
 
 @Repository
 public interface CustomerFeedbackRepository extends JpaRepository<CustomerFeedback, Integer>{
+    boolean existsByOrder_OrderId(Integer orderId);
+
     @Query("SELECT cf FROM CustomerFeedback cf " +
             "LEFT JOIN cf.customer c " +
             "WHERE (:search IS NULL OR LOWER(c.fullname) LIKE LOWER(CONCAT('%', :search, '%'))) " +

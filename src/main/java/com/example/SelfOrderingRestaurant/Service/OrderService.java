@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -35,6 +36,7 @@ import java.util.stream.Collectors;
 public class OrderService implements IOrderService {
 
     private final OrderRepository orderRepository;
+    private final Clock clock;
     private final OrderItemRepository orderItemRepository;
     private final DishRepository dishRepository;
     private final DinningTableRepository dinningTableRepository;
@@ -57,7 +59,7 @@ public class OrderService implements IOrderService {
             OrderCartService orderCartService,
             HttpServletRequest httpServletRequest,
             SecurityUtils securityUtils,
-            WebSocketService webSocketService, StaffShiftRepository staffShiftRepository) {
+            WebSocketService webSocketService, StaffShiftRepository staffShiftRepository, Clock clock) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.dishRepository = dishRepository;
@@ -68,15 +70,16 @@ public class OrderService implements IOrderService {
         this.securityUtils = securityUtils;
         this.webSocketService = webSocketService;
         this.staffShiftRepository = staffShiftRepository;
+        this.clock = clock;
     }
 
     @Transactional
     @Override
     public Integer createOrder(OrderRequestDTO request) {
-        List<Staff> staffOnShift = staffShiftRepository.findStaffOnCurrentShift(LocalDate.now(), LocalTime.now());
+        List<Staff> staffOnShift = staffShiftRepository.findStaffOnCurrentShift(LocalDate.now(clock), LocalTime.now(clock));
         if (staffOnShift.isEmpty()) {
             log.error("Cannot create order: No staff is currently on shift");
-            throw new ValidationException("Cannot create order: No staff is currently on shift");
+            throw new ValidationException("Hiện không có nhân viên trong ca nên chưa thể đặt món, vui lòng gọi nhân viên");
         }
         validateOrderRequest(request);
 
@@ -695,8 +698,12 @@ public class OrderService implements IOrderService {
             throw new ValidationException("Dish ID must be a positive integer");
         }
 
-        if (quantity <= 0) {
-            throw new ValidationException("Quantity must be a positive integer");
+        if (quantity < 0) {
+            throw new ValidationException("Số lượng không được âm");
+        }
+        if (quantity == 0) {
+            // Same meaning as in the cart: a quantity of 0 removes the dish
+            return removeItemFromCart(dishId);
         }
 
         HttpSession session = httpServletRequest.getSession();

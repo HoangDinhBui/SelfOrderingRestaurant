@@ -105,7 +105,7 @@ public class DinningTableService implements IDinningTableService {
     @Override
     public void updateTableStatus(Integer tableNumber, TableStatus status) {
         DinningTable table = dinningTableRepository.findById(tableNumber)
-                .orElseThrow(() -> new RuntimeException("Table not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Table not found"));
         if (status == null) {
             throw new IllegalArgumentException("Table status cannot be null");
         }

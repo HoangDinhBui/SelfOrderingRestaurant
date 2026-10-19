@@ -60,6 +60,16 @@ class FaceVerificationClientTest {
     }
 
     @Test
+    void verify_unreadableImage_isNoFaceNotOutage() {
+        // face service answers 400 "Invalid uploaded image" for a corrupt capture: the user should retry
+        server.expect(requestTo(URL)).andRespond(withBadRequest()
+                .body("{\"error\":\"Invalid uploaded image\"}").contentType(MediaType.APPLICATION_JSON));
+        FaceVerificationClient.VerifyResult r = client.verify(new byte[]{9}, refPath);
+        assertTrue(r.noFace());
+        assertFalse(r.verified());
+    }
+
+    @Test
     void verify_serviceError_throwsUnavailable() {
         server.expect(requestTo(URL)).andRespond(withServerError());
         AttendanceException ex = assertThrows(AttendanceException.class, () -> client.verify(new byte[]{9}, refPath));

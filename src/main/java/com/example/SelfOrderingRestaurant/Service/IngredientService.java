@@ -1,5 +1,7 @@
 package com.example.SelfOrderingRestaurant.Service;
 
+
+import com.example.SelfOrderingRestaurant.Exception.ResourceNotFoundException;
 import com.example.SelfOrderingRestaurant.Dto.Request.IngredientRequestDTO.CreateIngredienRequestDTO;
 import com.example.SelfOrderingRestaurant.Dto.Request.IngredientRequestDTO.UpdateIngredientRequestDTO;
 import com.example.SelfOrderingRestaurant.Entity.Category;
@@ -35,14 +37,14 @@ public class IngredientService implements IIngredientService {
     @Override
     public Ingredient getIngedientById(Integer id) {
         return ingredientRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Ingredient not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Ingredient not found"));
     }
 
     @Transactional
     @Override
     public void createIngedient(CreateIngredienRequestDTO request) {
         Supplier supplier = supplierRepository.findById(request.getSupplierId())
-                .orElseThrow(() -> new RuntimeException("Supplier not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Supplier not found"));
 
         Ingredient ingredient = new Ingredient();
         ingredient.setName(request.getName());
@@ -59,7 +61,7 @@ public class IngredientService implements IIngredientService {
     @Override
     public void updateIngredient(Integer id, UpdateIngredientRequestDTO request) {
         Ingredient ingredient = ingredientRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Ingredient not found with ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Ingredient not found with ID: " + id));
 
         ingredient.setName(request.getName());
         ingredient.setStatus(request.getStatus());

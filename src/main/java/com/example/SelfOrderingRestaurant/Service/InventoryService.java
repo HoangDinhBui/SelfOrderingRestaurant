@@ -1,5 +1,7 @@
 package com.example.SelfOrderingRestaurant.Service;
 
+
+import com.example.SelfOrderingRestaurant.Exception.ResourceNotFoundException;
 import com.example.SelfOrderingRestaurant.Dto.Request.InventoryRequestDTO.CreateInventoryRequestDTO;
 import com.example.SelfOrderingRestaurant.Dto.Request.InventoryRequestDTO.UpdateInventoryRequestDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.InventoryResponseDTO.GetInventoryResponseDTO;
@@ -55,7 +57,7 @@ public class InventoryService implements IInventoryService {
     @Override
     public GetInventoryResponseDTO getInventoryById(Integer id) {
         Inventory inventory = inventoryRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Inventory not found with ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with ID: " + id));
 
         return new GetInventoryResponseDTO(
                 inventory.getInventoryId(),
@@ -73,12 +75,12 @@ public class InventoryService implements IInventoryService {
     public void createInventory(CreateInventoryRequestDTO request) {
         // Find Ingredient by ingredientId
         Ingredient ingredient = ingredientRepository.findById(request.getIngredientId())
-                .orElseThrow(() -> new RuntimeException("Ingredient not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Ingredient not found"));
 
         // Check that if ingredient already has supplier, no need to re-query supplier
         if (ingredient.getSupplier() == null) {
             Supplier supplier = supplierRepository.findById(request.getSupplierId())
-                    .orElseThrow(() -> new RuntimeException("Supplier not found"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Supplier not found"));
             ingredient.setSupplier(supplier);  // Update supplier for ingredient
         }
 
@@ -97,7 +99,7 @@ public class InventoryService implements IInventoryService {
     @Override
     public void updateInventory(Integer id, UpdateInventoryRequestDTO request) {
         Inventory inventory = inventoryRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Inventory not found with ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Inventory not found with ID: " + id));
         inventory.setQuantity(request.getQuantity());
         inventory.setUnit(request.getUnit());
         inventory.setLastUpdated(new Date());
@@ -119,7 +121,7 @@ public class InventoryService implements IInventoryService {
     public RemainingInventoryResponseDTO getRemainingInventoryByIngredientId(Integer ingredientId) {
         // Tìm inventory theo ingredientId
         Inventory inventory = inventoryRepository.findByIngredientIngredientId(ingredientId)
-                .orElseThrow(() -> new RuntimeException("Inventory not found for ingredient ID: " + ingredientId));
+                .orElseThrow(() -> new ResourceNotFoundException("Inventory not found for ingredient ID: " + ingredientId));
 
         // Tính tổng số lượng đã sử dụng từ dish_ingredients
         BigDecimal totalUsedQuantity = dishIngredientRepository.getTotalQuantityUsedByIngredientId(ingredientId);

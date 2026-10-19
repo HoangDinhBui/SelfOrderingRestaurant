@@ -91,7 +91,6 @@ type Mutation {
   removeItemFromCart(dishId: ID!): OrderCart!
   updateItemQuantity(dishId: ID!, quantity: Int!): OrderCart!
   updateItemNotes(dishId: ID!, input: UpdateItemNotesInput!): OrderCart!
-  deleteOrder(orderId: String!): String!
   removeOrderItem(orderId: ID!, dishId: ID!): Order!
   updateOrderItemStatus(orderId: ID!, dishId: ID!, status: String!): Order!
 }

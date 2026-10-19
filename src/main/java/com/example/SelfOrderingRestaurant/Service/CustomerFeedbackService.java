@@ -1,5 +1,8 @@
 package com.example.SelfOrderingRestaurant.Service;
 
+
+import com.example.SelfOrderingRestaurant.Exception.BadRequestException;
+import com.example.SelfOrderingRestaurant.Exception.ResourceNotFoundException;
 import com.example.SelfOrderingRestaurant.Dto.Request.CustomerRequestDTO.CreateFeedbackRequest;
 import com.example.SelfOrderingRestaurant.Dto.Response.CustomerResponseDTO.CustomerFeedbackDTO;
 import com.example.SelfOrderingRestaurant.Entity.Customer;
@@ -31,20 +34,32 @@ public class CustomerFeedbackService {
     public CustomerFeedbackDTO createFeedback(CreateFeedbackRequest request) {
         CustomerFeedback feedback = new CustomerFeedback();
 
-        // Tìm Customer và Order dựa trên ID
-        Customer customer = customerRepository.findById(request.getCustomerId())
-                .orElseThrow(() -> new RuntimeException("Customer not found with ID: " + request.getCustomerId()));
         Order order = request.getOrderId() != null ?
                 orderRepository.findById(request.getOrderId())
-                        .orElseThrow(() -> new RuntimeException("Order not found with ID: " + request.getOrderId())) :
+                        .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + request.getOrderId())) :
                 null;
+
+        // Guests have no account: fall back to the customer recorded on the order
+        Customer customer;
+        if (request.getCustomerId() != null) {
+            customer = customerRepository.findById(request.getCustomerId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Customer not found with ID: " + request.getCustomerId()));
+        } else if (order != null && order.getCustomer() != null) {
+            customer = order.getCustomer();
+        } else {
+            throw new BadRequestException("Cần mã đơn hàng để gửi đánh giá");
+        }
+
+        if (order != null && feedbackRepository.existsByOrder_OrderId(order.getOrderId())) {
+            throw new BadRequestException("Đơn hàng này đã được đánh giá");
+        }
 
         feedback.setCustomer(customer);
         feedback.setOrder(order);
         feedback.setRating(request.getRating());
-        String comment = request.getFeedback();
-        if (!request.getSelectedTags().isEmpty()) {
-            comment += "\nTags: " + String.join(", ", request.getSelectedTags());
+        String comment = request.getFeedback() != null ? request.getFeedback() : "";
+        if (request.getSelectedTags() != null && !request.getSelectedTags().isEmpty()) {
+            comment += (comment.isEmpty() ? "" : "\n") + "Tags: " + String.join(", ", request.getSelectedTags());
         }
         feedback.setComment(comment);
 
@@ -60,7 +75,7 @@ public class CustomerFeedbackService {
     // Đánh dấu đã đọc
     public CustomerFeedbackDTO markAsRead(Integer id) {
         CustomerFeedback feedback = feedbackRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Feedback not found with ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Feedback not found with ID: " + id));
         feedback.setStatus(FeedbackStatus.REVIEWED);
         CustomerFeedback updatedFeedback = feedbackRepository.save(feedback);
         return mapToDTO(updatedFeedback);

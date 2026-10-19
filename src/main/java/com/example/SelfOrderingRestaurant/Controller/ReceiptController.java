@@ -17,19 +17,16 @@ public class ReceiptController {
     private final ReceiptService receiptService;
 
     @GetMapping("/generate/{orderId}")
-    public ResponseEntity<byte[]> generateReceipt(@PathVariable Integer orderId) {
-        try {
-            byte[] pdfBytes = receiptService.generateReceiptPdf(orderId);
+    public ResponseEntity<byte[]> generateReceipt(@PathVariable Integer orderId) throws Exception {
+        // Missing orders surface as 404 through GlobalExeptionHandler
+        byte[] pdfBytes = receiptService.generateReceiptPdf(orderId);
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_PDF);
-            headers.setContentDispositionFormData("attachment", "receipt-order-" + orderId + ".pdf");
-            headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDispositionFormData("attachment", "receipt-order-" + orderId + ".pdf");
+        headers.setCacheControl("must-revalidate, post-check=0, pre-check=0");
 
-            return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
-        } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
+        return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
     }
 
     @GetMapping("/generate/table/{tableId}")

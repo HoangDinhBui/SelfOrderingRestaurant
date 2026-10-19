@@ -28,10 +28,14 @@ public class ChatbotService {
     private final DishRepository dishRepository;
     private final RestTemplate restTemplate;
 
-    @Value("${gemini.api-key}")
+    @Value("${gemini.api-key:}")
     private String apiKey;
 
-    private static final String GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=";
+    // gemini-1.5-* models are retired; keep the model configurable so it can follow Google's lineup
+    @Value("${gemini.model:gemini-2.5-flash}")
+    private String model;
+
+    private static final String GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent";
 
     public ChatbotService(DishRepository dishRepository) {
         this.dishRepository = dishRepository;
@@ -69,12 +73,19 @@ public class ChatbotService {
 
         payload.put("contents", contents);
 
+        if (apiKey == null || apiKey.isBlank()) {
+            log.error("GEMINI_API_KEY is not configured; chatbot cannot answer");
+            return new ChatbotResponseDTO("Dạ xin lỗi anh/chị, trợ lý ảo hiện chưa được bật. Anh/chị vui lòng gọi nhân viên giúp em nhé!");
+        }
+
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
+        // Key in a header, not the URL, so it never ends up in access/error logs
+        headers.set("x-goog-api-key", apiKey);
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(payload, headers);
 
         try {
-            ResponseEntity<Map> response = restTemplate.postForEntity(GEMINI_API_URL + apiKey, entity, Map.class);
+            ResponseEntity<Map> response = restTemplate.postForEntity(String.format(GEMINI_API_URL, model), entity, Map.class);
             Map<String, Object> responseBody = response.getBody();
             if (responseBody != null && responseBody.containsKey("candidates")) {
                 List<Map<String, Object>> candidates = (List<Map<String, Object>>) responseBody.get("candidates");

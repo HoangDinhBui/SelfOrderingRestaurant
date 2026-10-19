@@ -5,8 +5,12 @@ import com.example.SelfOrderingRestaurant.Dto.Response.RevenueResponseDTO.Monthl
 import com.example.SelfOrderingRestaurant.Dto.Response.RevenueResponseDTO.OverviewRevenueDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.RevenueResponseDTO.RevenueDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.RevenueResponseDTO.YearlyRevenueDTO;
+import com.example.SelfOrderingRestaurant.Entity.Order;
+import com.example.SelfOrderingRestaurant.Entity.OrderItem;
 import com.example.SelfOrderingRestaurant.Entity.Revenue;
+import com.example.SelfOrderingRestaurant.Repository.OrderItemRepository;
 import com.example.SelfOrderingRestaurant.Repository.RevenueRepository;
+import org.springframework.transaction.annotation.Transactional;
 import com.itextpdf.text.BaseColor;
 import com.lowagie.text.Font;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +24,7 @@ import com.lowagie.text.pdf.*;
 
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.Month;
 import java.time.format.TextStyle;
@@ -32,6 +37,68 @@ import java.util.stream.Stream;
 @RequiredArgsConstructor
 public class RevenueService {
     private final RevenueRepository revenueRepository;
+    private final OrderItemRepository orderItemRepository;
+    private final Clock clock;
+
+    /**
+     * Adds a just-paid order to the daily revenue row (Vietnam date). Callers must invoke this
+     * exactly once per order, on its transition to PAID.
+     */
+    @Transactional
+    public synchronized void recordPaidOrder(Order order, BigDecimal amountPaid) {
+        LocalDate day = LocalDate.now(clock);
+        Revenue revenue = revenueRepository.findByDate(day).orElseGet(() -> {
+            Revenue r = new Revenue();
+            r.setDate(day);
+            r.setTotalRevenue(BigDecimal.ZERO);
+            r.setTotalOrders(0);
+            r.setTotalCustomers(0);
+            return r;
+        });
+
+        BigDecimal paid = amountPaid != null ? amountPaid : BigDecimal.ZERO;
+        revenue.setTotalRevenue(nz(revenue.getTotalRevenue()).add(paid));
+        revenue.setTotalOrders(nzInt(revenue.getTotalOrders()) + 1);
+        revenue.setTotalCustomers(nzInt(revenue.getTotalCustomers()) + 1);
+        revenue.setTotalDiscount(nz(revenue.getTotalDiscount()).add(nz(order.getDiscount())));
+
+        BigDecimal food = BigDecimal.ZERO, drink = BigDecimal.ZERO, other = BigDecimal.ZERO;
+        for (OrderItem item : orderItemRepository.findByOrderOrderId(order.getOrderId())) {
+            BigDecimal line = nz(item.getUnitPrice()).multiply(BigDecimal.valueOf(nzInt(item.getQuantity())));
+            switch (categoryOf(item)) {
+                case DRINK -> drink = drink.add(line);
+                case FOOD -> food = food.add(line);
+                default -> other = other.add(line);
+            }
+        }
+        revenue.setFoodRevenue(nz(revenue.getFoodRevenue()).add(food));
+        revenue.setDrinkRevenue(nz(revenue.getDrinkRevenue()).add(drink));
+        revenue.setOtherRevenue(nz(revenue.getOtherRevenue()).add(other));
+
+        revenueRepository.save(revenue);
+    }
+
+    private enum RevenueCategory { FOOD, DRINK, OTHER }
+
+    private static RevenueCategory categoryOf(OrderItem item) {
+        if (item.getDish() == null || item.getDish().getCategory() == null
+                || item.getDish().getCategory().getName() == null) {
+            return RevenueCategory.OTHER;
+        }
+        String name = item.getDish().getCategory().getName().toLowerCase(Locale.ROOT);
+        if (name.contains("uống") || name.contains("drink") || name.contains("nước")) {
+            return RevenueCategory.DRINK;
+        }
+        return RevenueCategory.FOOD;
+    }
+
+    private static BigDecimal nz(BigDecimal v) {
+        return v != null ? v : BigDecimal.ZERO;
+    }
+
+    private static int nzInt(Integer v) {
+        return v != null ? v : 0;
+    }
 
     public List<RevenueDTO> getAllRevenues() {
         return revenueRepository.findAll().stream()
@@ -40,7 +107,7 @@ public class RevenueService {
     }
 
     public OverviewRevenueDTO getRevenueOverview() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(clock);
         LocalDate startDate = today.minusMonths(12);
 
         List<Revenue> revenueList = revenueRepository.findByDateBetweenOrderByDateDesc(startDate, today);
@@ -127,7 +194,7 @@ public class RevenueService {
 
     public List<RevenueDTO> getDailyRevenue(LocalDate startDate, LocalDate endDate) {
         if (endDate == null) {
-            endDate = LocalDate.now();
+            endDate = LocalDate.now(clock);
         }
 
         if (startDate == null) {
@@ -256,11 +323,11 @@ public class RevenueService {
 
     public byte[] exportRevenueReport(RevenueExportDTO exportDTO) {
         if (exportDTO.getStartDate() == null) {
-            exportDTO.setStartDate(LocalDate.now().withDayOfMonth(1)); // Default to first day of current month
+            exportDTO.setStartDate(LocalDate.now(clock).withDayOfMonth(1)); // Default to first day of current month
         }
 
         if (exportDTO.getEndDate() == null) {
-            exportDTO.setEndDate(LocalDate.now()); // Default to today
+            exportDTO.setEndDate(LocalDate.now(clock)); // Default to today
         }
 
         // Get revenue data based on report type and date range

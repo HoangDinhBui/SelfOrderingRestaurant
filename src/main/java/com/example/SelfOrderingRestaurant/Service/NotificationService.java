@@ -1,5 +1,9 @@
 package com.example.SelfOrderingRestaurant.Service;
 
+
+
+import com.example.SelfOrderingRestaurant.Exception.ValidationException;
+import com.example.SelfOrderingRestaurant.Exception.ResourceNotFoundException;
 import com.example.SelfOrderingRestaurant.Dto.Request.NotificationRequestDTO.NotificationRequestDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.NotificationResponseDTO.NotificationResponseDTO;
 import com.example.SelfOrderingRestaurant.Entity.*;
@@ -13,6 +17,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.Clock;
 import java.util.List;
 import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
@@ -28,6 +33,7 @@ public class NotificationService implements INotificationService {
     private final DinningTableRepository dinningTableRepository;
     private final CustomerRepository customerRepository;
     private final WebSocketService webSocketService;
+    private final Clock clock;
 
     @Transactional
     @Override
@@ -55,7 +61,7 @@ public class NotificationService implements INotificationService {
     @Override
     public void markNotificationAsRead(Integer notificationId) {
         Notification notification = notificationRepository.findById(notificationId)
-                .orElseThrow(() -> new RuntimeException("Notification not found with id: " + notificationId));
+                .orElseThrow(() -> new ResourceNotFoundException("Notification not found with id: " + notificationId));
 
         notificationRepository.markAsRead(notificationId);
 
@@ -70,11 +76,11 @@ public class NotificationService implements INotificationService {
     public void createNotification(NotificationRequestDTO requestDTO) {
         // Get the customer who created the notification
         Customer customer = customerRepository.findById(requestDTO.getCustomerId())
-                .orElseThrow(() -> new RuntimeException("Customer not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
 
         // Get the table information
         DinningTable table = dinningTableRepository.findById(requestDTO.getTableNumber())
-                .orElseThrow(() -> new RuntimeException("Table not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Table not found"));
 
         // Get order information if available
         Order order = null;
@@ -84,13 +90,13 @@ public class NotificationService implements INotificationService {
         }
 
         // Find staff currently on shift
-        LocalDate today = LocalDate.now();
-        LocalTime currentTime = LocalTime.now();
+        LocalDate today = LocalDate.now(clock);
+        LocalTime currentTime = LocalTime.now(clock);
 
         List<Staff> onShiftStaff = staffShiftRepository.findStaffOnCurrentShift(today, currentTime);
 
         if (onShiftStaff.isEmpty()) {
-            throw new RuntimeException("No staff are currently on shift");
+            throw new ValidationException("Hiện không có nhân viên trong ca, vui lòng thử lại sau");
         }
 
         // Create a notification for each staff member on shift
@@ -234,7 +240,7 @@ public class NotificationService implements INotificationService {
     @Override
     public void deleteNotification(Integer notificationId) {
         Notification notification = notificationRepository.findById(notificationId)
-                .orElseThrow(() -> new RuntimeException("Notification not found with id: " + notificationId));
+                .orElseThrow(() -> new ResourceNotFoundException("Notification not found with id: " + notificationId));
 
         notificationRepository.delete(notification);
     }

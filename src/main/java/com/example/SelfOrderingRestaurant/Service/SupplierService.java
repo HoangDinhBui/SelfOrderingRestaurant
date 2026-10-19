@@ -1,5 +1,7 @@
 package com.example.SelfOrderingRestaurant.Service;
 
+
+import com.example.SelfOrderingRestaurant.Exception.ResourceNotFoundException;
 import com.example.SelfOrderingRestaurant.Dto.Request.SupplierRequestDTO.CreateSupplierRequestDTO;
 import com.example.SelfOrderingRestaurant.Dto.Request.SupplierRequestDTO.UpdateSupplierRequestDTO;
 import com.example.SelfOrderingRestaurant.Entity.Supplier;
@@ -29,7 +31,7 @@ public class SupplierService implements ISupplierService {
     @Override
     public Supplier getSupplierById(Integer id) {
         return supplierRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Supplier not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Supplier not found"));
     }
 
     @Transactional
@@ -49,7 +51,7 @@ public class SupplierService implements ISupplierService {
     @Override
     public void updateSupplier(Integer id, UpdateSupplierRequestDTO request) {
         Supplier supplier = supplierRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Supplier not found with ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Supplier not found with ID: " + id));
 
         supplier.setName(request.getName());
         supplier.setAddress(request.getAddress());
@@ -62,7 +64,7 @@ public class SupplierService implements ISupplierService {
     @Override
     public boolean deleteSupplier(Integer id) {
         Supplier supplier = supplierRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Supplier not found with ID: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Supplier not found with ID: " + id));
         supplierRepository.delete(supplier);
         return !supplierRepository.existsById(id);
     }

@@ -1,5 +1,7 @@
 package com.example.SelfOrderingRestaurant.Service;
 
+
+import com.example.SelfOrderingRestaurant.Exception.ResourceNotFoundException;
 import com.example.SelfOrderingRestaurant.Dto.Request.StaffRequestDTO.UpdateStaffDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.StaffResponseDTO.GetAllStaffResponseDTO;
 import com.example.SelfOrderingRestaurant.Entity.Shift;
@@ -67,10 +69,10 @@ public class StaffService implements IStaffService {
         }
 
         Staff staff = staffRepository.findById(staffId)
-                .orElseThrow(() -> new RuntimeException("Staff not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Staff not found"));
 
         Shift shift = shiftRepository.findById(shiftId)
-                .orElseThrow(() -> new RuntimeException("Shift not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Shift not found"));
 
         if (staffShiftRepository.existsByStaffAndShiftAndDate(staff, shift, date)) {
             throw new RuntimeException("Staff is already assigned to this shift on this date");
@@ -89,7 +91,7 @@ public class StaffService implements IStaffService {
     @Override
     public GetAllStaffResponseDTO getStaffById(Integer id) {
         Staff staff = staffRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Staff not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Staff not found with id: " + id));
         return new GetAllStaffResponseDTO(
                 staff.getStaffId(),
                 staff.getFullname(),

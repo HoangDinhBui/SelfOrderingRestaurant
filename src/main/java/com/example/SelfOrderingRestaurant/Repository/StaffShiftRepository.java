@@ -14,12 +14,19 @@ import java.util.List;
 @Repository
 public interface StaffShiftRepository extends JpaRepository<StaffShift, Integer> {
     boolean existsByStaffAndShiftAndDate(Staff staff, Shift shift, LocalDate date);
-    @Query("SELECT ss.staff FROM StaffShift ss " +
-            "WHERE ss.date = :date " +
-            "AND ss.status = 'ASSIGNED' " +
-            "AND ((ss.shift.startTime <= ss.shift.endTime AND :currentTime BETWEEN ss.shift.startTime AND ss.shift.endTime) " +
-            "OR (ss.shift.startTime > ss.shift.endTime AND (:currentTime >= ss.shift.startTime OR :currentTime <= ss.shift.endTime)))")
-    List<Staff> findStaffOnCurrentShift(LocalDate date, LocalTime currentTime);
+    // An overnight shift (start > end) assigned on day D runs from D start until D+1 end, so after
+    // midnight it is found through yesterday's assignment.
+    @Query("SELECT DISTINCT ss.staff FROM StaffShift ss " +
+            "WHERE ss.status = 'ASSIGNED' AND (" +
+            " (ss.date = :date AND ss.shift.startTime <= ss.shift.endTime" +
+            "   AND :currentTime BETWEEN ss.shift.startTime AND ss.shift.endTime)" +
+            " OR (ss.date = :date AND ss.shift.startTime > ss.shift.endTime AND :currentTime >= ss.shift.startTime)" +
+            " OR (ss.date = :yesterday AND ss.shift.startTime > ss.shift.endTime AND :currentTime <= ss.shift.endTime))")
+    List<Staff> findStaffOnShiftAt(LocalDate date, LocalDate yesterday, LocalTime currentTime);
+
+    default List<Staff> findStaffOnCurrentShift(LocalDate date, LocalTime currentTime) {
+        return findStaffOnShiftAt(date, date.minusDays(1), currentTime);
+    }
 
     List<StaffShift> findByStaffStaffId(Integer staffId);
 

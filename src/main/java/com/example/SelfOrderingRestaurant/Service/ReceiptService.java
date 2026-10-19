@@ -33,7 +33,8 @@ public class  ReceiptService {
      */
     public byte[] generateReceiptPdf(Integer orderId) throws Exception {
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new IllegalArgumentException("Order not found with ID: " + orderId));
+                .orElseThrow(() -> new com.example.SelfOrderingRestaurant.Exception.ResourceNotFoundException(
+                        "Order not found with ID: " + orderId));
 
         List<OrderItem> orderItems = orderItemRepository.findByOrder(order);
 

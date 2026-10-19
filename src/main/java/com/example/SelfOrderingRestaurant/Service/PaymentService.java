@@ -46,6 +46,7 @@ public class PaymentService {
     final DinningTableRepository tableRepository;
     final WebSocketService webSocketService;
     final CustomerRepository customerRepository;
+    final RevenueService revenueService;
 
     @Transactional
     public PaymentResponseDTO processPayment(ProcessPaymentRequestDTO request) {
@@ -123,6 +124,24 @@ public class PaymentService {
         }
     }
 
+    /**
+     * The single place where an order becomes PAID: awards points and records revenue once.
+     * Returns false (and does nothing) when the order was already paid, so a replayed VNPay
+     * return or a double click cannot count the same order twice.
+     */
+    @Transactional
+    public boolean markOrderPaid(Order order, BigDecimal paidAmount) {
+        if (order.getPaymentStatus() == PaymentStatus.PAID) {
+            log.info("Order {} is already PAID; skipping points and revenue", order.getOrderId());
+            return false;
+        }
+        order.setPaymentStatus(PaymentStatus.PAID);
+        orderRepository.save(order);
+        finalizePoints(order, paidAmount);
+        revenueService.recordPaidOrder(order, paidAmount);
+        return true;
+    }
+
     @Transactional
     public void finalizePoints(Order order, BigDecimal paidAmount) {
         if (order == null || order.getCustomer() == null) {
@@ -169,10 +188,7 @@ public class PaymentService {
 
         paymentRepository.save(payment);
 
-        order.setPaymentStatus(PaymentStatus.PAID);
-        orderRepository.save(order);
-
-        finalizePoints(order, amount);
+        markOrderPaid(order, amount);
 
         DinningTable table = order.getTables();
         if (table != null) {
@@ -220,10 +236,7 @@ public class PaymentService {
 
             paymentRepository.save(payment);
 
-            order.setPaymentStatus(PaymentStatus.PAID);
-            orderRepository.save(order);
-
-            finalizePoints(order, amount);
+            markOrderPaid(order, amount);
 
             DinningTable table = order.getTables();
             if (table != null) {
@@ -492,10 +505,7 @@ public class PaymentService {
 
                 if (isSuccessful && payment.getOrder() != null) {
                     Order order = payment.getOrder();
-                    order.setPaymentStatus(PaymentStatus.PAID);
-                    orderRepository.save(order);
-
-                    finalizePoints(order, payment.getAmount());
+                    markOrderPaid(order, payment.getAmount());
 
                     DinningTable table = order.getTables();
                     if (table != null) {
