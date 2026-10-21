@@ -1,6 +1,7 @@
 import { useState, useEffect, useContext } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CartContext } from "../../../context/CartContext";
+import VoiceOrderButton from "../../../components/voice/VoiceOrderButton";
 
 import { BACKEND_URL } from "../../../config";
 const Menu = () => {
@@ -375,6 +376,20 @@ const Menu = () => {
             {orderFeedback.message}
           </div>
         )}
+
+        <VoiceOrderButton
+          onAddItem={addToCartGraphQL}
+          onAdded={(count) => {
+            setOrderFeedback({
+              show: true,
+              message: `Đã thêm ${count} món vào giỏ`,
+              type: "success",
+            });
+            setTimeout(() => {
+              setOrderFeedback({ show: false, message: "", type: "" });
+            }, 3000);
+          }}
+        />
 
         <div className="mb-4">
           <input
