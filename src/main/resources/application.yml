@@ -74,6 +74,10 @@ resend:
 gemini:
   api-key: ${GEMINI_API_KEY:}
   model: ${GEMINI_MODEL:gemini-2.5-flash}
+voice:
+  stt:
+    # PhoWhisper service (VoiceRecognition/), e.g. https://<user>-<space>.hf.space/transcribe
+    url: ${VOICE_STT_URL:http://localhost:7860/transcribe}
 cloudinary:
   cloud-name: ${CLOUDINARY_CLOUD_NAME:your_cloud_name_here}
   api-key: ${CLOUDINARY_API_KEY:your_api_key_here}

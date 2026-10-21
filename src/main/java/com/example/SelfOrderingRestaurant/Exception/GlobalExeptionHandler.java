@@ -65,6 +65,16 @@ public class GlobalExeptionHandler {
         return new ResponseEntity<>(body, ex.getError().status());
     }
 
+    @ExceptionHandler(VoiceOrderException.class)
+    public ResponseEntity<Object> handleVoiceOrderException(VoiceOrderException ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", LocalDateTime.now());
+        body.put("code", ex.getError().name());
+        body.put("message", ex.getMessage());
+        body.put("status", ex.getError().status().value());
+        return new ResponseEntity<>(body, ex.getError().status());
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Object> handleMethodArgumentNotValid(MethodArgumentNotValidException ex) {
         Map<String, Object> body = new HashMap<>();

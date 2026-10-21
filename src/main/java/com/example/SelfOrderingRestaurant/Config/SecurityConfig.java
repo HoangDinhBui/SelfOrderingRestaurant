@@ -64,7 +64,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         // --- Public: guests at a table are not logged in ---
                         .requestMatchers("/api/auth/**", "/api/captive/**", "/api/chatbot/**",
-                                "/ws/**", "/error").permitAll()
+                                "/api/voice-order/**", "/ws/**", "/error").permitAll()
                         // GraphQL is public at the transport level; sensitive operations are
                         // guarded per resolver with @PreAuthorize
                         .requestMatchers("/graphql", "/graphql/**").permitAll()
