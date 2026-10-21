@@ -114,3 +114,19 @@ Key tables include:
 
 Developed as part of a self-service restaurant automation project.  
 Feel free to contribute, fork, or raise issues.
+
+### Thành viên hiện tại
+
+| Thành viên | Liên hệ |
+|-----------|---------|
+| Hoàng (HoangBD) — chủ repo | buidinhhoang1910@gmail.com |
+| Dung (MY DUNG) | dungne812@gmail.com |
+| Lâm | hoanglam21092005@gmail.com |
+
+### Thành viên trước đây
+
+| Thành viên | Ghi chú |
+|-----------|---------|
+| MinhTu | Đóng góp ở giai đoạn trước (các commit vẫn giữ tên MinhTu trong lịch sử git) |
+
+Xem chi tiết đóng góp theo lịch sử commit: `git shortlog -sne` (các danh tính trùng đã được gộp qua `.mailmap`).

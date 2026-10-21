@@ -1,0 +1,5 @@
+# Maps each contributor's alternate identities to one canonical name/email
+# (used by `git shortlog`, `git log --use-mailmap`, `git blame`). History is unchanged.
+HoangBD <buidinhhoang1910@gmail.com> HoangDinhBui <152020676+HoangDinhBui@users.noreply.github.com>
+MinhTu <minhtu06041@gmail.com> MinhTu <153406109+Minhtu0604@users.noreply.github.com>
+MY DUNG <dungne812@gmail.com>
