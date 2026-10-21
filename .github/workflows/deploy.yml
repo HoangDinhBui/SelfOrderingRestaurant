@@ -37,6 +37,17 @@ jobs:
         npm ci --prefix frontend
         npm run build --prefix frontend
 
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    # The model is stubbed in these tests, so only Flask is needed
+    - name: Test voice recognition service
+      run: |
+        pip install Flask==3.0.3 pytest
+        cd VoiceRecognition && python -m pytest -q
+
     - name: Trigger Render Deploy Hook
       if: github.ref == 'refs/heads/master' && success()
       run: |
