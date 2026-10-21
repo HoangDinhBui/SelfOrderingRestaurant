@@ -121,12 +121,6 @@ Feel free to contribute, fork, or raise issues.
 |-----------|---------|
 | Hoàng (HoangBD) — chủ repo | buidinhhoang1910@gmail.com |
 | Dung (MY DUNG) | dungne812@gmail.com |
-| Lâm | hoanglam21092005@gmail.com |
-
-### Thành viên trước đây
-
-| Thành viên | Ghi chú |
-|-----------|---------|
-| MinhTu | Đóng góp ở giai đoạn trước (các commit vẫn giữ tên MinhTu trong lịch sử git) |
+| Tú (MinhTu) | hoanglam21092005@gmail.com (tài khoản mới; email cũ minhtu06041@gmail.com) |
 
 Xem chi tiết đóng góp theo lịch sử commit: `git shortlog -sne` (các danh tính trùng đã được gộp qua `.mailmap`).
