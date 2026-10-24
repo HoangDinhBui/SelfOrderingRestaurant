@@ -347,9 +347,10 @@ const NotificationManagementStaff = () => {
           return;
         }
 
-        if (statusResponse.paymentStatus !== "PENDING") {
+        // A bill awaiting the staff is UNPAID on the order; PENDING only lives on a VNPay transaction
+        if (statusResponse.paymentStatus !== "UNPAID") {
           toast.update(loadingToastId, {
-            render: `No pending payment found for order ${notification.orderId}`,
+            render: `No unpaid bill found for order ${notification.orderId}`,
             type: "error",
             isLoading: false,
             autoClose: 5000,

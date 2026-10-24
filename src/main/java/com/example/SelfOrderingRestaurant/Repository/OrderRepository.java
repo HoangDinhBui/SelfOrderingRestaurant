@@ -12,14 +12,15 @@ import java.util.List;
 
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Integer> {
-    @Query("SELECT COUNT(o) FROM Order o WHERE o.tables.tableNumber = :tableNumber AND o.status NOT IN ('COMPLETED', 'CANCELED')")
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.tables.tableNumber = :tableNumber AND o.status NOT IN ('COMPLETED', 'CANCELLED')")
     long countActiveOrdersByTableId(@Param("tableNumber") Integer tableNumber);
     @Query("SELECT o FROM Order o WHERE o.tables.tableNumber = :tableNumber")
     List<Order> findByTableNumber(@Param("tableNumber") Integer tableNumber);
     List<Order> findByPaymentStatus(PaymentStatus paymentStatus);
     @Query("SELECT o FROM Order o WHERE o.tables.tableNumber = :tableNumber AND o.paymentStatus = :paymentStatus")
     List<Order> findByTableNumberAndPaymentStatus(@Param("tableNumber") Integer tableNumber, @Param("paymentStatus") PaymentStatus paymentStatus);
-    @Query("SELECT CASE WHEN COUNT(o) > 0 THEN true ELSE false END FROM Order o WHERE o.tables.tableNumber = :tableNumber AND o.paymentStatus = :paymentStatus")
+    // Cancelled orders are never paid, so they must not keep the table occupied
+    @Query("SELECT CASE WHEN COUNT(o) > 0 THEN true ELSE false END FROM Order o WHERE o.tables.tableNumber = :tableNumber AND o.paymentStatus = :paymentStatus AND o.status <> 'CANCELLED'")
     boolean existsByTablesTableNumberAndPaymentStatus(@Param("tableNumber") Integer tableNumber, @Param("paymentStatus") PaymentStatus paymentStatus);
     
     List<Order> findByCustomerCustomerIdOrderByOrderDateDesc(Integer customerId);
