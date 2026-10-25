@@ -18,17 +18,7 @@ const shiftModels = {
   },
 };
 
-const timeSlots = [
-  "7:30am - 12:30pm",
-  "12:30pm - 17:30pm",
-  "17:30pm - 22:30pm",
-];
-
-const timeSlotToShiftId = {
-  "7:30am - 12:30pm": 1,
-  "12:30pm - 17:30pm": 2,
-  "17:30pm - 22:30pm": 3,
-};
+const hhmm = (time) => (time || "").slice(0, 5);
 
 const dayToDate = (day) => {
   const today = new Date();
@@ -45,7 +35,8 @@ const dayToDate = (day) => {
   const currentDayIndex = today.getDay() === 0 ? 6 : today.getDay() - 1;
   const diff = targetDayIndex - currentDayIndex;
   today.setDate(today.getDate() + diff);
-  return today.toISOString().split("T")[0];
+  // Local calendar date: toISOString() is UTC and gives yesterday before 7am in Vietnam
+  return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
 };
 
 const StaffInformation = () => {
@@ -74,9 +65,11 @@ const StaffInformation = () => {
     newPassword: "",
   });
 
+  // Shifts come from the admin's shift list; their ids are not fixed
+  const [shiftOptions, setShiftOptions] = useState([]);
   const [shiftForm, setShiftForm] = useState({
     day: shiftModels["Full-time"].days[0],
-    timeSlot: timeSlots[0],
+    shiftId: "",
   });
 
   const [schedule, setSchedule] = useState({});
@@ -240,15 +233,25 @@ const StaffInformation = () => {
     }
   };
 
+  const fetchShiftOptions = async () => {
+    try {
+      const response = await axios.get(`${BACKEND_URL}/api/staff/shifts/available`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem("accessToken")}` },
+      });
+      const shifts = [...(response.data || [])].sort((a, b) =>
+        (a.startTime || "").localeCompare(b.startTime || "")
+      );
+      setShiftOptions(shifts);
+      setShiftForm((prev) => ({ ...prev, shiftId: prev.shiftId || shifts[0]?.shiftId || "" }));
+    } catch (error) {
+      console.error("Error fetching shifts:", error.response?.status);
+    }
+  };
+
   useEffect(() => {
+    // Never log tokens: the console is readable by anyone at the device
     console.log("StaffInformation: Component mounted");
-    console.log("Initial localStorage:", {
-      accessToken: localStorage.getItem("accessToken"),
-      username: localStorage.getItem("username"),
-      userType: localStorage.getItem("userType"),
-      refreshToken: localStorage.getItem("refreshToken"),
-      staffId: localStorage.getItem("staffId"),
-    });
+    fetchShiftOptions();
     fetchStaffInfo();
     fetchSchedule();
   }, []);
@@ -318,7 +321,7 @@ const StaffInformation = () => {
     }
 
     const shiftRegistration = {
-      shiftId: timeSlotToShiftId[shiftForm.timeSlot],
+      shiftId: Number(shiftForm.shiftId),
       date: dayToDate(shiftForm.day),
     };
 
@@ -336,7 +339,7 @@ const StaffInformation = () => {
       fetchSchedule();
       setShiftForm({
         day: shiftModels[staffData.workShift].days[0],
-        timeSlot: timeSlots[0],
+        shiftId: shiftOptions[0]?.shiftId ?? "",
       });
       setIsScheduleModalOpen(false);
     } catch (error) {
@@ -361,7 +364,7 @@ const StaffInformation = () => {
             fetchSchedule();
             setShiftForm({
               day: shiftModels[staffData.workShift].days[0],
-              timeSlot: timeSlots[0],
+              shiftId: shiftOptions[0]?.shiftId ?? "",
             });
             setIsScheduleModalOpen(false);
           } catch (retryError) {
@@ -864,20 +867,26 @@ const StaffInformation = () => {
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Time Slot
+                          Shift
                         </label>
-                        <select
-                          name="timeSlot"
-                          value={shiftForm.timeSlot}
-                          onChange={handleShiftFormChange}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-md"
-                        >
-                          {timeSlots.map((slot) => (
-                            <option key={slot} value={slot}>
-                              {slot}
-                            </option>
-                          ))}
-                        </select>
+                        {shiftOptions.length === 0 ? (
+                          <p className="text-sm text-gray-500">
+                            No shifts have been set up yet. Ask the admin to create shifts.
+                          </p>
+                        ) : (
+                          <select
+                            name="shiftId"
+                            value={shiftForm.shiftId}
+                            onChange={handleShiftFormChange}
+                            className="w-full px-4 py-2 border border-gray-300 rounded-md"
+                          >
+                            {shiftOptions.map((shift) => (
+                              <option key={shift.shiftId} value={shift.shiftId}>
+                                {shift.name} ({hhmm(shift.startTime)} – {hhmm(shift.endTime)})
+                              </option>
+                            ))}
+                          </select>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -886,7 +895,7 @@ const StaffInformation = () => {
                       type="submit"
                       className="px-8 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors shadow-md"
                       style={{ backgroundColor: "#000000" }}
-                      disabled={loading}
+                      disabled={loading || !shiftForm.shiftId}
                     >
                       {loading ? "Saving..." : "Save"}
                     </button>
