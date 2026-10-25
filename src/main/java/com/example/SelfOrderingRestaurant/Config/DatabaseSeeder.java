@@ -7,6 +7,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.time.LocalTime;
 import java.util.Date;
 import java.util.Optional;
 
@@ -19,6 +20,7 @@ public class DatabaseSeeder implements CommandLineRunner {
     private final SupplierRepository supplierRepository;
     private final IngredientRepository ingredientRepository;
     private final InventoryRepository inventoryRepository;
+    private final ShiftRepository shiftRepository;
 
     public DatabaseSeeder(
             CategoryRepository categoryRepository,
@@ -26,18 +28,21 @@ public class DatabaseSeeder implements CommandLineRunner {
             DinningTableRepository tableRepository,
             SupplierRepository supplierRepository,
             IngredientRepository ingredientRepository,
-            InventoryRepository inventoryRepository) {
+            InventoryRepository inventoryRepository,
+            ShiftRepository shiftRepository) {
         this.categoryRepository = categoryRepository;
         this.dishRepository = dishRepository;
         this.tableRepository = tableRepository;
         this.supplierRepository = supplierRepository;
         this.ingredientRepository = ingredientRepository;
         this.inventoryRepository = inventoryRepository;
+        this.shiftRepository = shiftRepository;
     }
 
     @Override
     public void run(String... args) throws Exception {
         seedTables();
+        seedShifts();
         seedCategoriesAndDishes();
         seedSuppliersAndInventory();
     }
@@ -53,6 +58,25 @@ public class DatabaseSeeder implements CommandLineRunner {
                 tableRepository.save(table);
             }
             System.out.println("Seeded Tables");
+        }
+    }
+
+    // Staff self-registration and the admin schedule both need shifts to exist
+    private void seedShifts() {
+        if (shiftRepository.count() == 0) {
+            String[][] defaults = {
+                    {"Ca sáng", "07:30", "12:30"},
+                    {"Ca chiều", "12:30", "17:30"},
+                    {"Ca tối", "17:30", "22:30"},
+            };
+            for (String[] d : defaults) {
+                Shift shift = new Shift();
+                shift.setName(d[0]);
+                shift.setStartTime(LocalTime.parse(d[1]));
+                shift.setEndTime(LocalTime.parse(d[2]));
+                shiftRepository.save(shift);
+            }
+            System.out.println("Seeded Shifts");
         }
     }
 

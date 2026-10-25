@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import MenuBar from "../../../components/layout/MenuBar";
 
 // Shift models data
@@ -17,6 +18,7 @@ const AdminInformation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const navigate = useNavigate();
   const [isShiftModalOpen, setIsShiftModalOpen] = useState(false);
   const [isAvatarModalOpen, setIsAvatarModalOpen] = useState(false);
   const [isScheduleModalOpen, setIsScheduleModalOpen] = useState(false);
@@ -36,8 +38,9 @@ const AdminInformation = () => {
     newPassword: ""
   });
 
+ // The schedule lives on its own page backed by the real shift data
  const handleScheduleShiftClick = () => {
-  setIsScheduleModalOpen(true);
+  navigate("/shift-schedule_admin");
 };
 
   // Modified to match the screenshot - now opens the dropdown menu instead
@@ -544,7 +547,7 @@ const AdminInformation = () => {
                 <div className="bg-blue-50 rounded-lg border border-gray-200 p-2">
                   <button 
                     className="w-full text-left flex items-center px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg"
-                    onClick={() => setIsShiftModalOpen(true)}
+                    onClick={() => navigate("/shift-schedule_admin")}
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"

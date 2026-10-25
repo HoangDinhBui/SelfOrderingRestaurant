@@ -5,7 +5,9 @@ import com.example.SelfOrderingRestaurant.Exception.ResourceNotFoundException;
 import com.example.SelfOrderingRestaurant.Dto.Request.ShiftRequestDTO.ShiftRequestDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.ShiftResponseDTO.ShiftResponseDTO;
 import com.example.SelfOrderingRestaurant.Entity.Shift;
+import com.example.SelfOrderingRestaurant.Exception.BadRequestException;
 import com.example.SelfOrderingRestaurant.Repository.ShiftRepository;
+import com.example.SelfOrderingRestaurant.Repository.StaffShiftRepository;
 import com.example.SelfOrderingRestaurant.Service.Imp.IShiftService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,6 +23,7 @@ import lombok.AllArgsConstructor;
 public class ShiftService implements IShiftService {
 
     private final ShiftRepository shiftRepository;
+    private final StaffShiftRepository staffShiftRepository;
 
     @Transactional
     @Override
@@ -41,6 +44,7 @@ public class ShiftService implements IShiftService {
     @Transactional
     @Override
     public ShiftResponseDTO createShift(ShiftRequestDTO shiftRequestDTO) {
+        validate(shiftRequestDTO);
         Shift shift = convertToEntity(shiftRequestDTO);
         Shift savedShift = shiftRepository.save(shift);
         return convertToResponseDTO(savedShift);
@@ -49,6 +53,7 @@ public class ShiftService implements IShiftService {
     @Transactional
     @Override
     public ShiftResponseDTO updateShift(Integer id, ShiftRequestDTO shiftRequestDTO) {
+        validate(shiftRequestDTO);
         Optional<Shift> existingShift = shiftRepository.findById(id);
         if (existingShift.isPresent()) {
             Shift shift = existingShift.get();
@@ -67,7 +72,23 @@ public class ShiftService implements IShiftService {
         if(!shiftRepository.existsById(id)){
             throw new ResourceNotFoundException("Shift not found");
         }
+        // Assignments (and the attendance computed from them) point at the shift
+        if (staffShiftRepository.existsByShift(shiftRepository.getReferenceById(id))) {
+            throw new BadRequestException("This shift is assigned to staff; remove those assignments before deleting it");
+        }
         shiftRepository.deleteById(id);
+    }
+
+    private static void validate(ShiftRequestDTO request) {
+        if (request.getName() == null || request.getName().isBlank()) {
+            throw new BadRequestException("Shift name is required");
+        }
+        if (request.getStartTime() == null || request.getEndTime() == null) {
+            throw new BadRequestException("Start time and end time are required");
+        }
+        if (request.getStartTime().equals(request.getEndTime())) {
+            throw new BadRequestException("Start time and end time must differ");
+        }
     }
 
     private ShiftResponseDTO convertToResponseDTO(Shift shift) {

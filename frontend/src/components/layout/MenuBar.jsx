@@ -194,6 +194,11 @@ const MenuBar = ({
       path: "/staff-management_admin",
     },
     {
+      label: "Shift Schedule",
+      icon: "https://img.icons8.com/ios-filled/50/1C2E4A/calendar.png",
+      path: "/shift-schedule_admin",
+    },
+    {
       label: "User Management",
       icon: "https://img.icons8.com/ios-filled/50/1C2E4A/group.png",
       path: "/user-management_admin",

@@ -35,6 +35,7 @@ import TableManagementAdmin from "./pages/Admin/TableManagement/TableManagement"
 import MenuManagementAdmin from "./pages/Admin/MenuManagement/MenuManagement";
 import RevenueManagement from "./pages/Admin/RevenueManagement/RevenueManagement";
 import StaffManagement from "./pages/Admin/StaffManagement/StaffManagement";
+import ShiftSchedule from "./pages/Admin/ShiftSchedule/ShiftSchedule";
 import UserManagementAdmin from "./pages/Admin/UserManagement/UserManagement";
 
 import DishManagementStaff from "./pages/Staff/DishManagement/DishManagement";
@@ -94,6 +95,10 @@ function App() {
               <Route
                 path="/staff-management_admin"
                 element={<RequireRole roles={["ADMIN"]}><StaffManagement /></RequireRole>}
+              />
+              <Route
+                path="/shift-schedule_admin"
+                element={<RequireRole roles={["ADMIN"]}><ShiftSchedule /></RequireRole>}
               />
               <Route
                 path="/user-management_admin"

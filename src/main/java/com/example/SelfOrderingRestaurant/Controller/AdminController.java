@@ -14,6 +14,7 @@ import com.example.SelfOrderingRestaurant.Dto.Response.RevenueResponseDTO.Overvi
 import com.example.SelfOrderingRestaurant.Dto.Response.RevenueResponseDTO.RevenueDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.RevenueResponseDTO.YearlyRevenueDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.ShiftResponseDTO.ShiftResponseDTO;
+import com.example.SelfOrderingRestaurant.Dto.Response.ShiftResponseDTO.StaffShiftAssignmentDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.StaffResponseDTO.GetAllStaffResponseDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.UserResponseDTO.AuthResponseDto;
 import com.example.SelfOrderingRestaurant.Entity.Shift;
@@ -235,41 +236,25 @@ public class AdminController {
         }
     }
 
+    // Validation errors propagate to GlobalExeptionHandler so the admin page can show the reason
     @PostMapping("/shifts")
     public ResponseEntity<ShiftResponseDTO> createShift(@RequestBody ShiftRequestDTO shiftRequestDTO) {
-        try {
-            logger.info("Creating new shift: {}", shiftRequestDTO.getName());
-            ShiftResponseDTO createdShift = shiftService.createShift(shiftRequestDTO);
-            return ResponseEntity.ok(createdShift);
-        } catch (Exception e) {
-            logger.error("Error creating shift: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
-        }
+        logger.info("Creating new shift: {}", shiftRequestDTO.getName());
+        return ResponseEntity.ok(shiftService.createShift(shiftRequestDTO));
     }
 
     @PutMapping("/shifts/{id}")
     public ResponseEntity<ShiftResponseDTO> updateShift(@PathVariable Integer id, @RequestBody ShiftRequestDTO shiftRequestDTO) {
-        try {
-            logger.info("Updating shift with ID: {}", id);
-            ShiftResponseDTO updatedShift = shiftService.updateShift(id, shiftRequestDTO);
-            return updatedShift != null ? ResponseEntity.ok(updatedShift) : ResponseEntity.notFound().build();
-        } catch (Exception e) {
-            logger.error("Error updating shift with ID {}: {}", id, e.getMessage());
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
-        }
+        logger.info("Updating shift with ID: {}", id);
+        ShiftResponseDTO updatedShift = shiftService.updateShift(id, shiftRequestDTO);
+        return updatedShift != null ? ResponseEntity.ok(updatedShift) : ResponseEntity.notFound().build();
     }
 
     @DeleteMapping("/shifts/{id}")
     public ResponseEntity<Map<String, String>> deleteShift(@PathVariable Integer id) {
-        try {
-            logger.info("Deleting shift with ID: {}", id);
-            shiftService.deleteShift(id);
-            return ResponseEntity.ok(Map.of("message", "Shift deleted successfully"));
-        } catch (Exception e) {
-            logger.error("Error deleting shift with ID {}: {}", id, e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Error deleting shift: " + e.getMessage()));
-        }
+        logger.info("Deleting shift with ID: {}", id);
+        shiftService.deleteShift(id);
+        return ResponseEntity.ok(Map.of("message", "Shift deleted successfully"));
     }
 
     @GetMapping("/shifts/empty")
@@ -294,20 +279,23 @@ public class AdminController {
 
     @PostMapping("/staff/shift/assign")
     public ResponseEntity<?> assignStaffShift(@RequestBody AssignStaffRequestDTO request) {
-        try {
-            logger.info("Assigning shift {} to staff {} for date {}", request.getShiftId(), request.getStaffId(), request.getDate());
-            staffShiftService.assignShiftByAdmin(request.getStaffId(), request.getShiftId(), request.getDate());
-            return ResponseEntity.ok("Shift assigned successfully!");
-        } catch (ResourceNotFoundException e) {
-            logger.warn("Resource not found: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
-        } catch (BadRequestException e) {
-            logger.warn("Bad request: {}", e.getMessage());
-            return ResponseEntity.badRequest().body(e.getMessage());
-        } catch (Exception e) {
-            logger.error("Error assigning shift: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error assigning shift: " + e.getMessage());
-        }
+        logger.info("Assigning shift {} to staff {} for date {}", request.getShiftId(), request.getStaffId(), request.getDate());
+        staffShiftService.assignShiftByAdmin(request.getStaffId(), request.getShiftId(), request.getDate());
+        return ResponseEntity.ok(Map.of("message", "Shift assigned successfully!"));
+    }
+
+    @GetMapping("/staff-shifts")
+    public ResponseEntity<List<StaffShiftAssignmentDTO>> getStaffShifts(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return ResponseEntity.ok(staffShiftService.getAssignments(from, to));
+    }
+
+    @DeleteMapping("/staff-shifts/{id}")
+    public ResponseEntity<Map<String, String>> removeStaffShift(@PathVariable Integer id) {
+        logger.info("Removing shift assignment {}", id);
+        staffShiftService.removeAssignmentByAdmin(id);
+        return ResponseEntity.ok(Map.of("message", "Shift assignment removed"));
     }
 
     // Revenue Endpoints

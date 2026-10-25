@@ -9,6 +9,7 @@ import OrderHistoryAdmin from "../pages/Admin/OrderHistory/OrderHistory";
 import TableManagementAdmin from "../pages/Admin/TableManagement/TableManagement";
 import MenuManagementAdmin from "../pages/Admin/MenuManagement/MenuManagement";
 import RevenueManagement from "../pages/Admin/RevenueManagement/RevenueManagement";
+import ShiftSchedule from "../pages/Admin/ShiftSchedule/ShiftSchedule";
 import StaffManagement from "../pages/Admin/StaffManagement/StaffManagement";
 import UserManagement from "../pages/Admin/UserManagement/UserManagement";
 
@@ -26,6 +27,7 @@ const AdminRoutes = () => {
         <Route path="/menu-management_admin" element={<MenuManagementAdmin />} />
         <Route path="/revenue-management_admin" element={<RevenueManagement />} />
         <Route path="/staff-management_admin" element={<StaffManagement />} />
+        <Route path="/shift-schedule_admin" element={<ShiftSchedule />} />
         <Route path="/inventory-management_admin" element={<InventoryManagement />} />
         <Route path="/user-management_admin" element={<UserManagement />} />
       </Routes>

@@ -40,4 +40,8 @@ public interface StaffShiftRepository extends JpaRepository<StaffShift, Integer>
     List<StaffShift> findByDate(LocalDate date);
 
     List<StaffShift> findByDateAndShift(LocalDate date, Shift shift);
+
+    List<StaffShift> findByDateBetweenOrderByDateAsc(LocalDate from, LocalDate to);
+
+    boolean existsByShift(Shift shift);
 }

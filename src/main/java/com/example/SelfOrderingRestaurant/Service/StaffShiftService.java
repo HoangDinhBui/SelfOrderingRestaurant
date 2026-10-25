@@ -2,6 +2,7 @@ package com.example.SelfOrderingRestaurant.Service;
 
 import com.example.SelfOrderingRestaurant.Dto.Request.ShiftRequestDTO.ShiftRegistrationDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.ShiftResponseDTO.ShiftScheduleDTO;
+import com.example.SelfOrderingRestaurant.Dto.Response.ShiftResponseDTO.StaffShiftAssignmentDTO;
 import com.example.SelfOrderingRestaurant.Entity.Shift;
 import com.example.SelfOrderingRestaurant.Entity.Staff;
 import com.example.SelfOrderingRestaurant.Entity.StaffShift;
@@ -39,20 +40,6 @@ public class StaffShiftService implements IStaffShiftService {
     private final UserRepository userRepository;
 
     private static final int MAX_STAFF_PER_SHIFT = 3;
-
-    private enum ShiftType {
-        MORNING, AFTERNOON, EVENING
-    }
-
-    private ShiftType determineShiftType(LocalTime startTime) {
-        if (startTime.isBefore(LocalTime.of(12, 0))) {
-            return ShiftType.MORNING;
-        } else if (startTime.isBefore(LocalTime.of(18, 0))) {
-            return ShiftType.AFTERNOON;
-        } else {
-            return ShiftType.EVENING;
-        }
-    }
 
     @Transactional
     @Override
@@ -131,25 +118,7 @@ public class StaffShiftService implements IStaffShiftService {
                 continue;
             }
 
-            // Kiểm tra loại ca của các nhân viên đã đăng ký trong ngày
-            List<StaffShift> shiftsOnSameDay = staffShiftRepository.findByDate(currentDate);
-            ShiftType requestedShiftType = determineShiftType(shift.getStartTime());
-            boolean hasSameShiftType = shiftsOnSameDay.stream()
-                    .map(ss -> determineShiftType(ss.getShift().getStartTime()))
-                    .anyMatch(shiftType -> shiftType == requestedShiftType);
-
-            if (hasSameShiftType) {
-                continue; // Bỏ qua nếu đã có nhân viên đăng ký cùng loại ca
-            }
-
-            // Kiểm tra trùng lặp thời gian
-            boolean hasOverlap = shiftsOnSameDay.stream().anyMatch(ss -> {
-                Shift existingShiftObj = ss.getShift();
-                return (shift.getStartTime().isBefore(existingShiftObj.getEndTime()) &&
-                        shift.getEndTime().isAfter(existingShiftObj.getStartTime()));
-            });
-
-            if (hasOverlap) {
+            if (overlapsOwnShifts(staff, shift, currentDate)) {
                 continue;
             }
 
@@ -169,7 +138,7 @@ public class StaffShiftService implements IStaffShiftService {
         }
 
         if (registeredShiftIds.isEmpty()) {
-            throw new BadRequestException("No shifts were registered due to conflicts, existing registrations, or same shift type.");
+            throw new BadRequestException("No shifts were registered: they are full, already yours, or overlap your other shifts.");
         }
 
         response.put("registeredShiftIds", registeredShiftIds);
@@ -284,6 +253,10 @@ public class StaffShiftService implements IStaffShiftService {
         Shift shift = shiftRepository.findById(shiftId)
                 .orElseThrow(() -> new ResourceNotFoundException("Shift with ID " + shiftId + " not found"));
 
+        if (date.isBefore(LocalDate.now())) {
+            throw new BadRequestException("Cannot assign a shift in the past (" + date + ")");
+        }
+
         // Kiểm tra số lượng nhân viên trong ca
         List<StaffShift> shiftRegistrations = staffShiftRepository.findByDateAndShift(date, shift);
         if (shiftRegistrations.size() >= MAX_STAFF_PER_SHIFT) {
@@ -296,26 +269,9 @@ public class StaffShiftService implements IStaffShiftService {
             throw new BadRequestException("Staff already assigned to shift " + shift.getName() + " on " + date);
         }
 
-        // Kiểm tra loại ca của các nhân viên đã đăng ký trong ngày
-        List<StaffShift> shiftsOnSameDay = staffShiftRepository.findByDate(date);
-        ShiftType requestedShiftType = determineShiftType(shift.getStartTime());
-        boolean hasSameShiftType = shiftsOnSameDay.stream()
-                .map(ss -> determineShiftType(ss.getShift().getStartTime()))
-                .anyMatch(shiftType -> shiftType == requestedShiftType);
-
-        if (hasSameShiftType) {
-            throw new BadRequestException("Shift type " + requestedShiftType + " is already assigned for " + date);
-        }
-
-        // Kiểm tra trùng lặp thời gian
-        boolean hasOverlap = shiftsOnSameDay.stream().anyMatch(ss -> {
-            Shift existingShiftObj = ss.getShift();
-            return (shift.getStartTime().isBefore(existingShiftObj.getEndTime()) &&
-                    shift.getEndTime().isAfter(existingShiftObj.getStartTime()));
-        });
-
-        if (hasOverlap) {
-            throw new BadRequestException("Shift " + shift.getName() + " overlaps with an existing shift on " + date);
+        // Only this staff member's own shifts can clash; colleagues share a shift up to the cap
+        if (overlapsOwnShifts(staff, shift, date)) {
+            throw new BadRequestException("Shift " + shift.getName() + " overlaps with another shift of this staff on " + date);
         }
 
         // Gán ca
@@ -326,6 +282,47 @@ public class StaffShiftService implements IStaffShiftService {
         staffShift.setStatus(StaffShiftStatus.ASSIGNED);
 
         staffShiftRepository.save(staffShift);
+    }
+
+    private boolean overlapsOwnShifts(Staff staff, Shift shift, LocalDate date) {
+        return staffShiftRepository.findByStaffAndDate(staff, date).stream().anyMatch(ss -> {
+            Shift other = ss.getShift();
+            return shift.getStartTime().isBefore(other.getEndTime())
+                    && shift.getEndTime().isAfter(other.getStartTime());
+        });
+    }
+
+    @Transactional
+    public List<StaffShiftAssignmentDTO> getAssignments(LocalDate from, LocalDate to) {
+        if (to.isBefore(from)) {
+            throw new BadRequestException("'to' must not be before 'from'");
+        }
+        return staffShiftRepository.findByDateBetweenOrderByDateAsc(from, to).stream()
+                .map(ss -> {
+                    StaffShiftAssignmentDTO dto = new StaffShiftAssignmentDTO();
+                    dto.setStaffShiftId(ss.getStaffShiftKey());
+                    dto.setDate(ss.getDate());
+                    dto.setStaffId(ss.getStaff().getStaffId());
+                    dto.setStaffName(ss.getStaff().getFullname());
+                    dto.setShiftId(ss.getShift().getShiftId());
+                    dto.setShiftName(ss.getShift().getName());
+                    dto.setStartTime(ss.getShift().getStartTime());
+                    dto.setEndTime(ss.getShift().getEndTime());
+                    dto.setStatus(ss.getStatus());
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
+
+    /** Past assignments stay: attendance and salary are computed from them. */
+    @Transactional
+    public void removeAssignmentByAdmin(Integer staffShiftId) {
+        StaffShift staffShift = staffShiftRepository.findById(staffShiftId)
+                .orElseThrow(() -> new ResourceNotFoundException("Shift assignment " + staffShiftId + " not found"));
+        if (staffShift.getDate().isBefore(LocalDate.now())) {
+            throw new BadRequestException("Cannot remove a past shift assignment");
+        }
+        staffShiftRepository.delete(staffShift);
     }
 
     private ShiftScheduleDTO mapToShiftScheduleDTO(StaffShift staffShift) {
