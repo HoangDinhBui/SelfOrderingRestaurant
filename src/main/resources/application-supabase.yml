@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://${SUPABASE_DB_HOST}:5432/postgres?sslmode=require&currentSchema=restaurant
+    username: ${SUPABASE_DB_USER}
+    password: ${SUPABASE_DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: ${SUPABASE_DB_POOL_SIZE:5}
+  jpa:
+    hibernate:
+      ddl-auto: ${SUPABASE_DB_DDL_AUTO:validate}
+    properties:
+      hibernate.hbm2ddl.halt_on_error: true

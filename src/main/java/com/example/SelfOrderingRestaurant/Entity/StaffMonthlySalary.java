@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.ColumnDefault;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -29,7 +30,8 @@ public class StaffMonthlySalary {
     @Column(name = "month_year", nullable = false)
     private LocalDate monthYear;
 
-    @Column(name = "total_working_hours", columnDefinition = "DOUBLE DEFAULT 0.0")
+    @ColumnDefault("0.0")
+    @Column(name = "total_working_hours")
     private Double totalWorkingHours;
 
     @Column(name = "hourly_salary", nullable = false, precision = 10, scale = 2)
