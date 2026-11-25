@@ -5,6 +5,8 @@ public enum OrderStatus {
     PROCESSING,
     COMPLETED,
     CANCELLED,
-    SCHEDULED
+    SCHEDULED,
+    // Lịch hẹn đã được nhà hàng xác nhận, khách chưa đến
+    CONFIRMED
 }
 

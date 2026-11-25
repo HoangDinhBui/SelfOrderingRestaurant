@@ -59,4 +59,10 @@ public class Order {
 
     @Column(name = "reservation_time")
     private LocalDateTime reservationTime;
+
+    @Column(name = "contact_phone", length = 20)
+    private String contactPhone;
+
+    @Column(name = "guest_count")
+    private Integer guestCount;
 }
