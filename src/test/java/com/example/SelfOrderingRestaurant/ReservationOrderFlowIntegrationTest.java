@@ -176,4 +176,23 @@ public class ReservationOrderFlowIntegrationTest {
 
         assertThrows(ValidationException.class, () -> orderService.updateOrderStatus(o.getOrderId(), "COMPLETED"));
     }
+
+    @Test
+    void getAllTables_ignoresRejectedReservation() {
+        saveReservation(table901, OrderStatus.CANCELLED, LocalDateTime.of(2026, 12, 2, 19, 0));
+
+        assertEquals("AVAILABLE", tableDto(901).getStatus());
+    }
+
+    @Test
+    void swap_doesNotMoveReservations() {
+        Order walkIn = saveReservation(table901, OrderStatus.PENDING, null);
+        Order booking = saveReservation(table902, OrderStatus.CONFIRMED, LocalDateTime.of(2026, 12, 1, 19, 0));
+
+        dinningTableService.swapTables(901, 902);
+
+        assertEquals(902, orderRepository.findById(walkIn.getOrderId()).orElseThrow().getTables().getTableNumber());
+        assertEquals(902, orderRepository.findById(booking.getOrderId()).orElseThrow().getTables().getTableNumber());
+        assertEquals(TableStatus.AVAILABLE, tableRepository.findById(901).orElseThrow().getTableStatus());
+    }
 }

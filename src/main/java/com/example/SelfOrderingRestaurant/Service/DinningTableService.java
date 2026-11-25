@@ -90,9 +90,9 @@ public class DinningTableService implements IDinningTableService {
         return dinningTableRepository.findAll().stream()
                 .map(table -> {
                     List<Order> allOrders = orderRepository.findByTableNumber(table.getTableNumber());
-                    // Lịch hẹn chưa nhận khách không chiếm bàn
+                    // Lịch hẹn chưa nhận khách và đơn đã hủy (kể cả lịch hẹn bị từ chối) không chiếm bàn
                     List<Order> tableOrders = allOrders.stream()
-                            .filter(order -> !ReservationPolicy.isAwaiting(order))
+                            .filter(order -> !ReservationPolicy.isAwaiting(order) && order.getStatus() != OrderStatus.CANCELLED)
                             .collect(Collectors.toList());
                     TableStatus status;
                     if (tableOrders.isEmpty()) {
@@ -160,9 +160,11 @@ public class DinningTableService implements IDinningTableService {
         DinningTable tableB = dinningTableRepository.findById(tableNumberB)
                 .orElseThrow(() -> new ResourceNotFoundException("Table with number " + tableNumberB + " not found"));
 
-        // Fetch orders
-        List<Order> ordersTableA = orderRepository.findByTableNumber(tableNumberA);
-        List<Order> ordersTableB = orderRepository.findByTableNumber(tableNumberB);
+        // Fetch orders; reservations stay on the table the guest booked
+        List<Order> ordersTableA = orderRepository.findByTableNumber(tableNumberA).stream()
+                .filter(order -> !ReservationPolicy.isAwaiting(order)).collect(Collectors.toList());
+        List<Order> ordersTableB = orderRepository.findByTableNumber(tableNumberB).stream()
+                .filter(order -> !ReservationPolicy.isAwaiting(order)).collect(Collectors.toList());
 
         // Validate orders have non-null tables
         ordersTableA.forEach(order -> {

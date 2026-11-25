@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { authAPI } from "../../axiosConfig";
 import { errorMessage, getMenuDishes } from "../../services/reservationAPI";
 import { formatVnd, normalizeDish } from "../../utils/reservation";
@@ -25,9 +25,18 @@ export default function ManualOrderModal({
   const [cart, setCart] = useState({}); // dishId -> quantity
   const [submitting, setSubmitting] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
+  const closeTimer = useRef(null);
+
+  // Hủy hẹn giờ đóng khi modal đóng hoặc bị gỡ, để lần mở sau không bị tự đóng
+  useEffect(() => {
+    if (isOpen) return undefined;
+    clearTimeout(closeTimer.current);
+    return () => clearTimeout(closeTimer.current);
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
+    setSubmitting(false);
     setCart({});
     setCustomerName("");
     setKitchenNote("");
@@ -94,7 +103,7 @@ export default function ManualOrderModal({
       });
       setToastMessage(`Đã tạo đơn #${orderId} cho bàn ${targetTable}, món đã chuyển xuống bếp.`);
       onOrderSuccess?.(orderId);
-      setTimeout(onClose, 1200);
+      closeTimer.current = setTimeout(onClose, 1200);
     } catch (err) {
       setToastMessage(errorMessage(err, "Không tạo được đơn, vui lòng thử lại."));
       setSubmitting(false);

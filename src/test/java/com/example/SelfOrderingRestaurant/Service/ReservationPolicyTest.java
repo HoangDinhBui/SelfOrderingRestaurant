@@ -204,4 +204,21 @@ class ReservationPolicyTest {
         Order o = reservation(10, OrderStatus.PENDING, LocalDateTime.of(2026, 12, 1, 19, 0), table);
         assertThrows(ValidationException.class, () -> policy().changeTable(o, table(902, 4)));
     }
+
+    @Test
+    void confirm_afterTimePassed_allowed() {
+        // Yêu cầu chưa ai duyệt kịp trước giờ hẹn vẫn xác nhận được
+        Order o = reservation(10, OrderStatus.SCHEDULED, LocalDateTime.of(2026, 12, 1, 9, 30), table);
+        policy().confirm(o);
+        assertEquals(OrderStatus.CONFIRMED, o.getStatus());
+    }
+
+    @Test
+    void changeTable_afterTimePassed_allowed() {
+        // Khách đến trễ, bàn cũ còn khách: phải đổi được bàn rồi nhận khách
+        Order o = reservation(10, OrderStatus.CONFIRMED, LocalDateTime.of(2026, 12, 1, 9, 30), table);
+        DinningTable other = table(902, 4);
+        policy().changeTable(o, other);
+        assertSame(other, o.getTables());
+    }
 }

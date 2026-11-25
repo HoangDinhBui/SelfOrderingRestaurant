@@ -1,8 +1,9 @@
 import { authAPI, publicAPI } from "../axiosConfig";
 
-// Khách (không cần đăng nhập)
+// Khách (không cần đăng nhập). Dùng authAPI để nếu khách đã đăng nhập thì có token,
+// backend gắn lịch hẹn vào tài khoản; chưa đăng nhập thì authAPI không gửi token.
 export const createReservation = async (body) =>
-  (await publicAPI.post("/api/reservations", body)).data;
+  (await authAPI.post("/api/reservations", body)).data;
 
 export const getPublicTables = async () =>
   (await publicAPI.get("/api/reservations/tables")).data;

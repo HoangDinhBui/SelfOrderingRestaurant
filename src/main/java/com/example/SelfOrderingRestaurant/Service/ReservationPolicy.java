@@ -52,6 +52,11 @@ public class ReservationPolicy {
         if (time.isAfter(now.plus(MAX_AHEAD))) {
             throw new ValidationException("Chỉ nhận đặt bàn trước tối đa 30 ngày");
         }
+        validateFit(table, time, guestCount, excludeOrderId);
+    }
+
+    /** Sức chứa và trùng giờ: dùng cả khi xác nhận/đổi bàn, kể cả khi giờ hẹn đã qua (khách đến trễ). */
+    void validateFit(DinningTable table, LocalDateTime time, Integer guestCount, Integer excludeOrderId) {
         if (guestCount != null && table.getCapacity() != null && guestCount > table.getCapacity()) {
             throw new ValidationException("Bàn " + table.getTableNumber() + " chỉ có " + table.getCapacity()
                     + " chỗ, không đủ cho " + guestCount + " khách");
@@ -68,7 +73,7 @@ public class ReservationPolicy {
 
     public void confirm(Order order) {
         requireStatus(order, "xác nhận", OrderStatus.SCHEDULED);
-        validateNew(order.getTables(), order.getReservationTime(), order.getGuestCount(), order.getOrderId());
+        validateFit(order.getTables(), order.getReservationTime(), order.getGuestCount(), order.getOrderId());
         setStatus(order, OrderStatus.CONFIRMED);
     }
 
@@ -101,7 +106,7 @@ public class ReservationPolicy {
 
     public void changeTable(Order order, DinningTable newTable) {
         requireStatus(order, "đổi bàn cho", OrderStatus.SCHEDULED, OrderStatus.CONFIRMED);
-        validateNew(newTable, order.getReservationTime(), order.getGuestCount(), order.getOrderId());
+        validateFit(newTable, order.getReservationTime(), order.getGuestCount(), order.getOrderId());
         order.setTables(newTable);
         orderRepository.save(order);
     }

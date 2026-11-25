@@ -206,4 +206,12 @@ public class ReservationApiIntegrationTest {
         mvc.perform(put("/api/reservations/{id}/confirm", walkIn.getOrderId()))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    @WithMockUser(roles = "STAFF")
+    void checkIn_scheduledToday_400() throws Exception {
+        Integer id = createdId(post("/api/reservations", body("2026-12-01T19:00:00")).andExpect(status().isOk()));
+
+        mvc.perform(put("/api/reservations/{id}/check-in", id)).andExpect(status().isBadRequest());
+    }
 }

@@ -6,7 +6,7 @@ import React, {
   useRef,
 } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { isAwaitingReservation } from "../../../utils/reservation";
+import { isOffTable } from "../../../utils/reservation";
 import MenuBar from "../../../components/layout/MenuBar.jsx";
 import axios from "axios";
 import { FaTrash } from "react-icons/fa";
@@ -442,8 +442,8 @@ const TableManagementAdmin = () => {
       if (!result || !result.orders) {
         throw new Error("Invalid GraphQL response structure");
       }
-      // Lịch hẹn chưa nhận khách không thuộc về bàn: không hiện, không tính tiền
-      return result.orders.filter((order) => !isAwaitingReservation(order));
+      // Lịch hẹn chưa nhận khách và đơn đã hủy không thuộc về bàn: không hiện, không tính tiền
+      return result.orders.filter((order) => !isOffTable(order));
     } catch (err) {
       console.error("Error fetching orders via GraphQL:", err);
       throw err;
@@ -474,7 +474,7 @@ const TableManagementAdmin = () => {
       try {
         const response = await API.get("/api/orders");
         response.data = (response.data || []).filter(
-          (order) => !isAwaitingReservation(order)
+          (order) => !isOffTable(order)
         );
         console.log("Orders from REST:", response.data);
         setOrders(response.data);

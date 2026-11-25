@@ -101,6 +101,9 @@ public class ReservationService implements IReservationService {
     @Override
     @Transactional
     public ReservationResponseDTO checkIn(Integer orderId) {
+        if (loadAwaiting(orderId).getStatus() != OrderStatus.CONFIRMED) {
+            throw new ValidationException("Lịch hẹn #" + orderId + " chưa được xác nhận, hãy chấp nhận trước khi nhận khách");
+        }
         return transition(orderId, OrderStatus.PENDING);
     }
 

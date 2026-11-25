@@ -4,6 +4,11 @@ export const RESERVATION_WAITING = ["SCHEDULED", "CONFIRMED"];
 export const isAwaitingReservation = (order) =>
   RESERVATION_WAITING.includes(String(order?.status || "").toUpperCase());
 
+// Đơn không còn thuộc về bàn: lịch hẹn chưa nhận khách, hoặc đơn đã hủy (kể cả lịch hẹn bị từ chối)
+export const isOffTable = (order) =>
+  isAwaitingReservation(order) ||
+  String(order?.status || "").toUpperCase() === "CANCELLED";
+
 export const RESERVATION_STATUS_LABEL = {
   SCHEDULED: "Chờ duyệt",
   CONFIRMED: "Đã xác nhận",

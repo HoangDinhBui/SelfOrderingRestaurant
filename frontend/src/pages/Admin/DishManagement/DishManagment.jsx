@@ -5,6 +5,7 @@ import MenuBar from "../../../components/layout/MenuBar";
 import axios from "axios";
 
 import { BACKEND_URL } from "../../../config";
+import { isAwaitingReservation } from "../../../utils/reservation";
 const DishManagementAdmin = () => {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [itemToDelete, setItemToDelete] = useState(null);
@@ -30,6 +31,7 @@ const DishManagementAdmin = () => {
               orders {
                 orderId
                 tableNumber
+                status
                 items {
                   dishId
                   dishName
@@ -50,7 +52,10 @@ const DishManagementAdmin = () => {
         if (response.data.errors) {
           throw new Error(response.data.errors[0].message);
         }
-        const orders = response.data.data.orders;
+        // Lịch hẹn chưa nhận khách thì bếp chưa nấu
+        const orders = response.data.data.orders.filter(
+          (order) => !isAwaitingReservation(order)
+        );
         const staffData = orders.flatMap((order) =>
           order.items.map((item, index) => ({
             id: `${order.orderId}-${item.dishId}-${index}`,
