@@ -83,7 +83,7 @@ function App() {
                 path="/table-management_admin"
                 element={<RequireRole roles={["ADMIN"]}><TableManagementAdmin /></RequireRole>}
               />
-              <Route path="/evaluate_admin" element={<RequireRole roles={["ADMIN"]}><EvaluateAdmin /></RequireRole>} />
+              <Route path="/evaluate_admin" element={<RequireRole roles={["ADMIN", "STAFF"]}><EvaluateAdmin /></RequireRole>} />
               <Route
                 path="/menu-management_admin"
                 element={<RequireRole roles={["ADMIN"]}><MenuManagementAdmin /></RequireRole>}

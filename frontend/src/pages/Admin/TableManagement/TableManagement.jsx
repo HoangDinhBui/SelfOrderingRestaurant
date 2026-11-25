@@ -1,10 +1,28 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import MenuBar from "../../../components/layout/MenuBar.jsx";
 import axios from "axios";
 import { FaTrash } from "react-icons/fa";
+import ManualOrderModal from "./ManualOrderModal";
+import ReservationModal from "./ReservationModal";
 
 import { BACKEND_URL, BACKEND_WS_URL, authHeaders } from "../../../config";
+
+const formatVND = (amount) => {
+  const num = Number(amount) || 0;
+  return `${num.toLocaleString("vi-VN")}đ`;
+};
 const TableManagementAdmin = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const menuContainerRef = useRef(null);
+
   const [selectedTable, setSelectedTable] = useState(null);
   const [isDishModalOpen, setIsDishModalOpen] = useState(false);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
@@ -17,10 +35,12 @@ const TableManagementAdmin = () => {
   const [isAddTableModalOpen, setIsAddTableModalOpen] = useState(false);
   const [newTableCapacity, setNewTableCapacity] = useState("");
   const [newTableNumber, setNewTableNumber] = useState("");
+  const [isReservationModalOpen, setIsReservationModalOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [editTableData, setEditTableData] = useState([]);
   const [tables, setTables] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isManualOrderModalOpen, setIsManualOrderModalOpen] = useState(false);
   const [error, setError] = useState(null);
   const [authError, setAuthError] = useState(null);
   const [tableNotifications, setTableNotifications] = useState([]);
@@ -37,14 +57,70 @@ const TableManagementAdmin = () => {
   const [qrError, setQrError] = useState(null);
   const [qrUploading, setQrUploading] = useState(false);
   const [lastWebSocketUpdate, setLastWebSocketUpdate] = useState(null);
-  const [isTransferTableModalOpen, setIsTransferTableModalOpen] = useState(false);
-  const [isTransferConfirmModalOpen, setIsTransferConfirmModalOpen] = useState(false);
-  const [isTransferSuccessModalOpen, setIsTransferSuccessModalOpen] = useState(false);
+  const [isTransferTableModalOpen, setIsTransferTableModalOpen] =
+    useState(false);
+  const [isTransferConfirmModalOpen, setIsTransferConfirmModalOpen] =
+    useState(false);
+  const [isTransferSuccessModalOpen, setIsTransferSuccessModalOpen] =
+    useState(false);
   const [transferSourceTable, setTransferSourceTable] = useState(null);
-  const [transferDestinationTable, setTransferDestinationTable] = useState(null);
+  const [transferDestinationTable, setTransferDestinationTable] =
+    useState(null);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showAvailableListModal, setShowAvailableListModal] = useState(false);
+  const [actionSuccessText, setActionSuccessText] = useState("");
+
   const userId = localStorage.getItem("userId") || "1";
+  const tablesPerPage = 6;
+
+  // Nhúng font tiếng Việt chuẩn, rõ dấu, không bị vỡ chữ
+  useEffect(() => {
+    const fontId = "bon-appetit-clean-vi-fonts";
+    if (!document.getElementById(fontId)) {
+      const link = document.createElement("link");
+      link.id = fontId;
+      link.rel = "stylesheet";
+      link.href =
+        "https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Lexend:wght@500;600;700&display=swap&subset=vietnamese";
+      document.head.appendChild(link);
+    }
+  }, []);
+
+  // Chuẩn hóa chữ tiếng Việt cho các phần tử bên trong MenuBar nếu component gốc có text tiếng Anh
+  useEffect(() => {
+    const translateMap = {
+      "Table Management": "Quản lý bàn",
+      Tables: "Quản lý bàn",
+      Menu: "Thực đơn",
+      "Menu Management": "Quản lý thực đơn",
+      Orders: "Đơn hàng",
+      "Order Management": "Quản lý đơn hàng",
+      Staff: "Nhân sự",
+      "Staff Management": "Quản lý nhân sự",
+      Attendance: "Chấm công",
+      Reports: "Báo cáo",
+      Statistics: "Thống kê",
+      Logout: "Đăng xuất",
+      "Sign Out": "Đăng xuất",
+      Profile: "Hồ sơ",
+      Settings: "Cài đặt",
+    };
+
+    const el = menuContainerRef.current;
+    if (!el) return;
+
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null);
+    let node;
+    while ((node = walker.nextNode())) {
+      const raw = node.nodeValue?.trim();
+      if (raw && translateMap[raw]) {
+        node.nodeValue = node.nodeValue.replace(raw, translateMap[raw]);
+      }
+    }
+  }, [tables, location.pathname]);
 
   // WebSocket Setup
   useEffect(() => {
@@ -58,17 +134,17 @@ const TableManagementAdmin = () => {
     const connectWebSocket = () => {
       if (!isMounted || reconnectAttempts >= maxReconnectAttempts) {
         console.log("Max reconnect attempts reached or component unmounted");
-        setSocketError("Max reconnect attempts reached or component unmounted");
+        setSocketError("Đã đạt giới hạn kết nối lại WebSocket");
         return;
       }
 
       console.log(
         `Attempting WebSocket connection for ADMIN (Attempt ${
           reconnectAttempts + 1
-        })`
+        })`,
       );
       ws = new WebSocket(
-        `${BACKEND_WS_URL}/ws/notifications?userType=ADMIN&userId=${userId}`
+        `${BACKEND_WS_URL}/ws/notifications?userType=ADMIN&userId=${userId}`,
       );
 
       ws.onopen = () => {
@@ -92,7 +168,7 @@ const TableManagementAdmin = () => {
           const message = JSON.parse(event.data);
           console.log(
             "Received WebSocket message for ADMIN:",
-            JSON.stringify(message, null, 2)
+            JSON.stringify(message, null, 2),
           );
 
           if (message.type === "PAYMENT_STATUS_UPDATED" && message.orderId) {
@@ -103,7 +179,7 @@ const TableManagementAdmin = () => {
                       ...order,
                       paymentStatus: message.paymentStatus?.toUpperCase(),
                     }
-                  : order
+                  : order,
               );
               console.log("Updated orders via WebSocket:", updatedOrders);
               return updatedOrders;
@@ -123,27 +199,27 @@ const TableManagementAdmin = () => {
                                 paymentStatus:
                                   message.paymentStatus?.toUpperCase(),
                               }
-                            : order
+                            : order,
                         ),
                       }
-                    : table
+                    : table,
                 );
                 console.log(
-                  `Updated table ${message.tableNumber} status to ${message.tableStatus} for order ${message.orderId} via WebSocket`
+                  `Updated table ${message.tableNumber} status to ${message.tableStatus} for order ${message.orderId} via WebSocket`,
                 );
                 return updatedTables;
               });
               setLastWebSocketUpdate(Date.now());
             } else {
               console.warn(
-                "Table info missing in PAYMENT_STATUS_UPDATED message, fetching tables"
+                "Table info missing in PAYMENT_STATUS_UPDATED message, fetching tables",
               );
               fetchTables();
             }
           } else if (message.type === "NEW_ORDER" && message.order) {
             setOrders((prev) => {
               const orderExists = prev.some(
-                (o) => Number(o.orderId) === Number(message.order.orderId)
+                (o) => Number(o.orderId) === Number(message.order.orderId),
               );
               if (!orderExists) {
                 console.log("Added new order via WebSocket:", message.order);
@@ -155,7 +231,7 @@ const TableManagementAdmin = () => {
           } else if (message.type === "TABLE_ADDED" && message.table) {
             setTables((prev) => {
               const tableExists = prev.some(
-                (t) => Number(t.id) === Number(message.table.table_id)
+                (t) => Number(t.id) === Number(message.table.table_id),
               );
               if (!tableExists) {
                 const newTable = {
@@ -184,8 +260,8 @@ const TableManagementAdmin = () => {
                       location: message.table.location,
                       qrCode: message.table.qrCode,
                     }
-                  : table
-              )
+                  : table,
+              ),
             );
             console.log("Updated table via WebSocket:", message.table);
             fetchAllNotifications();
@@ -195,18 +271,18 @@ const TableManagementAdmin = () => {
           ) {
             setTableNotifications((prev) => {
               const exists = prev.some(
-                (n) => n.notificationId === message.notificationId
+                (n) => n.notificationId === message.notificationId,
               );
               if (exists) {
                 console.log(`Updating notification ${message.notificationId}`);
                 return prev.map((n) =>
                   n.notificationId === message.notificationId
                     ? { ...n, ...message }
-                    : n
+                    : n,
                 );
               } else {
                 console.log(
-                  `Adding new notification ${message.notificationId}`
+                  `Adding new notification ${message.notificationId}`,
                 );
                 return [...prev, message];
               }
@@ -218,7 +294,7 @@ const TableManagementAdmin = () => {
           }
         } catch (err) {
           console.error("Error processing WebSocket message for ADMIN:", err);
-          setSocketError("Failed to process notification");
+          setSocketError("Không thể xử lý thông báo thời gian thực");
           fetchTables();
           fetchOrders();
         }
@@ -226,7 +302,7 @@ const TableManagementAdmin = () => {
 
       ws.onerror = (error) => {
         console.error("WebSocket error for ADMIN:", error);
-        setSocketError("Failed to connect to notifications server");
+        setSocketError("Không thể kết nối tới máy chủ thông báo");
       };
 
       ws.onclose = () => {
@@ -236,7 +312,7 @@ const TableManagementAdmin = () => {
           const delay = baseReconnectDelay * Math.pow(2, reconnectAttempts);
           reconnectAttempts++;
           console.log(
-            `Scheduling reconnect in ${delay}ms (Attempt ${reconnectAttempts})`
+            `Scheduling reconnect in ${delay}ms (Attempt ${reconnectAttempts})`,
           );
           reconnectTimeout = setTimeout(connectWebSocket, delay);
         }
@@ -284,7 +360,7 @@ const TableManagementAdmin = () => {
         }
         return config;
       },
-      (error) => Promise.reject(error)
+      (error) => Promise.reject(error),
     );
 
     const responseInterceptor = axios.interceptors.response.use(
@@ -296,11 +372,11 @@ const TableManagementAdmin = () => {
           !originalRequest._retry
         ) {
           originalRequest._retry = true;
-          setAuthError("Your session has expired. Please log in again.");
+          setAuthError("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
           return Promise.reject(error);
         }
         return Promise.reject(error);
-      }
+      },
     );
 
     return () => {
@@ -323,7 +399,7 @@ const TableManagementAdmin = () => {
       const response = await axios.post(
         `${BACKEND_URL}/graphql`,
         { query, variables },
-        { headers: { "Content-Type": "application/json", ...authHeaders() } }
+        { headers: { "Content-Type": "application/json", ...authHeaders() } },
       );
       if (response.data.errors) {
         throw new Error(response.data.errors[0].message);
@@ -353,6 +429,7 @@ const TableManagementAdmin = () => {
               quantity
               price
               notes
+              status
             }
           }
         }
@@ -380,10 +457,10 @@ const TableManagementAdmin = () => {
       setTables((prevTables) =>
         prevTables.map((table) => {
           const tableOrders = ordersData.filter(
-            (order) => order.tableNumber?.toString() === table.id.toString()
+            (order) => order.tableNumber?.toString() === table.id.toString(),
           );
           return { ...table, orders: tableOrders };
-        })
+        }),
       );
 
       return ordersData;
@@ -397,16 +474,16 @@ const TableManagementAdmin = () => {
         setTables((prevTables) =>
           prevTables.map((table) => {
             const tableOrders = response.data.filter(
-              (order) => order.tableNumber?.toString() === table.id.toString()
+              (order) => order.tableNumber?.toString() === table.id.toString(),
             );
             return { ...table, orders: tableOrders };
-          })
+          }),
         );
 
         return response.data;
       } catch (restErr) {
         console.error("REST orders fetch also failed:", restErr);
-        setOrderError("Failed to load orders data");
+        setOrderError("Không thể tải dữ liệu đơn hàng");
         return [];
       }
     } finally {
@@ -419,7 +496,7 @@ const TableManagementAdmin = () => {
     async (tableId) => {
       if (!tableId) {
         console.error("Cannot fetch orders without tableId");
-        setOrderError("Invalid table ID");
+        setOrderError("Mã bàn không hợp lệ");
         return [];
       }
 
@@ -435,22 +512,22 @@ const TableManagementAdmin = () => {
         const unpaidOrders = ordersData.filter(
           (order) =>
             order.tableNumber?.toString() === tableId.toString() &&
-            order.paymentStatus?.toUpperCase() === "UNPAID"
+            order.paymentStatus?.toUpperCase() === "UNPAID",
         );
         console.log(`Unpaid orders for table ${tableId}:`, unpaidOrders);
         return unpaidOrders || [];
       } catch (err) {
         console.error(
           `Error fetching unpaid orders for table ${tableId}:`,
-          err
+          err,
         );
-        setOrderError(`Failed to load unpaid orders for table #${tableId}`);
+        setOrderError(`Không thể tải đơn chưa thanh toán của bàn #${tableId}`);
         return [];
       } finally {
         setOrderLoading(false);
       }
     },
-    [fetchOrdersGraphQL]
+    [fetchOrdersGraphQL],
   );
 
   // Fetch Tables
@@ -483,19 +560,95 @@ const TableManagementAdmin = () => {
       console.error("Error fetching tables:", err);
       setError(
         err.response?.status === 403
-          ? "You don't have permission to access this resource."
-          : "Failed to load tables. Please try again later."
+          ? "Bạn không có quyền truy cập vào tài nguyên này."
+          : "Không thể tải danh sách bàn. Vui lòng thử lại sau.",
       );
     } finally {
       setLoading(false);
     }
   }, [fetchOrders]);
 
+  const isDishPending = (status) => {
+    const normalized = (status || "PENDING").toString().toUpperCase().trim();
+    return [
+      "PENDING",
+      "WAITING",
+      "NEW",
+      "ORDERED",
+      "CHUA_LAM",
+      "CHƯA LÀM",
+      "CHỜ LÀM",
+      "CHỜ XỬ LÝ",
+    ].includes(normalized);
+  };
+
+  // Tăng giảm số lượng món tính toán trực tiếp trên giao diện (phép tính thông thường, chưa cần gọi API)
+  const handleUpdateDishQuantity = (orderId, dishId, item, newQuantity) => {
+    if (
+      newQuantity < 1 ||
+      !isDishPending(item.status || item.itemStatus || item.cookingStatus)
+    )
+      return;
+    setOrderError(null);
+    setOrders((prevOrders) =>
+      prevOrders.map((ord) => {
+        if (ord.orderId !== orderId) return ord;
+        const updatedItems = (ord.items || []).map((it) => {
+          const itId = it.dishId || it.id;
+          const targetId = dishId || item.dishId || item.id;
+          if (itId === targetId && it.dishName === item.dishName) {
+            return { ...it, quantity: newQuantity };
+          }
+          return it;
+        });
+        const newTotal = updatedItems.reduce(
+          (sum, it) =>
+            sum + (Number(it.price) || 0) * (Number(it.quantity) || 1),
+          0,
+        );
+        return { ...ord, items: updatedItems, totalAmount: newTotal };
+      }),
+    );
+  };
+
+  // Hủy món ăn cập nhật trực tiếp trên giao diện
+  const handleCancelDishItem = (orderId, dishId, item) => {
+    if (!isDishPending(item.status || item.itemStatus || item.cookingStatus))
+      return;
+    if (
+      !window.confirm(
+        `Xác nhận hủy món "${item.dishName}" khỏi đơn #${orderId}?`,
+      )
+    )
+      return;
+    setOrderError(null);
+    setOrders((prevOrders) =>
+      prevOrders.map((ord) => {
+        if (ord.orderId !== orderId) return ord;
+        const updatedItems = (ord.items || []).filter((it) => {
+          const itId = it.dishId || it.id;
+          const targetId = dishId || item.dishId || item.id;
+          return !(itId === targetId && it.dishName === item.dishName);
+        });
+        const newTotal = updatedItems.reduce(
+          (sum, it) =>
+            sum + (Number(it.price) || 0) * (Number(it.quantity) || 1),
+          0,
+        );
+        return { ...ord, items: updatedItems, totalAmount: newTotal };
+      }),
+    );
+  };
+
+  useEffect(() => {
+    fetchTables();
+  }, [fetchTables]);
+
   // Notification Functions
   const fetchTableNotifications = async (tableId) => {
     if (!tableId) {
       console.error("Cannot fetch notifications for undefined table ID");
-      setNotificationsError("Invalid table selected");
+      setNotificationsError("Chưa chọn bàn hợp lệ");
       return;
     }
 
@@ -509,13 +662,15 @@ const TableManagementAdmin = () => {
 
       setTableNotifications((prev) => {
         const otherNotifications = prev.filter(
-          (n) => n.tableNumber !== tableId
+          (n) => n.tableNumber !== tableId,
         );
         return [...otherNotifications, ...notifications];
       });
     } catch (err) {
       console.error(`Error fetching notifications for table ${tableId}:`, err);
-      setNotificationsError("Failed to load notifications. Please try again.");
+      setNotificationsError(
+        "Không thể tải thông báo của bàn. Vui lòng thử lại.",
+      );
     } finally {
       setNotificationsLoading(false);
     }
@@ -535,10 +690,10 @@ const TableManagementAdmin = () => {
           .catch((err) => {
             console.error(
               `Error fetching notifications for table ${table.id}:`,
-              err
+              err,
             );
             return [];
-          })
+          }),
       );
 
       const notificationsArrays = await Promise.all(notificationsPromises);
@@ -556,7 +711,7 @@ const TableManagementAdmin = () => {
       });
     } catch (err) {
       console.error("Error fetching unread notifications:", err);
-      setNotificationsError("Failed to load unread notifications");
+      setNotificationsError("Không thể tải thông báo chưa đọc");
     } finally {
       setNotificationsLoading(false);
     }
@@ -576,10 +731,10 @@ const TableManagementAdmin = () => {
           .catch((err) => {
             console.error(
               `Error fetching notifications for table ${table.id}:`,
-              err
+              err,
             );
             return [];
-          })
+          }),
       );
 
       const notificationsArrays = await Promise.all(notificationsPromises);
@@ -591,7 +746,7 @@ const TableManagementAdmin = () => {
       setTableNotifications(allNotifications);
     } catch (err) {
       console.error("Error fetching all notifications:", err);
-      setNotificationsError("Failed to load notifications");
+      setNotificationsError("Không thể tải danh sách thông báo");
       setTableNotifications([]);
     } finally {
       setNotificationsLoading(false);
@@ -610,16 +765,16 @@ const TableManagementAdmin = () => {
         prev.map((notification) =>
           notification.notificationId === notificationId
             ? { ...notification, isRead: true }
-            : notification
-        )
+            : notification,
+        ),
       );
       await API.put(`/api/notifications/${notificationId}/read`);
     } catch (err) {
       console.error(
         `Error marking notification ${notificationId} as read:`,
-        err
+        err,
       );
-      setNotificationsError("Failed to mark notification as read");
+      setNotificationsError("Không thể đánh dấu thông báo đã đọc");
       fetchUnreadNotifications();
     }
   };
@@ -650,21 +805,21 @@ const TableManagementAdmin = () => {
 
       const tableUrl = `http://192.168.1.100:5173/table/${response.data.table_id}`;
       const qrApiUrl = `http://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(
-        tableUrl
+        tableUrl,
       )}&size=200x200`;
       setQrUrl(qrApiUrl);
     } catch (err) {
       console.error("Error creating table:", err);
       setErrorMessage(
         err.response?.data?.message ||
-          "Failed to create table. Please check the input and try again."
+          "Không thể tạo bàn mới. Vui lòng kiểm tra thông tin và thử lại.",
       );
     }
   };
 
   const handleGenerateQr = async () => {
     if (!newTableId) {
-      setQrError("No table ID available for QR code generation!");
+      setQrError("Không tìm thấy mã bàn để tạo mã QR!");
       return;
     }
     setQrError(null);
@@ -672,7 +827,7 @@ const TableManagementAdmin = () => {
     try {
       const tableUrl = `http://192.168.1.100:5173/table/${newTableId}`;
       const qrApiUrl = `http://api.qrserver.com/v1/create-qr-code/?data=${encodeURIComponent(
-        tableUrl
+        tableUrl,
       )}&size=200x200`;
 
       const response = await fetch(qrApiUrl);
@@ -682,16 +837,12 @@ const TableManagementAdmin = () => {
       formData.append("file", blob, `table_${newTableId}_qr.png`);
       formData.append("tableNumber", newTableId.toString());
 
-      const res = await axios.post(
-        `${BACKEND_URL}/api/qr/upload`,
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
-      );
+      const res = await axios.post(`${BACKEND_URL}/api/qr/upload`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
 
       if (res.status >= 200 && res.status < 300) {
-        alert("QR code saved successfully!");
+        alert("Lưu mã QR thành công!");
         setIsAddTableModalOpen(false);
         setNewTableId(null);
         setQrUrl("");
@@ -702,7 +853,7 @@ const TableManagementAdmin = () => {
       }
     } catch (err) {
       console.error("Error generating QR code:", err);
-      setQrError("Failed to save QR code. Please try again!");
+      setQrError("Không thể lưu mã QR. Vui lòng thử lại!");
     } finally {
       setQrUploading(false);
     }
@@ -722,7 +873,7 @@ const TableManagementAdmin = () => {
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error("Error downloading QR code:", err);
-      setQrError("Failed to download QR code. Please try again!");
+      setQrError("Không thể tải mã QR. Vui lòng thử lại!");
     }
   };
 
@@ -744,15 +895,15 @@ const TableManagementAdmin = () => {
     const tableIds = editTableData.map((table) => table.id);
     const hasDuplicateIds = new Set(tableIds).size !== tableIds.length;
     const hasInvalidValues = editTableData.some(
-      (table) => table.id <= 0 || table.capacity <= 0
+      (table) => table.id <= 0 || table.capacity <= 0,
     );
 
     if (hasDuplicateIds) {
-      setErrorMessage("Duplicate table numbers found.");
+      setErrorMessage("Số bàn bị trùng lặp.");
       return;
     }
     if (hasInvalidValues) {
-      setErrorMessage("Table number and capacity must be greater than 0.");
+      setErrorMessage("Số bàn và sức chứa phải lớn hơn 0.");
       return;
     }
 
@@ -773,7 +924,7 @@ const TableManagementAdmin = () => {
       fetchAllNotifications();
     } catch (err) {
       console.error("Error updating tables:", err);
-      setErrorMessage("Failed to update tables. Please try again.");
+      setErrorMessage("Không thể cập nhật thông tin bàn. Vui lòng thử lại.");
     }
   };
 
@@ -783,12 +934,12 @@ const TableManagementAdmin = () => {
       await API.delete(`/api/admin/tables/${id}`);
       setTables((prevTables) => prevTables.filter((table) => table.id !== id));
       setEditTableData((prevData) =>
-        prevData.filter((table) => table.id !== id)
+        prevData.filter((table) => table.id !== id),
       );
       fetchAllNotifications();
     } catch (err) {
       console.error("Error deleting table:", err);
-      setErrorMessage("Failed to delete table. Please try again.");
+      setErrorMessage("Không thể xóa bàn. Vui lòng thử lại.");
     }
   };
 
@@ -820,7 +971,7 @@ const TableManagementAdmin = () => {
       const tableId = table.id.toString();
       const tableOrders = ordersByTable[tableId] || [];
       const hasUnpaidOrders = tableOrders.some(
-        (order) => order.paymentStatus?.toUpperCase() !== "PAID"
+        (order) => order.paymentStatus?.toUpperCase() !== "PAID",
       );
       const updatedStatus =
         tableOrders.length === 0 || !hasUnpaidOrders ? "available" : "occupied";
@@ -831,7 +982,7 @@ const TableManagementAdmin = () => {
       ) {
         console.log(
           `Syncing table ${tableId} via useEffect: status=${updatedStatus}, orders=`,
-          tableOrders
+          tableOrders,
         );
         return { ...table, status: updatedStatus, orders: tableOrders };
       }
@@ -863,1954 +1014,1836 @@ const TableManagementAdmin = () => {
       }
 
       acc[table.id] = tableNotifications.filter(
-        (n) => n?.tableNumber?.toString() === table.id.toString() && !n.isRead
+        (n) => n?.tableNumber?.toString() === table.id.toString() && !n.isRead,
       ).length;
       return acc;
     }, {});
   }, [tableNotifications, tables]);
 
-  // New: Handle Print Bill
+  // Print Bill & Download PDF
   const handlePrintBill = async (orderId) => {
-  if (!orderId) {
-    setOrderError("Invalid order ID");
-    return;
-  }
-  try {
-    const response = await fetch(`${BACKEND_URL}/api/receipts/generate/${orderId}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/pdf",
-        ...authHeaders(),
-      },
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.message || `Failed to generate PDF (Status: ${response.status})`);
+    if (!orderId) {
+      setOrderError("Mã đơn hàng không hợp lệ");
+      return;
     }
+    try {
+      setOrderError(null);
+      const response = await fetch(
+        `${BACKEND_URL}/api/receipts/generate/${orderId}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/pdf",
+            ...authHeaders(),
+          },
+        },
+      );
 
-    const blob = await response.blob();
-    const url = window.URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `receipt-order-${orderId}.pdf`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url);
-  } catch (error) {
-    console.error("Error generating PDF:", error);
-    setOrderError(`Failed to generate receipt for order ${orderId}: ${error.message}`);
-  }
-};
-  
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.message ||
+            `Không thể xuất hóa đơn PDF (Mã: ${response.status})`,
+        );
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `receipt-order-${orderId}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+
+      // Đợi hoàn tất download rồi mới dọn dẹp URL Blob để tránh trình duyệt hủy download
+      setTimeout(() => {
+        if (document.body.contains(link)) {
+          document.body.removeChild(link);
+        }
+        window.URL.revokeObjectURL(url);
+      }, 1000);
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      setOrderError(
+        `Không thể tạo hóa đơn cho đơn #${orderId}: ${error.message}`,
+      );
+    }
+  };
+
   const handleConfirmPrint = () => {
-  if (selectedTable && selectedTable.orders && selectedTable.orders.length > 0) {
-    const orderId = selectedTable.orders[0].orderId; // Giả sử lấy orderId đầu tiên
-    if (orderId) {
-      handlePrintBill(orderId);
+    const tableOrders =
+      selectedTable?.orders ||
+      (selectedTable ? ordersByTable[selectedTable.id.toString()] : []) ||
+      [];
+    if (tableOrders.length > 0) {
+      const orderId = tableOrders[0].orderId;
+      if (orderId) {
+        handlePrintBill(orderId);
+      }
     }
-  }
-  setIsPrintModalOpen(false);
-};
+    setIsPrintModalOpen(false);
+  };
 
-const renderPrintModal = () => {
-  if (!isPrintModalOpen) return null;
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div
-        className="absolute inset-0 bg-black/50"
-        onClick={() => setIsPrintModalOpen(false)}
-      ></div>
-      <div className="relative bg-white rounded-xl shadow-2xl w-96 p-8 mx-4">
-        <div className="flex justify-center mb-4">
-          <img
-            alt="Logo"
-            className="w-24 h-24"
-            src="/img/logoremovebg.png"
-          />
-        </div>
-        <h3 className="text-xl font-bold mb-4 text-center">
-          CONFIRM PRINT?
-        </h3>
-        <div className="flex justify-center space-x-4">
-          <button
-            className="px-4 py-2 !bg-green-500 text-white rounded hover:bg-green-600"
-            onClick={handleConfirmPrint}
-          >
-            YES
-          </button>
-          <button
-            className="px-4 py-2 !bg-gray-500 text-white rounded hover:bg-gray-600"
-            onClick={() => setIsPrintModalOpen(false)}
-          >
-            NO
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-  // Modal Handlers
+  // Modal & Table Action Handlers
   const toggleNotificationModal = async (e, table) => {
     e.stopPropagation();
-    if (!table || !table.id) {
-      console.error("Cannot toggle notification modal for undefined table");
-      return;
-    }
-
-    console.log(`Toggling notification modal for table ${table.id}`);
     setSelectedTable(table);
-    setCurrentPage(1);
-
-    if (!isNotificationModalOpen) {
-      await fetchTableNotifications(table.id);
-    }
-
-    setIsNotificationModalOpen(!isNotificationModalOpen);
+    setIsNotificationModalOpen(true);
+    await fetchTableNotifications(table.id);
   };
 
-  const handleSelectTable = async (table) => {
-    if (!table || !table.id) {
-      console.error("Cannot select undefined table");
-      return;
-    }
-
-    console.log(`Selecting table ${table.id}`);
-    setSelectedTable({ ...table, orders: table.orders || [] });
-
-    if (table.status === "occupied") {
-      setOrderLoading(true);
-      try {
-        const tableOrders = await fetchUnpaidOrdersByTable(table.id);
-        setSelectedTable((prev) => ({
-          ...prev,
-          orders: tableOrders || [],
-        }));
-      } catch (err) {
-        console.error(`Failed to fetch orders for table ${table.id}:`, err);
-        setOrderError("Failed to load orders");
-      } finally {
-        setOrderLoading(false);
-      }
-    }
-  };
-
-  const handleShowDishModal = async (table) => {
-    if (!table || !table.id) {
-      console.error("Cannot show dish modal for undefined table");
-      setOrderError("Invalid table selected");
-      return;
-    }
-
-    console.log(`Showing dish modal for table ${table.id}`);
-    const initialTable = { ...table, orders: table.orders || [] };
-    setSelectedTable(initialTable);
+  const handleOpenDishModal = async (e, table) => {
+    e.stopPropagation();
+    setSelectedTable(table);
     setIsDishModalOpen(true);
-
-    setOrderLoading(true);
-    try {
-      const unpaidOrders = await fetchUnpaidOrdersByTable(table.id);
-      setSelectedTable((prev) => ({
-        ...prev,
-        orders: unpaidOrders || [],
-      }));
-    } catch (err) {
-      console.error(
-        `Failed to fetch unpaid orders for table ${table.id}:`,
-        err
-      );
-      setOrderError("Failed to load unpaid orders");
-      setSelectedTable((prev) => ({
-        ...prev,
-        orders: [],
-      }));
-    } finally {
-      setOrderLoading(false);
-    }
+    await fetchOrders();
   };
 
-  const handleShowPaymentModal = () => {
-    console.log("Showing payment modal");
-    setIsDishModalOpen(false);
+  const handleOpenPaymentModal = async (e, table) => {
+    e.stopPropagation();
+    setSelectedTable(table);
     setIsPaymentModalOpen(true);
+    await fetchUnpaidOrdersByTable(table.id);
   };
 
-  const handlePrintReceipt = () => {
-  console.log("Initiating print receipt");
-  setIsPaymentModalOpen(false);
-  setIsPrintModalOpen(true); // Mở Print Modal thay vì Confirm Modal
-};
-
-  const handlePaymentSuccess = async () => {
-  if (!selectedTable || !selectedTable.id) {
-    console.error("Cannot update status for undefined table");
-    setOrderError("Invalid table selected");
-    return;
-  }
-
-  console.log(`Processing payment success for table ${selectedTable.id}`);
-  try {
-    await API.put(`/api/admin/tables/${selectedTable.id}`, {
-      status: "AVAILABLE",
-    });
-
-    if (selectedTable.orders && selectedTable.orders.length > 0) {
-      for (const order of selectedTable.orders) {
-        try {
-          await API.put(`/api/orders/${order.orderId}/payment`, {
-            paymentStatus: "PAID",
-          });
-          // Bỏ handlePrintBill(order.orderId) ở đây
-        } catch (err) {
-          console.error(
-            `Error updating payment for order ${order.orderId}:`,
-            err
-          );
-          setOrderError(`Failed to process payment for order ${order.orderId}`);
-        }
-      }
-    }
-
-    setTables((prevTables) =>
-      prevTables.map((table) =>
-        table.id === selectedTable.id
-          ? { ...table, status: "available", orders: [] }
-          : table
-      )
-    );
-
-    setIsPaymentModalOpen(false);
-    setIsConfirmModalOpen(false);
-    setIsSuccessModalOpen(true);
-    await fetchAllNotifications();
-  } catch (err) {
-    console.error("Error processing payment:", err);
-    setOrderError("Failed to process payment");
-    setIsPaymentModalOpen(false);
-  }
-  setIsConfirmModalOpen(false);
-  setIsPrintModalOpen(true); // Mở Print Modal sau khi thanh toán
-};
-
-  const handleShowEmptyTableModal = () => {
-    console.log("Showing empty table modal");
-    setIsEmptyTableModalOpen(true);
-  };
-
-  const handleAddTableModal = () => {
-    setIsAddTableModalOpen(true);
-  };
-
-  const handleCloseAddTableModal = () => {
-    setIsAddTableModalOpen(false);
-    setNewTableNumber("");
-    setNewTableCapacity("");
-    setErrorMessage("");
-    setNewTableId(null);
-    setQrUrl("");
-    setQrError(null);
-    setQrUploading(false);
-  };
-
-  const handleEditTableModal = () => {
-    setEditTableData([...tables]);
-    setIsEditTableModalOpen(true);
-  };
-
-  const handleCloseEditTableModal = () => {
-    setIsEditTableModalOpen(false);
-    setEditTableData([]);
-    setErrorMessage("");
-  };
-
-  const handleEditTableField = (index, field, value) => {
-    setEditTableData((prevData) =>
-      prevData.map((table, i) =>
-        i === index
-          ? {
-              ...table,
-              [field]:
-                field === "id" || field === "capacity"
-                  ? parseInt(value) || table[field]
-                  : value,
-            }
-          : table
-      )
-    );
-  };
-
-  const calculateTotalFromOrders = (orders) => {
-    if (!orders || orders.length === 0) return 0;
-
-    return orders.reduce((sum, order) => {
-      return sum + (parseFloat(order.totalAmount) || 0);
-    }, 0);
-  };
-
-  const totalAmount = selectedTable?.orders
-    ? calculateTotalFromOrders(selectedTable.orders)
-    : 0;
-
-  const emptyTables = tables.filter((table) => table.status === "available");
-
-  // Initial Fetch
-  useEffect(() => {
-    fetchTables();
-
-    const pollInterval = setInterval(() => {
-      console.log("Polling for table status updates");
-      fetchTables();
-    }, 300000);
-
-    return () => clearInterval(pollInterval);
-  }, [fetchTables]);
-
-  // Render Notification Modal
-  const renderNotificationModal = () => {
-    if (!isNotificationModalOpen || !selectedTable) return null;
-
-    const itemsPerPage = 5;
-    const tableSpecificNotifications = tableNotifications.filter(
-      (notification) => notification.tableNumber === selectedTable.id
-    );
-    const totalPages = Math.ceil(
-      tableSpecificNotifications.length / itemsPerPage
-    );
-
-    const sortedNotifications = [...tableSpecificNotifications].sort(
-      (a, b) => new Date(b.createAt) - new Date(a.createAt)
-    );
-    const indexOfLastItem = currentPage * itemsPerPage;
-    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentNotifications = sortedNotifications.slice(
-      indexOfFirstItem,
-      indexOfLastItem
-    );
-
-    const formatDateTime = (isoString) => {
-      try {
-        const date = new Date(isoString);
-        return date.toLocaleString("vi-VN", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        });
-      } catch {
-        return "Invalid date";
-      }
-    };
-
-    const getPaginationButtons = () => {
-      const maxButtons = 5;
-      const buttons = [];
-      let startPage = Math.max(1, currentPage - Math.floor(maxButtons / 2));
-      let endPage = Math.min(totalPages, startPage + maxButtons - 1);
-
-      if (endPage - startPage + 1 < maxButtons) {
-        startPage = Math.max(1, endPage - maxButtons + 1);
-      }
-
-      for (let i = startPage; i <= endPage; i++) {
-        buttons.push(
-          <button
-            key={i}
-            onClick={() => setCurrentPage(i)}
-            className={`px-3 py-1 rounded ${
-              currentPage === i
-                ? "!bg-blue-400 text-white"
-                : "text-blue-600 hover:bg-blue-100"
-            }`}
-          >
-            {i}
-          </button>
-        );
-      }
-
-      return buttons;
-    };
-
-    return (
-      <div className="fixed inset-0 flex items-center justify-center z-50">
-        <div
-          className="absolute inset-0"
-          style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
-        ></div>
-        <div className="bg-white rounded-lg shadow-lg w-full max-w-3xl mx-auto p-6 flex flex-col max-h-[80vh] relative z-50">
-          <div className="flex justify-between items-center mb-4 border-b pb-2">
-            <h2 className="text-xl font-semibold">
-              Notifications for Table {selectedTable.id}
-            </h2>
-            <button
-              onClick={() => setIsNotificationModalOpen(false)}
-              className="text-gray-500 hover:text-gray-700"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-6 w-6"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-          </div>
-          <div className="flex-1 overflow-y-auto">
-            {notificationsLoading && (
-              <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
-                <span className="ml-2 text-gray-600">
-                  Loading notifications...
-                </span>
-              </div>
-            )}
-            {notificationsError && (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
-                {notificationsError}
-              </div>
-            )}
-            {!notificationsLoading && !notificationsError && (
-              <>
-                {currentNotifications.length === 0 ? (
-                  <div className="text-center py-10 text-gray-500">
-                    No notifications for this table
-                  </div>
-                ) : (
-                  <ul className="divide-y divide-gray-200">
-                    {currentNotifications.map((notification) => (
-                      <li
-                        key={notification.notificationId}
-                        className={`py-4 ${
-                          !notification.isRead ? "bg-blue-50" : ""
-                        }`}
-                      >
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <h3 className="font-medium text-gray-800">
-                              {notification.title || "Notification"}
-                            </h3>
-                            <p className="mt-1 text-gray-600">
-                              {notification.content || "No content"}
-                            </p>
-                          </div>
-                          <span className="text-sm text-gray-500">
-                            {formatDateTime(notification.createAt)}
-                          </span>
-                        </div>
-                        {!notification.isRead && (
-                          <button
-                            onClick={() =>
-                              markNotificationAsRead(
-                                notification.notificationId
-                              )
-                            }
-                            className="!bg-blue-600 mt-2 text-sm text-white hover:bg-blue-700 font-medium py-1 px-3 rounded"
-                          >
-                            Mark as Read
-                          </button>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </>
-            )}
-          </div>
-          {!notificationsLoading && !notificationsError && (
-            <div className="mt-4 pt-3 border-t">
-              {tableSpecificNotifications.length > 0 && (
-                <div className="text-center text-sm text-gray-600 mb-2">
-                  Page {currentPage} / {totalPages} (
-                  {tableSpecificNotifications.length} notifications)
-                </div>
-              )}
-              {tableSpecificNotifications.length > itemsPerPage && (
-                <div className="flex justify-center items-center space-x-1">
-                  <button
-                    onClick={() => setCurrentPage(1)}
-                    disabled={currentPage === 1}
-                    className={`px-3 py-1 rounded ${
-                      currentPage === 1
-                        ? "text-gray-400 cursor-not-allowed"
-                        : "text-blue-600 hover:bg-blue-100"
-                    }`}
-                  >
-                    First
-                  </button>
-                  <button
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.max(prev - 1, 1))
-                    }
-                    disabled={currentPage === 1}
-                    className={`px-3 py-1 rounded ${
-                      currentPage === 1
-                        ? "text-gray-400 cursor-not-allowed"
-                        : "text-blue-600 hover:bg-blue-100"
-                    }`}
-                  >
-                    «
-                  </button>
-                  {getPaginationButtons()}
-                  <button
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                    }
-                    disabled={currentPage === totalPages}
-                    className={`px-3 py-1 rounded ${
-                      currentPage === totalPages
-                        ? "text-gray-400 cursor-not-allowed"
-                        : "text-blue-600 hover:bg-blue-100"
-                    }`}
-                  >
-                    »
-                  </button>
-                  <button
-                    onClick={() => setCurrentPage(totalPages)}
-                    disabled={currentPage === totalPages}
-                    className={`px-3 py-1 rounded ${
-                      currentPage === totalPages
-                        ? "text-gray-400 cursor-not-allowed"
-                        : "text-blue-600 hover:bg-blue-100"
-                    }`}
-                  >
-                    Last
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-          <div className="mt-4 flex justify-end">
-            <button
-              onClick={() => setIsNotificationModalOpen(false)}
-              className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Render Dish Modal
-  const renderDishModal = () => {
-    if (!isDishModalOpen || !selectedTable) return null;
-
-    const orders = selectedTable.orders || [];
-
-    const handleUpdateStatus = async (orderId, newStatus) => {
-      try {
-        await API.put(`/api/orders/${orderId}/status`, {
-          status: newStatus.toUpperCase(),
-        });
-        setSelectedTable((prev) => ({
-          ...prev,
-          orders: prev.orders.map((order) =>
-            order.orderId === orderId ? { ...order, status: newStatus } : order
-          ),
-        }));
-        setOrders((prevOrders) =>
-          prevOrders.map((order) =>
-            order.orderId === orderId ? { ...order, status: newStatus } : order
-          )
-        );
-      } catch (err) {
-        console.error(`Error updating status for order ${orderId}:`, err);
-        setOrderError("Failed to update order status");
-      }
-    };
-
-    const handleUpdateQuantity = async (orderId, itemIndex, newQuantity) => {
-      try {
-        await API.put(`/api/orders/${orderId}/items/${itemIndex}`, {
-          quantity: newQuantity,
-        });
-        setSelectedTable((prev) => ({
-          ...prev,
-          orders: prev.orders.map((order) =>
-            order.orderId === orderId
-              ? {
-                  ...order,
-                  items: order.items.map((item, idx) =>
-                    idx === itemIndex
-                      ? { ...item, quantity: newQuantity }
-                      : item
-                  ),
-                }
-              : order
-          ),
-        }));
-      } catch (err) {
-        console.error(`Error updating quantity for order ${orderId}:`, err);
-        setOrderError("Failed to update item quantity");
-      }
-    };
-
-    const handleDeleteItem = async (orderId, itemIndex) => {
-      try {
-        await API.delete(`/api/orders/${orderId}/items/${itemIndex}`);
-        setSelectedTable((prev) => ({
-          ...prev,
-          orders: prev.orders.map((order) =>
-            order.orderId === orderId
-              ? {
-                  ...order,
-                  items: order.items.filter((_, idx) => idx !== itemIndex),
-                }
-              : order
-          ),
-        }));
-      } catch (err) {
-        console.error(`Error deleting item for order ${orderId}:`, err);
-        setOrderError("Failed to delete item");
-      }
-    };
-
-    const getStatusButton = (orderId, status) => {
-      const statusLower = status?.toLowerCase();
-      let bgColor, text;
-
-      switch (statusLower) {
-        case "complete":
-          bgColor = "bg-green-500";
-          text = "Complete";
-          break;
-        case "processing":
-          bgColor = "bg-yellow-500";
-          text = "Processing";
-          break;
-        case "pending":
-          bgColor = "bg-blue-500";
-          text = "Pending";
-          break;
-        case "cancel":
-          bgColor = "bg-red-500";
-          text = "Cancel";
-          break;
-        default:
-          bgColor = "bg-gray-500";
-          text = "Unknown";
-      }
-
-      const statusOptions = [
-        "pending",
-        "processing",
-        "complete",
-        "cancel",
-      ].filter((s) => s !== statusLower);
-
-      return (
-        <div className="relative inline-block">
-          <button
-            className={`${bgColor} text-white py-1 px-2 rounded`}
-            onClick={(e) => e.stopPropagation()}
-          >
-            {text}
-          </button>
-          {statusLower === "pending" && (
-            <div className="absolute left-0 mt-1 w-32 bg-white border border-gray-300 rounded shadow-lg z-10">
-              {statusOptions.map((option) => (
-                <button
-                  key={option}
-                  className="block w-full text-left px-2 py-1 hover:bg-gray-100"
-                  onClick={() => handleUpdateStatus(orderId, option)}
-                >
-                  {option.charAt(0).toUpperCase() + option.slice(1)}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      );
-    };
-
-    return (
-      <div className="fixed inset-0 flex items-center justify-center z-50">
-        <div
-          className="absolute inset-0"
-          style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
-          onClick={() => setIsDishModalOpen(false)}
-        ></div>
-        <div className="bg-white rounded-lg shadow-lg p-6 w-1/2 max-h-[80vh] overflow-y-auto relative z-50">
-          <div className="flex justify-between items-center mb-4 border-b pb-2">
-            <h2 className="text-xl font-bold">
-              Table {selectedTable.id || "Unknown"} - Unpaid Orders
-            </h2>
-            <button
-              className="text-gray-500 hover:text-gray-700"
-              onClick={() => setIsDishModalOpen(false)}
-            >
-              ✕
-            </button>
-          </div>
-          <div className="space-y-4">
-            {orderLoading && (
-              <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
-                <span className="ml-2 text-gray-600">Loading orders...</span>
-              </div>
-            )}
-            {orderError && (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative">
-                {orderError}
-              </div>
-            )}
-            {!orderLoading && !orderError && (
-              <>
-                {orders.length === 0 ? (
-                  <div className="text-center py-10 text-gray-500">
-                    No unpaid orders for this table
-                  </div>
-                ) : (
-                  <div>
-                    {orders.map((order) => (
-                      <div key={order.orderId} className="mb-6">
-                        <h3 className="font-semibold text-lg mb-2">
-                          Order #{order.orderId}
-                        </h3>
-                        <table className="w-full border-collapse">
-                          <thead>
-                            <tr className="bg-gray-100">
-                              <th className="text-left py-2 px-4">Dish Name</th>
-                              <th className="text-left py-2 px-4">Quantity</th>
-                              <th className="text-left py-2 px-4">Price</th>
-                              <th className="text-left py-2 px-4">Notes</th>
-                              <th className="text-left py-2 px-4">Action</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {order.items && order.items.length > 0 ? (
-                              order.items.map((item, index) => (
-                                <tr
-                                  key={`${order.orderId}-item-${index}`}
-                                  className="border-b hover:bg-gray-50"
-                                >
-                                  <td className="py-2 px-4">
-                                    {item.dishName || "—"}
-                                  </td>
-                                  <td className="py-2 px-4">
-                                    {order.status?.toLowerCase() ===
-                                    "pending" ? (
-                                      <input
-                                        type="number"
-                                        value={item.quantity || 0}
-                                        onChange={(e) =>
-                                          handleUpdateQuantity(
-                                            order.orderId,
-                                            index,
-                                            parseInt(e.target.value) || 0
-                                          )
-                                        }
-                                        className="w-16 border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        min="0"
-                                      />
-                                    ) : (
-                                      item.quantity || "—"
-                                    )}
-                                  </td>
-                                  <td className="py-2 px-4">
-                                    {item.price
-                                      ? `${parseFloat(
-                                          item.price
-                                        ).toLocaleString("vi-VN")} VND`
-                                      : "—"}
-                                  </td>
-                                  <td className="py-2 px-4">
-                                    {item.notes || "—"}
-                                  </td>
-                                  <td className="py-2 px-4">
-                                    <button
-                                      className={`${
-                                        order.status?.toLowerCase() ===
-                                        "complete"
-                                          ? "bg-green-500"
-                                          : order.status?.toLowerCase() ===
-                                            "processing"
-                                          ? "bg-yellow-500"
-                                          : order.status?.toLowerCase() ===
-                                            "pending"
-                                          ? "bg-blue-500"
-                                          : order.status?.toLowerCase() ===
-                                            "cancel"
-                                          ? "bg-red-500"
-                                          : "bg-gray-500"
-                                      } text-white py-1 px-2 rounded cursor-default`}
-                                      disabled
-                                    >
-                                      {order.status
-                                        ? order.status.charAt(0).toUpperCase() +
-                                          order.status.slice(1)
-                                        : "Pending"}
-                                    </button>
-                                    {order.status?.toLowerCase() ===
-                                      "pending" && (
-                                      <button
-                                        className="bg-red-500 hover:bg-red-600 text-white py-1 mt-1 px-2 rounded"
-                                        onClick={() =>
-                                          handleDeleteItem(order.orderId, index)
-                                        }
-                                      >
-                                        Delete
-                                      </button>
-                                    )}
-                                  </td>
-                                </tr>
-                              ))
-                            ) : (
-                              <tr>
-                                <td
-                                  colSpan="5"
-                                  className="py-2 px-4 text-center text-gray-500"
-                                >
-                                  No items in this order
-                                </td>
-                              </tr>
-                            )}
-                          </tbody>
-                        </table>
-                        <p className="mt-2 text-right font-semibold">
-                          Order Total:{" "}
-                          {order.totalAmount
-                            ? parseFloat(order.totalAmount).toLocaleString(
-                                "vi-VN"
-                              ) + " VND"
-                            : "0 VND"}
-                        </p>
-                      </div>
-                    ))}
-                    <p className="text-right font-bold text-lg mt-4">
-                      Table Total: {totalAmount.toLocaleString("vi-VN")} VND
-                    </p>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-          {!orderLoading && !orderError && orders.length > 0 && (
-            <div className="mt-4 flex justify-end space-x-4">
-              <button
-                className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded"
-                onClick={() => setIsDishModalOpen(false)}
-              >
-                Close
-              </button>
-              <button
-                className="!bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded"
-                onClick={handleShowPaymentModal}
-              >
-                Process Payment
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  // Render Payment Modal
-  const renderPaymentModal = () => {
-    if (!isPaymentModalOpen || !selectedTable) return null;
-
-    return (
-      <div className="fixed inset-0 flex items-center justify-center z-50">
-        <div
-          className="absolute inset-0"
-          style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
-          onClick={() => setIsPaymentModalOpen(false)}
-        ></div>
-        <div className="bg-white rounded-lg shadow-xl p-6 w-2/3 relative z-50">
-          <div className="text-center mb-4">
-            <p className="text-sm text-gray-600">
-              450 Le Van Viet Street, Tang Nhon Phu A Ward, District 9
-            </p>
-            <p className="text-sm text-gray-600">Phone: 0987654321</p>
-            <h3 className="font-bold mt-2 text-xl text-blue-800">
-              Payment Slip {selectedTable.id.toString().padStart(3, "0")}
-            </h3>
-          </div>
-          <div className="flex justify-between border-b pb-2 mb-4">
-            <span className="font-bold text-gray-700">
-              Table {selectedTable.id}
-            </span>
-            <span className="font-bold text-gray-700">Payment Slip {selectedTable.id.toString().padStart(3, "0")}</span>
-          </div>
-          <div className="max-h-96 overflow-y-auto mb-4">
-            <table className="w-full">
-              <thead className="sticky top-0 bg-white">
-                <tr className="border-b">
-                  <th className="text-left py-2 font-medium text-gray-700">
-                    Dish name
-                  </th>
-                  <th className="text-left py-2 font-medium text-gray-700">
-                    Qty
-                  </th>
-                  <th className="text-left py-2 font-medium text-gray-700">
-                    Unit price
-                  </th>
-                  <th className="text-left py-2 font-medium text-gray-700">
-                    Total amount
-                  </th>
-                  <th className="text-left py-2 font-medium text-gray-700">
-                    Note
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {selectedTable.orders.flatMap((order) =>
-                  order.items.map((item, index) => (
-                    <tr
-                      key={`${order.orderId}-item-${index}`}
-                      className="border-b hover:bg-gray-50"
-                    >
-                      <td className="py-3 text-gray-800">
-                        {item.dishName || "—"}
-                      </td>
-                      <td className="py-3">{item.quantity || "—"}</td>
-                      <td className="py-3">
-                        {item.price
-                          ? parseFloat(item.price).toLocaleString("vi-VN")
-                          : "—"}{" "}
-                        VND
-                      </td>
-                      <td className="py-3 font-medium">
-                        {item.price && item.quantity
-                          ? (item.price * item.quantity).toLocaleString("vi-VN")
-                          : "—"}{" "}
-                        VND
-                      </td>
-                      <td className="py-3 text-gray-500">
-                        {item.notes || "—"}
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-          <div className="flex justify-between mt-4 border-t pt-4">
-            <span className="font-bold text-gray-700">Staff: 1</span>
-            <span className="font-bold text-lg text-blue-800">
-              Total Amount: {totalAmount.toLocaleString("vi-VN")} VND
-            </span>
-          </div>
-          <div className="mt-6 flex justify-center space-x-4">
-            <button
-              className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg"
-              onClick={() => setIsPaymentModalOpen(false)}
-            >
-              Cancel
-            </button>
-            <button
-              className="!bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg"
-              onClick={handlePrintReceipt}
-            >
-              Confirm Payment
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Render Success Modal
-  const renderSuccessModal = () => {
-    if (!isSuccessModalOpen) return null;
-
-    return (
-      <div className="fixed inset-0 flex items-center justify-center z-50">
-        <div
-          className="absolute inset-0"
-          style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
-          onClick={() => setIsSuccessModalOpen(false)}
-        ></div>
-        <div className="bg-white rounded-lg p-6 w-80 relative z-50 text-center">
-          <div className="flex justify-center mb-4">
-            <img
-              alt="Logo"
-              className="w-24 h-24"
-              src="/img/logoremovebg.png"
-            />
-          </div>
-          <p className="text-lg mb-6 text-green-600 font-medium">
-            Payment Successful
-          </p>
-          <button
-            className="!bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg"
-            onClick={() => setIsSuccessModalOpen(false)}
-          >
-            OK
-          </button>
-        </div>
-      </div>
-    );
-  };
-
-  // Render Confirm Modal
-  const renderConfirmModal = () => {
-    if (!isConfirmModalOpen) return null;
-
-    return (
-      <div className="fixed inset-0 flex items-center justify-center z-50">
-        <div
-          className="absolute inset-0"
-          style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
-          onClick={() => setIsConfirmModalOpen(false)}
-        ></div>
-        <div className="bg-white rounded-lg p-6 w-80 relative z-50 text-center">
-          <div className="flex justify-center mb-4">
-            <img
-              alt="Logo"
-              className="w-24 h-24"
-              src="/img/logoremovebg.png"
-            />
-          </div>
-          <p className="text-lg mb-6">ARE YOU SURE?</p>
-          <div className="flex justify-center space-x-4">
-            <button
-              className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg"
-              onClick={() => setIsConfirmModalOpen(false)}
-            >
-              NO
-            </button>
-            <button
-              className="!bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg"
-              onClick={handlePaymentSuccess}
-            >
-              YES
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Render Empty Table Modal
-  const renderEmptyTableModal = () => {
-    if (!isEmptyTableModalOpen) return null;
-
-    return (
-      <div className="fixed inset-0 flex items-center justify-center z-50">
-        <div
-          className="absolute inset-0"
-          style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
-          onClick={() => setIsEmptyTableModalOpen(false)}
-        ></div>
-        <div className="bg-white rounded-lg shadow-lg p-6 w-96 relative z-50">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold">Empty Table List</h2>
-            <button
-              className="text-gray-500 hover:text-gray-700"
-              onClick={() => setIsEmptyTableModalOpen(false)}
-            >
-              ✕
-            </button>
-          </div>
-          <div>
-            <table className="w-full">
-              <thead>
-                <tr className="bg-teal-100">
-                  <th className="p-2 text-left">Table</th>
-                  <th className="p-2 text-left">Capacity</th>
-                </tr>
-              </thead>
-              <tbody>
-                {emptyTables.length > 0 ? (
-                  emptyTables.map((table) => (
-                    <tr key={table.id} className="border-b">
-                      <td className="p-2">{table.id}</td>
-                      <td className="p-2">
-                        <div className="flex items-center">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-4 w-4 mr-1"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                            />
-                          </svg>
-                          {table.capacity}
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="2" className="p-2 text-center text-gray-500">
-                      No empty tables available
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Render Bill Modal
-  const renderBillModal = () => {
-    if (!isBillModalOpen || !selectedTable) return null;
-
-    return (
-      <div className="fixed inset-0 flex items-center justify-center z-50">
-        <div
-          className="absolute inset-0"
-          style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
-          onClick={() => setIsBillModalOpen(false)}
-        ></div>
-        <div className="bg-white rounded-lg shadow-xl p-6 w-2/3 relative z-50">
-          <div className="text-center mb-4">
-            <h3 className="font-bold text-xl text-blue-800">Bill Details</h3>
-          </div>
-          <div className="max-h-96 overflow-y-auto mb-4">
-            <table className="w-full">
-              <thead className="sticky top-0 bg-white">
-                <tr className="border-b">
-                  <th className="text-left py-2 font-medium text-gray-700">
-                    Dish name
-                  </th>
-                  <th className="text-left py-2 font-medium text-gray-700">
-                    Qty
-                  </th>
-                  <th className="text-left py-2 font-medium text-gray-700">
-                    Price
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {selectedTable.orders.flatMap((order) =>
-                  order.items.map((item, index) => (
-                    <tr
-                      key={`${order.orderId}-item-${index}`}
-                      className="border-b hover:bg-gray-50"
-                    >
-                      <td className="py-3 text-gray-800">
-                        {item.dishName || "—"}
-                      </td>
-                      <td className="py-3">{item.quantity || "—"}</td>
-                      <td className="py-3">
-                        {item.price
-                          ? parseFloat(item.price).toLocaleString("vi-VN")
-                          : "—"}{" "}
-                        VND
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-          <div className="flex justify-end mt-4 border-t pt-4">
-            <span className="font-bold text-lg text-blue-800">
-              Total: {totalAmount.toLocaleString("vi-VN")} VND
-            </span>
-          </div>
-          <div className="mt-6 flex justify-center space-x-4">
-            <button
-              className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg"
-              onClick={() => setIsBillModalOpen(false)}
-            >
-              Close
-            </button>
-            <button
-              className="!bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg"
-              onClick={handlePrintReceipt}
-            >
-              Print Receipt
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Render Add Table Modal
-  const renderAddTableModal = () => {
-    if (!isAddTableModalOpen) return null;
-
-    return (
-      <div className="fixed inset-0 flex items-center justify-center z-50">
-        <div
-          className="absolute inset-0"
-          style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
-          onClick={handleCloseAddTableModal}
-        ></div>
-        <div className="bg-[#F0F8FD] rounded-lg shadow-lg p-6 w-[400px] relative z-50">
-          <button
-            className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
-            onClick={handleCloseAddTableModal}
-          >
-            ✕
-          </button>
-          <h2
-            style={{ fontSize: "24px" }}
-            className="text-center text-xl font-bold mb-4"
-          >
-            Add Table
-          </h2>
-          {!newTableId ? (
-            <form onSubmit={handleAddTableSuccess}>
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">
-                  Table Number
-                </label>
-                <input
-                  type="number"
-                  value={newTableNumber}
-                  onChange={(e) => setNewTableNumber(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                  placeholder="Enter table number"
-                  required
-                  min="1"
-                />
-              </div>
-              <div className="mb-4">
-                <label className="block text-sm font-medium mb-1">
-                  Capacity
-                </label>
-                <input
-                  type="number"
-                  value={newTableCapacity}
-                  onChange={(e) => setNewTableCapacity(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                  placeholder="Enter table capacity"
-                  required
-                  min="1"
-                />
-              </div>
-              {errorMessage && (
-                <p className="text-red-500 text-sm mb-4">{errorMessage}</p>
-              )}
-              <button
-                style={{ backgroundColor: "black", marginTop: "10px" }}
-                type="submit"
-                className="w-full text-white font-medium py-2 px-4 rounded-lg hover:bg-gray-800"
-              >
-                Add
-              </button>
-            </form>
-          ) : (
-            <div className="text-center">
-              <p className="text-green-600 mb-4">
-               Table {newTableId} was created successfully!
-              </p>
-              {qrUrl && (
-                <>
-                  <h3 className="text-lg font-semibold mb-2">
-                    QR Code for table {newTableId}
-                  </h3>
-                  <img
-                    src={qrUrl}
-                    alt={`QR Code for table ${newTableId}`}
-                    style={{
-                      width: "200px",
-                      height: "200px",
-                      margin: "0 auto",
-                    }}
-                  />
-                  <p className="mt-2 text-gray-600">
-                    URL:{" "}
-                    <a
-                      href={`http://192.168.1.100:5173/table/${newTableId}`}
-                      target="_blank"
-                      className="text-blue-500"
-                    >
-                      http://192.168.1.100:5173/table/{newTableId}
-                    </a>
-                  </p>
-                </>
-              )}
-              {qrError && (
-                <p className="text-red-500 text-sm mt-2">{qrError}</p>
-              )}
-              <div className="mt-4 flex flex-col gap-2">
-                <button
-                  onClick={handleGenerateQr}
-                  disabled={qrUploading}
-                  className="w-full text-white font-medium py-2 rounded hover:bg-blue-600 disabled:bg-gray-400"
-                  style={{ backgroundColor: "#4CAF50" }}
-                >
-                  {qrUploading ? "Saving..." : "Create and Save QR Code"}
-                </button>
-                {qrUrl && (
-                  <div className="flex justify-center gap-4">
-                    <button
-                      onClick={handleDownloadQr}
-                      className="text-white py-2 px-4 rounded hover:bg-green-600"
-                      style={{ backgroundColor: "#4E71FF" }}
-                    >
-                      Download QR Code
-                    </button>
-                    <button
-                      onClick={handlePrintQr}
-                      className="text-white py-2 px-4 rounded hover:bg-gray-600"
-                      style={{ backgroundColor: "#4E71FF" }}
-                    >
-                      Print QR Code
-                    </button>
-                  </div>
-                )}
-                <button
-                  onClick={handleCloseAddTableModal}
-                  className="w-full bg-gray-300 text-gray-800 font-medium py-2 rounded hover:bg-gray-400 mt-2"
-                  style={{ backgroundColor: "#F7374F" }}
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  // Render Edit Table Modal
-  const renderEditTableModal = () => {
-    if (!isEditTableModalOpen || !editTableData.length) return null;
-
-    return (
-      <div className="fixed inset-0 flex items-center justify-center z-50">
-        <div
-          className="absolute inset-0"
-          style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
-          onClick={handleCloseEditTableModal}
-        ></div>
-        <div className="bg-[#F0F8FD] rounded-lg shadow-lg p-6 w-[600px] relative z-50">
-          <button
-            className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
-            onClick={handleCloseEditTableModal}
-          >
-            ✕
-          </button>
-          <h2 className="text-center text-xl font-bold mb-4">Edit Tables</h2>
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="bg-teal-100">
-                <th className="p-2 text-left">Table Number</th>
-                <th className="p-2 text-left">Capacity</th>
-                <th className="p-2 text-center">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {editTableData.map((table, index) => (
-                <tr key={table.id} className="border-b">
-                  <td className="p-2">
-                    <input
-                      type="number"
-                      value={table.id}
-                      onChange={(e) =>
-                        handleEditTableField(index, "id", e.target.value)
-                      }
-                      className="w-full border border-gray-300 rounded-lg px-2 py-1"
-                      min="1"
-                    />
-                  </td>
-                  <td className="p-2">
-                    <input
-                      type="number"
-                      value={table.capacity}
-                      onChange={(e) =>
-                        handleEditTableField(index, "capacity", e.target.value)
-                      }
-                      className="w-full border border-gray-300 rounded-lg px-2 py-1"
-                      min="1"
-                    />
-                  </td>
-                  <td className="p-2 text-center">
-                    <button
-                      className="text-red-500 hover:text-red-700"
-                      onClick={() => handleDeleteTable(table.id)}
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M6 18L18 6M6 6l12 12"
-                        />
-                      </svg>
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {errorMessage && (
-            <p className="text-red-500 text-sm mt-4">{errorMessage}</p>
-          )}
-          <button
-            className="mt-4 w-full !bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600"
-            onClick={handleSaveTableChanges}
-          >
-            Save Changes
-          </button>
-        </div>
-      </div>
-    );
-  };
-
-  const renderTransferTableModal = () => {
-    if (!isTransferTableModalOpen) return null;
-
-    const occupiedTables = tables.filter(
-      (table) => table.status === "occupied"
-    );
-    const availableTables = tables.filter(
-      (table) => table.status === "available"
-    );
-
-    return (
-      <div className="fixed inset-0 flex items-center justify-center z-50">
-        <div
-          className="absolute inset-0"
-          style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
-          onClick={() => {
-            setIsTransferTableModalOpen(false);
-            setTransferSourceTable(null);
-            setTransferDestinationTable(null);
-            setErrorMessage("");
-          }}
-        ></div>
-        <div className="bg-[#F0F8FD] rounded-lg shadow-lg p-6 w-[400px] relative z-50">
-          <button
-            className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
-            onClick={() => {
-              setIsTransferTableModalOpen(false);
-              setTransferSourceTable(null);
-              setTransferDestinationTable(null);
-              setErrorMessage("");
-            }}
-          >
-            ✕
-          </button>
-          <h2 className="text-center text-xl font-bold mb-4">Transfer Table</h2>
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">
-              From Table (Occupied)
-            </label>
-            <select
-              value={transferSourceTable?.id || ""}
-              onChange={(e) => {
-                const selected = tables.find(
-                  (t) => t.id === parseInt(e.target.value)
-                );
-                setTransferSourceTable(selected || null);
-              }}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-            >
-              <option value="">Choose current</option>
-              {occupiedTables.map((table) => (
-                <option key={table.id} value={table.id}>
-                  Table {table.id} (Capacity: {table.capacity})
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="mb-4">
-            <label className="block text-sm font-medium mb-1">
-              To Table (Available)
-            </label>
-            <select
-              value={transferDestinationTable?.id || ""}
-              onChange={(e) => {
-                const selected = tables.find(
-                  (t) => t.id === parseInt(e.target.value)
-                );
-                setTransferDestinationTable(selected || null);
-              }}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-            >
-              <option value="">Choose new</option>
-              {availableTables.map((table) => (
-                <option key={table.id} value={table.id}>
-                  Table {table.id} (Capacity: {table.capacity})
-                </option>
-              ))}
-            </select>
-          </div>
-          {errorMessage && (
-            <p className="text-red-500 text-sm mb-4">{errorMessage}</p>
-          )}
-          <button
-            style={{ backgroundColor: "#4CAF50" }}
-            className="w-full text-white font-medium py-2 px-4 rounded-lg hover:bg-green-600"
-            onClick={() => {
-              if (transferSourceTable && transferDestinationTable) {
-                setIsTransferTableModalOpen(false);
-                setIsTransferConfirmModalOpen(true);
-              } else {
-                setErrorMessage("Vui lòng chọn cả bàn nguồn và bàn đích.");
-              }
-            }}
-            disabled={!transferSourceTable || !transferDestinationTable}
-          >
-            Transfer
-          </button>
-        </div>
-      </div>
-    );
-  };
-
-  const handleSwapTables = async () => {
-    if (!transferSourceTable || !transferDestinationTable) {
-      setErrorMessage("Please select both source and destination tables.");
-      return;
-    }
-
+  const handleConfirmPayment = async () => {
+    if (!selectedTable) return;
     try {
       setLoading(true);
-      setErrorMessage(null);
-
-      // Call the swap tables API
-      await API.post(
-        `/api/staff/tables/swap?tableNumberA=${transferSourceTable.id}&tableNumberB=${transferDestinationTable.id}`
+      const tableOrders =
+        selectedTable.orders ||
+        ordersByTable[selectedTable.id.toString()] ||
+        [];
+      const unpaidOrders = tableOrders.filter(
+        (o) => o.paymentStatus?.toUpperCase() !== "PAID",
       );
 
-      // Update local table state
-      setTables((prevTables) =>
-        prevTables.map((table) => {
-          if (table.id === transferSourceTable.id) {
-            return { ...table, status: "available", orders: [] };
-          }
-          if (table.id === transferDestinationTable.id) {
-            return {
-              ...table,
-              status: "occupied",
-              orders: transferSourceTable.orders || [],
-            };
-          }
-          return table;
-        })
-      );
+      // 1. Cập nhật trạng thái thanh toán cho các đơn hàng chưa thanh toán
+      for (const order of unpaidOrders) {
+        try {
+          await API.post(`/api/payment/payment/cash/${order.orderId}`);
+        } catch (e) {
+          console.warn("Lỗi cập nhật thanh toán đơn:", order.orderId, e);
+        }
+      }
 
-      // Fetch updated data
+      // 2. Chuyển trạng thái bàn sang AVAILABLE
+      await API.put(`/api/admin/tables/${selectedTable.id}`, {
+        capacity: selectedTable.capacity,
+        status: "AVAILABLE",
+        location: selectedTable.location,
+        qrCode: selectedTable.qrCode,
+      });
+
+      // 3. Tự động tải hóa đơn PDF của các đơn vừa thanh toán
+      for (const order of unpaidOrders) {
+        handlePrintBill(order.orderId);
+      }
+
+      setIsPaymentModalOpen(false);
+      setActionSuccessText(
+        `Đã xác nhận thanh toán và lưu hóa đơn cho Bàn ${selectedTable.id}.`,
+      );
+      setIsSuccessModalOpen(true);
       await fetchTables();
       await fetchOrders();
-
-      // Show success modal
-      setIsTransferConfirmModalOpen(false);
-      setIsTransferSuccessModalOpen(true);
-      setTransferSourceTable(null);
-      setTransferDestinationTable(null);
     } catch (err) {
-      console.error("Error swapping tables:", err);
-      setErrorMessage("Failed to swap tables. Please try again.");
+      console.error("Error confirming payment:", err);
+      setOrderError("Không thể xác nhận thanh toán. Vui lòng thử lại.");
     } finally {
       setLoading(false);
     }
   };
 
-  // New modal render function for transfer confirmation
-  const renderTransferConfirmModal = () => {
-    if (!isTransferConfirmModalOpen) return null;
-
-    return (
-      <div className="fixed inset-0 flex items-center justify-center z-50">
-        <div
-          className="absolute inset-0"
-          style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
-          onClick={() => setIsTransferConfirmModalOpen(false)}
-        ></div>
-        <div className="bg-white rounded-lg p-6 w-80 relative z-50 text-center">
-          <div className="flex justify-center mb-4">
-            <img
-              alt="Logo"
-              className="w-24 h-24"
-              src="/img/logoremovebg.png"
-            />
-          </div>
-          <p className="text-lg mb-6">
-            Are you sure you want to transfer from Table{" "}
-            {transferSourceTable?.id} to Table {transferDestinationTable?.id}?
-          </p>
-          <div className="flex justify-center space-x-4">
-            <button
-              className="!bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg"
-              onClick={handleSwapTables} // Call the new function
-            >
-              Yes
-            </button>
-            <button
-              className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg"
-              onClick={() => setIsTransferConfirmModalOpen(false)}
-            >
-              No
-            </button>
-          </div>
-        </div>
-      </div>
-    );
+  const handleConfirmEmptyTable = async () => {
+    if (!selectedTable) return;
+    try {
+      setLoading(true);
+      await API.put(`/api/admin/tables/${selectedTable.id}`, {
+        capacity: selectedTable.capacity,
+        status: "AVAILABLE",
+        location: selectedTable.location,
+        qrCode: selectedTable.qrCode,
+      });
+      setIsEmptyTableModalOpen(false);
+      setActionSuccessText(
+        `Đã cập nhật Bàn ${selectedTable.id} sang trạng thái sẵn sàng.`,
+      );
+      setIsSuccessModalOpen(true);
+      await fetchTables();
+    } catch (err) {
+      console.error("Error updating table status:", err);
+      setError("Không thể cập nhật trạng thái bàn. Vui lòng thử lại.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // New modal render function for transfer success
-  const renderTransferSuccessModal = () => {
-    if (!isTransferSuccessModalOpen) return null;
-
-    return (
-      <div className="fixed inset-0 flex items-center justify-center z-50">
-        <div
-          className="absolute inset-0"
-          style={{ backgroundColor: "rgba(0, 0, 0, 0.3)" }}
-          onClick={() => setIsTransferSuccessModalOpen(false)}
-        ></div>
-        <div className="bg-white rounded-lg p-6 w-80 relative z-50 text-center">
-          <div className="flex justify-center mb-4">
-            <img
-              alt="Logo"
-              className="w-24 h-24"
-              src="/img/logoremovebg.png"
-            />
-          </div>
-          <p className="text-lg mb-6 text-green-600 font-medium">
-            Transfer Successfull!
-          </p>
-          <button
-            className="!bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg"
-            onClick={() => setIsTransferSuccessModalOpen(false)}
-          >
-            OK
-          </button>
-        </div>
-      </div>
-    );
+  const handleConfirmTransfer = async () => {
+    if (!transferSourceTable || !transferDestinationTable) return;
+    try {
+      setLoading(true);
+      await API.put(`/api/admin/tables/${transferDestinationTable.id}`, {
+        capacity: transferDestinationTable.capacity,
+        status: "OCCUPIED",
+        location: transferDestinationTable.location,
+        qrCode: transferDestinationTable.qrCode,
+      });
+      await API.put(`/api/admin/tables/${transferSourceTable.id}`, {
+        capacity: transferSourceTable.capacity,
+        status: "AVAILABLE",
+        location: transferSourceTable.location,
+        qrCode: transferSourceTable.qrCode,
+      });
+      setIsTransferConfirmModalOpen(false);
+      setIsTransferTableModalOpen(false);
+      setIsTransferSuccessModalOpen(true);
+      await fetchTables();
+    } catch (err) {
+      console.error("Error transferring table:", err);
+      setError("Không thể chuyển bàn. Vui lòng thử lại.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Main Render
+  // Thống kê & lọc bàn (không còn phần khu vực bàn)
+  const stats = useMemo(() => {
+    const total = tables.length;
+    const occupied = tables.filter((t) => t.status === "occupied").length;
+    const available = tables.filter((t) => t.status !== "occupied").length;
+    const unpaidCount = orders.filter(
+      (o) => o.paymentStatus?.toUpperCase() === "UNPAID",
+    ).length;
+    const paidCount = orders.filter(
+      (o) => o.paymentStatus?.toUpperCase() === "PAID",
+    ).length;
+
+    return {
+      total,
+      occupied,
+      available,
+      paidCount,
+      unpaidCount,
+    };
+  }, [tables, orders]);
+
+  const filteredTables = useMemo(() => {
+    return tables.filter((table) => {
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "occupied" && table.status === "occupied") ||
+        (statusFilter === "available" && table.status !== "occupied");
+
+      const query = searchQuery.trim().toLowerCase();
+      const customerNames = (table.orders || [])
+        .map((o) => o.customerName || "")
+        .join(" ")
+        .toLowerCase();
+      const matchesSearch =
+        !query ||
+        String(table.id).toLowerCase().includes(query) ||
+        `bàn ${table.id}`.includes(query) ||
+        customerNames.includes(query);
+
+      return matchesStatus && matchesSearch;
+    });
+  }, [tables, statusFilter, searchQuery]);
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredTables.length / tablesPerPage),
+  );
+  const paginatedTables = useMemo(() => {
+    const safePage = Math.min(currentPage, totalPages);
+    const start = (safePage - 1) * tablesPerPage;
+    return filteredTables.slice(start, start + tablesPerPage);
+  }, [filteredTables, currentPage, totalPages]);
+
+  const availableTablesList = useMemo(
+    () => tables.filter((t) => t.status !== "occupied"),
+    [tables],
+  );
+
+  const fontStyle = {
+    fontFamily:
+      "'Be Vietnam Pro', 'Lexend', system-ui, -apple-system, sans-serif",
+  };
+  const headingFontStyle = {
+    fontFamily: "'Lexend', 'Be Vietnam Pro', system-ui, sans-serif",
+  };
+
+  const navItems = [
+    { label: "Quản lý bàn", path: "/table-management_admin" },
+    { label: "Chấm công", path: "/attendance" },
+  ];
+
   return (
-    <div className="h-screen w-screen bg-[#C2C7CA] flex justify-center items-center">
-      <div
-        className={`h-full w-full ${
-          isDishModalOpen ||
-          isPaymentModalOpen ||
-          isEmptyTableModalOpen ||
-          isBillModalOpen ||
-          isConfirmModalOpen ||
-          isSuccessModalOpen ||
-          isNotificationModalOpen ||
-          isAddTableModalOpen ||
-          isEditTableModalOpen ||
-          isTransferTableModalOpen ||
-          isTransferConfirmModalOpen ||
-          isTransferSuccessModalOpen
-            ? "blur-sm"
-            : ""
-        }`}
-        onClick={() => setIsNotificationModalOpen(false)}
-      >
-        <MenuBar
-          title="Table Management"
-          icon="https://img.icons8.com/ios-filled/50/FFFFFF/table.png"
-        />
+    <div className="w-full min-h-screen bg-[#FAF7F2] flex flex-col text-[#33261D] font-sans">
+      {/* Thanh mục lục chuẩn hóa: Tiếng Việt, tone sáng vàng nhạt - cam nhạt - trắng */}
+      <MenuBar title="Quản lý sơ đồ bàn" />
 
-        <div
-          style={{ marginTop: "30px" }}
-          className="flex-1 flex justify-center items-center"
-        >
-          <div className="w-[90%] h-[95%] bg-[#F0F8FD] rounded-lg shadow-lg overflow-hidden">
-            <div className="flex-1 p-6 bg-gray-100 flex">
-              <div className="flex-1 grid grid-cols-2 gap-4">
-                {loading ? (
-                  <div className="col-span-2 text-center">
-                    <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500 mx-auto"></div>
-                    <span className="text-gray-600">Loading tables...</span>
-                  </div>
-                ) : error ? (
-                  <div className="col-span-2 text-center text-red-500">
-                    {error}
-                  </div>
-                ) : tables.length === 0 ? (
-                  <div className="col-span-2 text-center text-gray-500">
-                    No tables available
-                  </div>
-                ) : (
-                  tables.map((table) => (
+      {/* Cảnh báo lỗi nếu có */}
+      {(authError || error || orderError || socketError) && (
+        <div className="shrink-0 px-4 sm:px-6 pt-3 space-y-1.5">
+          {authError && (
+            <div className="bg-[#FFF2EC] border border-[#F6C8B4] text-[#A63A14] px-4 py-2 rounded-lg text-xs font-medium">
+              {authError}
+            </div>
+          )}
+          {error && (
+            <div className="bg-[#FFF2EC] border border-[#F6C8B4] text-[#A63A14] px-4 py-2 rounded-lg text-xs font-medium flex items-center justify-between">
+              <span>{error}</span>
+              <button
+                type="button"
+                onClick={fetchTables}
+                className="underline font-semibold ml-3"
+              >
+                Thử lại
+              </button>
+            </div>
+          )}
+          {orderError && (
+            <div className="bg-[#FFF8E6] border border-[#F3D89E] text-[#8E5B0E] px-4 py-2 rounded-lg text-xs font-medium">
+              {orderError}
+            </div>
+          )}
+          {socketError && (
+            <div className="bg-[#FFFDF7] border border-[#EFE3CA] text-[#7D6E5C] px-3.5 py-1.5 rounded-lg text-[11px]">
+              {socketError}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Vùng nội dung chính full màn hình */}
+      <main className="flex-1 min-h-0 px-4 sm:px-6 py-4 flex flex-col gap-4 overflow-hidden">
+        {/* Thanh thống kê + lọc trạng thái + tìm kiếm bàn (bỏ phần khu vực bàn) */}
+        <div className="shrink-0 bg-white border border-[#F2DFC2] rounded-2xl px-4 py-3 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            {[
+              { id: "all", label: `Tất cả (${stats.total})` },
+              { id: "occupied", label: `Đang phục vụ (${stats.occupied})` },
+              { id: "available", label: `Bàn trống (${stats.available})` },
+            ].map((tab) => {
+              const active = statusFilter === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => {
+                    setStatusFilter(tab.id);
+                    setCurrentPage(1);
+                  }}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-medium transition-colors ${
+                    active
+                      ? "bg-[#FFEAD2] text-[#A84B14] border border-[#F6C89B]"
+                      : "bg-[#FFFDF8] text-[#6E6050] hover:bg-[#FFF7E6] border border-[#F3E6CE]"
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-4 text-xs text-[#6E6050]">
+            <span>
+              Tổng bàn:{" "}
+              <strong className="text-[#3A2E22] font-semibold">
+                {stats.total}
+              </strong>
+            </span>
+            <span className="text-[#EBD8B8]">•</span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-[#E06D2B]" />
+              Đang phục vụ:{" "}
+              <strong className="text-[#C75619] font-semibold">
+                {stats.occupied}
+              </strong>
+            </span>
+            <span className="text-[#EBD8B8]">•</span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-[#D99B26]" />
+              Bàn trống:{" "}
+              <strong className="text-[#9E6B0B] font-semibold">
+                {stats.available}
+              </strong>
+            </span>
+          </div>
+
+          <div className="relative w-full lg:w-64">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A89378] pointer-events-none">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-4 w-4"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+              >
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.35-4.35" />
+              </svg>
+            </span>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
+              placeholder="Tìm số bàn, tên khách..."
+              className="w-full pl-9 pr-3 py-1.5 rounded-xl border border-[#F0DEC0] bg-[#FFFDF8] text-xs text-[#3A2E22] placeholder-[#A89882] focus:outline-none focus:border-[#E08A3C]"
+            />
+          </div>
+        </div>
+
+        {/* Lưới nội dung chính: danh sách bàn bên trái + chú thích & thao tác bên phải */}
+        <div className="flex-1 min-h-0 grid grid-cols-1 xl:grid-cols-12 gap-4">
+          {/* Danh sách thẻ bàn */}
+          <div className="xl:col-span-8 flex flex-col min-h-0 overflow-y-auto pr-1">
+            {loading && tables.length === 0 ? (
+              <div className="bg-white border border-[#F2DFC2] rounded-2xl p-12 text-center text-sm text-[#7D6E5C]">
+                Đang tải danh sách bàn...
+              </div>
+            ) : paginatedTables.length === 0 ? (
+              <div className="bg-white border border-[#F2DFC2] rounded-2xl p-12 text-center text-sm text-[#7D6E5C]">
+                Không tìm thấy bàn nào phù hợp.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                {paginatedTables.map((table) => {
+                  const tableOrders =
+                    table.orders || ordersByTable[table.id.toString()] || [];
+                  const unpaidOrders = tableOrders.filter(
+                    (o) => o.paymentStatus?.toUpperCase() === "UNPAID",
+                  );
+                  const isOccupied =
+                    table.status === "occupied" || unpaidOrders.length > 0;
+
+                  const totalItemsCount = unpaidOrders.reduce((sum, order) => {
+                    const itemsSum = (order.items || []).reduce(
+                      (iSum, item) => iSum + (Number(item.quantity) || 1),
+                      0,
+                    );
+                    return sum + (itemsSum > 0 ? itemsSum : 1);
+                  }, 0);
+
+                  const totalUnpaidAmount = unpaidOrders.reduce(
+                    (sum, order) => sum + (Number(order.totalAmount) || 0),
+                    0,
+                  );
+
+                  const unreadCount = unreadNotificationsByTable[table.id] || 0;
+                  const hasAlert = unreadCount >= 3;
+                  const formattedTableNum = String(table.id).padStart(2, "0");
+
+                  return (
                     <div
                       key={table.id}
-                      className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer"
-                      onClick={() => handleSelectTable(table)}
+                      onClick={() => setSelectedTable(table)}
+                      className={`rounded-2xl overflow-hidden bg-white transition-all cursor-pointer flex flex-col justify-between ${
+                        hasAlert
+                          ? "border border-[#F3B594] bg-[#FFFBF8]"
+                          : "border border-[#F2DFC2] hover:border-[#E5BD7A]"
+                      }`}
                     >
+                      {/* Header thẻ bàn phân tách rõ trạng thái Có khách / Sẵn sàng */}
                       <div
-                        style={{ backgroundColor: "#1C2E4A" }}
-                        className="text-white p-3 flex justify-between items-center"
+                        className={`px-4 py-2.5 flex items-center justify-between border-b transition-colors duration-200 ${
+                          isOccupied
+                            ? "bg-gradient-to-r from-[#EA580C] to-[#C2410C] border-[#9A3412]"
+                            : "bg-[#ECFDF5] border-[#A7F3D0]"
+                        }`}
                       >
-                        <h2 className="font-bold">Table {table.id}</h2>
                         <div className="flex items-center gap-2">
-                          <span>{table.capacity}</span>
-                          <img
-                            width="15"
-                            height="15"
-                            src="https://img.icons8.com/ios-glyphs/90/FFFFFF/guest-male.png"
-                            alt="guest-male"
-                          />
-                        </div>
-                      </div>
-                      <div className="grid grid-cols-2 bg-gray-200">
-                        <div
-                          style={{
-                            backgroundColor: "#BDC4D4",
-                            borderRight: "1px solid #fff",
-                          }}
-                          className="p-4 flex flex-col items-center justify-center"
-                        >
-                          <span className="text-lg">Time</span>
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-8 w-8 text-gray-500"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
+                          <span
+                            className={`text-base font-bold ${
+                              isOccupied ? "text-white" : "text-[#065F46]"
+                            }`}
+                            style={headingFontStyle}
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                            />
-                          </svg>
-                        </div>
-                        <div
-                          style={{ backgroundColor: "#BDC4D4" }}
-                          className="p-4 flex items-center justify-center cursor-pointer"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleShowDishModal(table);
-                          }}
-                        >
-                          <span className="text-lg">
-                            {table.orders && table.orders.length > 0
-                              ? `Unpaid Orders: ${
-                                  table.orders.filter(
-                                    (order) =>
-                                      order.paymentStatus?.toUpperCase() ===
-                                      "UNPAID"
-                                  ).length
-                                }`
-                              : "No unpaid orders"}
+                            Bàn {formattedTableNum}
                           </span>
+                          {isOccupied ? (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-white text-[#C2410C] shadow-xs">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#EA580C] animate-pulse" />
+                              Có khách
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#D1FAE5] text-[#047857] border border-[#6EE7B7]">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
+                              Sẵn sàng
+                            </span>
+                          )}
                         </div>
-                      </div>
-                      <div className="px-4 py-2 flex justify-between items-center">
-                        <div className="flex items-center">
-                          <div
-                            className={`w-6 h-6 ${
-                              table.status === "occupied"
-                                ? "bg-gray-700"
-                                : "bg-green-500"
-                            } rounded-full mr-2`}
-                          ></div>
+
+                        <div
+                          className={`flex items-center gap-1 text-xs font-semibold ${
+                            isOccupied ? "text-[#FFEDD5]" : "text-[#047857]"
+                          }`}
+                        >
                           <svg
                             xmlns="http://www.w3.org/2000/svg"
-                            className="h-6 w-6 text-gray-500 mx-2"
-                            fill="none"
+                            className={`h-3.5 w-3.5 ${
+                              isOccupied ? "text-[#FED7AA]" : "text-[#10B981]"
+                            }`}
                             viewBox="0 0 24 24"
+                            fill="none"
                             stroke="currentColor"
+                            strokeWidth="2"
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                            />
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                            <circle cx="9" cy="7" r="4" />
                           </svg>
-                          <div
-                            className="relative cursor-pointer"
+                          <span>{table.capacity || 4} chỗ</span>
+                        </div>
+                      </div>
+
+                      {/* Thân thẻ bàn */}
+                      <div className="grid grid-cols-2 divide-x divide-[#F5E8D0] px-4 py-3">
+                        <div className="pr-3">
+                          <p className="text-[10px] font-semibold tracking-wider text-[#9A8568] uppercase mb-1">
+                            TRẠNG THÁI BÀN
+                          </p>
+                          <p className="text-xs font-medium text-[#4A3B2C]">
+                            {isOccupied ? "Đang dùng bữa" : "Chưa có khách"}
+                          </p>
+                        </div>
+
+                        <div
+                          onClick={(e) => handleOpenDishModal(e, table)}
+                          role="button"
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              handleOpenDishModal(e, table);
+                            }
+                          }}
+                          className="pl-4 py-1 pr-2 rounded-lg cursor-pointer hover:bg-[#FFF7E6]/80 transition-colors group"
+                          title="Nhấn để xem danh sách món"
+                        >
+                          <p className="text-[10px] font-semibold tracking-wider text-[#9A8568] group-hover:text-[#C85319] uppercase mb-1 transition-colors">
+                            MÓN CHƯA TRẢ TIỀN
+                          </p>
+                          {isOccupied ? (
+                            <>
+                              <p className="text-sm font-bold text-[#C85319] underline-offset-2 group-hover:underline">
+                                {totalItemsCount > 0
+                                  ? `${totalItemsCount} món`
+                                  : `${unpaidOrders.length} đơn`}
+                              </p>
+                              <p className="text-[11px] text-[#7D6B55] mt-0.5">
+                                {formatVND(totalUnpaidAmount)}
+                              </p>
+                            </>
+                          ) : (
+                            <p className="text-sm font-semibold text-[#8A775E] mt-0.5">
+                              0 món
+                            </p>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Footer thao tác trên từng bàn */}
+                      <div className="border-t border-[#F5E8D0] px-4 py-2 flex items-center justify-between gap-2 bg-[#FFFDF8]">
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
                             onClick={(e) => toggleNotificationModal(e, table)}
+                            className="relative w-7 h-7 rounded-full border border-[#EED8B4] bg-white hover:bg-[#FFF5E2] text-[#8A5A1C] flex items-center justify-center transition-colors"
+                            title="Thông báo từ bàn"
                           >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
-                              className="h-6 w-6 text-gray-500"
-                              fill="none"
+                              className="h-3.5 w-3.5"
                               viewBox="0 0 24 24"
+                              fill="none"
                               stroke="currentColor"
+                              strokeWidth="1.8"
                             >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                              />
+                              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                              <path d="M13.73 21a2 2 0 0 1-3.46 0" />
                             </svg>
-                            {notificationsLoading ? (
-                              <span className="absolute -top-1 -right-1 bg-gray-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
-                                ...
+                            {unreadCount > 0 && (
+                              <span className="-top-1 -right-1 absolute min-w-4 h-4 px-1 rounded-full text-[10px] font-bold text-white bg-[#E06324] flex items-center justify-center">
+                                {unreadCount}
                               </span>
-                            ) : unreadNotificationsByTable[table.id] > 0 ? (
-                              <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
-                                {unreadNotificationsByTable[table.id]}
-                              </span>
-                            ) : null}
-                          </div>
+                            )}
+                          </button>
                         </div>
-                        <div className="flex items-center">
-                          {table.status === "occupied" ? (
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-6 w-6 text-red-500"
-                              viewBox="0 0 20 20"
-                              fill="currentColor"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
+
+                        <div className="flex items-center gap-2">
+                          {isOccupied ? (
+                            <>
+                              <button
+                                type="button"
+                                onClick={(e) => handleOpenDishModal(e, table)}
+                                className="px-3 py-1 rounded-lg border border-[#EBD4B0] bg-white hover:bg-[#FFF7E6] text-xs font-medium text-[#4A3B2C] transition-colors"
+                              >
+                                Xem món
+                              </button>
+                              <button
+                                type="button"
+                                onClick={(e) =>
+                                  handleOpenPaymentModal(e, table)
+                                }
+                                className="px-3 py-1 rounded-lg bg-[#FCE3C8] hover:bg-[#FAD3AC] text-[#A64410] border border-[#F3B982] text-xs font-semibold transition-colors"
+                              >
+                                Thanh toán
+                              </button>
+                            </>
                           ) : (
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-6 w-6 text-green-500"
-                              viewBox="0 0 20 20"
-                              fill="currentColor"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedTable(table);
+                                setIsEmptyTableModalOpen(true);
+                              }}
+                              className="px-3 py-1 rounded-lg bg-[#FFF2CC] hover:bg-[#FFE6A3] text-[#855509] border border-[#EBCB7B] text-xs font-semibold transition-colors"
+                            ></button>
                           )}
                         </div>
                       </div>
                     </div>
-                  ))
-                )}
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Phân trang */}
+            {totalPages > 1 && (
+              <div className="mt-3 pt-2 flex items-center justify-between text-xs text-[#6E6050]">
+                <span>
+                  Trang {currentPage} / {totalPages} ({filteredTables.length}{" "}
+                  bàn)
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    disabled={currentPage <= 1}
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    className="px-3 py-1 rounded-lg border border-[#EED8B4] bg-white disabled:opacity-40 hover:bg-[#FFF7E6]"
+                  >
+                    Trước
+                  </button>
+                  <button
+                    type="button"
+                    disabled={currentPage >= totalPages}
+                    onClick={() =>
+                      setCurrentPage((p) => Math.min(totalPages, p + 1))
+                    }
+                    className="px-3 py-1 rounded-lg border border-[#EED8B4] bg-white disabled:opacity-40 hover:bg-[#FFF7E6]"
+                  >
+                    Sau
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Cột bên phải: Chú thích trạng thái & Thao tác hệ thống (bỏ phần mô tả vị trí ngồi) */}
+          <aside className="xl:col-span-4 flex flex-col gap-4 overflow-y-auto">
+            {/* Chú thích trạng thái */}
+            <div className="bg-white border border-[#F2DFC2] rounded-2xl p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h2
+                  className="text-xs font-bold tracking-wider text-[#6E4B18] uppercase"
+                  style={headingFontStyle}
+                >
+                  Chú thích trạng thái
+                </h2>
+                <span className="text-[11px] px-2 py-0.5 rounded-full bg-[#FFF7E4] text-[#9A6814]">
+                  Cập nhật
+                </span>
               </div>
 
-              <div className="ml-4 w-64 flex flex-col gap-4">
-                <div className="bg-white rounded-lg shadow-md p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-6 w-6 text-green-500"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <p>: Available Table</p>
+              <div className="space-y-2.5 text-xs">
+                <div className="flex items-center justify-between py-1">
+                  <div className="flex items-center gap-2 text-[#4A3B2C]">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#10B981]" />
+                    <span>Bàn trống / Sẵn sàng</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-6 w-6 text-red-500"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <p>: Occupied Table</p>
-                  </div>
-                </div>
-                <div className="bg-white rounded-lg shadow-md p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-6 h-6 bg-green-500 rounded-full"></div>
-                    <p>: Paid</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 bg-gray-700 rounded-full"></div>
-                    <p>: Unpaid</p>
-                  </div>
+                  <span className="px-2 py-0.5 rounded-md bg-[#D1FAE5] text-[#047857] border border-[#6EE7B7] font-bold text-[11px]">
+                    {stats.available} bàn
+                  </span>
                 </div>
 
-                <div className="mt-2">
-                  <button
-                    style={{ backgroundColor: "#BDC4D4" }}
-                    className="w-full bg-gray-300 hover:bg-gray-400 text-gray-700 font-medium py-3 px-4 rounded-lg transition-colors duration-200"
-                    onClick={handleShowEmptyTableModal}
-                  >
-                    <b style={{ color: "#FFFFFF" }} className="text-lg">
-                      Empty Table List
-                    </b>
-                  </button>
-                </div>
-                <div className="flex gap-5 mt-4">
-                  <button
-                    style={{ marginLeft: "17px", backgroundColor: "#FFFFFF" }}
-                    className="flex items-center justify-center bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg shadow-md"
-                    onClick={handleAddTableModal}
-                  >
-                    <img
-                      width="20"
-                      height="20"
-                      src="https://img.icons8.com/ios-glyphs/90/49B02D/plus-math.png"
-                      alt="plus-math"
-                    />
-                  </button>
-                  <button
-                    style={{ backgroundColor: "#FFFFFF" }}
-                    className="flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg shadow-md"
-                    onClick={handleEditTableModal}
-                  >
-                    <img
-                      width="19px"
-                      height="10px"
-                      src="https://img.icons8.com/ios-glyphs/90/274FAA/edit--v1.png"
-                      alt="edit--v1"
-                    />
-                  </button>
-                  <button
-                    style={{ backgroundColor: "#FFFFFF" }}
-                    className="flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg shadow-md"
-                    onClick={() => setIsTransferTableModalOpen(true)}
-                  >
-                    <img
-                      width="20"
-                      height="20"
-                      src="https://img.icons8.com/ios-glyphs/90/000000/refresh.png"
-                      alt="transfer"
-                    />
-                  </button>
+                <div className="flex items-center justify-between py-1">
+                  <div className="flex items-center gap-2 text-[#4A3B2C]">
+                    <span className="w-2.5 h-2.5 rounded-full bg-[#EA580C] animate-pulse" />
+                    <span>Đang phục vụ</span>
+                  </div>
+                  <span className="px-2 py-0.5 rounded-md bg-gradient-to-r from-[#EA580C] to-[#C2410C] text-white font-bold text-[11px] shadow-2xs">
+                    {stats.occupied} bàn
+                  </span>
                 </div>
               </div>
             </div>
+
+            {/* Thao tác hệ thống */}
+            <div className="bg-white border border-[#F2DFC2] rounded-2xl p-4">
+              <h2
+                className="text-xs font-bold tracking-wider text-[#6E4B18] uppercase mb-3"
+                style={headingFontStyle}
+              >
+                Thao tác hệ thống
+              </h2>
+
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setErrorMessage("");
+                    setQrError(null);
+                    setNewTableId(null);
+                    setQrUrl("");
+                    setIsAddTableModalOpen(true);
+                  }}
+                  className="!py-3 !px-2 !rounded-xl border border-[#F0DEC0] bg-[#FFFDF9] hover:bg-[#FFF6E5] flex flex-col items-center justify-center !gap-2 text-[11px] font-semibold text-[#4A3B2C] transition-colors cursor-pointer"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 text-[#B8581E]"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.2"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M12 5v14m-7-7h14"
+                    />
+                  </svg>
+                  <span>Thêm bàn</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setErrorMessage("");
+                    setEditTableData(tables.map((t) => ({ ...t })));
+                    setIsEditTableModalOpen(true);
+                  }}
+                  className="!py-3 !px-2 !rounded-xl border border-[#F0DEC0] bg-[#FFFDF9] hover:bg-[#FFF6E5] flex flex-col items-center justify-center !gap-2 text-[11px] font-semibold text-[#4A3B2C] transition-colors cursor-pointer"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 text-[#B8581E]"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+                  </svg>
+                  <span>Sửa bàn</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    fetchTables();
+                    fetchAllNotifications();
+                  }}
+                  className="!py-3 !px-2 !rounded-xl border border-[#F0DEC0] bg-[#FFFDF9] hover:bg-[#FFF6E5] flex flex-col items-center justify-center !gap-2 text-[11px] font-semibold text-[#4A3B2C] transition-colors cursor-pointer group"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 text-[#B8581E] transition-transform duration-300 group-hover:rotate-180"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                    <path d="M3 3v5h5" />
+                    <path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16" />
+                    <path d="M16 16h5v5" />
+                  </svg>
+                  <span>Chuyển bàn</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsManualOrderModalOpen(true)}
+                  className="!py-3 !px-2 !rounded-xl border border-[#F0DEC0] bg-[#FFFDF9] hover:bg-[#FFF6E5] flex flex-col items-center justify-center !gap-2 text-[11px] font-semibold text-[#4A3B2C] transition-colors cursor-pointer"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 text-[#B8581E]"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      d="M3 3h2l2.4 12.4a2 2 0 0 0 2 1.6h8.8a2 2 0 0 0 2-1.6L22 8H6"
+                    />
+                    <circle cx="10" cy="21" r="1" />
+                    <circle cx="19" cy="21" r="1" />
+                    <path strokeLinecap="round" d="M12 6v6m-3-3h6" />
+                  </svg>
+                  <span>Đặt món thủ công</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsReservationModalOpen(true)}
+                  className="!py-3 !px-2 !rounded-xl border border-[#F0DEC0] bg-[#FFFDF9] hover:bg-[#FFF6E5] flex flex-col items-center justify-center !gap-2 text-[11px] font-semibold text-[#4A3B2C] transition-colors cursor-pointer"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="w-[18px] h-[18px] text-[#B8581E]"
+                  >
+                    <rect x="3" y="5" width="18" height="16" rx="2" />
+                    <path d="M16 3v4M8 3v4M3 10h18" />
+                    <path d="M12 14v5M9.5 16.5h5" />
+                  </svg>
+                  <span>Hẹn đặt bàn</span>
+                </button>
+              </div>
+            </div>
+          </aside>
+          <ManualOrderModal
+            isOpen={isManualOrderModalOpen}
+            onClose={() => setIsManualOrderModalOpen(false)}
+          />
+          <ReservationModal
+            isOpen={isReservationModalOpen}
+            onClose={() => setIsReservationModalOpen(false)}
+          />
+        </div>
+      </main>
+
+      {isDishModalOpen &&
+        selectedTable &&
+        (() => {
+          const unpaidOrders = (
+            ordersByTable[selectedTable.id.toString()] || []
+          ).filter((order) => order.paymentStatus?.toUpperCase() !== "PAID");
+
+          // Helper hiển thị badge trạng thái món
+          const renderDishStatusBadge = (status) => {
+            const s = (status || "").toString().toUpperCase().trim();
+            if (
+              [
+                "COMPLETED",
+                "DONE",
+                "SERVED",
+                "HOAN_THANH",
+                "HOÀN THÀNH",
+              ].includes(s)
+            ) {
+              return (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#D1FAE5] text-[#047857] border border-[#6EE7B7]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
+                  Hoàn thành
+                </span>
+              );
+            }
+            if (
+              [
+                "COOKING",
+                "PREPARING",
+                "IN_PROGRESS",
+                "DANG_LAM",
+                "ĐANG LÀM",
+              ].includes(s)
+            ) {
+              return (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#FEF3C7] text-[#B45309] border border-[#FCD34D]">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#F59E0B] animate-pulse" />
+                  Đang làm
+                </span>
+              );
+            }
+            return (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#FFEDD5] text-[#C2410C] border border-[#FDBA74]">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#EA580C]" />
+                Chưa làm
+              </span>
+            );
+          };
+
+          return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#3A2E22]/40 backdrop-blur-2xs px-4">
+              <div className="bg-white border border-[#F2DFC2] rounded-2xl shadow-2xl w-full max-w-4xl p-6 flex flex-col max-h-[85vh]">
+                {/* Header Modal */}
+                <div className="flex items-center justify-between pb-3 mb-4 border-b border-[#F5E8D0]">
+                  <div className="flex items-center gap-3">
+                    <h3
+                      className="text-lg font-bold text-[#3A2E22]"
+                      style={headingFontStyle}
+                    >
+                      Chi tiết món chưa thanh toán — Bàn{" "}
+                      {String(selectedTable.id).padStart(2, "0")}
+                    </h3>
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-[#FFEDD5] text-[#C2410C]">
+                      {unpaidOrders.length} đơn chưa thanh toán
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsDishModalOpen(false)}
+                    className="w-8 h-8 rounded-xl flex items-center justify-center text-[#8A775E] hover:text-[#3A2E22] hover:bg-[#FAF7F2] transition-colors cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {/* Thông báo lỗi nếu có */}
+                {orderError && (
+                  <p className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                    {orderError}
+                  </p>
+                )}
+
+                {/* Danh sách các đơn chưa thanh toán */}
+                {orderLoading ? (
+                  <p className="text-sm text-[#7D6B55] py-10 text-center">
+                    Đang tải danh sách món...
+                  </p>
+                ) : unpaidOrders.length === 0 ? (
+                  <div className="py-12 text-center bg-[#FFFDF8] rounded-xl border border-dashed border-[#EBD4B0]">
+                    <p className="text-sm font-medium text-[#7D6B55]">
+                      Bàn hiện không có đơn gọi món nào chưa thanh toán.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="overflow-y-auto flex-1 space-y-4 pr-1">
+                    {unpaidOrders.map((order) => {
+                      const activeItems = (order.items || []).filter(
+                        (it) =>
+                          (it.status || "").toString().toUpperCase() !==
+                          "CANCELLED",
+                      );
+                      if (activeItems.length === 0) return null;
+
+                      return (
+                        <div
+                          key={order.orderId}
+                          className="border border-[#F2DFC2] rounded-2xl overflow-hidden shadow-2xs bg-white"
+                        >
+                          {/* Thanh thông tin đơn + Nút Thanh toán và In bill kế bên Order */}
+                          <div className="bg-[#FAF4EA] px-4 py-3 flex flex-wrap items-center justify-between gap-3 border-b border-[#EBD4B0]">
+                            <div className="flex items-center gap-3">
+                              <span className="px-3 py-1 rounded-xl bg-[#FFE4CC] text-[#C2410C] font-extrabold text-sm border border-[#FDBA74]">
+                                Đơn #{order.orderId}
+                              </span>
+                              {order.customerName && (
+                                <span className="text-xs font-semibold text-[#4A3B2C]">
+                                  Khách:{" "}
+                                  <strong className="text-[#3A2E22]">
+                                    {order.customerName}
+                                  </strong>
+                                </span>
+                              )}
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#FEF3C7] text-[#B45309] border border-[#FDE68A]">
+                                Chưa thanh toán
+                              </span>
+                            </div>
+
+                            {/* Cụm nút thao tác kế bên Order: In bill & Thanh toán rộng rãi, cách viền đàng hoàng */}
+                            <div className="flex items-center gap-2.5">
+                              <button
+                                type="button"
+                                onClick={() => handlePrintBill(order.orderId)}
+                                className="inline-flex items-center gap-2 px-4.5 py-2 rounded-xl border border-[#EBD4B0] bg-white hover:bg-[#FFF9F2] text-[#5C4A3C] hover:text-[#C2410C] text-xs font-semibold tracking-wide transition-all shadow-2xs cursor-pointer"
+                                title="Tải hóa đơn PDF của đơn này"
+                              >
+                                <svg
+                                  className="w-4 h-4 text-[#C2410C]"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth="2"
+                                    d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+                                  />
+                                </svg>
+                                <span>In bill</span>
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  handlePrintBill(order.orderId);
+                                  setIsDishModalOpen(false);
+                                  setIsPaymentModalOpen(true);
+                                }}
+                                className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-gradient-to-r from-[#EA580C] to-[#C2410C] hover:opacity-95 text-white text-xs font-bold shadow-xs cursor-pointer transition-all duration-150 hover:scale-102 active:scale-98 tracking-wide"
+                                title="Thanh toán và in hóa đơn cho bàn này"
+                              >
+                                <div className="inline-flex px-1 py-1">
+                                  <svg
+                                    className="py-1 px-1 w-4 h-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth="2"
+                                      d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"
+                                    />
+                                  </svg>
+                                  <span>Thanh toán & In bill</span>
+                                </div>
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Bảng chi tiết các món của đơn hàng */}
+                          <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse text-xs">
+                              <thead className="bg-[#FFFDF8] text-[#6E5A47] uppercase text-[10px] font-bold border-b border-[#F5E8D0]">
+                                <tr>
+                                  <th className="py-2.5 px-3.5">Tên món</th>
+                                  <th className="py-2.5 px-3.5 text-center whitespace-nowrap">
+                                    Số lượng
+                                  </th>
+                                  <th className="py-2.5 px-3.5">
+                                    Ghi chú (Note)
+                                  </th>
+                                  <th className="py-2.5 px-3.5 whitespace-nowrap">
+                                    Trạng thái
+                                  </th>
+                                  <th className="py-2.5 px-3.5 text-right whitespace-nowrap">
+                                    Đơn giá
+                                  </th>
+                                  <th className="py-2.5 px-3.5 text-right whitespace-nowrap">
+                                    Thành tiền
+                                  </th>
+                                  <th className="py-2.5 px-3.5 text-center whitespace-nowrap">
+                                    Thao tác
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-[#F5E8D0]">
+                                {activeItems.map((item, idx) => {
+                                  const canEdit = isDishPending(
+                                    item.status ||
+                                      item.itemStatus ||
+                                      item.cookingStatus,
+                                  );
+                                  const qty = Number(item.quantity) || 1;
+                                  const unitPrice = Number(item.price) || 0;
+
+                                  return (
+                                    <tr
+                                      key={`${order.orderId}-${item.dishId || item.id || idx}`}
+                                      className="hover:bg-[#FFFDF8] transition-colors"
+                                    >
+                                      {/* Tên món */}
+                                      <td className="py-2.5 px-3.5 font-semibold text-[#3A2E22]">
+                                        {item.dishName}
+                                      </td>
+
+                                      {/* Số lượng: Nếu chưa làm thì có nút chỉnh số lượng, nếu đang làm/hoàn thành thì khóa */}
+                                      <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
+                                        {canEdit ? (
+                                          <div className="inline-flex items-center gap-1.5 bg-[#FAF7F2] border border-[#EBD4B0] rounded-lg px-1.5 py-1">
+                                            <button
+                                              type="button"
+                                              disabled={qty <= 1}
+                                              onClick={() =>
+                                                handleUpdateDishQuantity(
+                                                  order.orderId,
+                                                  item.dishId,
+                                                  item,
+                                                  qty - 1,
+                                                )
+                                              }
+                                              className="w-5 h-5 rounded bg-white border border-[#E5D3B3] text-[#4A3B2C] font-bold hover:bg-[#EA580C] hover:text-white disabled:opacity-40 disabled:hover:bg-white disabled:hover:text-[#4A3B2C] transition-colors cursor-pointer"
+                                              title="Giảm số lượng"
+                                            >
+                                              -
+                                            </button>
+                                            <span className="min-w-5 text-center font-bold text-[#3A2E22]">
+                                              {qty}
+                                            </span>
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                handleUpdateDishQuantity(
+                                                  order.orderId,
+                                                  item.dishId,
+                                                  item,
+                                                  qty + 1,
+                                                )
+                                              }
+                                              className="w-5 h-5 rounded bg-white border border-[#E5D3B3] text-[#4A3B2C] font-bold hover:bg-[#EA580C] hover:text-white transition-colors cursor-pointer"
+                                              title="Tăng số lượng"
+                                            >
+                                              +
+                                            </button>
+                                          </div>
+                                        ) : (
+                                          <span className="font-bold text-[#3A2E22] px-2.5 py-1 rounded-md bg-[#F7F3EC] border border-[#EFE5D7]">
+                                            × {qty}
+                                          </span>
+                                        )}
+                                      </td>
+
+                                      {/* Ghi chú */}
+                                      <td className="py-2.5 px-3.5 text-[#6E6050] max-w-[180px]">
+                                        {item.notes ? (
+                                          <span className="italic text-[#7D6B55]">
+                                            {item.notes}
+                                          </span>
+                                        ) : (
+                                          <span className="text-[#B8A996]">
+                                            —
+                                          </span>
+                                        )}
+                                      </td>
+
+                                      {/* Trạng thái thực hiện */}
+                                      <td className="py-2.5 px-3.5 whitespace-nowrap">
+                                        {renderDishStatusBadge(
+                                          item.status ||
+                                            item.itemStatus ||
+                                            item.cookingStatus,
+                                        )}
+                                      </td>
+
+                                      {/* Đơn giá */}
+                                      <td className="py-2.5 px-3.5 text-right text-[#6E6050] whitespace-nowrap">
+                                        {formatVND(unitPrice)}
+                                      </td>
+
+                                      {/* Thành tiền */}
+                                      <td className="py-2.5 px-3.5 text-right font-bold text-[#3A2E22] whitespace-nowrap">
+                                        {formatVND(unitPrice * qty)}
+                                      </td>
+
+                                      {/* Thao tác: Chỉ có nút Hủy khi chưa làm, đang làm/hoàn thành không có nút xóa */}
+                                      <td className="py-2.5 px-3.5 text-center whitespace-nowrap">
+                                        {canEdit ? (
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              handleCancelDishItem(
+                                                order.orderId,
+                                                item.dishId,
+                                                item,
+                                              )
+                                            }
+                                            className="px-2.5 py-1 rounded-lg bg-[#FEF2F2] hover:bg-[#DC2626] text-[#DC2626] hover:text-white border border-[#FECACA] text-[11px] font-bold transition-colors cursor-pointer shadow-2xs"
+                                          >
+                                            Hủy món
+                                          </button>
+                                        ) : (
+                                          <span className="text-[11px] font-medium text-[#9C8A79] bg-[#FAF6F0] px-2 py-0.5 rounded border border-[#EDE0D2]">
+                                            Đã khóa
+                                          </span>
+                                        )}
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Footer Modal */}
+                <div className="mt-4 pt-3 border-t border-[#F5E8D0] flex flex-wrap items-center justify-between gap-3">
+                  <div className="text-xs text-[#6E6050]">
+                    Tổng tạm tính bàn:{" "}
+                    <span className="text-sm font-bold text-[#C85319] ml-1">
+                      {formatVND(
+                        unpaidOrders.reduce(
+                          (sum, o) => sum + (Number(o.totalAmount) || 0),
+                          0,
+                        ),
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setIsDishModalOpen(false)}
+                      className="px-5 py-2.5 rounded-xl border border-[#EBD4B0] bg-white text-xs font-semibold text-[#5C4A3C] hover:bg-[#FAF7F2] transition-colors cursor-pointer"
+                    >
+                      Đóng
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
+      {/* Modal Thanh toán */}
+      {isPaymentModalOpen && selectedTable && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#3A2E22]/30 backdrop-blur-2xs px-4">
+          <div className="bg-white border border-[#F2DFC2] rounded-2xl shadow-xl w-full max-w-md p-6">
+            <h3
+              className="text-lg font-semibold text-[#3A2E22] mb-2"
+              style={headingFontStyle}
+            >
+              Xác nhận thanh toán — Bàn{" "}
+              {String(selectedTable.id).padStart(2, "0")}
+            </h3>
+            <p className="text-xs text-[#7D6B55] mb-4">
+              Kiểm tra các đơn chưa thanh toán trước khi giải phóng bàn.
+            </p>
+            {orderError && (
+              <p className="mb-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+                {orderError}
+              </p>
+            )}
+            <div className="space-y-2 mb-5 max-h-56 overflow-y-auto text-xs">
+              {(ordersByTable[selectedTable.id.toString()] || [])
+                .filter((o) => o.paymentStatus?.toUpperCase() !== "PAID")
+                .map((order) => (
+                  <div
+                    key={order.orderId}
+                    className="flex items-center justify-between p-2.5 rounded-xl bg-[#FFFDF8] border border-[#F5E8D0]"
+                  >
+                    <span>Đơn #{order.orderId}</span>
+                    <span className="font-semibold text-[#C85319]">
+                      {formatVND(order.totalAmount)}
+                    </span>
+                  </div>
+                ))}
+            </div>
+            <div className="flex justify-end gap-3 mt-2">
+              <button
+                type="button"
+                onClick={() => setIsPaymentModalOpen(false)}
+                className="px-5 py-2.5 rounded-xl border border-[#EED8B4] bg-white text-xs font-semibold text-[#5C4A3C] hover:bg-[#FAF7F2] transition-colors cursor-pointer"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const tableOrders =
+                    selectedTable.orders ||
+                    ordersByTable[selectedTable.id.toString()] ||
+                    [];
+                  const unpaid = tableOrders.filter(
+                    (o) => o.paymentStatus?.toUpperCase() !== "PAID",
+                  );
+                  if (unpaid.length > 0) {
+                    unpaid.forEach((o) => handlePrintBill(o.orderId));
+                  } else if (tableOrders.length > 0) {
+                    handlePrintBill(tableOrders[0].orderId);
+                  }
+                }}
+                className="px-5 py-2.5 rounded-xl border border-[#EBD4B0] bg-white hover:bg-[#FFF9F2] text-[#5C4A3C] hover:text-[#C2410C] text-xs font-bold shadow-2xs cursor-pointer transition-all tracking-wide inline-flex items-center gap-2"
+                title="Tải hóa đơn PDF của bàn này"
+              >
+                <svg
+                  className="w-4 h-4 text-[#C2410C]"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
+                  />
+                </svg>
+                <span>In bill</span>
+              </button>
+              <button
+                type="button"
+                disabled={loading}
+                onClick={handleConfirmPayment}
+                className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#EA580C] to-[#C2410C] hover:opacity-95 text-white border border-[#C2410C] text-xs font-bold disabled:cursor-not-allowed disabled:opacity-60 shadow-xs cursor-pointer tracking-wide inline-flex items-center gap-2"
+              >
+                <div className="inline-flex px-1 py-1">
+                  <svg
+                    className="py-1 px-1 w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"
+                    />
+                  </svg>
+                  <span>Xác nhận thanh toán</span>
+                </div>
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {renderTransferTableModal()}
-      {renderTransferConfirmModal()}
-      {renderTransferSuccessModal()}
-      {renderNotificationModal()}
-      {renderDishModal()}
-      {renderPaymentModal()}
-      {renderEmptyTableModal()}
-      {renderBillModal()}
-      {renderConfirmModal()}
-      {renderSuccessModal()}
-      {renderAddTableModal()}
-      {renderEditTableModal()}
-      {renderPrintModal()}
+      {/* Modal Mở bàn / Làm trống bàn */}
+      {isEmptyTableModalOpen && selectedTable && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#3A2E22]/30 backdrop-blur-2xs px-4">
+          <div className="bg-white border border-[#F2DFC2] rounded-2xl shadow-xl w-full max-w-sm p-6 text-center">
+            <h3
+              className="text-lg font-semibold text-[#3A2E22] mb-2"
+              style={headingFontStyle}
+            >
+              Mở bàn {String(selectedTable.id).padStart(2, "0")}?
+            </h3>
+            <p className="text-xs text-[#7D6B55] mb-5">
+              Xác nhận kích hoạt Bàn {String(selectedTable.id).padStart(2, "0")}{" "}
+              ({selectedTable.capacity || 4} chỗ).
+            </p>
+            <div className="flex justify-center gap-2.5">
+              <button
+                type="button"
+                onClick={() => setIsEmptyTableModalOpen(false)}
+                className="px-4 py-2 rounded-xl border border-[#EED8B4] bg-white text-xs font-medium text-[#4A3B2C]"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmEmptyTable}
+                className="px-4 py-2 rounded-xl bg-[#FFF0C2] hover:bg-[#FFE499] text-[#855509] border border-[#EBCB7B] text-xs font-semibold"
+              >
+                Xác nhận
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Hóa đơn & In bill */}
+      {isBillModalOpen && selectedTable && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#3A2E22]/30 backdrop-blur-2xs px-4">
+          <div className="bg-white border border-[#F2DFC2] rounded-2xl shadow-xl w-full max-w-md p-6">
+            <h3
+              className="text-lg font-semibold text-[#3A2E22] mb-2"
+              style={headingFontStyle}
+            >
+              Hóa đơn — Bàn {String(selectedTable.id).padStart(2, "0")}
+            </h3>
+            <p className="text-xs text-[#7D6B55] mb-5">
+              Xuất file PDF hóa đơn cho đơn hiện tại của bàn.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsBillModalOpen(false)}
+                className="px-4 py-2 rounded-xl border border-[#EED8B4] bg-white text-xs font-medium text-[#4A3B2C]"
+              >
+                Đóng
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsBillModalOpen(false);
+                  setIsPrintModalOpen(true);
+                }}
+                className="px-4 py-2 rounded-xl bg-[#FFF2CC] hover:bg-[#FFE6A3] text-[#855509] border border-[#EBCB7B] text-xs font-semibold"
+              >
+                In hóa đơn PDF
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Xác nhận in hóa đơn */}
+      {isPrintModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#3A2E22]/30 backdrop-blur-2xs px-4">
+          <div className="bg-white border border-[#F2DFC2] rounded-2xl shadow-xl w-full max-w-sm p-6 text-center">
+            <h3
+              className="text-lg font-semibold text-[#3A2E22] mb-3"
+              style={headingFontStyle}
+            >
+              Xác nhận in hóa đơn?
+            </h3>
+            <div className="flex justify-center gap-3 mt-4">
+              <button
+                type="button"
+                onClick={handleConfirmPrint}
+                className="px-4 py-2 rounded-xl bg-[#FFF0C2] hover:bg-[#FFE499] text-[#855509] border border-[#EBCB7B] text-xs font-semibold"
+              >
+                Đồng ý
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsPrintModalOpen(false)}
+                className="px-4 py-2 rounded-xl border border-[#EED8B4] bg-white text-xs font-medium text-[#4A3B2C]"
+              >
+                Hủy
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Thông báo của bàn */}
+      {isNotificationModalOpen && selectedTable && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#3A2E22]/30 backdrop-blur-2xs px-4">
+          <div className="bg-white border border-[#F2DFC2] rounded-2xl shadow-xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3
+                className="text-lg font-semibold text-[#3A2E22]"
+                style={headingFontStyle}
+              >
+                Thông báo — Bàn {String(selectedTable.id).padStart(2, "0")}
+              </h3>
+              <button
+                onClick={() => setIsNotificationModalOpen(false)}
+                className="text-[#8A775E] hover:text-[#3A2E22]"
+              >
+                ✕
+              </button>
+            </div>
+
+            {notificationsError && (
+              <p className="text-xs text-[#C85319] mb-3">
+                {notificationsError}
+              </p>
+            )}
+
+            {notificationsLoading ? (
+              <p className="text-xs text-[#7D6B55] py-6 text-center">
+                Đang tải thông báo...
+              </p>
+            ) : (
+              <div className="max-h-72 overflow-y-auto space-y-2.5">
+                {tableNotifications.filter(
+                  (n) =>
+                    n.tableNumber?.toString() === selectedTable.id.toString(),
+                ).length === 0 ? (
+                  <p className="text-xs text-[#7D6B55] text-center py-6">
+                    Không có thông báo nào cho bàn này.
+                  </p>
+                ) : (
+                  tableNotifications
+                    .filter(
+                      (n) =>
+                        n.tableNumber?.toString() ===
+                        selectedTable.id.toString(),
+                    )
+                    .map((n) => (
+                      <div
+                        key={n.notificationId}
+                        className={`p-3 rounded-xl border text-xs flex items-start justify-between gap-3 ${
+                          n.isRead
+                            ? "bg-[#FFFDF8] border-[#F5E8D0] text-[#7D6B55]"
+                            : "bg-[#FFF4EA] border-[#F7C9AD] text-[#3A2E22]"
+                        }`}
+                      >
+                        <div>
+                          <p className="font-medium">
+                            {n.message || "Yêu cầu hỗ trợ từ bàn"}
+                          </p>
+                          <span className="text-[11px] text-[#9A8568]">
+                            {n.isRead ? "Đã xử lý" : "Chưa xử lý"}
+                          </span>
+                        </div>
+                        {!n.isRead && (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              markNotificationAsRead(n.notificationId)
+                            }
+                            className="px-2.5 py-1 rounded-lg bg-[#FFF0C2] text-[#855509] border border-[#EBCB7B] text-[11px] font-semibold shrink-0"
+                          >
+                            Đã đọc
+                          </button>
+                        )}
+                      </div>
+                    ))
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal Thêm bàn & tạo mã QR */}
+      {isAddTableModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#3A2E22]/30 backdrop-blur-2xs px-4">
+          <div className="bg-white border border-[#F2DFC2] rounded-2xl shadow-xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3
+                className="text-lg font-semibold text-[#3A2E22]"
+                style={headingFontStyle}
+              >
+                Thêm bàn mới
+              </h3>
+              <button
+                onClick={() => setIsAddTableModalOpen(false)}
+                className="text-[#8A775E] hover:text-[#3A2E22]"
+              >
+                ✕
+              </button>
+            </div>
+
+            {errorMessage && (
+              <div className="mb-3 p-2.5 rounded-xl bg-[#FFF2EC] border border-[#F6C8B4] text-xs text-[#A63A14]">
+                {errorMessage}
+              </div>
+            )}
+
+            <form onSubmit={handleAddTableSuccess} className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-medium text-[#4A3B2C] mb-1">
+                  Số bàn
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  required
+                  value={newTableNumber}
+                  onChange={(e) => setNewTableNumber(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-[#F0DEC0] bg-[#FFFDF8] text-sm text-[#3A2E22]"
+                  placeholder="Ví dụ: 7"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-[#4A3B2C] mb-1">
+                  Sức chứa (số chỗ)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  required
+                  value={newTableCapacity}
+                  onChange={(e) => setNewTableCapacity(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl border border-[#F0DEC0] bg-[#FFFDF8] text-sm text-[#3A2E22]"
+                  placeholder="Ví dụ: 4"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsAddTableModalOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-[#EED8B4] bg-white text-xs font-medium text-[#4A3B2C]"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 rounded-xl bg-[#FFF0C2] hover:bg-[#FFE499] text-[#855509] border border-[#EBCB7B] text-xs font-semibold"
+                >
+                  Tạo bàn
+                </button>
+              </div>
+            </form>
+
+            {newTableId && qrUrl && (
+              <div className="mt-5 pt-4 border-t border-[#F5E8D0] text-center">
+                <p className="text-xs font-medium text-[#3A2E22] mb-2">
+                  Mã QR cho Bàn #{newTableId}
+                </p>
+                <img
+                  src={qrUrl}
+                  alt={`QR Bàn ${newTableId}`}
+                  className="w-36 h-36 mx-auto border border-[#F2DFC2] rounded-xl p-1.5 bg-white"
+                />
+                {qrError && (
+                  <p className="text-xs text-[#C85319] mt-2">{qrError}</p>
+                )}
+                <div className="mt-3 flex flex-wrap justify-center gap-2">
+                  <button
+                    type="button"
+                    disabled={qrUploading}
+                    onClick={handleGenerateQr}
+                    className="px-3 py-1.5 rounded-xl bg-[#FFF0C2] text-[#855509] border border-[#EBCB7B] text-xs font-semibold disabled:opacity-60"
+                  >
+                    {qrUploading ? "Đang lưu..." : "Lưu QR lên hệ thống"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDownloadQr}
+                    className="px-3 py-1.5 rounded-xl border border-[#EED8B4] bg-white text-xs font-medium text-[#4A3B2C]"
+                  >
+                    Tải QR
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handlePrintQr}
+                    className="px-3 py-1.5 rounded-xl border border-[#EED8B4] bg-white text-xs font-medium text-[#4A3B2C]"
+                  >
+                    In QR
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal Chỉnh sửa danh sách bàn */}
+      {isEditTableModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#3A2E22]/30 backdrop-blur-2xs px-4">
+          <div className="bg-white border border-[#F2DFC2] rounded-2xl shadow-xl w-full max-w-xl p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3
+                className="text-lg font-semibold text-[#3A2E22]"
+                style={headingFontStyle}
+              >
+                Chỉnh sửa danh sách bàn
+              </h3>
+              <button
+                onClick={() => setIsEditTableModalOpen(false)}
+                className="text-[#8A775E] hover:text-[#3A2E22]"
+              >
+                ✕
+              </button>
+            </div>
+
+            {errorMessage && (
+              <div className="mb-3 p-2.5 rounded-xl bg-[#FFF2EC] border border-[#F6C8B4] text-xs text-[#A63A14]">
+                {errorMessage}
+              </div>
+            )}
+
+            <div className="max-h-80 overflow-y-auto space-y-2.5">
+              {editTableData.map((t, index) => (
+                <div
+                  key={t.id}
+                  className="flex items-center justify-between gap-3 p-2.5 rounded-xl border border-[#F5E8D0] bg-[#FFFDF8] text-xs"
+                >
+                  <span className="font-semibold text-[#3A2E22] w-20">
+                    Bàn {String(t.id).padStart(2, "0")}
+                  </span>
+                  <label className="flex items-center gap-1.5">
+                    <span className="text-[#7D6B55]">Sức chứa:</span>
+                    <input
+                      type="number"
+                      min="1"
+                      value={t.capacity}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value, 10) || 1;
+                        setEditTableData((prev) =>
+                          prev.map((item, idx) =>
+                            idx === index ? { ...item, capacity: val } : item,
+                          ),
+                        );
+                      }}
+                      className="w-16 px-2 py-1 rounded-lg border border-[#F0DEC0] bg-white"
+                    />
+                  </label>
+                  <select
+                    value={t.status}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setEditTableData((prev) =>
+                        prev.map((item, idx) =>
+                          idx === index ? { ...item, status: val } : item,
+                        ),
+                      );
+                    }}
+                    className="px-2 py-1 rounded-lg border border-[#F0DEC0] bg-white"
+                  >
+                    <option value="available">Sẵn sàng</option>
+                    <option value="occupied">Có khách</option>
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteTable(t.id)}
+                    className="p-1.5 text-[#C85319] hover:bg-[#FFF2EC] rounded-lg"
+                    title="Xóa bàn"
+                  >
+                    <FaTrash className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsEditTableModalOpen(false)}
+                className="px-4 py-2 rounded-xl border border-[#EED8B4] bg-white text-xs font-medium text-[#4A3B2C]"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveTableChanges}
+                className="px-4 py-2 rounded-xl bg-[#FFF0C2] hover:bg-[#FFE499] text-[#855509] border border-[#EBCB7B] text-xs font-semibold"
+              >
+                Lưu thay đổi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Chuyển bàn */}
+      {isTransferTableModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#3A2E22]/30 backdrop-blur-2xs px-4">
+          <div className="bg-white border border-[#F2DFC2] rounded-2xl shadow-xl w-full max-w-md p-6">
+            <h3
+              className="text-lg font-semibold text-[#3A2E22] mb-3"
+              style={headingFontStyle}
+            >
+              Chuyển bàn cho khách
+            </h3>
+            <div className="space-y-3 text-xs mb-4">
+              <div>
+                <label className="block text-[#7D6B55] mb-1">Từ bàn</label>
+                <select
+                  value={transferSourceTable?.id || ""}
+                  onChange={(e) =>
+                    setTransferSourceTable(
+                      tables.find((t) => String(t.id) === e.target.value) ||
+                        null,
+                    )
+                  }
+                  className="w-full px-3 py-2 rounded-xl border border-[#F0DEC0] bg-[#FFFDF8]"
+                >
+                  <option value="">Chọn bàn đang có khách</option>
+                  {tables
+                    .filter((t) => t.status === "occupied")
+                    .map((t) => (
+                      <option key={t.id} value={t.id}>
+                        Bàn {String(t.id).padStart(2, "0")}
+                      </option>
+                    ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[#7D6B55] mb-1">
+                  Sang bàn trống
+                </label>
+                <select
+                  value={transferDestinationTable?.id || ""}
+                  onChange={(e) =>
+                    setTransferDestinationTable(
+                      tables.find((t) => String(t.id) === e.target.value) ||
+                        null,
+                    )
+                  }
+                  className="w-full px-3 py-2 rounded-xl border border-[#F0DEC0] bg-[#FFFDF8]"
+                >
+                  <option value="">Chọn bàn đích</option>
+                  {availableTablesList.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      Bàn {String(t.id).padStart(2, "0")} ({t.capacity || 4}{" "}
+                      chỗ)
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsTransferTableModalOpen(false)}
+                className="px-4 py-2 rounded-xl border border-[#EED8B4] bg-white text-xs"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                disabled={!transferSourceTable || !transferDestinationTable}
+                onClick={() => setIsTransferConfirmModalOpen(true)}
+                className="px-4 py-2 rounded-xl bg-[#FFF0C2] text-[#855509] border border-[#EBCB7B] text-xs font-semibold disabled:opacity-50"
+              >
+                Tiếp tục
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isTransferConfirmModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#3A2E22]/30 backdrop-blur-2xs px-4">
+          <div className="bg-white border border-[#F2DFC2] rounded-2xl shadow-xl w-full max-w-sm p-6 text-center">
+            <h3 className="text-base font-semibold text-[#3A2E22] mb-2">
+              Xác nhận chuyển bàn?
+            </h3>
+            <p className="text-xs text-[#7D6B55] mb-4">
+              Chuyển từ Bàn #{transferSourceTable?.id} sang Bàn #
+              {transferDestinationTable?.id}.
+            </p>
+            <div className="flex justify-center gap-2">
+              <button
+                type="button"
+                onClick={() => setIsTransferConfirmModalOpen(false)}
+                className="px-4 py-2 rounded-xl border border-[#EED8B4] bg-white text-xs"
+              >
+                Hủy
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmTransfer}
+                className="px-4 py-2 rounded-xl bg-[#FFF0C2] text-[#855509] border border-[#EBCB7B] text-xs font-semibold"
+              >
+                Xác nhận
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isTransferSuccessModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#3A2E22]/30 backdrop-blur-2xs px-4">
+          <div className="bg-white border border-[#F2DFC2] rounded-2xl shadow-xl w-full max-w-sm p-6 text-center">
+            <h3 className="text-base font-semibold text-[#9E6B0B] mb-2">
+              Chuyển bàn thành công
+            </h3>
+            <button
+              type="button"
+              onClick={() => setIsTransferSuccessModalOpen(false)}
+              className="mt-3 px-4 py-2 rounded-xl bg-[#FFF0C2] text-[#855509] border border-[#EBCB7B] text-xs font-semibold"
+            >
+              Đóng
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Thành công thao tác chung */}
+      {isSuccessModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#3A2E22]/30 backdrop-blur-2xs px-4">
+          <div className="bg-white border border-[#F2DFC2] rounded-2xl shadow-xl w-full max-w-sm p-6 text-center">
+            <h3 className="text-base font-semibold text-[#9E6B0B] mb-2">
+              Thao tác thành công
+            </h3>
+            <p className="text-xs text-[#7D6B55] mb-4">
+              {actionSuccessText || "Dữ liệu bàn đã được cập nhật."}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setIsSuccessModalOpen(false);
+                setActionSuccessText("");
+              }}
+              className="px-4 py-2 rounded-xl bg-[#FFF0C2] text-[#855509] border border-[#EBCB7B] text-xs font-semibold"
+            >
+              Đóng
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

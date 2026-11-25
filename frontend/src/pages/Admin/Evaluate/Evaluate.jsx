@@ -60,9 +60,9 @@ const EvaluteAdmin = () => {
     }
   };
 
-  // Gọi API khi component mount hoặc khi search/filter thay đổi, chỉ nếu là ADMIN
+  // Gọi API khi component mount hoặc khi search/filter thay đổi cho cả ADMIN và STAFF
   useEffect(() => {
-    if (userRole === "ADMIN") {
+    if (userRole === "ADMIN" || userRole === "STAFF") {
       fetchFeedbacks();
     }
   }, [searchTerm, filterRating, filterDate, userRole]);
@@ -151,15 +151,12 @@ const EvaluteAdmin = () => {
         {[1, 2, 3, 4, 5].map((star) => (
           <button
             key={star}
-            onClick={() =>
-              userRole === "ADMIN" && setFilterRating(star.toString())
-            }
+            onClick={() => setFilterRating(star.toString())}
             className={`flex items-center text-2xl ${
               filterRating === star.toString()
                 ? "text-yellow-500"
                 : "text-gray-300"
             } hover:text-yellow-500 transition-colors`}
-            disabled={userRole !== "ADMIN"}
           >
             <span className="mr-1 text-sm">{star}</span>⭐
             <span className="ml-1 text-sm text-gray-600">
@@ -168,11 +165,10 @@ const EvaluteAdmin = () => {
           </button>
         ))}
         <button
-          onClick={() => userRole === "ADMIN" && setFilterRating("All")}
+          onClick={() => setFilterRating("All")}
           className={`ml-4 text-sm ${
             filterRating === "All" ? "text-blue-500" : "text-gray-500"
           } hover:text-blue-500 transition-colors`}
-          disabled={userRole !== "ADMIN"}
         >
           All ({reviews.length})
         </button>
@@ -196,28 +192,10 @@ const EvaluteAdmin = () => {
     return dateB - dateA;
   });
 
-  // Render "Access Denied" message if user is not ADMIN
-  if (userRole !== "ADMIN") {
-    return (
-      <div className="h-screen w-screen flex flex-col bg-gradient-to-br from-blue-50 to-gray-100">
-        <MenuBar
-          title="Evaluate"
-          icon="https://img.icons8.com/ios-filled/50/FFFFFF/bookmark.png"
-        />
-        <div className="flex-1 flex items-center justify-center">
-          <div className="bg-red-100 border border-red-400 text-red-700 px-6 py-4 rounded-lg shadow-lg text-xl">
-            Access denied: Administrator privileges required.
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="h-screen w-screen !bg-gradient-to-br from-blue-50 to-gray-100 flex flex-col">
+    <div className="min-h-screen w-full bg-[#FAF7F2] flex flex-col text-[#33261D] font-sans">
       <MenuBar
-        title="Evaluate"
-        icon="https://img.icons8.com/ios-filled/50/FFFFFF/bookmark.png"
+        title="Đánh giá khách hàng"
       />
       {/* Main Content */}
       <div className="flex-1 p-8 bg-transparent overflow-y-auto">
@@ -244,16 +222,14 @@ const EvaluteAdmin = () => {
               placeholder="Search by customer name..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full h-12 p-3 pl-10 pr-4 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 hover:shadow-md placeholder-gray-400 text-gray-700"
-              disabled={userRole !== "ADMIN"}
+              className="w-full h-12 p-3 pl-10 pr-4 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#EA580C] focus:border-transparent transition-all duration-300 hover:shadow-md placeholder-gray-400 text-gray-700"
             />
           </div>
           {renderStarFilter()}
           <select
             value={filterDate}
             onChange={(e) => setFilterDate(e.target.value)}
-            className="h-12 px-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 hover:shadow-md text-gray-700"
-            disabled={userRole !== "ADMIN"}
+            className="h-12 px-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#EA580C] focus:border-transparent transition-all duration-300 hover:shadow-md text-gray-700"
           >
             {uniqueDates.map((date) => (
               <option key={date} value={date}>

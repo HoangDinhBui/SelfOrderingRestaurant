@@ -88,7 +88,8 @@ public class  ReceiptService {
         document.add(new Paragraph(" "));
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        Paragraph dateTime = new Paragraph("Date: " + dateFormat.format(order.getOrderDate()), subHeaderFont);
+        Date dateToFormat = order.getOrderDate() != null ? order.getOrderDate() : new Date();
+        Paragraph dateTime = new Paragraph("Date: " + dateFormat.format(dateToFormat), subHeaderFont);
         dateTime.setAlignment(Element.ALIGN_RIGHT);
         document.add(dateTime);
 
@@ -102,10 +103,11 @@ public class  ReceiptService {
     private void addTableInfo(Document document, Order order) throws DocumentException {
         Font normalFont = new Font(Font.HELVETICA, 12);
 
-        Paragraph tableInfo = new Paragraph("Table: " + order.getTables().getTableNumber(), normalFont);
+        String tableNum = (order.getTables() != null) ? String.valueOf(order.getTables().getTableNumber()) : "N/A";
+        Paragraph tableInfo = new Paragraph("Table: " + tableNum, normalFont);
         document.add(tableInfo);
 
-        if (order.getCustomer() != null) {
+        if (order.getCustomer() != null && order.getCustomer().getFullname() != null) {
             Paragraph customerInfo = new Paragraph("Customer: " + order.getCustomer().getFullname(), normalFont);
             document.add(customerInfo);
         }
@@ -169,13 +171,16 @@ public class  ReceiptService {
             table.addCell(cell);
 
             // Unit price
-            cell = new PdfPCell(new Phrase(String.format("%.2f", item.getUnitPrice()), contentFont));
+            BigDecimal unitPrice = item.getUnitPrice() != null ? item.getUnitPrice()
+                    : (item.getDish() != null && item.getDish().getPrice() != null ? item.getDish().getPrice() : BigDecimal.ZERO);
+            cell = new PdfPCell(new Phrase(String.format("%.2f", unitPrice), contentFont));
             cell.setHorizontalAlignment(Element.ALIGN_RIGHT);
             cell.setPadding(5);
             table.addCell(cell);
 
             // Quantity
-            cell = new PdfPCell(new Phrase(item.getQuantity().toString(), contentFont));
+            int qty = item.getQuantity() != null ? item.getQuantity() : 1;
+            cell = new PdfPCell(new Phrase(String.valueOf(qty), contentFont));
             cell.setHorizontalAlignment(Element.ALIGN_CENTER);
             cell.setPadding(5);
             table.addCell(cell);
@@ -188,7 +193,7 @@ public class  ReceiptService {
             table.addCell(cell);
 
             // Subtotal
-            BigDecimal subtotal = item.getUnitPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
+            BigDecimal subtotal = unitPrice.multiply(BigDecimal.valueOf(qty));
             cell = new PdfPCell(new Phrase(String.format("%.2f", subtotal), contentFont));
             cell.setHorizontalAlignment(Element.ALIGN_RIGHT);
             cell.setPadding(5);
@@ -210,8 +215,9 @@ public class  ReceiptService {
         totalsTable.getDefaultCell().setBorder(Rectangle.NO_BORDER);
         totalsTable.getDefaultCell().setHorizontalAlignment(Element.ALIGN_RIGHT);
 
+        BigDecimal subtotal = order.getTotalAmount() != null ? order.getTotalAmount() : BigDecimal.ZERO;
         totalsTable.addCell(new Phrase("Subtotal:", normalFont));
-        totalsTable.addCell(new Phrase(String.format("%.2f", order.getTotalAmount()), normalFont));
+        totalsTable.addCell(new Phrase(String.format("%.2f", subtotal), normalFont));
 
         // Discount (if any)
         if (order.getDiscount() != null && order.getDiscount().compareTo(BigDecimal.ZERO) > 0) {
@@ -220,7 +226,7 @@ public class  ReceiptService {
         }
 
         // Total
-        BigDecimal totalAfterDiscount = order.getTotalAmount();
+        BigDecimal totalAfterDiscount = subtotal;
         if (order.getDiscount() != null) {
             totalAfterDiscount = totalAfterDiscount.subtract(order.getDiscount());
         }

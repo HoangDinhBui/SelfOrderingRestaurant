@@ -31,4 +31,13 @@ public class OrderController {
             @PathVariable Integer dishId) {
         return ResponseEntity.ok(orderService.removeOrderItem(orderId, dishId));
     }
+
+    @PutMapping("/{orderId}/items/{dishId}")
+    public ResponseEntity<OrderResponseDTO> updateOrderItemQuantity(
+            @PathVariable Integer orderId,
+            @PathVariable Integer dishId,
+            @RequestBody java.util.Map<String, Integer> request) {
+        Integer quantity = request.get("quantity");
+        return ResponseEntity.ok(orderService.updateOrderItemQuantity(orderId, dishId, quantity));
+    }
 }

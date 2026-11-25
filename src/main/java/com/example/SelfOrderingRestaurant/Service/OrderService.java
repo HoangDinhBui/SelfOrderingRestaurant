@@ -660,6 +660,72 @@ public class OrderService implements IOrderService {
         );
     }
 
+    @Transactional
+    public OrderResponseDTO updateOrderItemQuantity(Integer orderId, Integer dishId, Integer quantity) {
+        if (!securityUtils.isAuthenticated() || (!securityUtils.isStaff() && !securityUtils.isCustomer())) {
+            throw new AuthorizationException("Not authorized to update order items");
+        }
+
+        if (orderId == null || orderId <= 0 || dishId == null || dishId <= 0) {
+            throw new ValidationException("Order ID and Dish ID must be positive integers");
+        }
+
+        if (quantity == null || quantity <= 0) {
+            throw new ValidationException("Quantity must be positive");
+        }
+
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + orderId));
+
+        if (order.getPaymentStatus() != PaymentStatus.UNPAID) {
+            throw new ValidationException("Can only update items for UNPAID orders");
+        }
+
+        OrderItemKey key = new OrderItemKey();
+        key.setOrderId(orderId);
+        key.setDishId(dishId);
+
+        OrderItem orderItem = orderItemRepository.findById(key)
+                .orElseThrow(() -> new ResourceNotFoundException("Order item not found for order ID: " + orderId + " and dish ID: " + dishId));
+
+        if (orderItem.getStatus() != OrderItemStatus.PENDING) {
+            throw new ValidationException("Can only update quantity for PENDING items");
+        }
+
+        orderItem.setQuantity(quantity);
+        orderItemRepository.save(orderItem);
+
+        // Recalculate total amount
+        BigDecimal totalAmount = calculateTotalAmount(order);
+        order.setTotalAmount(totalAmount);
+        orderRepository.save(order);
+
+        List<OrderItem> remainingItems = orderItemRepository.findByOrder(order);
+        List<OrderItemDTO> items = remainingItems.stream()
+                .map(item -> {
+                    OrderItemDTO dto = new OrderItemDTO();
+                    dto.setDishId(item.getId().getDishId());
+                    dto.setQuantity(item.getQuantity());
+                    dto.setNotes(item.getNotes());
+                    dto.setDishName(item.getDish().getName());
+                    dto.setPrice(item.getDish().getPrice());
+                    dto.setStatus(item.getStatus() != null ? item.getStatus().name() : OrderItemStatus.PENDING.name());
+                    return dto;
+                }).collect(Collectors.toList());
+
+        return new OrderResponseDTO(
+                order.getOrderId(),
+                order.getCustomer() != null ? order.getCustomer().getFullname() : "Khách",
+                order.getTables().getTableNumber(),
+                order.getStatus().name(),
+                order.getTotalAmount(),
+                order.getPaymentStatus().name(),
+                items,
+                order.getReservationTime(),
+                order.getOrderDate() != null ? new java.sql.Timestamp(order.getOrderDate().getTime()).toLocalDateTime() : null
+        );
+    }
+
     @Override
     public OrderCartResponseDTO addDishToOrderCart(OrderItemDTO orderItemDTO) {
         if (orderItemDTO.getDishId() == null || orderItemDTO.getDishId() <= 0) {
