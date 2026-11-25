@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useQuery, useMutation, gql } from "@apollo/client";
 import { toast } from "react-toastify";
 import MenuBar from "../../../components/layout/MenuBar";
+import { isAwaitingReservation } from "../../../utils/reservation";
 
 // GraphQL Queries and Mutations
 const GET_ORDERS = gql`
@@ -91,7 +92,12 @@ const DishManagementStaff = () => {
     },
   });
 
-  const selectedOrder = data?.orders?.find(
+  // Lịch hẹn chưa nhận khách thì bếp chưa nấu
+  const kitchenOrders = (data?.orders || []).filter(
+    (order) => !isAwaitingReservation(order)
+  );
+
+  const selectedOrder = kitchenOrders.find(
     (order) => order.orderId === selectedOrderId
   );
   const orderItems = selectedOrder
@@ -182,7 +188,7 @@ const DishManagementStaff = () => {
                 <option value="" disabled>
                   Choose an order
                 </option>
-                {data?.orders?.map((order) => (
+                {kitchenOrders.map((order) => (
                   <option key={order.orderId} value={order.orderId}>
                     Order {order.orderId} (Table {order.tableNumber}, Status:{" "}
                     {order.status || "UNKNOWN"})
@@ -202,7 +208,7 @@ const DishManagementStaff = () => {
                   Retry
                 </button>
               </div>
-            ) : !data?.orders?.length ? (
+            ) : !kitchenOrders.length ? (
               <p className="text-gray-500">No unpaid orders found.</p>
             ) : !selectedOrderId ? (
               <p className="text-gray-500">

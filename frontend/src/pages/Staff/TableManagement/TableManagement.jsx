@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import MenuBarStaff from "../../../components/layout/MenuBar_Staff.jsx";
+import { isAwaitingReservation } from "../../../utils/reservation";
 import MenuBar from "../../../components/layout/MenuBar.jsx";
 import axios from "axios";
 import { debounce } from "lodash";
@@ -533,7 +534,8 @@ const TableManagementStaff = () => {
       if (!result || !result.orders) {
         throw new Error("Invalid GraphQL response structure");
       }
-      return result.orders;
+      // Lịch hẹn chưa nhận khách không thuộc về bàn: không hiện, không tính tiền
+      return result.orders.filter((order) => !isAwaitingReservation(order));
     } catch (err) {
       console.error("Error fetching orders via GraphQL:", err);
       throw err;
@@ -563,6 +565,9 @@ const TableManagementStaff = () => {
       console.error("GraphQL orders fetch failed:", err);
       try {
         const response = await API.get("/api/orders");
+        response.data = (response.data || []).filter(
+          (order) => !isAwaitingReservation(order)
+        );
         console.log("Orders from REST:", response.data);
         setOrders(response.data);
 
@@ -788,6 +793,7 @@ const TableManagementStaff = () => {
             id: table.table_id,
             status: table.status?.toLowerCase() || "available",
             capacity: table.capacity,
+            nextReservationTime: table.nextReservationTime || null,
             orders: updatedOrders.filter(
               (order) =>
                 order.tableNumber.toString() === table.table_id.toString()
@@ -821,6 +827,7 @@ const TableManagementStaff = () => {
           id: table.table_id,
           status: table.status?.toLowerCase() || "available",
           capacity: table.capacity,
+          nextReservationTime: table.nextReservationTime || null,
           orders: [],
         }));
 
@@ -2449,6 +2456,11 @@ const TableManagementStaff = () => {
                     >
                       <h2 className="font-bold">Table {table.id}</h2>
                       <div className="flex items-center gap-2">
+                        {table.nextReservationTime && (
+                          <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-[#EDE9FE] text-[#5B21B6]">
+                            Hẹn {table.nextReservationTime}
+                          </span>
+                        )}
                         <span>{table.capacity}</span>
                         <img
                           width="15"

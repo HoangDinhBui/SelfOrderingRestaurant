@@ -6,6 +6,7 @@ import React, {
   useRef,
 } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { isAwaitingReservation } from "../../../utils/reservation";
 import MenuBar from "../../../components/layout/MenuBar.jsx";
 import axios from "axios";
 import { FaTrash } from "react-icons/fa";
@@ -438,7 +439,8 @@ const TableManagementAdmin = () => {
       if (!result || !result.orders) {
         throw new Error("Invalid GraphQL response structure");
       }
-      return result.orders;
+      // Lịch hẹn chưa nhận khách không thuộc về bàn: không hiện, không tính tiền
+      return result.orders.filter((order) => !isAwaitingReservation(order));
     } catch (err) {
       console.error("Error fetching orders via GraphQL:", err);
       throw err;
@@ -468,6 +470,9 @@ const TableManagementAdmin = () => {
       console.error("GraphQL orders fetch failed:", err);
       try {
         const response = await API.get("/api/orders");
+        response.data = (response.data || []).filter(
+          (order) => !isAwaitingReservation(order)
+        );
         console.log("Orders from REST:", response.data);
         setOrders(response.data);
 
@@ -544,6 +549,7 @@ const TableManagementAdmin = () => {
         id: table.table_id,
         status: table.status?.toLowerCase() || "available",
         capacity: table.capacity,
+        nextReservationTime: table.nextReservationTime || null,
         orders: [],
         location: table.location,
         qrCode: table.qrCode,
@@ -913,6 +919,7 @@ const TableManagementAdmin = () => {
         if (JSON.stringify(originalTable) !== JSON.stringify(table)) {
           await API.put(`/api/admin/tables/${table.id}`, {
             capacity: table.capacity,
+            nextReservationTime: table.nextReservationTime || null,
             status: table.status.toUpperCase(),
             location: table.location,
             qrCode: table.qrCode,
@@ -1498,6 +1505,11 @@ const TableManagementAdmin = () => {
                             <circle cx="9" cy="7" r="4" />
                           </svg>
                           <span>{table.capacity || 4} chỗ</span>
+                          {table.nextReservationTime && (
+                            <span className="ml-auto inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold bg-[#EDE9FE] text-[#5B21B6] border border-[#C4B5FD]">
+                              Hẹn {table.nextReservationTime}
+                            </span>
+                          )}
                         </div>
                       </div>
 
