@@ -72,6 +72,10 @@ public class SecurityConfig {
                                 "/uploads/**", "/api/inventory/available", "/api/dish_ingredients/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/orders").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/feedback").permitAll()
+                        // Reservations: a guest may book and see the table list; managing bookings is staff work
+                        .requestMatchers(HttpMethod.POST, "/api/reservations").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/reservations/tables").permitAll()
+                        .requestMatchers("/api/reservations/**").hasAnyRole("STAFF", "ADMIN")
                         .requestMatchers(HttpMethod.POST, "/api/notifications").permitAll()
                         // Payment: a guest may start a payment and watch its status, never settle it
                         .requestMatchers(HttpMethod.POST, "/api/payment/vnpay", "/api/payment/process",
