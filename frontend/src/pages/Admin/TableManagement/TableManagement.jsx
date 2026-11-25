@@ -11,7 +11,8 @@ import MenuBar from "../../../components/layout/MenuBar.jsx";
 import axios from "axios";
 import { FaTrash } from "react-icons/fa";
 import ManualOrderModal from "./ManualOrderModal";
-import ReservationModal from "./ReservationModal";
+import ReservationManager from "../../../components/reservation/ReservationManager";
+import usePendingReservationCount from "../../../components/reservation/usePendingReservationCount";
 
 import { BACKEND_URL, BACKEND_WS_URL, authHeaders } from "../../../config";
 
@@ -37,6 +38,8 @@ const TableManagementAdmin = () => {
   const [newTableCapacity, setNewTableCapacity] = useState("");
   const [newTableNumber, setNewTableNumber] = useState("");
   const [isReservationModalOpen, setIsReservationModalOpen] = useState(false);
+  const [reservationRefreshKey, setReservationRefreshKey] = useState(0);
+  const pendingReservationCount = usePendingReservationCount(reservationRefreshKey);
   const [errorMessage, setErrorMessage] = useState("");
   const [editTableData, setEditTableData] = useState([]);
   const [tables, setTables] = useState([]);
@@ -1824,7 +1827,14 @@ const TableManagementAdmin = () => {
                     <path d="M16 3v4M8 3v4M3 10h18" />
                     <path d="M12 14v5M9.5 16.5h5" />
                   </svg>
-                  <span>Hẹn đặt bàn</span>
+                  <span>
+                    Lịch hẹn
+                    {pendingReservationCount > 0 && (
+                      <span className="ml-1 rounded-full bg-[#B73512] px-1.5 py-0.5 text-[10px] text-white">
+                        {pendingReservationCount}
+                      </span>
+                    )}
+                  </span>
                 </button>
               </div>
             </div>
@@ -1833,9 +1843,17 @@ const TableManagementAdmin = () => {
             isOpen={isManualOrderModalOpen}
             onClose={() => setIsManualOrderModalOpen(false)}
           />
-          <ReservationModal
+          <ReservationManager
             isOpen={isReservationModalOpen}
-            onClose={() => setIsReservationModalOpen(false)}
+            onClose={() => {
+              setIsReservationModalOpen(false);
+              setReservationRefreshKey((k) => k + 1);
+            }}
+            tables={tables.map((t) => ({ tableNumber: t.id, capacity: t.capacity }))}
+            onChanged={() => {
+              fetchTables();
+              fetchOrders();
+            }}
           />
         </div>
       </main>

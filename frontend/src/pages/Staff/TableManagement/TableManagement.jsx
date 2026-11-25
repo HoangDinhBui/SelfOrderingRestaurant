@@ -6,6 +6,8 @@ import axios from "axios";
 import { debounce } from "lodash";
 import { useMemo } from "react";
 import QuickOrderModal from "./QuickOrderModal";
+import ReservationManager from "../../../components/reservation/ReservationManager";
+import usePendingReservationCount from "../../../components/reservation/usePendingReservationCount";
 
 import { BACKEND_URL, BACKEND_WS_URL, authHeaders } from "../../../config";
 const TableManagementStaff = () => {
@@ -43,6 +45,9 @@ const TableManagementStaff = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false); // Used for transfer error handling
   const [isQuickOrderModalOpen, setIsQuickOrderModalOpen] = useState(false);
+  const [isReservationManagerOpen, setIsReservationManagerOpen] = useState(false);
+  const [reservationRefreshKey, setReservationRefreshKey] = useState(0);
+  const pendingReservationCount = usePendingReservationCount(reservationRefreshKey);
 
   // Assume userId is stored in localStorage or fetched from auth context
   const userId = localStorage.getItem("userId") || "1"; // Replace with actual userId retrieval logic
@@ -2675,6 +2680,17 @@ const TableManagementStaff = () => {
                       Đặt Đơn Nhanh
                     </b>
                   </button>
+                  <button
+                    className="w-full bg-[#B73512] hover:bg-[#9a2c0f] text-white font-medium py-3 px-4 mt-3 rounded-lg shadow-md transition-colors duration-200"
+                    onClick={() => setIsReservationManagerOpen(true)}
+                  >
+                    <b className="text-lg">Lịch hẹn</b>
+                    {pendingReservationCount > 0 && (
+                      <span className="ml-2 rounded-full bg-white px-2 py-0.5 text-xs font-bold text-[#B73512]">
+                        {pendingReservationCount} chờ duyệt
+                      </span>
+                    )}
+                  </button>
                 </div>
               </div>
             </div>
@@ -2693,6 +2709,15 @@ const TableManagementStaff = () => {
       {renderTransferConfirmModal()}
       {renderTransferSuccessModal()}
       {renderPrintModal()}
+      <ReservationManager
+        isOpen={isReservationManagerOpen}
+        onClose={() => {
+          setIsReservationManagerOpen(false);
+          setReservationRefreshKey((k) => k + 1);
+        }}
+        tables={tables.map((t) => ({ tableNumber: t.id, capacity: t.capacity }))}
+        onChanged={fetchOrders}
+      />
       <QuickOrderModal
         isOpen={isQuickOrderModalOpen}
         onClose={() => setIsQuickOrderModalOpen(false)}
