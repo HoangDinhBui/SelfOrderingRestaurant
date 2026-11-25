@@ -570,6 +570,13 @@ const Home = () => {
           </button>
         </div>
 
+        <button
+          onClick={() => navigate("/reservation")}
+          className="mt-3 w-full rounded-lg bg-[#B73512] py-4 text-lg font-bold text-white shadow-md"
+        >
+          📅 Đặt bàn trước
+        </button>
+
         <section className="mt-4">
           <div className="flex items-center space-x-2 mb-3">
             <h2 className="text-xl font-bold">Today's Special</h2>

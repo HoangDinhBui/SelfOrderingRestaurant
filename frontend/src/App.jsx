@@ -23,6 +23,7 @@ import Payment from "./pages/Customer/PayMent/Payment";
 import Evaluate from "./pages/Customer/Evaluate/Evaluate";
 import CreateTable from "./components/CreateTable";
 import CaptivePortal from "./pages/Customer/CaptivePortal/CaptivePortal";
+import Reservation from "./pages/Customer/Reservation/Reservation";
 
 import AdminInformation from "./pages/Admin/AdminInformation/AdminInformation";
 import DishManagementAdmin from "./pages/Admin/DishManagement/DishManagment";
@@ -69,6 +70,7 @@ function App() {
               <Route path="/payment_cus" element={<Payment />} />
               <Route path="/evaluate_cus" element={<Evaluate />} />
               <Route path="/captive-portal" element={<CaptivePortal />} />
+              <Route path="/reservation" element={<Reservation />} />
 
               <Route path="/login" element={<Login />} />
               <Route
