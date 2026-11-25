@@ -1508,10 +1508,10 @@ const TableManagementStaff = () => {
       }
     };
 
-    const handleUpdateQuantity = async (orderId, itemIndex, newQuantity) => {
+    // The backend identifies an order item by dishId, not by its position in the list
+    const handleUpdateQuantity = async (orderId, dishId, newQuantity) => {
       try {
-        // Assuming an API endpoint to update item quantity
-        await API.put(`/api/orders/${orderId}/items/${itemIndex}`, {
+        await API.put(`/api/orders/${orderId}/items/${dishId}`, {
           quantity: newQuantity,
         });
         setSelectedTable((prev) => ({
@@ -1520,8 +1520,8 @@ const TableManagementStaff = () => {
             order.orderId === orderId
               ? {
                   ...order,
-                  items: order.items.map((item, idx) =>
-                    idx === itemIndex
+                  items: order.items.map((item) =>
+                    Number(item.dishId) === Number(dishId)
                       ? { ...item, quantity: newQuantity }
                       : item
                   ),
@@ -1535,17 +1535,18 @@ const TableManagementStaff = () => {
       }
     };
 
-    const handleDeleteItem = async (orderId, itemIndex) => {
+    const handleDeleteItem = async (orderId, dishId) => {
       try {
-        // Assuming an API endpoint to delete an item
-        await API.delete(`/api/orders/${orderId}/items/${itemIndex}`);
+        await API.delete(`/api/orders/${orderId}/items/${dishId}`);
         setSelectedTable((prev) => ({
           ...prev,
           orders: prev.orders.map((order) =>
             order.orderId === orderId
               ? {
                   ...order,
-                  items: order.items.filter((_, idx) => idx !== itemIndex),
+                  items: order.items.filter(
+                    (item) => Number(item.dishId) !== Number(dishId)
+                  ),
                 }
               : order
           ),
