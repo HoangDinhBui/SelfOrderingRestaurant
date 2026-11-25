@@ -5,6 +5,7 @@ import com.example.SelfOrderingRestaurant.Dto.Request.DinningTableRequestDTO.Upd
 import com.example.SelfOrderingRestaurant.Dto.Response.DinningTableResponseDTO.DinningTableResponseDTO;
 import com.example.SelfOrderingRestaurant.Entity.DinningTable;
 import com.example.SelfOrderingRestaurant.Entity.Order;
+import com.example.SelfOrderingRestaurant.Enum.OrderStatus;
 import com.example.SelfOrderingRestaurant.Enum.PaymentStatus;
 import com.example.SelfOrderingRestaurant.Enum.TableStatus;
 import com.example.SelfOrderingRestaurant.Exception.ResourceNotFoundException;
@@ -17,6 +18,10 @@ import org.slf4j.Logger;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -27,6 +32,7 @@ public class DinningTableService implements IDinningTableService {
     private final DinningTableRepository dinningTableRepository;
     private final OrderRepository orderRepository;
     private final WebSocketService webSocketService;
+    private final Clock clock;
     private final Logger log = org.slf4j.LoggerFactory.getLogger(DinningTableService.class);
     
     @Transactional
@@ -83,7 +89,11 @@ public class DinningTableService implements IDinningTableService {
     public List<DinningTableResponseDTO> getAllTables() {
         return dinningTableRepository.findAll().stream()
                 .map(table -> {
-                    List<Order> tableOrders = orderRepository.findByTableNumber(table.getTableNumber());
+                    List<Order> allOrders = orderRepository.findByTableNumber(table.getTableNumber());
+                    // Lịch hẹn chưa nhận khách không chiếm bàn
+                    List<Order> tableOrders = allOrders.stream()
+                            .filter(order -> !ReservationPolicy.isAwaiting(order))
+                            .collect(Collectors.toList());
                     TableStatus status;
                     if (tableOrders.isEmpty()) {
                         status = TableStatus.AVAILABLE;
@@ -96,7 +106,9 @@ public class DinningTableService implements IDinningTableService {
                         table.setTableStatus(status);
                         dinningTableRepository.save(table);
                     }
-                    return convertToResponseDTO(table);
+                    DinningTableResponseDTO dto = convertToResponseDTO(table);
+                    dto.setNextReservationTime(nextReservationToday(allOrders));
+                    return dto;
                 })
                 .collect(Collectors.toList());
     }
@@ -111,6 +123,17 @@ public class DinningTableService implements IDinningTableService {
         }
         table.setTableStatus(status);
         dinningTableRepository.save(table);
+    }
+
+    private String nextReservationToday(List<Order> orders) {
+        LocalDateTime now = LocalDateTime.now(clock);
+        return orders.stream()
+                .filter(order -> order.getStatus() == OrderStatus.CONFIRMED && order.getReservationTime() != null)
+                .map(Order::getReservationTime)
+                .filter(time -> !time.isBefore(now) && time.toLocalDate().equals(now.toLocalDate()))
+                .min(Comparator.naturalOrder())
+                .map(time -> time.format(DateTimeFormatter.ofPattern("HH:mm")))
+                .orElse(null);
     }
 
     @Transactional

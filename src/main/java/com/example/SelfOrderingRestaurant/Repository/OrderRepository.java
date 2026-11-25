@@ -14,15 +14,15 @@ import java.util.List;
 
 @Repository
 public interface OrderRepository extends JpaRepository<Order, Integer> {
-    @Query("SELECT COUNT(o) FROM Order o WHERE o.tables.tableNumber = :tableNumber AND o.status NOT IN ('COMPLETED', 'CANCELLED')")
+    @Query("SELECT COUNT(o) FROM Order o WHERE o.tables.tableNumber = :tableNumber AND o.status NOT IN ('COMPLETED', 'CANCELLED', 'SCHEDULED', 'CONFIRMED')")
     long countActiveOrdersByTableId(@Param("tableNumber") Integer tableNumber);
     @Query("SELECT o FROM Order o WHERE o.tables.tableNumber = :tableNumber")
     List<Order> findByTableNumber(@Param("tableNumber") Integer tableNumber);
     List<Order> findByPaymentStatus(PaymentStatus paymentStatus);
     @Query("SELECT o FROM Order o WHERE o.tables.tableNumber = :tableNumber AND o.paymentStatus = :paymentStatus")
     List<Order> findByTableNumberAndPaymentStatus(@Param("tableNumber") Integer tableNumber, @Param("paymentStatus") PaymentStatus paymentStatus);
-    // Cancelled orders are never paid, so they must not keep the table occupied
-    @Query("SELECT CASE WHEN COUNT(o) > 0 THEN true ELSE false END FROM Order o WHERE o.tables.tableNumber = :tableNumber AND o.paymentStatus = :paymentStatus AND o.status <> 'CANCELLED'")
+    // Cancelled orders are never paid and pending reservations have no guests seated, so neither keeps the table occupied
+    @Query("SELECT CASE WHEN COUNT(o) > 0 THEN true ELSE false END FROM Order o WHERE o.tables.tableNumber = :tableNumber AND o.paymentStatus = :paymentStatus AND o.status NOT IN ('CANCELLED', 'SCHEDULED', 'CONFIRMED')")
     boolean existsByTablesTableNumberAndPaymentStatus(@Param("tableNumber") Integer tableNumber, @Param("paymentStatus") PaymentStatus paymentStatus);
     
     List<Order> findByCustomerCustomerIdOrderByOrderDateDesc(Integer customerId);
@@ -34,6 +34,9 @@ public interface OrderRepository extends JpaRepository<Order, Integer> {
     List<Order> findByReservationTimeIsNotNullOrderByReservationTimeAsc();
 
     // Đơn đang phục vụ tại bàn: chưa thanh toán, không phải lịch hẹn chưa nhận khách
-    @Query("SELECT CASE WHEN COUNT(o) > 0 THEN true ELSE false END FROM Order o WHERE o.tables.tableNumber = :tableNumber AND o.paymentStatus = 'UNPAID' AND o.status NOT IN ('CANCELLED', 'SCHEDULED', 'CONFIRMED', 'COMPLETED') AND (:excludeOrderId IS NULL OR o.orderId <> :excludeOrderId)")
+    @Query("SELECT CASE WHEN COUNT(o) > 0 THEN true ELSE false END FROM Order o WHERE o.tables.tableNumber = :tableNumber AND o.paymentStatus = 'UNPAID' AND o.status NOT IN ('CANCELLED', 'SCHEDULED', 'CONFIRMED') AND (:excludeOrderId IS NULL OR o.orderId <> :excludeOrderId)")
     boolean existsServingUnpaidOrderOnTable(@Param("tableNumber") Integer tableNumber, @Param("excludeOrderId") Integer excludeOrderId);
+
+    @Query("SELECT o FROM Order o WHERE o.tables.tableNumber = :tableNumber AND o.paymentStatus = 'UNPAID' AND o.status NOT IN ('CANCELLED', 'SCHEDULED', 'CONFIRMED') ORDER BY o.orderId")
+    List<Order> findServingUnpaidOrdersOnTable(@Param("tableNumber") Integer tableNumber);
 }

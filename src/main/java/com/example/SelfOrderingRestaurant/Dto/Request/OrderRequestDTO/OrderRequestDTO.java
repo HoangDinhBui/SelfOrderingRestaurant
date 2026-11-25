@@ -28,4 +28,7 @@ public class OrderRequestDTO {
     private String notes;
 
     private LocalDateTime reservationTime;
+    // Chỉ dùng cho lịch hẹn
+    private String contactPhone;
+    private Integer guestCount;
 }

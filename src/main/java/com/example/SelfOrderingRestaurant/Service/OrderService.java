@@ -46,6 +46,7 @@ public class OrderService implements IOrderService {
     private final SecurityUtils securityUtils;
     private final WebSocketService webSocketService;
     private final StaffShiftRepository staffShiftRepository;
+    private final ReservationPolicy reservationPolicy;
 
     private static final Logger log = LoggerFactory.getLogger(OrderService.class);
 
@@ -59,7 +60,8 @@ public class OrderService implements IOrderService {
             OrderCartService orderCartService,
             HttpServletRequest httpServletRequest,
             SecurityUtils securityUtils,
-            WebSocketService webSocketService, StaffShiftRepository staffShiftRepository, Clock clock) {
+            WebSocketService webSocketService, StaffShiftRepository staffShiftRepository, Clock clock,
+            ReservationPolicy reservationPolicy) {
         this.orderRepository = orderRepository;
         this.orderItemRepository = orderItemRepository;
         this.dishRepository = dishRepository;
@@ -71,11 +73,17 @@ public class OrderService implements IOrderService {
         this.webSocketService = webSocketService;
         this.staffShiftRepository = staffShiftRepository;
         this.clock = clock;
+        this.reservationPolicy = reservationPolicy;
     }
 
     @Transactional
     @Override
     public Integer createOrder(OrderRequestDTO request) {
+        // Đơn có giờ hẹn là lịch hẹn (đường cũ của app Flutter): không kiểm tra ca, không gộp đơn
+        if (request.getReservationTime() != null) {
+            return createReservationOrder(request, OrderStatus.SCHEDULED);
+        }
+
         List<Staff> staffOnShift = staffShiftRepository.findStaffOnCurrentShift(LocalDate.now(clock), LocalTime.now(clock));
         if (staffOnShift.isEmpty()) {
             log.error("Cannot create order: No staff is currently on shift");
@@ -86,10 +94,9 @@ public class OrderService implements IOrderService {
         DinningTable dinningTable = dinningTableRepository.findById(request.getTableId())
                 .orElseThrow(() -> new ResourceNotFoundException("Table not found with ID: " + request.getTableId()));
 
-        // Only merge into existing unpaid order if this is an immediate walk-in order (not a future reservation)
-        if (request.getReservationTime() == null && TableStatus.OCCUPIED.equals(dinningTable.getTableStatus())) {
-            List<Order> existingOrders = orderRepository.findByTableNumberAndPaymentStatus(
-                    dinningTable.getTableNumber(), PaymentStatus.UNPAID);
+        // Merge into the order being served at this table; pending reservations are never merged into
+        if (TableStatus.OCCUPIED.equals(dinningTable.getTableStatus())) {
+            List<Order> existingOrders = orderRepository.findServingUnpaidOrdersOnTable(dinningTable.getTableNumber());
             if (!existingOrders.isEmpty()) {
                 Integer orderId = existingOrders.get(0).getOrderId();
                 log.info("Found existing unpaid order with ID: {} for table {}, redirecting to updateOrder", orderId, dinningTable.getTableNumber());
@@ -97,24 +104,57 @@ public class OrderService implements IOrderService {
             }
         }
 
-        Customer customer = getOrCreateCustomer(request);
+        Order order = saveNewOrder(request, dinningTable, OrderStatus.PENDING);
 
-        Order newOrder = new Order();
-        newOrder.setCustomer(customer);
-        newOrder.setTables(dinningTable);
-        if (request.getReservationTime() != null) {
-            newOrder.setStatus(OrderStatus.SCHEDULED);
-            newOrder.setReservationTime(request.getReservationTime());
-        } else {
-            newOrder.setStatus(OrderStatus.PENDING);
+        dinningTable.setTableStatus(TableStatus.OCCUPIED);
+        dinningTableRepository.save(dinningTable);
+
+        orderCartService.clearCart();
+
+        sendOrderNotification(order, dinningTable);
+
+        return order.getOrderId();
+    }
+
+    /**
+     * Tạo lịch hẹn ở trạng thái SCHEDULED (khách tự đặt) hoặc CONFIRMED (nhân viên đặt thủ công).
+     * Không đổi trạng thái bàn: bàn chỉ bị chiếm khi nhân viên nhận khách.
+     */
+    @Transactional
+    public Integer createReservationOrder(OrderRequestDTO request, OrderStatus initialStatus) {
+        if (!ReservationPolicy.WAITING.contains(initialStatus)) {
+            throw new IllegalArgumentException("Reservation must start as SCHEDULED or CONFIRMED");
         }
-        
+        if (request.getReservationTime() == null) {
+            throw new ValidationException("Lịch hẹn phải có thời gian đặt bàn");
+        }
+        validateOrderRequest(request);
+
+        DinningTable dinningTable = dinningTableRepository.findById(request.getTableId())
+                .orElseThrow(() -> new ResourceNotFoundException("Table not found with ID: " + request.getTableId()));
+        reservationPolicy.validateNew(dinningTable, request.getReservationTime(), request.getGuestCount(), null);
+
+        Order order = saveNewOrder(request, dinningTable, initialStatus);
+
+        sendOrderNotification(order, dinningTable);
+
+        return order.getOrderId();
+    }
+
+    private Order saveNewOrder(OrderRequestDTO request, DinningTable dinningTable, OrderStatus status) {
+        Order newOrder = new Order();
+        newOrder.setCustomer(getOrCreateCustomer(request));
+        newOrder.setTables(dinningTable);
+        newOrder.setStatus(status);
+        newOrder.setReservationTime(request.getReservationTime());
+        newOrder.setContactPhone(request.getContactPhone());
+        newOrder.setGuestCount(request.getGuestCount());
         newOrder.setPaymentStatus(PaymentStatus.UNPAID);
         newOrder.setNotes(request.getNotes());
         newOrder.setOrderDate(new Date());
 
         Order order = orderRepository.save(newOrder); // Save order to generate orderId
-        log.info("Created new order with ID: {} for table {}", order.getOrderId(), dinningTable.getTableNumber());
+        log.info("Created new order with ID: {} for table {} with status {}", order.getOrderId(), dinningTable.getTableNumber(), status);
 
         // Add items to new order
         List<OrderItem> orderItems = new ArrayList<>();
@@ -149,19 +189,7 @@ public class OrderService implements IOrderService {
         order.setTotalAmount(totalAmount);
         orderRepository.save(order);
         log.info("Set total amount for order {} to {}", order.getOrderId(), totalAmount);
-
-        if (request.getReservationTime() != null) {
-            dinningTable.setTableStatus(TableStatus.RESERVED);
-        } else {
-            dinningTable.setTableStatus(TableStatus.OCCUPIED);
-        }
-        dinningTableRepository.save(dinningTable);
-
-        orderCartService.clearCart();
-
-        sendOrderNotification(order, dinningTable);
-
-        return order.getOrderId();
+        return order;
     }
 
     @Transactional
@@ -548,8 +576,28 @@ public class OrderService implements IOrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + orderId));
 
+        OrderStatus newStatus;
         try {
-            OrderStatus newStatus = OrderStatus.valueOf(status.toUpperCase());
+            newStatus = OrderStatus.valueOf(status.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new ValidationException("Invalid order status: " + status);
+        }
+
+        if (ReservationPolicy.isAwaiting(order)) {
+            // Lịch hẹn chưa nhận khách chỉ đi theo vòng đời lịch hẹn
+            OrderStatus oldStatus = order.getStatus();
+            switch (newStatus) {
+                case PENDING -> reservationPolicy.checkIn(order);
+                case CONFIRMED -> reservationPolicy.confirm(order);
+                case CANCELLED -> reservationPolicy.cancel(order);
+                default -> throw new ValidationException("Không thể chuyển lịch hẹn sang trạng thái " + newStatus);
+            }
+            log.info("Updated reservation {} status from {} to {}", orderId, oldStatus, newStatus);
+            sendOrderStatusNotification(order, newStatus);
+            return;
+        }
+
+        try {
             OrderStatus oldStatus = order.getStatus();
 
             order.setStatus(newStatus);
