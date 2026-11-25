@@ -10,7 +10,7 @@ import { isAwaitingReservation } from "../../../utils/reservation";
 import MenuBar from "../../../components/layout/MenuBar.jsx";
 import axios from "axios";
 import { FaTrash } from "react-icons/fa";
-import ManualOrderModal from "./ManualOrderModal";
+import ManualOrderModal from "../../../components/order/ManualOrderModal";
 import ReservationManager from "../../../components/reservation/ReservationManager";
 import usePendingReservationCount from "../../../components/reservation/usePendingReservationCount";
 
@@ -1842,6 +1842,12 @@ const TableManagementAdmin = () => {
           <ManualOrderModal
             isOpen={isManualOrderModalOpen}
             onClose={() => setIsManualOrderModalOpen(false)}
+            tables={tables.map((t) => ({ tableNumber: t.id, capacity: t.capacity, status: t.status }))}
+            defaultTableNumber={selectedTable?.id}
+            onOrderSuccess={() => {
+              fetchTables();
+              fetchOrders();
+            }}
           />
           <ReservationManager
             isOpen={isReservationModalOpen}

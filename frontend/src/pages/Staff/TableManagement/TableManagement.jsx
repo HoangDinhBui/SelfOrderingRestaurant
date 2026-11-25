@@ -5,7 +5,7 @@ import MenuBar from "../../../components/layout/MenuBar.jsx";
 import axios from "axios";
 import { debounce } from "lodash";
 import { useMemo } from "react";
-import QuickOrderModal from "./QuickOrderModal";
+import ManualOrderModal from "../../../components/order/ManualOrderModal";
 import ReservationManager from "../../../components/reservation/ReservationManager";
 import usePendingReservationCount from "../../../components/reservation/usePendingReservationCount";
 
@@ -44,7 +44,7 @@ const TableManagementStaff = () => {
     useState(null);
   const [errorMessage, setErrorMessage] = useState("");
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false); // Used for transfer error handling
-  const [isQuickOrderModalOpen, setIsQuickOrderModalOpen] = useState(false);
+  const [isManualOrderModalOpen, setIsManualOrderModalOpen] = useState(false);
   const [isReservationManagerOpen, setIsReservationManagerOpen] = useState(false);
   const [reservationRefreshKey, setReservationRefreshKey] = useState(0);
   const pendingReservationCount = usePendingReservationCount(reservationRefreshKey);
@@ -2674,10 +2674,10 @@ const TableManagementStaff = () => {
                   </button>
                   <button
                     className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-4 mt-4 rounded-lg shadow-md transition-colors duration-200"
-                    onClick={() => setIsQuickOrderModalOpen(true)}
+                    onClick={() => setIsManualOrderModalOpen(true)}
                   >
                     <b className="text-lg">
-                      Đặt Đơn Nhanh
+                      Đặt món thủ công
                     </b>
                   </button>
                   <button
@@ -2718,13 +2718,12 @@ const TableManagementStaff = () => {
         tables={tables.map((t) => ({ tableNumber: t.id, capacity: t.capacity }))}
         onChanged={fetchOrders}
       />
-      <QuickOrderModal
-        isOpen={isQuickOrderModalOpen}
-        onClose={() => setIsQuickOrderModalOpen(false)}
-        tables={tables}
-        onOrderSuccess={() => {
-          window.location.reload();
-        }}
+      <ManualOrderModal
+        isOpen={isManualOrderModalOpen}
+        onClose={() => setIsManualOrderModalOpen(false)}
+        tables={tables.map((t) => ({ tableNumber: t.id, capacity: t.capacity, status: t.status }))}
+        defaultTableNumber={selectedTable?.id}
+        onOrderSuccess={fetchOrders}
       />
     </div>
   );
