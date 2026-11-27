@@ -1,6 +1,7 @@
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useCallback, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CartContext } from "../../../context/CartContext";
+import VoiceOrderModal from "../../../components/voice/VoiceOrderModal";
 
 import { BACKEND_URL } from "../../../config";
 const Menu = () => {
@@ -38,6 +39,7 @@ const Menu = () => {
   const [loadingDish, setLoadingDish] = useState(null);
   const [inventory, setInventory] = useState([]);
   const [dishIngredients, setDishIngredients] = useState([]);
+  const [voiceOpen, setVoiceOpen] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -120,7 +122,7 @@ const Menu = () => {
   }, [fetchCartData, tableNumberFromUrl]);
 
   // Function to check if a dish has sufficient ingredients
-  const hasSufficientIngredients = (dishId) => {
+  const hasSufficientIngredients = useCallback((dishId) => {
     // Retrieve the list of ingredients required for the dish
     const requiredIngredients = dishIngredients.filter(
       (di) => di.dishId === dishId
@@ -141,6 +143,27 @@ const Menu = () => {
       }
     }
     return true; // Sufficient ingredients
+  }, [inventory, dishIngredients]);
+
+  // Món đang bán, dùng cho gọi món bằng giọng nói
+  const availableDishes = useMemo(
+    () => dishes.filter((dish) => hasSufficientIngredients(dish.dishId)),
+    [dishes, hasSufficientIngredients]
+  );
+
+  const handleVoiceOrder = async (items) => {
+    for (const item of items) {
+      await addToCartGraphQL({ dishId: item.dishId, quantity: item.quantity, notes: "" });
+    }
+    const portions = items.reduce((sum, item) => sum + item.quantity, 0);
+    setOrderFeedback({
+      show: true,
+      message: `Đã thêm ${portions} phần vào giỏ hàng`,
+      type: "success",
+    });
+    setTimeout(() => {
+      setOrderFeedback({ show: false, message: "", type: "" });
+    }, 3000);
   };
 
   // Filter dishes based on search, category, and ingredients
@@ -376,15 +399,30 @@ const Menu = () => {
           </div>
         )}
 
-        <div className="mb-4">
+        <div className="mb-4 flex gap-2">
           <input
             type="text"
             placeholder="Search"
-            className="w-full py-2.5 px-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="flex-1 min-w-0 py-2.5 px-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
+          <button
+            type="button"
+            onClick={() => setVoiceOpen(true)}
+            className="shrink-0 px-3 rounded-lg text-white text-sm font-medium flex items-center gap-1"
+            style={{ backgroundColor: "#EE6363" }}
+          >
+            🎤 Gọi bằng giọng nói
+          </button>
         </div>
+
+        <VoiceOrderModal
+          isOpen={voiceOpen}
+          onClose={() => setVoiceOpen(false)}
+          dishes={availableDishes}
+          onConfirm={handleVoiceOrder}
+        />
 
         <div className="bg-white p-3 rounded-lg shadow-sm mb-4">
           <div className="flex items-center mb-2">

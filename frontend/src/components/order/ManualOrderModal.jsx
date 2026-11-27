@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { authAPI } from "../../axiosConfig";
 import { errorMessage, getMenuDishes } from "../../services/reservationAPI";
 import { formatVnd, normalizeDish } from "../../utils/reservation";
+import VoiceOrderModal from "../voice/VoiceOrderModal";
 
 /**
  * Nhân viên đặt món giúp khách tại bàn (khách lớn tuổi, khách không tự order được).
@@ -25,6 +26,7 @@ export default function ManualOrderModal({
   const [cart, setCart] = useState({}); // dishId -> quantity
   const [submitting, setSubmitting] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
+  const [voiceOpen, setVoiceOpen] = useState(false);
   const closeTimer = useRef(null);
 
   // Hủy hẹn giờ đóng khi modal đóng hoặc bị gỡ, để lần mở sau không bị tự đóng
@@ -41,6 +43,7 @@ export default function ManualOrderModal({
     setCustomerName("");
     setKitchenNote("");
     setSearchQuery("");
+    setVoiceOpen(false);
     setTargetTable(defaultTableNumber ? String(defaultTableNumber) : "");
     setLoadError("");
     getMenuDishes()
@@ -80,6 +83,16 @@ export default function ManualOrderModal({
       const copy = { ...prev };
       if (next === 0) delete copy[dishId];
       else copy[dishId] = next;
+      return copy;
+    });
+
+  // Món nhận từ giọng nói được cộng vào danh sách đã chọn, nhân viên vẫn xem lại trước khi gửi bếp
+  const handleVoiceOrder = (items) =>
+    setCart((prev) => {
+      const copy = { ...prev };
+      items.forEach((it) => {
+        copy[it.dishId] = (copy[it.dishId] || 0) + it.quantity;
+      });
       return copy;
     });
 
@@ -140,13 +153,23 @@ export default function ManualOrderModal({
         <div className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
           {/* Cột trái: tìm kiếm, danh mục, thực đơn */}
           <div className="lg:col-span-7 p-4 flex flex-col min-h-0 border-b lg:border-b-0 lg:border-r border-[#F0DEC0] overflow-y-auto">
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Tìm tên món..."
-              className="w-full mb-3 px-3 py-2 rounded-xl border border-[#EBD4B0] bg-white text-sm placeholder-[#A89882] focus:outline-none focus:border-[#EA580C]"
-            />
+            <div className="flex gap-2 mb-3">
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Tìm tên món..."
+                className="flex-1 min-w-0 px-3 py-2 rounded-xl border border-[#EBD4B0] bg-white text-sm placeholder-[#A89882] focus:outline-none focus:border-[#EA580C]"
+              />
+              <button
+                type="button"
+                onClick={() => setVoiceOpen(true)}
+                disabled={dishes.length === 0}
+                className="shrink-0 px-3 py-2 rounded-xl bg-[#EA580C] hover:bg-[#C2410C] text-white text-sm font-semibold disabled:opacity-50"
+              >
+                🎤 Giọng nói
+              </button>
+            </div>
             <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-3">
               {categories.map((cat) => (
                 <button
@@ -349,6 +372,14 @@ export default function ManualOrderModal({
           </div>
         </div>
       </div>
+
+      <VoiceOrderModal
+        isOpen={voiceOpen}
+        onClose={() => setVoiceOpen(false)}
+        dishes={dishes}
+        onConfirm={handleVoiceOrder}
+        confirmLabel="Thêm vào món đã chọn"
+      />
     </div>
   );
 }
