@@ -78,6 +78,11 @@ logging:
 resend:
   api-key: ${RESEND_API_KEY:}
   from-email: ${RESEND_FROM_EMAIL:onboarding@resend.dev}
+# Preferred over Resend when set: sends to any address with a sender verified in Brevo (no own domain needed)
+brevo:
+  api-key: ${BREVO_API_KEY:}
+  sender-email: ${BREVO_SENDER_EMAIL:}
+  sender-name: ${BREVO_SENDER_NAME:Self Ordering Restaurant}
 gemini:
   api-key: ${GEMINI_API_KEY:}
   model: ${GEMINI_MODEL:gemini-2.5-flash}
