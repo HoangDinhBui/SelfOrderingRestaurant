@@ -5,7 +5,7 @@ A full-stack restaurant management system that streamlines the ordering, staffin
 ## 🔧 Technologies Used
 
 - **Backend**: Spring Boot, Hibernate (JPA), RESTful APIs, GraphQL, WebSocket  
-- **Database**: MySQL  
+- **Database**: PostgreSQL on Supabase (Render), H2 for local development
 - **Authentication & Security**: JWT, OAuth2 (Google), Spring Security  
 - **Utilities & Tools**: Lombok, DeepFace, OpenCV (facial recognition)  
 - **Architecture**: Microservice-ready, MVC pattern & N-tiers Architecture
@@ -103,10 +103,31 @@ Key tables include:
 ## 📌 Setup Instructions
 
 1. **Clone the repository**
-2. **Configure database in `application.yml`**
+2. **Configure the local application in `src/main/resources/application.yml`**
 3. **Run `mvn clean install`**
 4. **Start the Spring Boot application**
 5. **Access the API via Postman or your frontend client**
+
+### Supabase on Render
+
+In the Supabase project dashboard, open **Connect → Session pooler** and copy the host shown there. The backend connects over JDBC and uses the private `restaurant` schema. Create the schema and give the backend's dedicated PostgreSQL role access to it before importing data or starting the app.
+
+Set these environment variables on the Render backend service:
+
+| Variable | Value |
+| --- | --- |
+| `SPRING_PROFILES_ACTIVE` | `supabase` (append to any active profiles) |
+| `SUPABASE_DB_HOST` | Session pooler hostname from **Connect** |
+| `SUPABASE_DB_USER` | Session pooler username in the form `<database-role>.<project-ref>` |
+| `SUPABASE_DB_PASSWORD` | Database role password, stored as a Render secret |
+
+Remove the old Clever Cloud values for `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME` and `SPRING_DATASOURCE_PASSWORD` from the Render service when switching over. Spring Boot gives those variables priority over the profile.
+
+The profile validates the database schema at startup. For an empty Supabase project, set `SUPABASE_DB_DDL_AUTO=update` for the first deploy to create the tables and let the application seed its starter data. Change the seeded administrator password before exposing a fresh deployment. Remove the variable after initialization to return to schema validation.
+
+To keep existing data, back up the Clever Cloud database before switching. Convert and import the MySQL schema and data into the target `restaurant` schema. Check table counts, foreign keys, generated columns and identity sequences in the target. Pause writes during the final copy and switch Render only after the checks pass.
+
+[Supabase Spring Boot connection guide](https://supabase.com/docs/guides/getting-started/quickstarts/spring-boot)
 
 ---
 

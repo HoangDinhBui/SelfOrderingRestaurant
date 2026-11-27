@@ -26,9 +26,9 @@ public interface RevenueRepository extends JpaRepository<Revenue, Long> {
     @Query("SELECT DISTINCT YEAR(r.date) FROM Revenue r ORDER BY YEAR(r.date) DESC")
     List<Integer> findDistinctYears();
 
-    @Query(value = "SELECT SUM(total_revenue) FROM revenue WHERE YEAR(date) = :year AND MONTH(date) = :month", nativeQuery = true)
+    @Query("SELECT SUM(r.totalRevenue) FROM Revenue r WHERE YEAR(r.date) = :year AND MONTH(r.date) = :month")
     BigDecimal sumTotalRevenueByYearAndMonth(@Param("year") int year, @Param("month") int month);
 
-    @Query(value = "SELECT SUM(total_revenue) FROM revenue WHERE YEAR(date) = :year", nativeQuery = true)
+    @Query("SELECT SUM(r.totalRevenue) FROM Revenue r WHERE YEAR(r.date) = :year")
     BigDecimal sumTotalRevenueByYear(@Param("year") int year);
 }
