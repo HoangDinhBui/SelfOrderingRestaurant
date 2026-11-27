@@ -316,6 +316,10 @@ public class PaymentService {
 
     @Transactional
     public String createVNPayOrder(int total, String orderInfo, String urlReturn) throws Exception {
+        if (VNPayConfig.vnp_TmnCode.isEmpty() || VNPayConfig.vnp_HashSecret.isEmpty()) {
+            throw new IllegalStateException("VNPay is not configured: set VNPAY_TMN_CODE and VNPAY_HASH_SECRET");
+        }
+
         // Parse the order ID from orderInfo
         Integer orderId = extractOrderIdFromOrderInfo(orderInfo);
 
@@ -344,7 +348,7 @@ public class PaymentService {
         String vnp_TxnRef = VNPayConfig.getRandomNumber(8);
         String vnp_IpAddr = "127.0.0.1";
         String vnp_TmnCode = VNPayConfig.vnp_TmnCode;
-        String orderType = "order-type";
+        String orderType = "other";
 
         // Create a pending payment record in database
         if (orderId != null) {
@@ -397,13 +401,14 @@ public class PaymentService {
         vnp_Params.put("vnp_CurrCode", "VND");
         vnp_Params.put("vnp_TxnRef", vnp_TxnRef);
 
-        String vnp_OrderInfo = new String(orderInfo.getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8);
+        // VNPay only accepts unaccented text without special characters here (":" gives "Invalid data format")
+        String vnp_OrderInfo = orderId != null ? "Thanh toan don hang " + orderId : plainOrderInfo(orderInfo);
         vnp_Params.put("vnp_OrderInfo", vnp_OrderInfo);
 
         vnp_Params.put("vnp_OrderType", orderType);
         String locate = "vn";
         vnp_Params.put("vnp_Locale", locate);
-        vnp_Params.put("vnp_ReturnUrl", urlReturn != null ? urlReturn : VNPayConfig.vnp_Returnurl);
+        vnp_Params.put("vnp_ReturnUrl", urlReturn != null && !urlReturn.isBlank() ? urlReturn.trim() : VNPayConfig.vnp_Returnurl);
         vnp_Params.put("vnp_IpAddr", vnp_IpAddr);
 
         Calendar cld = Calendar.getInstance(TimeZone.getTimeZone("Asia/Ho_Chi_Minh"));
@@ -441,6 +446,16 @@ public class PaymentService {
         query.append("&vnp_SecureHash=").append(vnp_SecureHash);
 
         return VNPayConfig.vnp_PayUrl + "?" + query;
+    }
+
+    private static String plainOrderInfo(String orderInfo) {
+        String plain = java.text.Normalizer.normalize(orderInfo == null ? "" : orderInfo, java.text.Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .replace('đ', 'd').replace('Đ', 'D')
+                .replaceAll("[^A-Za-z0-9 ]", " ")
+                .replaceAll("\\s+", " ")
+                .trim();
+        return plain.isEmpty() ? "Thanh toan don hang" : plain;
     }
 
     private Integer extractOrderIdFromOrderInfo(String orderInfo) {

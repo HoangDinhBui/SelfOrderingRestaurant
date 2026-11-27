@@ -2,6 +2,7 @@ package com.example.SelfOrderingRestaurant.Config;
 
 import jakarta.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.Mac;
@@ -9,14 +10,31 @@ import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
+/**
+ * Merchant settings come from the environment (VNPAY_TMN_CODE, VNPAY_HASH_SECRET, VNPAY_PAY_URL,
+ * VNPAY_RETURN_URL, see application.yml) so a new or renewed terminal needs no code change and the
+ * secret stays out of git.
+ */
 @Component
 public class VNPayConfig {
     static Logger log = org.slf4j.LoggerFactory.getLogger(VNPayConfig.class);
-    public static String vnp_TmnCode = "VFT8X1UH";
-    public static String vnp_HashSecret = "NEYWPQVX5P76MXDS0Z7OFFWESR0T1H6K";
-    public static String vnp_PayUrl = "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
-    public static String vnp_Returnurl = "https://selforderingrestaurant-635x.onrender.com/api/payment/vnpay_payment";
-    public static String vnp_apiUrl = "https://sandbox.vnpayment.vn/merchant_webapi/api/transaction";
+    public static String vnp_TmnCode = "";
+    public static String vnp_HashSecret = "";
+    public static String vnp_PayUrl = "";
+    public static String vnp_Returnurl = "";
+
+    public VNPayConfig(@Value("${vnpay.tmn-code:}") String tmnCode,
+                       @Value("${vnpay.hash-secret:}") String hashSecret,
+                       @Value("${vnpay.pay-url:}") String payUrl,
+                       @Value("${vnpay.return-url:}") String returnUrl) {
+        vnp_TmnCode = tmnCode.trim();
+        vnp_HashSecret = hashSecret.trim();
+        vnp_PayUrl = payUrl.trim();
+        vnp_Returnurl = returnUrl.trim();
+        if (vnp_TmnCode.isEmpty() || vnp_HashSecret.isEmpty()) {
+            log.warn("VNPay is not configured: set VNPAY_TMN_CODE and VNPAY_HASH_SECRET to enable online payment.");
+        }
+    }
 
     //Util for VNPAY
     public static String hashAllFields(Map<String, String> fields) throws Exception {

@@ -52,6 +52,13 @@ app:
 file:
   upload-dir: uploads
 
+vnpay:
+  # Sandbox terminal from https://sandbox.vnpayment.vn/devreg/ (credentials arrive by email)
+  tmn-code: ${VNPAY_TMN_CODE:}
+  hash-secret: ${VNPAY_HASH_SECRET:}
+  pay-url: ${VNPAY_PAY_URL:https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}
+  return-url: ${VNPAY_RETURN_URL:https://selforderingrestaurant-635x.onrender.com/api/payment/vnpay_payment}
+
 restaurant:
   network:
     cidr: 172.20.10.0/24
