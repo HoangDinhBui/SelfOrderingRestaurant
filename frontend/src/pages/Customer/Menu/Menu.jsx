@@ -2,6 +2,7 @@ import { useState, useEffect, useContext, useCallback, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CartContext } from "../../../context/CartContext";
 import VoiceOrderModal from "../../../components/voice/VoiceOrderModal";
+import { hasSufficientIngredients as hasEnoughStock } from "../../../utils/inventory";
 
 import { BACKEND_URL } from "../../../config";
 const Menu = () => {
@@ -121,29 +122,10 @@ const Menu = () => {
     console.log("Menu - tableNumber:", tableNumber);
   }, [fetchCartData, tableNumberFromUrl]);
 
-  // Function to check if a dish has sufficient ingredients
-  const hasSufficientIngredients = useCallback((dishId) => {
-    // Retrieve the list of ingredients required for the dish
-    const requiredIngredients = dishIngredients.filter(
-      (di) => di.dishId === dishId
-    );
-
-    // If no ingredients are found, return false
-    if (requiredIngredients.length === 0) {
-      return false; // Dish has no ingredient information, do not display
-    }
-
-    // Check each ingredient
-    for (const req of requiredIngredients) {
-      const inventoryItem = inventory.find(
-        (inv) => inv.ingredientId === req.ingredientId
-      );
-      if (!inventoryItem || inventoryItem.remainingQuantity < req.quantity) {
-        return false; // Insufficient ingredients or ingredient does not exist
-      }
-    }
-    return true; // Sufficient ingredients
-  }, [inventory, dishIngredients]);
+  const hasSufficientIngredients = useCallback(
+    (dishId) => hasEnoughStock(dishId, dishIngredients, inventory),
+    [inventory, dishIngredients]
+  );
 
   // Món đang bán, dùng cho gọi món bằng giọng nói
   const availableDishes = useMemo(
