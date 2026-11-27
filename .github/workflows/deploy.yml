@@ -36,6 +36,7 @@ jobs:
       run: |
         npm ci --prefix frontend
         npm run build --prefix frontend
+        npm test --prefix frontend
 
     - name: Trigger Render Deploy Hook
       if: github.ref == 'refs/heads/master' && success()
