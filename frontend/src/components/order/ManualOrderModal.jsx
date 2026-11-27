@@ -86,25 +86,31 @@ export default function ManualOrderModal({
       return copy;
     });
 
-  // Món nhận từ giọng nói được cộng vào danh sách đã chọn, nhân viên vẫn xem lại trước khi gửi bếp
-  const handleVoiceOrder = (items) =>
-    setCart((prev) => {
-      const copy = { ...prev };
-      items.forEach((it) => {
-        copy[it.dishId] = (copy[it.dishId] || 0) + it.quantity;
-      });
-      return copy;
-    });
+  const toCart = (items) => Object.fromEntries(items.map((it) => [it.dishId, it.quantity]));
+
+  // Giọng nói sửa trên chính danh sách đã chọn, nên kết quả thay cho danh sách cũ
+  const handleVoiceOrder = (items) => setCart(toCart(items));
+
+  const handleVoicePlaceOrder = async (items) => {
+    setCart(toCart(items));
+    const error = await submitOrder(items.map((it) => ({ ...it.dish, quantity: it.quantity })));
+    if (error) throw new Error(error);
+  };
 
   const handlePlaceOrder = async () => {
     if (submitting) return;
+    await submitOrder(cartItems);
+  };
+
+  // Trả về câu báo lỗi nếu không gửi được, null nếu thành công
+  const submitOrder = async (orderItems) => {
     if (!targetTable) {
       setToastMessage("Vui lòng chọn bàn phục vụ.");
-      return;
+      return "Vui lòng chọn bàn phục vụ trước khi đặt.";
     }
-    if (cartItems.length === 0) {
+    if (orderItems.length === 0) {
       setToastMessage("Vui lòng chọn ít nhất 1 món ăn trước khi đặt.");
-      return;
+      return "Chưa có món nào.";
     }
     setSubmitting(true);
     try {
@@ -112,14 +118,17 @@ export default function ManualOrderModal({
         tableId: Number(targetTable),
         customerName: customerName.trim() || `Khách tại bàn ${targetTable}`,
         notes: kitchenNote.trim(),
-        items: cartItems.map((it) => ({ dishId: it.dishId, quantity: it.quantity, notes: "" })),
+        items: orderItems.map((it) => ({ dishId: it.dishId, quantity: it.quantity, notes: "" })),
       });
       setToastMessage(`Đã tạo đơn #${orderId} cho bàn ${targetTable}, món đã chuyển xuống bếp.`);
       onOrderSuccess?.(orderId);
       closeTimer.current = setTimeout(onClose, 1200);
+      return null;
     } catch (err) {
-      setToastMessage(errorMessage(err, "Không tạo được đơn, vui lòng thử lại."));
+      const message = errorMessage(err, "Không tạo được đơn, vui lòng thử lại.");
+      setToastMessage(message);
       setSubmitting(false);
+      return message;
     }
   };
 
@@ -377,8 +386,11 @@ export default function ManualOrderModal({
         isOpen={voiceOpen}
         onClose={() => setVoiceOpen(false)}
         dishes={dishes}
+        initialItems={cartItems.map((it) => ({ dish: it, quantity: it.quantity }))}
         onConfirm={handleVoiceOrder}
-        confirmLabel="Thêm vào món đã chọn"
+        onPlaceOrder={handleVoicePlaceOrder}
+        confirmLabel="Lưu vào món đã chọn"
+        placeOrderLabel="Gửi bếp luôn"
       />
     </div>
   );

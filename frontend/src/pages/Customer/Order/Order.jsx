@@ -1,7 +1,7 @@
 import { useState, useEffect, useContext, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CartContext } from "../../../context/CartContext";
-import axios from "axios";
+import { submitCustomerOrder } from "../../../services/customerOrder";
 
 import { BACKEND_URL } from "../../../config";
 const Order = () => {
@@ -178,97 +178,22 @@ const Order = () => {
     try {
       setProcessingOrder(true);
 
-      const items = cartItems.map((item) => ({
-        dishId: item.dishId.toString(),
-        quantity: item.quantity,
-        notes: item.notes || "",
-      }));
-
-      const orderMutation = {
-        query: `
-          mutation CreateOrder($input: OrderInput!) {
-            createOrder(input: $input)
-          }
-        `,
-        variables: {
-          input: {
-            tableId: tableId.toString(),
-            customerName: "Guest",
-            items: items,
-            notes: "",
-          },
-        },
-      };
-
-      console.log("Creating order with tableId:", tableId);
-      console.log("Full mutation:", JSON.stringify(orderMutation, null, 2));
-
-      const response = await fetch(`${API_BASE_URL}/graphql`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        credentials: "include",
-        body: JSON.stringify(orderMutation),
+      await submitCustomerOrder({
+        tableId,
+        items: cartItems,
+        totalAmount: totalPrice,
       });
 
-      const result = await response.json();
-      console.log("GraphQL response:", result);
+      setShowModal(false);
+      setShowConfirmation(true);
 
-      if (result.errors) {
-        throw new Error(result.errors[0].message || "Error creating order");
-      }
+      setCartItems([]);
+      localStorage.removeItem("cartData");
 
-      const orderId = result.data.createOrder;
-
-      if (orderId) {
-        const paymentInfo = {
-          orderId: orderId,
-          amount: totalPrice,
-          customerId: null,
-          createdAt: new Date().toISOString(),
-          isPaid: false,
-        };
-        localStorage.setItem("latestOrderInfo", JSON.stringify(paymentInfo));
-        sessionStorage.setItem("latestOrderInfo", JSON.stringify(paymentInfo));
-
-        try {
-          const notificationData = {
-            tableNumber: Number(tableId),
-            customerId: null,
-            orderId: Number(orderId),
-            type: "NEW_ORDER",
-            additionalMessage: `New order placed for Table ${tableId}`,
-          };
-
-          console.log("Sending notification data:", notificationData);
-
-          await axios.post(
-            `${API_BASE_URL}/api/notifications`,
-            notificationData
-          );
-          console.log("Order notification sent successfully");
-        } catch (notificationError) {
-          console.error(
-            "Failed to send order notification:",
-            notificationError
-          );
-        }
-
-        setShowModal(false);
-        setShowConfirmation(true);
-
-        setCartItems([]);
-        localStorage.removeItem("cartData");
-
-        setTimeout(() => {
-          setShowConfirmation(false);
-          navigate(`/table/${tableId}`);
-        }, 3000);
-      } else {
-        console.error("Order created but no orderId returned");
-        throw new Error("Could not get orderId from response");
-      }
+      setTimeout(() => {
+        setShowConfirmation(false);
+        navigate(`/table/${tableId}`);
+      }, 3000);
     } catch (err) {
       console.error("Error in order/payment flow:", err);
       setError(`Failed to process your order: ${err.message}`);

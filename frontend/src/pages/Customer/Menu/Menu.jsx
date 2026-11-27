@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { CartContext } from "../../../context/CartContext";
 import VoiceOrderModal from "../../../components/voice/VoiceOrderModal";
 import { hasSufficientIngredients as hasEnoughStock } from "../../../utils/inventory";
+import { submitCustomerOrder } from "../../../services/customerOrder";
 
 import { BACKEND_URL } from "../../../config";
 const Menu = () => {
@@ -132,6 +133,24 @@ const Menu = () => {
     () => dishes.filter((dish) => hasSufficientIngredients(dish.dishId)),
     [dishes, hasSufficientIngredients]
   );
+
+  // Đặt đơn ngay với đúng các món trong danh sách giọng nói; giỏ hàng giữ nguyên
+  const handleVoicePlaceOrder = async (items) => {
+    const orderId = await submitCustomerOrder({
+      tableId: tableNumber,
+      items,
+      totalAmount: items.reduce((sum, item) => sum + Number(item.dish.price) * item.quantity, 0),
+    });
+    setOrderFeedback({
+      show: true,
+      message: `Đã đặt đơn #${orderId}, món đang được chuyển xuống bếp`,
+      type: "success",
+    });
+    setTimeout(() => {
+      setOrderFeedback({ show: false, message: "", type: "" });
+      navigate(`/table/${tableNumber}`);
+    }, 3000);
+  };
 
   const handleVoiceOrder = async (items) => {
     for (const item of items) {
@@ -404,6 +423,7 @@ const Menu = () => {
           onClose={() => setVoiceOpen(false)}
           dishes={availableDishes}
           onConfirm={handleVoiceOrder}
+          onPlaceOrder={handleVoicePlaceOrder}
         />
 
         <div className="bg-white p-3 rounded-lg shadow-sm mb-4">

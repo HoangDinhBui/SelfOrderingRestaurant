@@ -1,83 +1,134 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { parseVoiceOrder } from "../../utils/voiceOrder";
+import React, { useEffect, useRef, useState } from "react";
+import { applyVoiceCommand, applyVoiceOp, parseVoiceCommand } from "../../utils/voiceOrder";
 import { formatVnd } from "../../utils/reservation";
 import useSpeechRecognition from "./useSpeechRecognition";
 
 const dishName = (dish) => dish.name ?? dish.dishName ?? "";
+const CONFIRM_SECONDS = 3;
+const ACTION_LABEL = { add: "thêm", remove: "bỏ", set: "đổi" };
 
 /**
- * Gọi món bằng giọng nói: nghe (hoặc gõ) câu gọi món, hiện danh sách món hiểu được để sửa,
- * rồi mới gửi qua onConfirm([{ dishId, quantity, dish }]). Không bao giờ tự đặt món.
+ * Gọi món bằng giọng nói. Mỗi câu nói là một lệnh: gọi thêm ("hai phở bò"), bỏ ("bỏ phở bò"),
+ * bớt ("bớt một trà đá"), đổi số lượng ("phở bò thành ba"), xóa hết ("hủy hết"),
+ * và đặt đơn ("xác nhận", "chốt đơn"): đếm ngược vài giây, nói "hủy" hoặc bấm Hủy để dừng.
  * dishes: [{ dishId, name | dishName, price }] là các món đang bán.
+ * initialItems: [{ dish, quantity }] món đã chọn sẵn, giọng nói sửa tiếp trên danh sách này.
+ * onConfirm(items): đưa món vào giỏ/danh sách; onPlaceOrder(items): đặt đơn luôn.
+ * items: [{ dishId, quantity, dish }].
  */
-export default function VoiceOrderModal({ isOpen, onClose, dishes = [], onConfirm, confirmLabel = "Thêm vào giỏ" }) {
-  const [text, setText] = useState("");
+export default function VoiceOrderModal({
+  isOpen,
+  onClose,
+  dishes = [],
+  initialItems,
+  onConfirm,
+  onPlaceOrder,
+  confirmLabel = "Thêm vào giỏ",
+  placeOrderLabel = "Đặt món luôn",
+}) {
   const [draft, setDraft] = useState([]); // [{ dish, quantity }]
-  const [resolved, setResolved] = useState({}); // chỉ số món mơ hồ đã chọn xong
+  const [pending, setPending] = useState([]); // món nói thiếu tên cần khách chọn
+  const [unmatched, setUnmatched] = useState([]);
+  const [heard, setHeard] = useState("");
+  const [interim, setInterim] = useState("");
+  const [typed, setTyped] = useState("");
+  const [countdown, setCountdown] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
-  const baseText = useRef("");
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
+  // Chỉ lấy danh sách ban đầu lúc mở modal
+  const initialItemsRef = useRef(initialItems);
+  initialItemsRef.current = initialItems;
+
+  const handleCommand = (text) => {
+    if (submitting) return;
+    const command = parseVoiceCommand(text, dishes);
+    setHeard(text);
+    setUnmatched(command.unmatched);
+    if (command.cancel) {
+      setCountdown(null);
+      return;
+    }
+    const result = applyVoiceCommand(draftRef.current, command);
+    draftRef.current = result.draft;
+    setDraft(result.draft);
+    const cleared = command.ops.some((op) => op.type === "clear");
+    setPending((prev) => [...(cleared ? [] : prev), ...result.pending]);
+    if (command.ops.length > 0 || result.pending.length > 0) setCountdown(null);
+    if (command.confirm && result.draft.length > 0) {
+      if (onPlaceOrder) setCountdown(CONFIRM_SECONDS);
+      else submit(onConfirm, result.draft);
+    }
+  };
 
   const { supported, listening, error, start, stop } = useSpeechRecognition({
-    onText: (spoken) => setText(`${baseText.current} ${spoken}`.trim()),
+    onFinal: handleCommand,
+    onInterim: setInterim,
   });
-
-  const startListening = () => {
-    baseText.current = text;
-    start();
-  };
 
   useEffect(() => {
     if (!isOpen) return undefined;
-    setText("");
+    setDraft(initialItemsRef.current || []);
+    setPending([]);
+    setUnmatched([]);
+    setHeard("");
+    setTyped("");
+    setCountdown(null);
     setSubmitting(false);
     setSubmitError("");
-    baseText.current = "";
     if (supported) start();
     return stop;
   }, [isOpen, supported, start, stop]);
 
-  const parsed = useMemo(() => parseVoiceOrder(text, dishes), [text, dishes]);
-
-  // Mỗi lần câu nói thay đổi thì tính lại danh sách món từ đầu
-  useEffect(() => {
-    setDraft(parsed.items.map((item) => ({ dish: dishes.find((d) => d.dishId === item.dishId), quantity: item.quantity })));
-    setResolved({});
-  }, [parsed, dishes]);
-
-  const changeQuantity = (dishId, delta) =>
-    setDraft((prev) =>
-      prev
-        .map((it) => (it.dish.dishId === dishId ? { ...it, quantity: it.quantity + delta } : it))
-        .filter((it) => it.quantity > 0),
-    );
-
-  const chooseOption = (index, dish, quantity) => {
-    setResolved((prev) => ({ ...prev, [index]: true }));
-    setDraft((prev) =>
-      prev.some((it) => it.dish.dishId === dish.dishId)
-        ? prev.map((it) => (it.dish.dishId === dish.dishId ? { ...it, quantity: it.quantity + quantity } : it))
-        : [...prev, { dish, quantity }],
-    );
-  };
-
-  const handleConfirm = async () => {
-    if (submitting || draft.length === 0) return;
+  const submit = async (action, items = draftRef.current) => {
+    if (!action || items.length === 0) return;
     stop();
+    setCountdown(null);
     setSubmitting(true);
     setSubmitError("");
     try {
-      await onConfirm(draft.map((it) => ({ dishId: it.dish.dishId, quantity: it.quantity, dish: it.dish })));
+      await action(items.map((it) => ({ dishId: it.dish.dishId, quantity: it.quantity, dish: it.dish })));
       onClose();
     } catch (err) {
-      setSubmitError(err?.message || "Không thêm được món, thử lại nhé.");
+      setSubmitError(err?.message || "Không gửi được, thử lại nhé.");
       setSubmitting(false);
     }
   };
 
+  // Đếm ngược trước khi đặt đơn bằng giọng nói
+  useEffect(() => {
+    if (countdown === null) return undefined;
+    if (countdown === 0) {
+      submit(onPlaceOrder);
+      return undefined;
+    }
+    const timer = setTimeout(() => setCountdown((c) => (c === null ? null : c - 1)), 1000);
+    return () => clearTimeout(timer);
+    // submit đọc món mới nhất qua ref, không cần chạy lại khi submit đổi
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [countdown, onPlaceOrder]);
+
+  const changeQuantity = (dish, delta) => {
+    setCountdown(null);
+    setDraft((prev) => applyVoiceOp(prev, { type: "add", dish, quantity: delta }));
+  };
+
+  const chooseOption = (index, dish) => {
+    const amb = pending[index];
+    setPending((prev) => prev.filter((_, i) => i !== index));
+    setDraft((prev) => applyVoiceOp(prev, { type: amb.type, dish, quantity: amb.quantity }));
+  };
+
+  const submitTyped = (e) => {
+    e.preventDefault();
+    if (!typed.trim()) return;
+    handleCommand(typed.trim());
+    setTyped("");
+  };
+
   if (!isOpen) return null;
 
-  const pendingChoices = parsed.ambiguous.filter((_, index) => !resolved[index]).length;
   const total = draft.reduce((sum, it) => sum + (Number(it.dish.price) || 0) * it.quantity, 0);
 
   return (
@@ -86,12 +137,14 @@ export default function VoiceOrderModal({ isOpen, onClose, dishes = [], onConfir
         <div className="px-4 py-3 bg-white border-b border-[#F0DEC0] flex items-center justify-between">
           <div>
             <h2 className="text-base font-bold">Gọi món bằng giọng nói</h2>
-            <p className="text-xs text-[#7D6B55]">Ví dụ: "cho hai phở bò với một ly trà đá"</p>
+            <p className="text-xs text-[#7D6B55]">
+              "hai phở bò" · "bỏ phở bò" · "bớt một trà đá" · "phở bò thành ba" · "xác nhận"
+            </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-[#F5EFE6] hover:bg-[#EBDCC8] text-[#6E5A44] text-sm"
+            className="w-8 h-8 shrink-0 rounded-full bg-[#F5EFE6] hover:bg-[#EBDCC8] text-[#6E5A44] text-sm"
             aria-label="Đóng"
           >
             ✕
@@ -104,7 +157,8 @@ export default function VoiceOrderModal({ isOpen, onClose, dishes = [], onConfir
               <>
                 <button
                   type="button"
-                  onClick={listening ? stop : startListening}
+                  onClick={listening ? stop : start}
+                  disabled={submitting}
                   className={`w-20 h-20 rounded-full text-3xl text-white shadow-lg transition ${
                     listening ? "bg-[#DC2626] animate-pulse" : "bg-[#EA580C] hover:bg-[#C2410C]"
                   }`}
@@ -112,59 +166,78 @@ export default function VoiceOrderModal({ isOpen, onClose, dishes = [], onConfir
                 >
                   🎤
                 </button>
-                <span className="text-sm text-[#6E5A44]">
-                  {listening ? "Đang nghe... nói xong bấm để dừng" : "Bấm micro để nói"}
+                <span className="text-sm text-[#6E5A44] text-center min-h-5">
+                  {interim ? `"${interim}"` : listening ? "Đang nghe, cứ nói từng câu..." : "Bấm micro để nói"}
                 </span>
               </>
             ) : (
               <p className="text-sm text-center text-[#8A5A14] bg-[#FFF4E0] rounded-xl px-3 py-2">
-                Trình duyệt này chưa hỗ trợ nhận giọng nói (hãy dùng Chrome, Edge hoặc Safari). Bạn có thể gõ món vào
-                ô bên dưới.
+                Trình duyệt này chưa hỗ trợ nhận giọng nói (hãy dùng Chrome, Edge hoặc Safari). Bạn có thể gõ lệnh
+                vào ô bên dưới.
               </p>
             )}
+            {heard && <p className="text-xs text-[#8C7A65]">Vừa nghe: "{heard}"</p>}
             {error && <p className="text-sm text-red-700">{error}</p>}
           </div>
 
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            rows={2}
-            placeholder="Câu gọi món sẽ hiện ở đây, bạn có thể sửa lại"
-            className="w-full px-3 py-2 rounded-xl border border-[#EBD4B0] bg-white text-sm focus:outline-none focus:border-[#EA580C]"
-          />
+          <form onSubmit={submitTyped} className="flex gap-2">
+            <input
+              type="text"
+              value={typed}
+              onChange={(e) => setTyped(e.target.value)}
+              placeholder="Hoặc gõ: hai phở bò, bỏ trà đá..."
+              className="flex-1 min-w-0 px-3 py-2 rounded-xl border border-[#EBD4B0] bg-white text-sm focus:outline-none focus:border-[#EA580C]"
+            />
+            <button type="submit" className="px-3 rounded-xl bg-[#3A2E22] text-white text-sm">
+              Gửi
+            </button>
+          </form>
 
-          {parsed.ambiguous.map((amb, index) =>
-            resolved[index] ? null : (
-              <div key={index} className="bg-white rounded-xl border border-[#F5C293] p-3">
-                <p className="text-sm mb-2">
-                  "{amb.phrase}" (x{amb.quantity}) là món nào?
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {amb.options.map((dish) => (
-                    <button
-                      key={dish.dishId}
-                      type="button"
-                      onClick={() => chooseOption(index, dish, amb.quantity)}
-                      className="px-3 py-1.5 rounded-lg border border-[#EBD4B0] bg-[#FFFBF5] hover:bg-[#FFEED8] text-sm"
-                    >
-                      {dishName(dish)}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ),
+          {countdown !== null && (
+            <div className="flex items-center justify-between gap-3 bg-[#FFF1E6] border border-[#F5C293] rounded-xl px-3 py-2">
+              <span className="text-sm font-semibold">Đặt món sau {countdown} giây... nói "hủy" để dừng</span>
+              <button
+                type="button"
+                onClick={() => setCountdown(null)}
+                className="px-3 py-1.5 rounded-lg bg-white border border-[#EBD4B0] text-sm font-semibold"
+              >
+                Hủy
+              </button>
+            </div>
           )}
 
-          {parsed.unmatched.length > 0 && (
+          {pending.map((amb, index) => (
+            <div key={index} className="bg-white rounded-xl border border-[#F5C293] p-3">
+              <p className="text-sm mb-2">
+                {amb.type === "add" ? "Thêm" : amb.type === "set" ? "Đổi" : "Bỏ"} "{amb.phrase}"
+                {amb.quantity ? ` (${amb.quantity})` : ""} là món nào?
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {amb.options.map((dish) => (
+                  <button
+                    key={dish.dishId}
+                    type="button"
+                    onClick={() => chooseOption(index, dish)}
+                    className="px-3 py-1.5 rounded-lg border border-[#EBD4B0] bg-[#FFFBF5] hover:bg-[#FFEED8] text-sm"
+                    aria-label={`${ACTION_LABEL[amb.type]} ${dishName(dish)}`}
+                  >
+                    {dishName(dish)}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
+
+          {unmatched.length > 0 && (
             <p className="text-sm text-[#8A5A14] bg-[#FFF4E0] rounded-xl px-3 py-2">
-              Chưa tìm thấy trong thực đơn: {parsed.unmatched.map((u) => `"${u}"`).join(", ")}
+              Chưa tìm thấy trong thực đơn: {unmatched.map((u) => `"${u}"`).join(", ")}
             </p>
           )}
 
           <div className="space-y-2">
             {draft.length === 0 ? (
               <p className="py-6 text-center text-sm text-[#9E8B75] bg-white rounded-xl border border-dashed border-[#E8D4BA]">
-                Chưa nhận được món nào.
+                Chưa có món nào.
               </p>
             ) : (
               draft.map((it) => (
@@ -179,7 +252,7 @@ export default function VoiceOrderModal({ isOpen, onClose, dishes = [], onConfir
                   <div className="flex items-center gap-1.5 bg-[#FAF4ED] border border-[#ECD1B3] rounded-lg p-0.5">
                     <button
                       type="button"
-                      onClick={() => changeQuantity(it.dish.dishId, -1)}
+                      onClick={() => changeQuantity(it.dish, -1)}
                       className="w-7 h-7 rounded bg-white font-bold"
                       aria-label={`Bớt ${dishName(it.dish)}`}
                     >
@@ -188,7 +261,7 @@ export default function VoiceOrderModal({ isOpen, onClose, dishes = [], onConfir
                     <span className="w-6 text-center text-sm font-bold">{it.quantity}</span>
                     <button
                       type="button"
-                      onClick={() => changeQuantity(it.dish.dishId, 1)}
+                      onClick={() => changeQuantity(it.dish, 1)}
                       className="w-7 h-7 rounded bg-white font-bold"
                       aria-label={`Thêm ${dishName(it.dish)}`}
                     >
@@ -203,17 +276,34 @@ export default function VoiceOrderModal({ isOpen, onClose, dishes = [], onConfir
 
         <div className="p-4 bg-white border-t border-[#F0DEC0] space-y-2">
           {submitError && <p className="text-sm text-red-700">{submitError}</p>}
-          {pendingChoices > 0 && (
-            <p className="text-xs text-[#8A5A14]">Còn {pendingChoices} món cần chọn rõ ở trên.</p>
+          {draft.length > 0 && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-semibold">Tạm tính</span>
+              <span className="font-bold text-[#C85319]">{formatVnd(total)}</span>
+            </div>
           )}
-          <button
-            type="button"
-            onClick={handleConfirm}
-            disabled={submitting || draft.length === 0}
-            className="w-full py-3 rounded-xl bg-[#EA580C] hover:bg-[#C2410C] text-white font-bold disabled:opacity-50"
-          >
-            {submitting ? "Đang thêm..." : `${confirmLabel} (${formatVnd(total)})`}
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => submit(onConfirm)}
+              disabled={submitting || draft.length === 0}
+              className={`flex-1 py-3 rounded-xl font-bold disabled:opacity-50 ${
+                onPlaceOrder ? "bg-white border border-[#EA580C] text-[#C2410C]" : "bg-[#EA580C] text-white"
+              }`}
+            >
+              {confirmLabel}
+            </button>
+            {onPlaceOrder && (
+              <button
+                type="button"
+                onClick={() => submit(onPlaceOrder)}
+                disabled={submitting || draft.length === 0}
+                className="flex-1 py-3 rounded-xl bg-[#EA580C] hover:bg-[#C2410C] text-white font-bold disabled:opacity-50"
+              >
+                {submitting ? "Đang gửi..." : placeOrderLabel}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
