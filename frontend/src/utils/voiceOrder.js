@@ -10,17 +10,19 @@ const CLASSIFIERS = new Set(["ly", "cốc", "phần", "suất", "xuất", "bát"
 const CLASSIFIERS_PLAIN = new Set(["ly", "coc", "phan", "suat", "xuat", "bat", "to", "dia", "chai", "lon", "cai", "chen", "binh", "mieng", "con", "trai", "qua"]);
 
 // Từ đệm, không mang nghĩa món ăn; cũng là ranh giới giữa các món
-const FILLERS = new Set(["không", "tôi", "mình", "em", "anh", "chị", "và", "với", "nữa", "nhé", "nha", "ạ", "ơi", "món", "đặt", "muốn", "thì", "là", "có", "luôn", "giúp", "rồi", "đổi", "sửa", "thôi", "dừng", "khoan", "đợi"]);
-const FILLERS_PLAIN = new Set(["khong", "toi", "minh", "em", "anh", "chi", "va", "voi", "nua", "nhe", "nha", "a", "oi", "mon", "dat", "muon", "thi", "la", "co", "luon", "giup", "roi", "doi", "sua", "thoi", "dung", "khoan", "doi"]);
+const FILLERS = new Set(["không", "tôi", "mình", "em", "anh", "chị", "và", "với", "nữa", "nhé", "nha", "ạ", "ơi", "món", "đặt", "muốn", "thì", "là", "có", "luôn", "giúp", "rồi", "đổi", "sửa", "thôi", "dừng", "khoan", "đợi", "đi"]);
+const FILLERS_PLAIN = new Set(["khong", "toi", "minh", "em", "anh", "chi", "va", "voi", "nua", "nhe", "nha", "a", "oi", "mon", "dat", "muon", "thi", "la", "co", "luon", "giup", "roi", "doi", "sua", "thoi", "dung", "khoan", "doi", "di"]);
 
 // Chuyển về chế độ gọi thêm món
-const ADD_WORDS = new Set(["thêm", "lấy", "gọi", "cho"]);
-const ADD_WORDS_PLAIN = new Set(["them", "lay", "goi", "cho"]);
+const ADD_WORDS = new Set(["thêm", "tăng", "lấy", "gọi", "cho"]);
+const ADD_WORDS_PLAIN = new Set(["them", "tang", "lay", "goi", "cho"]);
+// Nói kèm số mà không nêu món ("thêm một bát nữa") thì áp vào món vừa nhắc tới
+const IMPLICIT_ADD_PLAIN = new Set(["them", "tang"]);
 // Bỏ hẳn món (không nói số) / bớt từng phần
 const REMOVE_ALL_WORDS = new Set(["bỏ", "hủy", "huỷ", "xóa", "xoá"]);
 const REMOVE_ALL_WORDS_PLAIN = new Set(["huy", "xoa"]);
-const REMOVE_ONE_WORDS = new Set(["bớt", "trừ"]);
-const REMOVE_ONE_WORDS_PLAIN = new Set(["bot", "tru"]);
+const REMOVE_ONE_WORDS = new Set(["bớt", "trừ", "giảm"]);
+const REMOVE_ONE_WORDS_PLAIN = new Set(["bot", "tru", "giam"]);
 // "phở bò thành ba": đặt lại số lượng của món vừa nói
 const SET_WORDS = new Set(["thành", "còn", "lên", "xuống"]);
 const SET_WORDS_PLAIN = new Set(["thanh", "con", "len", "xuong"]);
@@ -137,9 +139,10 @@ const matchPrefix = (tokens, start, dishWords) => {
  * dishes: [{ dishId, name | dishName, ... }]
  * Trả về {
  *   ops: [{ type: "add" | "remove" | "set", dish, quantity } | { type: "clear" }] theo thứ tự nói,
- *        remove có quantity null nghĩa là bỏ hẳn món,
+ *        remove có quantity null nghĩa là bỏ hẳn món; dish null khi không nêu tên món
+ *        ("giảm một bát", "hủy"), áp vào món vừa nhắc tới,
  *   ambiguous: [{ type, quantity, phrase, options }]  món nói thiếu tên khớp nhiều món,
- *   unmatched: [phrase], confirm: đặt đơn luôn, cancel: chỉ nói "hủy"/"thôi" mà không kèm món
+ *   unmatched: [phrase], confirm: đặt đơn luôn, cancel: nói "hủy"/"thôi" mà không nêu tên món
  * }
  */
 export const parseVoiceCommand = (transcript, dishes = []) => {
@@ -161,6 +164,7 @@ export const parseVoiceCommand = (transcript, dishes = []) => {
   let lastDefaulted = null; // lệnh vừa nhận mà chưa nói số lượng, để nhận số lượng nói sau tên món
   let lastDish = null;
   let setTarget = null; // món đang chờ số lượng mới sau "thành"/"còn"
+  let implicit = false; // vừa có lệnh bỏ/bớt/thêm mà chưa nêu món
 
   const takeQuantity = () => {
     const quantity = parseVietnameseNumber(numberWords);
@@ -179,6 +183,11 @@ export const parseVoiceCommand = (transcript, dishes = []) => {
   // Ranh giới (từ đệm, dấu câu, hết câu): số lượng còn treo thuộc về lệnh vừa nói trước đó
   const closeSegment = () => {
     flushUnknown();
+    if (implicit) {
+      implicit = false;
+      const spoken = takeQuantity();
+      if (mode === "remove" || spoken) ops.push({ type: mode, dish: null, quantity: spoken || defaultQuantity() });
+    }
     if (setTarget) resolveSet();
     const quantity = takeQuantity();
     if (quantity && lastDefaulted) lastDefaulted.quantity = quantity;
@@ -186,6 +195,7 @@ export const parseVoiceCommand = (transcript, dishes = []) => {
   };
   const defaultQuantity = () => (mode === "add" ? 1 : removeOne ? 1 : null);
   const addOp = (dish) => {
+    implicit = false;
     if (setTarget) resolveSet();
     const spoken = takeQuantity();
     const op = { type: mode, dish, quantity: spoken || defaultQuantity() };
@@ -258,6 +268,7 @@ export const parseVoiceCommand = (transcript, dishes = []) => {
       flushUnknown();
       numberWords = [];
       lastDefaulted = null;
+      implicit = false;
       setTarget = lastDish;
       i++;
       continue;
@@ -266,18 +277,27 @@ export const parseVoiceCommand = (transcript, dishes = []) => {
     const next = tokens[i + 1];
     const isDontWant = token.plain === "khong" && next && !next.sep && ["lay", "goi", "can"].includes(next.plain);
     if (isRemoveAllWord(token) || isRemoveOneWord(token) || isDontWant) {
+      // "giảm bớt hai": hai từ lệnh liền nhau là một lệnh
+      if (implicit && numberWords.length === 0) implicit = false;
       closeSegment();
       if (CANCEL_WORDS.has(token.lower)) sawCancelWord = true;
       mode = "remove";
       removeOne = isRemoveOneWord(token);
       keepRemove = isDontWant;
+      implicit = true;
       i++;
       continue;
     }
     if (isAddWord(token)) {
+      if (keepRemove) {
+        keepRemove = false;
+        i++;
+        continue;
+      }
+      if (implicit && numberWords.length === 0) implicit = false;
       closeSegment();
-      if (!keepRemove) mode = "add";
-      keepRemove = false;
+      mode = "add";
+      implicit = IMPLICIT_ADD_PLAIN.has(token.plain);
       i++;
       continue;
     }
@@ -314,6 +334,7 @@ export const parseVoiceCommand = (transcript, dishes = []) => {
       const phrase = tokens.slice(i, i + longest).map((t) => t.raw).join(" ");
       ambiguous.push({ type: mode, quantity: takeQuantity() || defaultQuantity(), phrase, options: candidates });
       lastDefaulted = null;
+      implicit = false;
       i += longest;
       continue;
     }
@@ -326,7 +347,8 @@ export const parseVoiceCommand = (transcript, dishes = []) => {
   }
   closeSegment();
 
-  const cancel = sawCancelWord && ops.length === 0 && ambiguous.length === 0 && !confirm;
+  const namedDish = ops.some((op) => op.type === "clear" || op.dish) || ambiguous.length > 0;
+  const cancel = sawCancelWord && !namedDish && !confirm;
   return { ops, ambiguous, unmatched, confirm, cancel };
 };
 
@@ -360,19 +382,39 @@ export const applyVoiceOp = (draft, op) => {
 
 /**
  * Áp kết quả parseVoiceCommand lên danh sách món đang chọn.
+ * lastDish: món vừa được nhắc tới ở câu trước; lệnh không nêu món ("giảm một bát") áp vào món đó,
+ * hoặc vào món duy nhất trong danh sách. Không xác định được món thì bỏ qua và đếm vào unresolved.
  * Món nói thiếu tên khi bỏ/đổi số lượng được hiểu là món đang có trong danh sách nếu chỉ có một;
  * còn lại trả về pending để khách chọn.
+ * Trả về { draft, pending, unresolved, lastDish }.
  */
-export const applyVoiceCommand = (draft, command) => {
-  let next = command.ops.reduce(applyVoiceOp, draft);
+export const applyVoiceCommand = (draft, command, lastDish = null) => {
+  let next = draft;
+  let target = lastDish;
+  let unresolved = 0;
+  const inList = (dish) => dish && next.some((it) => it.dish.dishId === dish.dishId);
+  for (const op of command.ops) {
+    if (op.type === "clear") {
+      next = [];
+      continue;
+    }
+    const dish = op.dish || (inList(target) ? target : next.length === 1 ? next[0].dish : null);
+    if (!dish) {
+      unresolved++;
+      continue;
+    }
+    next = applyVoiceOp(next, { ...op, dish });
+    target = dish;
+  }
   const pending = [];
   for (const amb of command.ambiguous) {
-    const inDraft = amb.options.filter((dish) => next.some((it) => it.dish.dishId === dish.dishId));
+    const inDraft = amb.options.filter(inList);
     if (amb.type !== "add" && inDraft.length === 1) {
       next = applyVoiceOp(next, { type: amb.type, dish: inDraft[0], quantity: amb.quantity });
+      target = inDraft[0];
     } else {
       pending.push(amb);
     }
   }
-  return { draft: next, pending };
+  return { draft: next, pending, unresolved, lastDish: target };
 };

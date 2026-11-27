@@ -119,7 +119,7 @@ describe("parseVoiceOrder", () => {
 });
 
 const ops = (result) =>
-  result.ops.map((op) => (op.type === "clear" ? ["clear"] : [op.type, op.dish.dishId, op.quantity]));
+  result.ops.map((op) => (op.type === "clear" ? ["clear"] : [op.type, op.dish?.dishId ?? null, op.quantity]));
 
 describe("parseVoiceCommand", () => {
   it("bỏ hẳn một món", () => {
@@ -178,9 +178,28 @@ describe("parseVoiceCommand", () => {
     expect(ops(parseVoiceCommand("xóa tất cả rồi lấy một trà đá", MENU))).toEqual([["clear"], ["add", 3, 1]]);
   });
 
-  it("chỉ nói hủy thì là lệnh dừng", () => {
-    expect(parseVoiceCommand("hủy", MENU)).toMatchObject({ ops: [], cancel: true });
+  it("chỉ nói hủy: bỏ món đang nói tới, đồng thời là lệnh dừng đặt đơn", () => {
+    const result = parseVoiceCommand("Hủy.", MENU);
+    expect(ops(result)).toEqual([["remove", null, null]]);
+    expect(result.cancel).toBe(true);
     expect(parseVoiceCommand("phở bò", MENU).cancel).toBe(false);
+    expect(parseVoiceCommand("hủy phở bò", MENU).cancel).toBe(false);
+  });
+
+  it("giảm/thêm không nói tên món", () => {
+    expect(ops(parseVoiceCommand("Giảm một bát.", MENU))).toEqual([["remove", null, 1]]);
+    expect(ops(parseVoiceCommand("giảm bớt hai", MENU))).toEqual([["remove", null, 2]]);
+    expect(ops(parseVoiceCommand("thêm một bát nữa", MENU))).toEqual([["add", null, 1]]);
+    expect(ops(parseVoiceCommand("tăng hai", MENU))).toEqual([["add", null, 2]]);
+  });
+
+  it("từ đệm một mình không sinh lệnh", () => {
+    expect(ops(parseVoiceCommand("cho em", MENU))).toEqual([]);
+    expect(ops(parseVoiceCommand("thêm", MENU))).toEqual([]);
+  });
+
+  it("giảm kèm tên món", () => {
+    expect(ops(parseVoiceCommand("giảm một phở bò", MENU))).toEqual([["remove", 1, 1]]);
   });
 });
 
@@ -199,6 +218,25 @@ describe("applyVoiceCommand", () => {
     expect(view(run("bỏ trà đá").draft)).toEqual([[1, 2]]);
     expect(view(run("phở bò thành năm").draft)).toEqual([[1, 5], [3, 1]]);
     expect(view(run("hủy hết").draft)).toEqual([]);
+  });
+
+  it("lệnh không nói tên món áp vào món vừa nhắc tới", () => {
+    const one = [{ dish: dish(1), quantity: 3 }];
+    expect(view(run("Giảm một bát.", one).draft)).toEqual([[1, 2]]);
+    expect(view(run("hủy", one).draft)).toEqual([]);
+    expect(view(applyVoiceCommand(start, parseVoiceCommand("giảm một", MENU), dish(1)).draft)).toEqual([[1, 1], [3, 1]]);
+    expect(view(applyVoiceCommand(start, parseVoiceCommand("thêm hai", MENU), dish(3)).draft)).toEqual([[1, 2], [3, 3]]);
+  });
+
+  it("nhiều món mà không biết món nào thì không đổi gì và báo lại", () => {
+    const result = run("giảm một");
+    expect(view(result.draft)).toEqual([[1, 2], [3, 1]]);
+    expect(result.unresolved).toBe(1);
+  });
+
+  it("trả về món vừa được nhắc tới để câu sau dùng", () => {
+    expect(run("bớt một trà đá").lastDish.dishId).toBe(3);
+    expect(run("phở bò thành năm").lastDish.dishId).toBe(1);
   });
 
   it("bớt quá số đang có thì bỏ món", () => {

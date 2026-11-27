@@ -35,8 +35,11 @@ export default function VoiceOrderModal({
   const [countdown, setCountdown] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState("");
+  const [notice, setNotice] = useState("");
   const draftRef = useRef(draft);
   draftRef.current = draft;
+  // Món vừa được nhắc tới, để hiểu các câu không nêu tên món như "giảm một bát", "hủy"
+  const lastDishRef = useRef(null);
   // Chỉ lấy danh sách ban đầu lúc mở modal
   const initialItemsRef = useRef(initialItems);
   initialItemsRef.current = initialItems;
@@ -46,13 +49,17 @@ export default function VoiceOrderModal({
     const command = parseVoiceCommand(text, dishes);
     setHeard(text);
     setUnmatched(command.unmatched);
-    if (command.cancel) {
+    // Đang đếm ngược mà nói "hủy"/"thôi" thì chỉ dừng việc đặt đơn
+    if (command.cancel && countdown !== null) {
       setCountdown(null);
+      setNotice("Đã dừng, chưa đặt đơn.");
       return;
     }
-    const result = applyVoiceCommand(draftRef.current, command);
+    const result = applyVoiceCommand(draftRef.current, command, lastDishRef.current);
     draftRef.current = result.draft;
+    lastDishRef.current = result.lastDish;
     setDraft(result.draft);
+    setNotice(result.unresolved > 0 ? "Chưa rõ món nào, bạn nói kèm tên món nhé (ví dụ: giảm một phở bò)." : "");
     const cleared = command.ops.some((op) => op.type === "clear");
     setPending((prev) => [...(cleared ? [] : prev), ...result.pending]);
     if (command.ops.length > 0 || result.pending.length > 0) setCountdown(null);
@@ -70,6 +77,8 @@ export default function VoiceOrderModal({
   useEffect(() => {
     if (!isOpen) return undefined;
     setDraft(initialItemsRef.current || []);
+    lastDishRef.current = null;
+    setNotice("");
     setPending([]);
     setUnmatched([]);
     setHeard("");
@@ -111,11 +120,13 @@ export default function VoiceOrderModal({
 
   const changeQuantity = (dish, delta) => {
     setCountdown(null);
+    lastDishRef.current = dish;
     setDraft((prev) => applyVoiceOp(prev, { type: "add", dish, quantity: delta }));
   };
 
   const chooseOption = (index, dish) => {
     const amb = pending[index];
+    lastDishRef.current = dish;
     setPending((prev) => prev.filter((_, i) => i !== index));
     setDraft((prev) => applyVoiceOp(prev, { type: amb.type, dish, quantity: amb.quantity }));
   };
@@ -138,7 +149,7 @@ export default function VoiceOrderModal({
           <div>
             <h2 className="text-base font-bold">Gọi món bằng giọng nói</h2>
             <p className="text-xs text-[#7D6B55]">
-              "hai phở bò" · "bỏ phở bò" · "bớt một trà đá" · "phở bò thành ba" · "xác nhận"
+              "hai phở bò" · "giảm một bát" · "bỏ phở bò" · "phở bò thành ba" · "xác nhận"
             </p>
           </div>
           <button
@@ -178,6 +189,7 @@ export default function VoiceOrderModal({
             )}
             {heard && <p className="text-xs text-[#8C7A65]">Vừa nghe: "{heard}"</p>}
             {error && <p className="text-sm text-red-700">{error}</p>}
+            {notice && <p className="text-sm text-[#8A5A14]">{notice}</p>}
           </div>
 
           <form onSubmit={submitTyped} className="flex gap-2">
