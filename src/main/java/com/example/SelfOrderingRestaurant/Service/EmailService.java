@@ -13,10 +13,10 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Sends mail over HTTPS APIs, since Render's free tier blocks outbound SMTP.
- * Brevo (BREVO_API_KEY + BREVO_SENDER_EMAIL, a sender verified in Brevo) reaches any address and is used
- * when configured; otherwise Resend (RESEND_API_KEY), which without a verified domain only delivers to the
- * Resend account owner's address.
+ * Sends mail over HTTPS APIs, since Render's free tier blocks outbound SMTP. The first configured provider wins:
+ * Mailjet (MAILJET_API_KEY + MAILJET_SECRET_KEY + MAILJET_SENDER_EMAIL) and Brevo (BREVO_API_KEY +
+ * BREVO_SENDER_EMAIL) reach any address with a single verified sender email; Resend (RESEND_API_KEY) without
+ * a verified domain only delivers to the Resend account owner's address.
  */
 @Service
 @RequiredArgsConstructor
@@ -34,21 +34,57 @@ public class EmailService {
     @Value("${brevo.sender-email:}")
     private String brevoSenderEmail;
 
-    @Value("${brevo.sender-name:Self Ordering Restaurant}")
-    private String brevoSenderName;
+    @Value("${mail.sender-name:Self Ordering Restaurant}")
+    private String senderName;
+
+    @Value("${mailjet.api-key:}")
+    private String mailjetApiKey;
+
+    @Value("${mailjet.secret-key:}")
+    private String mailjetSecretKey;
+
+    @Value("${mailjet.sender-email:}")
+    private String mailjetSenderEmail;
 
     @Value("${app.frontend-url}")
     private String frontendUrl;
 
     private RestTemplate restTemplate = new RestTemplate();
 
+    private static boolean isSet(String value) {
+        return value != null && !value.isBlank();
+    }
+
     private void sendEmail(String toEmail, String subject, String content) {
-        if (brevoApiKey != null && !brevoApiKey.isBlank()) {
+        if (isSet(mailjetApiKey) && isSet(mailjetSecretKey)) {
+            sendEmailViaMailjet(toEmail, subject, content);
+        } else if (isSet(brevoApiKey)) {
             sendEmailViaBrevo(toEmail, subject, content);
-        } else if (resendApiKey != null && !resendApiKey.isBlank()) {
+        } else if (isSet(resendApiKey)) {
             sendEmailViaResend(toEmail, subject, content);
         } else {
-            throw new IllegalStateException("No email provider configured: set BREVO_API_KEY and BREVO_SENDER_EMAIL (or RESEND_API_KEY)");
+            throw new IllegalStateException("No email provider configured: set MAILJET_API_KEY, MAILJET_SECRET_KEY and "
+                    + "MAILJET_SENDER_EMAIL (or BREVO_API_KEY and BREVO_SENDER_EMAIL, or RESEND_API_KEY)");
+        }
+    }
+
+    private void sendEmailViaMailjet(String toEmail, String subject, String content) {
+        try {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.setBasicAuth(mailjetApiKey, mailjetSecretKey);
+
+            Map<String, Object> message = new HashMap<>();
+            message.put("From", Map.of("Email", mailjetSenderEmail, "Name", senderName));
+            message.put("To", List.of(Map.of("Email", toEmail)));
+            message.put("Subject", subject);
+            message.put("TextPart", content);
+
+            restTemplate.postForEntity("https://api.mailjet.com/v3.1/send",
+                    new HttpEntity<>(Map.of("Messages", List.of(message)), headers), String.class);
+        } catch (Exception e) {
+            System.err.println("Failed to send email via Mailjet: " + e.getMessage());
+            throw new RuntimeException("Failed to send email via Mailjet", e);
         }
     }
 
@@ -59,7 +95,7 @@ public class EmailService {
             headers.set("api-key", brevoApiKey);
 
             Map<String, Object> body = new HashMap<>();
-            body.put("sender", Map.of("email", brevoSenderEmail, "name", brevoSenderName));
+            body.put("sender", Map.of("email", brevoSenderEmail, "name", senderName));
             body.put("to", List.of(Map.of("email", toEmail)));
             body.put("subject", subject);
             body.put("textContent", content);

@@ -29,7 +29,49 @@ class EmailServiceTest {
         ReflectionTestUtils.setField(emailService, "resendFromEmail", "onboarding@resend.dev");
         ReflectionTestUtils.setField(emailService, "brevoApiKey", "");
         ReflectionTestUtils.setField(emailService, "brevoSenderEmail", "");
-        ReflectionTestUtils.setField(emailService, "brevoSenderName", "Self Ordering Restaurant");
+        ReflectionTestUtils.setField(emailService, "senderName", "Self Ordering Restaurant");
+        ReflectionTestUtils.setField(emailService, "mailjetApiKey", "");
+        ReflectionTestUtils.setField(emailService, "mailjetSecretKey", "");
+        ReflectionTestUtils.setField(emailService, "mailjetSenderEmail", "");
+    }
+
+    @Test
+    void sendsThroughMailjetWhenItsKeysAreSet() {
+        ReflectionTestUtils.setField(emailService, "mailjetApiKey", "mj-public");
+        ReflectionTestUtils.setField(emailService, "mailjetSecretKey", "mj-secret");
+        ReflectionTestUtils.setField(emailService, "mailjetSenderEmail", "owner@gmail.com");
+        String basic = "Basic " + java.util.Base64.getEncoder()
+                .encodeToString("mj-public:mj-secret".getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        server.expect(requestTo("https://api.mailjet.com/v3.1/send"))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(header("Authorization", basic))
+                .andExpect(jsonPath("$.Messages[0].From.Email").value("owner@gmail.com"))
+                .andExpect(jsonPath("$.Messages[0].From.Name").value("Self Ordering Restaurant"))
+                .andExpect(jsonPath("$.Messages[0].To[0].Email").value("guest@example.com"))
+                .andExpect(jsonPath("$.Messages[0].Subject").value("Password Reset OTP"))
+                .andExpect(jsonPath("$.Messages[0].TextPart").value(org.hamcrest.Matchers.containsString("654321")))
+                .andRespond(withSuccess("{\"Messages\":[{\"Status\":\"success\"}]}", MediaType.APPLICATION_JSON));
+
+        emailService.sendPasswordResetEmail("guest@example.com", "654321");
+
+        server.verify();
+    }
+
+    @Test
+    void mailjetErrorIsReported() {
+        ReflectionTestUtils.setField(emailService, "mailjetApiKey", "mj-public");
+        ReflectionTestUtils.setField(emailService, "mailjetSecretKey", "wrong");
+        ReflectionTestUtils.setField(emailService, "mailjetSenderEmail", "owner@gmail.com");
+        server.expect(requestTo("https://api.mailjet.com/v3.1/send")).andRespond(withStatus(UNAUTHORIZED));
+
+        assertThrows(RuntimeException.class, () -> emailService.sendPasswordResetEmail("guest@example.com", "654321"));
+    }
+
+    @Test
+    void missingProviderMessageMentionsMailjet() {
+        RuntimeException e = assertThrows(RuntimeException.class,
+                () -> emailService.sendRegistrationOtpEmail("guest@example.com", "111222"));
+        assertTrue(e.getMessage().contains("MAILJET_API_KEY"), e.getMessage());
     }
 
     @Test

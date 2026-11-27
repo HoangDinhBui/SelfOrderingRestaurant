@@ -78,11 +78,17 @@ logging:
 resend:
   api-key: ${RESEND_API_KEY:}
   from-email: ${RESEND_FROM_EMAIL:onboarding@resend.dev}
-# Preferred over Resend when set: sends to any address with a sender verified in Brevo (no own domain needed)
+# Mailjet, then Brevo, then Resend: the first one configured sends OTP emails. Mailjet and Brevo reach any
+# address with one verified sender email (no own domain needed)
+mailjet:
+  api-key: ${MAILJET_API_KEY:}
+  secret-key: ${MAILJET_SECRET_KEY:}
+  sender-email: ${MAILJET_SENDER_EMAIL:}
 brevo:
   api-key: ${BREVO_API_KEY:}
   sender-email: ${BREVO_SENDER_EMAIL:}
-  sender-name: ${BREVO_SENDER_NAME:Self Ordering Restaurant}
+mail:
+  sender-name: ${MAIL_SENDER_NAME:Self Ordering Restaurant}
 gemini:
   api-key: ${GEMINI_API_KEY:}
   model: ${GEMINI_MODEL:gemini-2.5-flash}
