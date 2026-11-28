@@ -41,7 +41,7 @@ const DishDetails = () => {
         setLoading(false);
       } catch (err) {
         console.error("Error fetching dish details:", err);
-        setError("Failed to load dish details. Please try again!");
+        setError("Không tải được thông tin món. Vui lòng thử lại!");
         setLoading(false);
       }
     };
@@ -55,27 +55,27 @@ const DishDetails = () => {
 
   const handleAddToCart = () => {
     // Implement add to cart functionality here
-    alert(`Added ${quantity} ${dish.dishName || dish.name} to cart!`);
+    alert(`Đã thêm ${quantity} ${dish.dishName || dish.name} vào giỏ!`);
     // Navigate to cart or stay on page
   };
 
   console.log("Current dish state:", dish);
 
   if (loading || contextLoading)
-    return <p className="text-center text-gray-500">Loading dish details...</p>;
+    return <p className="text-center text-gray-500">Đang tải thông tin món...</p>;
   if (error || contextError)
     return <p className="text-center text-red-500">{error || contextError}</p>;
-  if (!dish) return <p className="text-center text-red-500">Dish not found</p>;
+  if (!dish) return <p className="text-center text-red-500">Không tìm thấy món</p>;
 
-  const dishName = dish.dishName || dish.name || "Unnamed Dish";
+  const dishName = dish.dishName || dish.name || "Món ăn";
   const price = dish.price || 0;
   const category = dish.categoryName || dish.category || "Uncategorized";
-  const description = dish.description || "No description available.";
+  const description = dish.description || "Chưa có mô tả.";
   const imageUrl = dish.imageUrl || dish.image || "/placeholder-dish.jpg";
   const status = dish.status || "Available";
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-cream">
       <div className="bg-white py-3 shadow-md sticky top-0 z-10">
         <div className="container mx-auto flex items-center px-4">
           <button
@@ -98,7 +98,7 @@ const DishDetails = () => {
             </svg>
           </button>
           <div className="flex-1 text-center">
-            <div className="text-lg font-bold">Dish Details</div>
+            <div className="text-lg font-bold">Chi tiết món</div>
           </div>
           <div className="w-8"></div>
         </div>
@@ -127,7 +127,7 @@ const DishDetails = () => {
             </div>
 
             <div className="mb-4">
-              <span className="text-gray-500">Category:</span>
+              <span className="text-gray-500">Danh mục:</span>
               <span className="ml-2 font-medium">{category}</span>
             </div>
 

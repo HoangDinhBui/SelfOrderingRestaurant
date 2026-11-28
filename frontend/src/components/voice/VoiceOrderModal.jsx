@@ -175,7 +175,7 @@ export default function VoiceOrderModal({
                   }`}
                   aria-label={listening ? "Dừng nghe" : "Bắt đầu nói"}
                 >
-                  🎤
+                  <i className="fa-solid fa-microphone" aria-hidden="true" />
                 </button>
                 <span className="text-sm text-[#6E5A44] text-center min-h-5">
                   {interim ? `"${interim}"` : listening ? "Đang nghe, cứ nói từng câu..." : "Bấm micro để nói"}

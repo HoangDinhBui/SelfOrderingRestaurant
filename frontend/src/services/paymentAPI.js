@@ -29,7 +29,7 @@ const handleApiError = (error) => {
     return error.response.data;
   } else if (error.request) {
     console.error("API Request Error:", error.request);
-    return { success: false, message: "No response received from server" };
+    return { success: false, message: "Máy chủ không phản hồi" };
   } else {
     console.error("API Error:", error.message);
     return { success: false, message: error.message };
@@ -39,7 +39,7 @@ const handleApiError = (error) => {
 export const confirmPayment = async (orderId) => {
   try {
     if (!orderId) {
-      throw new Error("Invalid order ID");
+      throw new Error("Mã đơn hàng không hợp lệ");
     }
     console.log("Confirming payment for orderId:", orderId);
     const response = await paymentAPI.post("/api/payment/confirm", { orderId });
@@ -52,7 +52,7 @@ export const confirmPayment = async (orderId) => {
 export const getPaymentStatus = async (orderId) => {
   try {
     if (!orderId) {
-      throw new Error("Invalid order ID");
+      throw new Error("Mã đơn hàng không hợp lệ");
     }
     const response = await paymentAPI.get(`/api/payment/payment/status/${orderId}`);
     return response.data;

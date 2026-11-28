@@ -17,11 +17,11 @@ class AuthService {
       return response.data;
     } catch (error) {
       const status = error.response?.status;
-      let message = "Failed to login. Please try again.";
+      let message = "Đăng nhập thất bại. Vui lòng thử lại.";
       if (status === 401) {
-        message = "Invalid username or password.";
+        message = "Sai tên đăng nhập hoặc mật khẩu.";
       } else if (status === 400) {
-        message = error.response?.data?.message || "Invalid login request.";
+        message = error.response?.data?.message || "Yêu cầu đăng nhập không hợp lệ.";
       }
       throw new Error(message);
     }
@@ -43,7 +43,7 @@ class AuthService {
     } catch (error) {
       const message =
         error.response?.data?.message ||
-        "Failed to login with Google. Please try again.";
+        "Không đăng nhập được bằng Google. Vui lòng thử lại.";
       throw new Error(message);
     }
   }
@@ -61,7 +61,7 @@ class AuthService {
       this.clearLocalStorage();
       return {
         success: false,
-        message: "Logout failed, but local data cleared.",
+        message: "Đăng xuất lỗi, nhưng dữ liệu trên máy đã được xóa.",
       };
     }
   }
@@ -78,11 +78,11 @@ class AuthService {
   async forgotPassword(login) {
     try {
       await api.post("/api/auth/forgot-password", { login });
-      return { success: true, message: "Password reset link sent." };
+      return { success: true, message: "Đã gửi liên kết đặt lại mật khẩu." };
     } catch (error) {
       const message =
         error.response?.data?.message ||
-        "Failed to request password reset. Please try again.";
+        "Không gửi được yêu cầu đặt lại mật khẩu. Vui lòng thử lại.";
       throw new Error(message);
     }
   }
@@ -101,7 +101,7 @@ class AuthService {
       return response.data;
     } catch (error) {
       const message =
-        error.response?.data?.message || "Failed to refresh token.";
+        error.response?.data?.message || "Không làm mới được phiên đăng nhập.";
       throw new Error(message);
     }
   }

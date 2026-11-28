@@ -123,7 +123,7 @@ const NotificationManagementAdmin = () => {
       case "Payment request":
         return <FaMoneyBillWave className="text-green-500 mr-2" />;
       case "Call staff":
-        return <FaBell className="text-blue-500 mr-2" />;
+        return <FaBell className="text-brand mr-2" />;
       case "Other":
         return <FaUtensils className="text-orange-500 mr-2" />;
       default:
@@ -132,7 +132,7 @@ const NotificationManagementAdmin = () => {
   };
 
   return (
-    <div className="h-screen w-screen !bg-blue-50 flex flex-col">
+    <div className="min-h-screen w-full bg-cream flex flex-col">
       <MenuBar />
 
       {/* Main Content */}
@@ -179,13 +179,13 @@ const NotificationManagementAdmin = () => {
                         className="flex items-center px-3 py-1 !bg-yellow-500 text-white rounded hover:bg-green-600"
                         onClick={() => handleCheckNotification(notification.id)}
                       >
-                        <FaCheck className="mr-1" /> Check
+                        <FaCheck className="mr-1" /> Kiểm tra
                       </button>
                       <button
                         className="flex items-center px-3 py-1 !bg-red-500 text-white rounded hover:bg-red-600"
                         onClick={() => handleDeleteClick(notification.id)}
                       >
-                        <FaTrash className="mr-1" /> Delete
+                        <FaTrash className="mr-1" /> Xóa
                       </button>
                     </div>
                   </div>
@@ -209,7 +209,7 @@ const NotificationManagementAdmin = () => {
               ></img>
             </div>
             <h3 className="text-xl font-bold mb-4 text-center">
-              ARE YOU SURE?
+              BẠN CÓ CHẮC CHẮN?
             </h3>
             <div className="flex justify-center space-x-4">
               <button
@@ -222,7 +222,7 @@ const NotificationManagementAdmin = () => {
                 className="px-4 py-2 !bg-gray-500 text-white rounded hover:bg-gray-600"
                 onClick={handleCancelDelete}
               >
-                NO
+                KHÔNG
               </button>
             </div>
           </div>

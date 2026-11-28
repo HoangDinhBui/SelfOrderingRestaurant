@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaUtensils, FaQrcode, FaCamera, FaTimes, FaArrowRight } from "react-icons/fa";
-import welcomeBg from "../../../assets/img/welcome_bg.jpg";
+import welcomeBg from "../../../assets/img/CaptiveBg.jpg";
 
 const CaptivePortal = () => {
   const navigate = useNavigate();
@@ -30,7 +30,7 @@ const CaptivePortal = () => {
       <div className="absolute inset-0 z-0">
         <img
           src={welcomeBg}
-          alt="Restaurant background"
+          alt="Ảnh nền nhà hàng"
           className="w-full h-full object-cover object-center filter brightness-75 scale-105"
         />
         {/* Gradients to match the exact dark luxury mood */}
@@ -53,7 +53,6 @@ const CaptivePortal = () => {
             </div>
             <h1
               className="text-3xl sm:text-4xl font-serif italic tracking-wide text-white"
-              style={{ fontFamily: "'Playfair Display', 'Times New Roman', serif" }}
             >
               Bon Appétit
             </h1>

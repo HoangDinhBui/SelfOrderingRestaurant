@@ -94,7 +94,7 @@ const NotificationManagementStaff = () => {
               const processedNotification = {
                 ...newNotification,
                 tableNumber: newNotification.tableNumber || "Unknown",
-                content: newNotification.content || "New notification",
+                content: newNotification.content || "Thông báo mới",
                 dateObj: date,
                 dateString: isToday(date)
                   ? "Today"
@@ -104,7 +104,7 @@ const NotificationManagementStaff = () => {
               };
 
               toast.info(
-                `New notification from Table ${processedNotification.tableNumber}: ${processedNotification.content}`,
+                `Thông báo mới từ bàn ${processedNotification.tableNumber}: ${processedNotification.content}`,
                 { autoClose: 5000 }
               );
 
@@ -114,7 +114,7 @@ const NotificationManagementStaff = () => {
             });
           } catch (err) {
             console.error("Error processing WebSocket message:", err);
-            toast.error("Error processing real-time notification");
+            toast.error("Lỗi xử lý thông báo thời gian thực");
           }
         };
 
@@ -142,14 +142,14 @@ const NotificationManagementStaff = () => {
             console.log(
               "Max reconnect attempts reached. Falling back to polling only."
             );
-            toast.warn("Real-time notifications unavailable. Using polling.", {
+            toast.warn("Thông báo tức thời đang gián đoạn, hệ thống sẽ tự cập nhật định kỳ.", {
               autoClose: 5000,
             });
           }
         };
       } catch (err) {
         console.error("Failed to create WebSocket connection:", err);
-        toast.error("Failed to connect to real-time notifications");
+        toast.error("Không kết nối được thông báo tức thời");
       }
     };
 
@@ -210,12 +210,12 @@ const NotificationManagementStaff = () => {
         setError(null);
       } else if (data && data.error) {
         console.error("Server returned error:", data.error);
-        setError(`Server Error: ${data.error}`);
-        toast.error(`Server Error: ${data.error}`);
+        setError(`Lỗi máy chủ: ${data.error}`);
+        toast.error(`Lỗi máy chủ: ${data.error}`);
       } else {
         console.error("Invalid notification data format received:", data);
-        setError(`Invalid format: ${JSON.stringify(data).substring(0, 50)}`);
-        toast.error("Invalid notification data format");
+        setError(`Sai định dạng: ${JSON.stringify(data).substring(0, 50)}`);
+        toast.error("Dữ liệu thông báo không hợp lệ");
       }
     } catch (err) {
       console.error("Error fetching notifications:", {
@@ -225,12 +225,12 @@ const NotificationManagementStaff = () => {
         headers: err.response?.headers,
       });
       setError(
-        `Failed to fetch notifications: ${
+        `Không tải được thông báo: ${
           err.response?.data?.error || err.message
         }`
       );
       toast.error(
-        `Failed to fetch notifications: ${
+        `Không tải được thông báo: ${
           err.response?.data?.error || err.message
         }`
       );
@@ -271,9 +271,9 @@ const NotificationManagementStaff = () => {
       }
       acc[notification.dateString].items.push({
         ...notification,
-        table: `Table ${notification.tableNumber || "Unknown"}`,
+        table: `Bàn ${notification.tableNumber || "?"}`,
         time: notification.timeString,
-        content: notification.content || "No content",
+        content: notification.content || "Không có nội dung",
       });
       return acc;
     }, {});
@@ -304,22 +304,22 @@ const NotificationManagementStaff = () => {
       setProcessing(true);
       const id = notification.notificationId;
       if (!id) {
-        toast.error("Invalid notification ID");
+        toast.error("Mã thông báo không hợp lệ");
         return;
       }
 
       if (notification.type === "PAYMENT_REQUEST") {
         if (!notification.orderId) {
-          toast.error("Invalid order ID for payment confirmation");
+          toast.error("Mã đơn không hợp lệ để xác nhận thanh toán");
           return;
         }
 
-        const loadingToastId = toast.loading("Checking payment status...");
+        const loadingToastId = toast.loading("Đang kiểm tra trạng thái thanh toán...");
 
         const statusResponse = await getPaymentStatus(notification.orderId);
         if (statusResponse.error) {
           toast.update(loadingToastId, {
-            render: `Failed to check payment status: ${statusResponse.message}`,
+            render: `Không kiểm tra được thanh toán: ${statusResponse.message}`,
             type: "error",
             isLoading: false,
             autoClose: 5000,
@@ -329,14 +329,14 @@ const NotificationManagementStaff = () => {
 
         if (statusResponse.paymentStatus === "PAID") {
           toast.update(loadingToastId, {
-            render: `Payment already confirmed for order ${notification.orderId}`,
+            render: `Đã xác nhận thanh toán cho đơn ${notification.orderId}`,
             type: "info",
             isLoading: false,
             autoClose: 3000,
           });
           const readResponse = await markNotificationAsRead(id);
           if (readResponse.error) {
-            toast.error("Failed to mark notification as read");
+            toast.error("Không đánh dấu đã đọc được");
             return;
           }
           setNotifications((prev) =>
@@ -350,14 +350,14 @@ const NotificationManagementStaff = () => {
         // A bill awaiting the staff is UNPAID on the order; PENDING only lives on a VNPay transaction
         if (statusResponse.paymentStatus !== "UNPAID") {
           toast.update(loadingToastId, {
-            render: `No unpaid bill found for order ${notification.orderId}`,
+            render: `Không tìm thấy hóa đơn chưa thanh toán của đơn ${notification.orderId}`,
             type: "error",
             isLoading: false,
             autoClose: 5000,
           });
           const readResponse = await markNotificationAsRead(id);
           if (readResponse.error) {
-            toast.error("Failed to mark notification as read");
+            toast.error("Không đánh dấu đã đọc được");
             return;
           }
           setNotifications((prev) =>
@@ -368,18 +368,18 @@ const NotificationManagementStaff = () => {
           return;
         }
 
-        toast.update(loadingToastId, { render: "Confirming payment..." });
+        toast.update(loadingToastId, { render: "Đang xác nhận thanh toán..." });
         const paymentResponse = await confirmPayment(notification.orderId);
         if (paymentResponse.success) {
           toast.update(loadingToastId, {
-            render: "Payment confirmed successfully!",
+            render: "Đã xác nhận thanh toán!",
             type: "success",
             isLoading: false,
             autoClose: 3000,
           });
         } else {
           toast.update(loadingToastId, {
-            render: paymentResponse.message || "Failed to confirm payment",
+            render: paymentResponse.message || "Không xác nhận được thanh toán",
             type: "error",
             isLoading: false,
             autoClose: 5000,
@@ -390,7 +390,7 @@ const NotificationManagementStaff = () => {
 
       const readResponse = await markNotificationAsRead(id);
       if (readResponse.error) {
-        toast.error("Failed to mark notification as read");
+        toast.error("Không đánh dấu đã đọc được");
         return;
       }
 
@@ -401,11 +401,11 @@ const NotificationManagementStaff = () => {
       );
 
       if (notification.type !== "PAYMENT_REQUEST") {
-        toast.success("Notification marked as read");
+        toast.success("Đã đánh dấu đã đọc");
       }
     } catch (err) {
       console.error("Error processing notification:", err);
-      toast.error(`Error processing notification: ${err.message}`);
+      toast.error(`Lỗi xử lý thông báo: ${err.message}`);
     } finally {
       setProcessing(false);
     }
@@ -422,16 +422,16 @@ const NotificationManagementStaff = () => {
       try {
         const response = await deleteNotification(notificationToDelete);
         if (response.error) {
-          toast.error("Failed to delete notification");
+          toast.error("Không xóa được thông báo");
         } else {
           setNotifications((prev) =>
             prev.filter((noti) => noti.notificationId !== notificationToDelete)
           );
-          toast.success("Notification deleted successfully");
+          toast.success("Đã xóa thông báo");
         }
       } catch (err) {
         console.error("Error deleting notification:", err);
-        toast.error("Error deleting notification");
+        toast.error("Lỗi khi xóa thông báo");
       } finally {
         setProcessing(false);
         setShowDeleteModal(false);
@@ -451,7 +451,7 @@ const NotificationManagementStaff = () => {
       case "PAYMENT_REQUEST":
         return <FaMoneyBillWave className="text-green-500 mr-2 h-5 w-5" />;
       case "CALL_STAFF":
-        return <FaBell className="text-blue-500 mr-2 h-5 w-5" />;
+        return <FaBell className="text-brand mr-2 h-5 w-5" />;
       case "ORDER_READY":
         return <FaUtensils className="text-orange-500 mr-2 h-5 w-5" />;
       default:
@@ -467,13 +467,13 @@ const NotificationManagementStaff = () => {
 
   if (loading) {
     return (
-      <div className="h-screen w-screen bg-blue-50 flex flex-col">
+      <div className="min-h-screen w-full bg-cream flex flex-col">
         <MenuBar
-          title="Notification Management"
+          title="Quản lý thông báo"
           icon="https://img.icons8.com/material-outlined/192/FFFFFF/alarm.png"
         />
         <div className="flex-1 p-6 bg-gray-100 flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-brand"></div>
         </div>
       </div>
     );
@@ -481,9 +481,9 @@ const NotificationManagementStaff = () => {
 
   if (error) {
     return (
-      <div className="h-screen w-screen bg-blue-50 flex flex-col">
+      <div className="min-h-screen w-full bg-cream flex flex-col">
         <MenuBar
-          title="Notification Management"
+          title="Quản lý thông báo"
           icon="https://img.icons8.com/material-outlined/192/FFFFFF/alarm.png"
         />
         <div className="flex-1 p-6 bg-gray-100 flex items-center justify-center">
@@ -496,9 +496,9 @@ const NotificationManagementStaff = () => {
   const sortedNotificationGroups = groupedNotifications();
 
   return (
-    <div className="h-screen w-screen !bg-blue-50 flex flex-col">
+    <div className="min-h-screen w-full bg-cream flex flex-col">
       <MenuBar
-        title="Notification Management"
+        title="Quản lý thông báo"
         icon="https://img.icons8.com/material-outlined/192/FFFFFF/alarm.png"
       />
 
@@ -507,7 +507,7 @@ const NotificationManagementStaff = () => {
         {/* Date Filter */}
         <div className="mb-6">
           <label htmlFor="dateFilter" className="mr-2 font-medium">
-            Filter by Date:
+            Lọc theo ngày:
           </label>
           <input
             type="date"
@@ -524,7 +524,7 @@ const NotificationManagementStaff = () => {
                 backgroundColor: "#FF6347",
               }}
             >
-              Clear Filter
+              Bỏ lọc
             </button>
           )}
         </div>
@@ -533,7 +533,7 @@ const NotificationManagementStaff = () => {
         <div className="bg-white rounded-lg shadow-md p-6">
           {sortedNotificationGroups.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              No notifications available
+              Chưa có thông báo
             </div>
           ) : (
             sortedNotificationGroups.map((dateGroup) => (
@@ -573,8 +573,8 @@ const NotificationManagementStaff = () => {
                         <button
                           aria-label={
                             notification.isRead
-                              ? "Notification checked"
-                              : "Mark notification as checked"
+                              ? "Đã xem"
+                              : "Đánh dấu đã xem"
                           }
                           className={`flex items-center justify-center px-3 py-1 w-28 text-white rounded text-sm font-medium ${
                             notification.isRead
@@ -591,14 +591,14 @@ const NotificationManagementStaff = () => {
                           {notification.isRead ? "Checked" : "Check"}
                         </button>
                         <button
-                          aria-label="Delete notification"
+                          aria-label="Xóa thông báo"
                           className="flex items-center justify-center px-3 py-1 w-28 !bg-red-500 hover:bg-red-600 text-white rounded text-sm font-medium"
                           onClick={() =>
                             handleDeleteClick(notification.notificationId)
                           }
                         >
                           <FaTrash className="mr-1 w-6 h-6" />
-                          Delete
+                          Xóa
                         </button>
                       </div>
                     </div>
@@ -622,7 +622,7 @@ const NotificationManagementStaff = () => {
               />
             </div>
             <h3 className="text-xl font-bold mb-4 text-center">
-              ARE YOU SURE?
+              BẠN CÓ CHẮC CHẮN?
             </h3>
             <div className="flex justify-center space-x-4">
               <button
@@ -635,7 +635,7 @@ const NotificationManagementStaff = () => {
                 className="px-4 py-2 !bg-gray-500 text-white rounded hover:bg-gray-600"
                 onClick={handleCancelDelete}
               >
-                NO
+                KHÔNG
               </button>
             </div>
           </div>

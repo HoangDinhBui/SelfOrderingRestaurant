@@ -2,8 +2,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import { formatVnd, toLocalDateString } from "../../utils/reservation";
 
 const inputClass =
-  "w-full rounded-lg border border-slate-200 bg-[#F0F5FD] px-3 py-2.5 text-sm text-slate-800 outline-none focus:border-[#B73512]";
-const labelClass = "mb-1.5 block text-xs font-medium text-slate-600";
+  "w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/20";
+const labelClass = "mb-1.5 block text-xs font-medium text-ink-muted";
 
 const MAX_DAYS_AHEAD = 30;
 
@@ -138,7 +138,7 @@ export default function ReservationForm({
             <button
               type="button"
               onClick={() => setGuestCount((n) => Math.max(1, n - 1))}
-              className="h-10 w-10 rounded-lg bg-[#EAF0F9] text-lg font-bold text-slate-700"
+              className="h-10 w-10 rounded-lg bg-brand-soft text-lg font-bold text-ink"
               aria-label="Bớt một khách"
             >
               −
@@ -147,7 +147,7 @@ export default function ReservationForm({
             <button
               type="button"
               onClick={() => setGuestCount((n) => Math.min(30, n + 1))}
-              className="h-10 w-10 rounded-lg bg-[#EAF0F9] text-lg font-bold text-slate-700"
+              className="h-10 w-10 rounded-lg bg-brand-soft text-lg font-bold text-ink"
               aria-label="Thêm một khách"
             >
               ＋
@@ -159,7 +159,7 @@ export default function ReservationForm({
       <div>
         <span className={labelClass}>Giờ đến *</span>
         {availableSlots.length === 0 ? (
-          <p className="text-sm text-slate-500">Hôm nay đã hết khung giờ, vui lòng chọn ngày khác.</p>
+          <p className="text-sm text-ink-muted">Hôm nay đã hết khung giờ, vui lòng chọn ngày khác.</p>
         ) : (
           <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
             {availableSlots.map((slot) => (
@@ -167,8 +167,8 @@ export default function ReservationForm({
                 type="button"
                 key={slot}
                 onClick={() => setTime(slot)}
-                className={`rounded-md py-2 text-sm font-semibold ${
-                  time === slot ? "bg-[#B73512] text-white" : "bg-[#EAF0F9] text-slate-700 hover:bg-slate-200"
+                className={`rounded-lg min-h-[40px] text-sm font-semibold transition ${
+                  time === slot ? "bg-brand text-white" : "bg-brand-soft text-ink hover:bg-brand/15"
                 }`}
               >
                 {slot}
@@ -195,9 +195,9 @@ export default function ReservationForm({
       {availableDishes.length > 0 && (
         <div className="border-t border-slate-100 pt-3">
           <div className="mb-2 flex items-center justify-between">
-            <span className="text-sm font-semibold text-slate-800">Món đặt trước (không bắt buộc)</span>
+            <span className="text-sm font-semibold text-ink">Món đặt trước (không bắt buộc)</span>
             {selectedDishes.length > 0 && (
-              <span className="text-sm font-semibold text-[#B73512]">{formatVnd(total)}</span>
+              <span className="text-sm font-semibold text-brand">{formatVnd(total)}</span>
             )}
           </div>
           <div className="mb-2 flex gap-1.5 overflow-x-auto pb-1">
@@ -207,7 +207,7 @@ export default function ReservationForm({
                 key={c}
                 onClick={() => setCategory(c)}
                 className={`whitespace-nowrap rounded-full px-3 py-1 text-xs font-medium ${
-                  category === c ? "bg-[#B73512] text-white" : "bg-[#EAF0F9] text-slate-700"
+                  category === c ? "bg-brand text-white" : "bg-brand-soft text-ink"
                 }`}
               >
                 {c}
@@ -216,10 +216,10 @@ export default function ReservationForm({
           </div>
           <div className="max-h-64 space-y-1.5 overflow-y-auto">
             {shownDishes.map((d) => (
-              <div key={d.dishId} className="flex items-center justify-between gap-2 rounded-lg bg-[#F0F5FD] px-3 py-2">
+              <div key={d.dishId} className="flex items-center justify-between gap-2 rounded-lg bg-white px-3 py-2">
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-slate-700">{d.name}</p>
-                  <p className="text-xs text-slate-500">{formatVnd(d.price)}</p>
+                  <p className="truncate text-sm font-medium text-ink">{d.name}</p>
+                  <p className="text-xs text-ink-muted">{formatVnd(d.price)}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   {quantities[d.dishId] > 0 && (
@@ -227,7 +227,7 @@ export default function ReservationForm({
                       <button
                         type="button"
                         onClick={() => changeQuantity(d.dishId, -1)}
-                        className="h-8 w-8 rounded bg-white text-slate-600"
+                        className="h-8 w-8 rounded bg-white text-ink-muted"
                         aria-label={`Bớt ${d.name}`}
                       >
                         −
@@ -238,7 +238,7 @@ export default function ReservationForm({
                   <button
                     type="button"
                     onClick={() => changeQuantity(d.dishId, 1)}
-                    className="h-8 w-8 rounded bg-white text-slate-600"
+                    className="h-8 w-8 rounded bg-white text-ink-muted"
                     aria-label={`Thêm ${d.name}`}
                   >
                     ＋
@@ -270,7 +270,7 @@ export default function ReservationForm({
       <button
         type="submit"
         disabled={submitting}
-        className="w-full rounded-lg bg-[#B73512] py-3 text-base font-semibold text-white disabled:opacity-60"
+        className="w-full rounded-lg bg-brand py-3 text-base font-semibold text-white disabled:opacity-60"
       >
         {submitting ? "Đang gửi..." : submitLabel}
       </button>

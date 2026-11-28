@@ -15,13 +15,13 @@ class ErrorBoundary extends React.Component {
     if (this.state.hasError) {
       return (
         <div className="p-4 bg-red-100 text-red-700 rounded">
-          <h2>Something went wrong.</h2>
-          <p>{this.state.error?.message || "Unknown error"}</p>
+          <h2>Đã có lỗi xảy ra.</h2>
+          <p>{this.state.error?.message || "Lỗi không xác định"}</p>
           <button
-            className="mt-2 bg-blue-500 text-white px-4 py-2 rounded"
+            className="mt-2 bg-brand text-white px-4 py-2 rounded"
             onClick={() => this.setState({ hasError: false, error: null })}
           >
-            Try Again
+            Thử lại
           </button>
         </div>
       );

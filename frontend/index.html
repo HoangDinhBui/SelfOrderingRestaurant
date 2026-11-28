@@ -1,23 +1,40 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#FAF7F2" />
+    <title>Bon Appétit</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Dancing+Script:wght@400;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Lora:ital,wght@0,500;0,600;0,700;1,400;1,600&display=swap"
       rel="stylesheet"
     />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Bon Appétit</title>
+    <!-- Critical styles: paint the brand background and a splash before the JS bundle arrives,
+         so a reload never flashes white or shows an unstyled page -->
+    <style>
+      html, body { margin: 0; background: #FAF7F2; color: #33261D; font-family: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+      #boot-splash { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; background: #FAF7F2; }
+      #boot-splash .brand { font-family: "Lora", Georgia, serif; font-style: italic; font-weight: 600; font-size: 28px; letter-spacing: .01em; color: #33261D; }
+      #boot-splash .bar { width: 120px; height: 3px; border-radius: 3px; background: #EADBC8; overflow: hidden; }
+      #boot-splash .bar::after { content: ""; display: block; width: 40%; height: 100%; border-radius: 3px; background: #C2410C; animation: boot-slide 1s ease-in-out infinite; }
+      @keyframes boot-slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(250%); } }
+      @media (prefers-reduced-motion: reduce) { #boot-splash .bar::after { animation: none; width: 100%; } }
+    </style>
     <!-- Define timer variable globally -->
     <script>
       var timer;
     </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <div id="boot-splash" role="status" aria-label="Đang tải">
+        <div class="brand">Bon Appétit</div>
+        <div class="bar"></div>
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

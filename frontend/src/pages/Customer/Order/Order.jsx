@@ -7,7 +7,6 @@ import { BACKEND_URL } from "../../../config";
 const Order = () => {
   const navigate = useNavigate();
   const { state } = useLocation();
-  const [searchTerm, setSearchTerm] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -123,14 +122,14 @@ const Order = () => {
         if (localItems.length > 0) {
           console.log("Using cached data as fallback after API failures");
         } else {
-          setError("Failed to load cart items. Please try again.");
+          setError("Không tải được giỏ hàng. Vui lòng thử lại.");
         }
       }
 
       setLoading(false);
     } catch (err) {
       console.error("Error in fetchCartItems:", err);
-      setError("Failed to load cart items. Please try again.");
+      setError("Không tải được giỏ hàng. Vui lòng thử lại.");
       setLoading(false);
     }
   }, [setCartItems]);
@@ -165,7 +164,7 @@ const Order = () => {
         await updateItemQuantity(id, newQuantity);
       }
     } catch (err) {
-      setError("Failed to update quantity. Please try again.");
+      setError("Không cập nhật được số lượng. Vui lòng thử lại.");
     }
   };
 
@@ -196,223 +195,136 @@ const Order = () => {
       }, 3000);
     } catch (err) {
       console.error("Error in order/payment flow:", err);
-      setError(`Failed to process your order: ${err.message}`);
+      setError(`Không gửi được đơn: ${err.message}`);
       setShowModal(false);
     } finally {
       setProcessingOrder(false);
     }
   };
 
+  const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse">Loading...</div>
+      <div className="min-h-screen bg-cream">
+        <div className="max-w-md mx-auto px-4 pt-20 space-y-3">
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="h-28 rounded-2xl bg-card border border-line animate-pulse" />
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen w-110 bg-gray-100 flex flex-col items-center">
-      {/* Debug information - Fixed NODE_ENV check */}
-      {typeof window !== "undefined" && window.ENV_DEBUG && (
-        <div className="w-full bg-yellow-100 p-2 text-xs text-center">
-          Debug: Cart has {cartItems.length} items
-        </div>
-      )}
-
-      {/* Input Search */}
-      <div className="container mx-auto p-4">
-        <input
-          type="text"
-          placeholder="Search"
-          className="w-full py-3 px-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-
-        {/* Menu and Home buttons */}
-        <div className="flex justify-between mt-4">
+    <div className="min-h-screen bg-cream">
+      <header className="bg-card/95 backdrop-blur border-b border-line sticky top-0 z-20">
+        <div className="max-w-md mx-auto flex items-center justify-between px-2 h-14">
           <button
             onClick={() => navigate("/menu_cus")}
-            className="p-2 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center font-bold"
+            aria-label="Quay lại thực đơn"
+            className="w-11 h-11 flex items-center justify-center rounded-full hover:bg-brand-soft transition"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth="2"
-              stroke="currentColor"
-              className="w-4 h-4 mr-1"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 19l-7-7 7-7"
-              />
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-5 h-5" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
-            Menu
           </button>
-
+          <div className="text-center">
+            <div className="text-base font-bold text-ink">Giỏ hàng</div>
+            <div className="text-[11px] text-ink-muted">Bàn {tableId}</div>
+          </div>
           <button
             onClick={() => navigate(`/table/${tableId}`)}
-            className="p-2 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center font-bold"
+            aria-label="Trang chủ"
+            className="w-11 h-11 flex items-center justify-center rounded-full hover:bg-brand-soft transition"
           >
-            Home
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth="2"
-              stroke="currentColor"
-              className="w-4 h-4 ml-1"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M7 7l10 10M7 17L17 7"
-              />
-            </svg>
+            <i className="fa-solid fa-house text-ink" aria-hidden="true" />
           </button>
         </div>
-      </div>
+      </header>
 
-      {/* Selected Staff list - Only show if there are items */}
-      {cartItems && cartItems.length > 0 && (
-        <div className="container mx-auto px-4 mb-4">
-          <h3 className="text-lg font-bold mb-2">Your Selections</h3>
-          <div className="flex space-x-6 overflow-x-auto pb-2">
-            {cartItems.map((item) => (
-              <div
-                key={item.dishId}
-                className="flex flex-col items-center min-w-[120px]"
-              >
-                <img
-                  src={getImageUrl(item.dishImage)}
-                  alt={item.dishName}
-                  className="w-24 h-24 object-cover rounded-lg"
-                  onError={(e) => {
-                    e.target.onerror = null;
-                    e.target.src = "/img/placeholder.jpg";
-                  }}
-                />
-                <p className="text-sm text-center mt-2 font-medium">
-                  {item.dishName}
-                </p>
-                <p className="text-xs text-center text-gray-500">
-                  Quantity: {item.quantity}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Bill */}
-      <div className="container mx-auto p-4 flex flex-col items-center">
-        <div className="flex items-center w-full max-w-2xl mb-4">
-          <button
-            onClick={() => navigate("/menu_cus")}
-            className="p-2 rounded-full bg-gray-200 hover:bg-gray-300 mr-2"
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth="2"
-              stroke="currentColor"
-              className="w-4 h-4"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 19l-7-7 7-7"
-              />
-            </svg>
-          </button>
-          <h2 className="text-xl font-bold">Bill</h2>
-        </div>
-
+      <main className={`max-w-md mx-auto px-4 py-4 ${cartItems.length > 0 ? "pb-32" : "pb-10"}`}>
         {error && (
-          <div className="w-full max-w-2xl mb-4 bg-red-100 p-4 rounded-lg">
-            <p className="text-red-700">{error}</p>
+          <div role="alert" className="mb-4 flex items-start justify-between gap-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+            <p>{error}</p>
             <button
-              className="mt-2 bg-red-500 text-white py-1 px-3 rounded"
+              className="shrink-0 font-semibold underline underline-offset-2"
               onClick={() => {
                 setError(null);
                 fetchCartItems();
               }}
             >
-              Try Again
+              Thử lại
             </button>
           </div>
         )}
 
-        <div className="space-y-4 w-full max-w-2xl">
-          {!cartItems || cartItems.length === 0 ? (
-            <div className="bg-white p-6 rounded-lg shadow-sm text-center">
-              <p className="text-gray-500">Your cart is empty</p>
-              <button
-                onClick={() => navigate("/menu_cus")}
-                className="mt-4 !bg-red-500 text-white py-2 px-6 rounded-lg"
-              >
-                Browse Menu
-              </button>
-            </div>
-          ) : (
-            cartItems.map((item) => (
-              <div
-                key={item.dishId}
-                className="bg-white p-4 rounded-lg shadow-sm flex items-start"
-              >
+        {cartItems.length === 0 ? (
+          <div className="mt-10 text-center bg-card border border-line rounded-2xl p-8">
+            <i className="fa-solid fa-basket-shopping text-4xl text-line" aria-hidden="true" />
+            <p className="mt-4 font-semibold text-ink">Giỏ hàng đang trống</p>
+            <p className="mt-1 text-sm text-ink-muted">Hãy chọn vài món ngon nhé!</p>
+            <button
+              onClick={() => navigate("/menu_cus")}
+              className="mt-5 min-h-[44px] px-6 rounded-xl bg-brand text-white font-semibold hover:bg-brand-hover transition"
+            >
+              Xem thực đơn
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {cartItems.map((item) => (
+              <article key={item.dishId} className="bg-card border border-line rounded-2xl shadow-sm p-3 flex gap-3">
                 <img
                   src={getImageUrl(item.dishImage || item.image)}
-                  alt={item.dishName || item.name}
-                  className="w-24 h-24 object-cover rounded-lg"
+                  alt=""
+                  loading="lazy"
+                  className="w-20 h-20 shrink-0 object-cover rounded-xl bg-line"
                   onError={(e) => {
                     e.target.onerror = null;
-                    e.target.src = "/img/placeholder.jpg";
+                    e.target.src = "/img/logoremovebg.png";
                   }}
                 />
 
-                <div className="flex-1 ml-4">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h3 className="font-bold text-lg text-left">
-                        {item.dishName}
-                        {item.notes && item.notes.trim() !== "" && (
-                          <span
-                            className="ml-2 text-rose-500"
-                            title="Has notes"
-                          >
-                            📝
-                          </span>
-                        )}
-                      </h3>
-                      <p className="text-gray-500 text-lg text-left">
-                        {parseFloat(item.price).toLocaleString()} VND
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <h3 className="font-semibold text-[15px] text-ink leading-snug">{item.dishName}</h3>
+                      <p className="text-sm font-bold text-brand mt-0.5">
+                        {parseFloat(item.price).toLocaleString("vi-VN")}đ
                       </p>
                     </div>
                     <button
                       onClick={() => removeItem(item.dishId)}
-                      className="bg-gray-200 text-red-500 hover:text-red-700 p-2 rounded-full"
-                      aria-label="Remove item"
+                      className="w-9 h-9 -mt-1 -mr-1 shrink-0 flex items-center justify-center rounded-full text-ink-muted hover:bg-red-50 hover:text-red-700 transition"
+                      aria-label={`Xóa ${item.dishName}`}
                     >
-                      ✕
+                      <i className="fa-regular fa-trash-can" aria-hidden="true" />
                     </button>
                   </div>
 
+                  {item.notes && item.notes.trim() !== "" && (
+                    <div className="mt-1.5 text-xs text-ink-muted bg-brand-soft px-2 py-1 rounded-lg">
+                      <span className="font-medium text-ink">Ghi chú:</span> {item.notes}
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between mt-2">
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center rounded-xl border border-line bg-white">
                       <button
                         onClick={() => updateQuantity(item.dishId, -1)}
-                        className="bg-gray-200 px-2 py-1 rounded hover:bg-gray-300"
+                        aria-label="Giảm số lượng"
+                        className="w-9 h-9 flex items-center justify-center text-ink text-lg rounded-l-xl hover:bg-brand-soft transition"
                       >
-                        -
+                        −
                       </button>
-                      <span className="text-sm">{item.quantity}</span>
+                      <span className="w-7 text-center text-sm font-semibold text-ink" aria-live="polite">
+                        {item.quantity}
+                      </span>
                       <button
                         onClick={() => updateQuantity(item.dishId, 1)}
-                        className="bg-gray-200 px-2 py-1 rounded hover:bg-gray-300"
+                        aria-label="Tăng số lượng"
+                        className="w-9 h-9 flex items-center justify-center text-ink text-lg rounded-r-xl hover:bg-brand-soft transition"
                       >
                         +
                       </button>
@@ -423,107 +335,63 @@ const Order = () => {
                           state: { name: item.dishName },
                         })
                       }
-                      className="!bg-rose-400 text-white px-4 py-1 rounded-md hover:bg-rose-500 transition duration-300"
+                      className="h-9 px-3 rounded-xl border border-line bg-white text-sm font-medium text-ink flex items-center gap-1.5 hover:border-brand/40 transition"
                     >
-                      Note
+                      <i className="fa-regular fa-pen-to-square text-ink-muted" aria-hidden="true" />
+                      Ghi chú
                     </button>
                   </div>
-                  {/* Display item notes when they exist */}
-                  {item.notes && item.notes.trim() !== "" && (
-                    <div className="mt-2 text-sm text-gray-600 bg-gray-100 p-2 rounded">
-                      <span className="font-medium">Notes:</span> {item.notes}
-                    </div>
-                  )}
                 </div>
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* Total price and Order button */}
-        {cartItems && cartItems.length > 0 && (
-          <div className="mt-6 flex justify-between items-center w-full max-w-2xl">
-            <button
-              onClick={() => setShowModal(true)}
-              className="!bg-red-400 text-white px-6 py-2 rounded-lg flex items-center hover:bg-red-500 transition-colors duration-300"
-            >
-              {processingOrder ? "Processing..." : "Order"}
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 ml-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 6h16M4 12h16m-7 6h7"
-                />
-              </svg>
-            </button>
-
-            <div className="border border-gray-300 rounded-lg px-4 py-2 bg-white flex items-center">
-              <p className="text-lg font-bold">
-                {totalPrice.toLocaleString()} VND
-              </p>
-            </div>
+              </article>
+            ))}
           </div>
         )}
-      </div>
+      </main>
+
+      {/* Sticky checkout bar: total is always visible next to the action */}
+      {cartItems.length > 0 && (
+        <div className="fixed bottom-0 inset-x-0 z-30 bg-card/95 backdrop-blur border-t border-line">
+          <div className="max-w-md mx-auto px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex items-center gap-3">
+            <div className="flex-1">
+              <div className="text-xs text-ink-muted">{itemCount} món · Tổng cộng</div>
+              <div className="text-lg font-bold text-ink">{totalPrice.toLocaleString("vi-VN")}đ</div>
+            </div>
+            <button
+              onClick={() => setShowModal(true)}
+              disabled={processingOrder}
+              className="h-12 px-6 rounded-xl bg-brand text-white font-semibold shadow-md shadow-brand/25 hover:bg-brand-hover active:scale-[0.98] transition disabled:opacity-60"
+            >
+              {processingOrder ? "Đang gửi..." : "Đặt món"}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Confirmation Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-opacity-20 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="relative bg-white p-6 rounded-lg shadow-lg w-96 border border-gray-300">
-            <button
-              onClick={() => setShowModal(false)}
-              className="absolute top-2 right-2 text-gray-500 hover:text-gray-800"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth="2"
-                stroke="currentColor"
-                className="w-6 h-6"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-
-            <img
-              src={`${API_BASE_URL}/api/images/logo.jpg`}
-              alt="Restaurant Logo"
-              className="mx-auto mb-4 w-24 h-24 object-contain"
-              onError={(e) => {
-                e.target.onerror = null;
-                e.target.style.display = "none";
-              }}
-            />
-            <p className="text-center text-gray-700 mb-6">
-              ARE YOU SURE YOU WANT TO ORDER THESE ITEMS?
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="order-confirm-title">
+          <div className="absolute inset-0 bg-black/40" onClick={() => !processingOrder && setShowModal(false)} />
+          <div className="relative w-full max-w-md bg-card rounded-t-3xl sm:rounded-3xl p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-xl page-enter">
+            <h2 id="order-confirm-title" className="text-lg font-bold text-ink text-center">
+              Xác nhận gọi món?
+            </h2>
+            <p className="mt-1 text-sm text-ink-muted text-center">
+              {itemCount} món · {totalPrice.toLocaleString("vi-VN")}đ sẽ được gửi xuống bếp
             </p>
-            <div className="flex justify-center space-x-4">
-              <button
-                onClick={createOrder}
-                className="!bg-green-400 text-white px-6 py-2 rounded-lg hover:bg-green-500 transition-colors duration-300"
-                disabled={processingOrder}
-              >
-                {processingOrder ? "Processing..." : "Yes"}
-              </button>
-
+            <div className="mt-6 grid grid-cols-2 gap-3">
               <button
                 onClick={() => setShowModal(false)}
-                className="bg-gray-200 hover:bg-gray-300 text-gray-700 py-2 px-6 rounded-lg transition"
+                className="h-12 rounded-xl border border-line bg-white font-semibold text-ink hover:bg-brand-soft transition"
                 disabled={processingOrder}
               >
-                No
+                Xem lại
+              </button>
+              <button
+                onClick={createOrder}
+                className="h-12 rounded-xl bg-brand font-semibold text-white hover:bg-brand-hover transition disabled:opacity-60"
+                disabled={processingOrder}
+              >
+                {processingOrder ? "Đang gửi..." : "Xác nhận"}
               </button>
             </div>
           </div>
@@ -532,28 +400,16 @@ const Order = () => {
 
       {/* Success Confirmation Message */}
       {showConfirmation && (
-        <div className="fixed inset-0 bg-opacity-20 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-96 text-center border border-gray-300">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-16 w-16 text-green-500 mx-auto mb-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-            <h3 className="text-xl font-bold mb-2">Order Successful!</h3>
-            <p className="text-gray-600 mb-4">
-              Your order has been placed successfully. You will be redirected to
-              the home page.
-            </p>
-            <p className="text-sm text-gray-500">Redirecting...</p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-6" role="alertdialog" aria-live="assertive">
+          <div className="absolute inset-0 bg-black/40" />
+          <div className="relative bg-card p-7 rounded-3xl shadow-xl w-full max-w-sm text-center page-enter">
+            <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-9 w-9 text-green-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h3 className="text-xl font-bold text-ink mb-1">Đặt món thành công!</h3>
+            <p className="text-ink-muted text-sm">Đơn của bạn đã được gửi tới bếp. Đang quay về trang chủ...</p>
           </div>
         </div>
       )}

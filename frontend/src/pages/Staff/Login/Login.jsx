@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { login, googleLogin, forgotPassword } from "../../../services/api";
 import axios from "axios";
@@ -67,18 +67,6 @@ const Login = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [newPasswordError, setNewPasswordError] = useState("");
   const otpInputs = useRef([]);
-
-  useEffect(() => {
-    const fontId = "bon-appetit-vi-fonts";
-    if (!document.getElementById(fontId)) {
-      const link = document.createElement("link");
-      link.id = fontId;
-      link.rel = "stylesheet";
-      link.href =
-        "https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap&subset=vietnamese";
-      document.head.appendChild(link);
-    }
-  }, []);
 
   const handleLogin = async () => {
     try {
@@ -317,7 +305,7 @@ const Login = () => {
     fontFamily: "'Lora', Georgia, 'Times New Roman', serif",
   };
   const sansFont = {
-    fontFamily: "'Plus Jakarta Sans', system-ui, -apple-system, sans-serif",
+    fontFamily: "'Be Vietnam Pro', system-ui, -apple-system, sans-serif",
   };
   const goldLogoStyle = {
     filter:

@@ -39,7 +39,7 @@ const PaymentModal = ({
       setIsSuccessModalOpen(true);
     } catch (err) {
       console.error("Payment processing error:", err);
-      setError("Failed to process payment. Please try again.");
+      setError("Không xử lý được thanh toán. Vui lòng thử lại.");
     } finally {
       setIsProcessing(false);
     }
@@ -51,7 +51,7 @@ const PaymentModal = ({
       PaymentService.downloadReceipt(receiptBlob, tableData.id);
       // eslint-disable-next-line no-unused-vars
     } catch (err) {
-      setError("Failed to generate receipt. Please try again.");
+      setError("Không tạo được hóa đơn. Vui lòng thử lại.");
     }
   };
 
@@ -60,17 +60,17 @@ const PaymentModal = ({
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50">
       <div
-        className="absolute inset-0 bg-black bg-opacity-50"
+        className="absolute inset-0 bg-black/50"
         onClick={onClose}
       ></div>
       <div className="bg-white rounded-lg shadow-xl p-6 w-2/3 relative z-50">
         {/* Header */}
         <div className="text-center mb-4">
           <p className="text-sm text-gray-600">
-            450 Le Van Viel Street, Tang Nhon Phu A Word, District 9
+            450 Lê Văn Việt, Phường Tăng Nhơn Phú A, TP. Thủ Đức
           </p>
-          <p className="text-sm text-gray-600">Phone: 0987654321</p>
-          <h3 className="font-bold mt-2 text-xl text-blue-800">Payment Slip</h3>
+          <p className="text-sm text-gray-600">SĐT: 0987654321</p>
+          <h3 className="font-bold mt-2 text-xl text-brand">Phiếu thanh toán</h3>
         </div>
 
         {/* Table Info */}
@@ -88,19 +88,19 @@ const PaymentModal = ({
             <thead className="sticky top-0 bg-white">
               <tr className="border-b">
                 <th className="text-left py-2 font-medium text-gray-700">
-                  Dish name
+                  Tên món
                 </th>
                 <th className="text-left py-2 font-medium text-gray-700">
-                  Qty
+                  SL
                 </th>
                 <th className="text-left py-2 font-medium text-gray-700">
-                  Unit price
+                  Đơn giá
                 </th>
                 <th className="text-left py-2 font-medium text-gray-700">
-                  Total amount
+                  Tổng tiền
                 </th>
                 <th className="text-left py-2 font-medium text-gray-700">
-                  Note
+                  Ghi chú
                 </th>
               </tr>
             </thead>
@@ -126,37 +126,37 @@ const PaymentModal = ({
 
         {/* Payment Method */}
         <div className="mt-4 border-t pt-4">
-          <h4 className="font-medium mb-2">Payment Method</h4>
+          <h4 className="font-medium mb-2">Phương thức thanh toán</h4>
           <div className="flex space-x-4 mb-4">
             <button
               className={`px-4 py-2 rounded-lg ${
                 paymentMethod === "cash"
-                  ? "bg-blue-500 text-white"
+                  ? "bg-brand text-white"
                   : "bg-gray-200"
               }`}
               onClick={() => setPaymentMethod("cash")}
             >
-              Cash
+              Tiền mặt
             </button>
             <button
               className={`px-4 py-2 rounded-lg ${
                 paymentMethod === "card"
-                  ? "bg-blue-500 text-white"
+                  ? "bg-brand text-white"
                   : "bg-gray-200"
               }`}
               onClick={() => setPaymentMethod("card")}
             >
-              Card
+              Thẻ
             </button>
             <button
               className={`px-4 py-2 rounded-lg ${
                 paymentMethod === "banking"
-                  ? "bg-blue-500 text-white"
+                  ? "bg-brand text-white"
                   : "bg-gray-200"
               }`}
               onClick={() => setPaymentMethod("banking")}
             >
-              Banking
+              Chuyển khoản
             </button>
           </div>
 
@@ -164,7 +164,7 @@ const PaymentModal = ({
           {paymentMethod === "cash" && (
             <div className="space-y-3 mb-4">
               <div className="flex justify-between items-center">
-                <label className="font-medium">Discount:</label>
+                <label className="font-medium">Giảm giá:</label>
                 <input
                   type="number"
                   className="border border-gray-300 rounded px-3 py-1 w-48"
@@ -174,11 +174,11 @@ const PaymentModal = ({
                 />
               </div>
               <div className="flex justify-between items-center">
-                <label className="font-medium">Amount received:</label>
+                <label className="font-medium">Tiền khách đưa:</label>
                 <input
                   type="number"
                   className="border border-gray-300 rounded px-3 py-1 w-48"
-                  placeholder="Enter amount"
+                  placeholder="Nhập số tiền"
                   value={receivedAmount}
                   onChange={(e) => {
                     setReceivedAmount(e.target.value);
@@ -189,7 +189,7 @@ const PaymentModal = ({
               {showChangeAmount &&
                 parseFloat(receivedAmount) >= finalAmount && (
                   <div className="flex justify-between items-center">
-                    <label className="font-medium">Change:</label>
+                    <label className="font-medium">Tiền thối:</label>
                     <span className="font-medium">
                       {changeAmount.toLocaleString()} VND
                     </span>
@@ -201,25 +201,25 @@ const PaymentModal = ({
 
         {/* Totals */}
         <div className="flex justify-between mt-4 border-t pt-4">
-          <span className="font-bold text-gray-700">Staff: 1</span>
+          <span className="font-bold text-gray-700">Nhân viên: 1</span>
           <div className="text-right">
             <div className="flex justify-end space-x-4">
-              <span className="font-medium">Subtotal:</span>
+              <span className="font-medium">Tạm tính:</span>
               <span className="font-medium">
                 {totalAmount.toLocaleString()} VND
               </span>
             </div>
             {discountValue > 0 && (
               <div className="flex justify-end space-x-4">
-                <span className="font-medium">Discount:</span>
+                <span className="font-medium">Giảm giá:</span>
                 <span className="font-medium text-red-500">
                   - {discountValue.toLocaleString()} VND
                 </span>
               </div>
             )}
             <div className="flex justify-end space-x-4 mt-2">
-              <span className="font-bold text-lg">Total Amount:</span>
-              <span className="font-bold text-lg text-blue-800">
+              <span className="font-bold text-lg">Tổng cộng:</span>
+              <span className="font-bold text-lg text-brand">
                 {finalAmount.toLocaleString()} VND
               </span>
             </div>
@@ -232,13 +232,13 @@ const PaymentModal = ({
             className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg"
             onClick={onClose}
           >
-            Cancel
+            Hủy
           </button>
           <button
             className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-2 rounded-lg"
             onClick={handlePrintReceipt}
           >
-            Print Receipt
+            In hóa đơn
           </button>
           <button
             className="bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg"
@@ -248,7 +248,7 @@ const PaymentModal = ({
               parseFloat(receivedAmount) < finalAmount
             }
           >
-            Confirm Payment
+            Xác nhận thanh toán
           </button>
         </div>
       </div>

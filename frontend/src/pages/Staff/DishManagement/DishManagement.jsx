@@ -59,12 +59,12 @@ const DishManagementStaff = () => {
     onCompleted: (data) => {
       console.log("Query completed with data:", data);
       if (!data?.orders?.length) {
-        toast.warn("No unpaid orders found");
+        toast.warn("Không có đơn chưa thanh toán");
       }
     },
     onError: (error) => {
       console.log("Query error:", error);
-      toast.error(`Failed to fetch orders: ${error.message}`);
+      toast.error(`Không tải được đơn hàng: ${error.message}`);
     },
   });
 
@@ -83,12 +83,12 @@ const DishManagementStaff = () => {
       });
     },
     onCompleted: () => {
-      toast.success("Item status updated successfully");
+      toast.success("Đã cập nhật trạng thái món");
       refetch(); // Force refetch to ensure latest data
     },
     onError: (error) => {
       console.log("Mutation error:", error);
-      toast.error("Failed to update item status: " + error.message);
+      toast.error("Không cập nhật được trạng thái món: " + error.message);
     },
   });
 
@@ -120,7 +120,7 @@ const DishManagementStaff = () => {
     };
     if (!validTransitions[item.status]?.includes(newStatus)) {
       toast.error(
-        `Invalid status transition from ${item.status} to ${newStatus}`
+        `Không thể chuyển trạng thái từ ${item.status} to ${newStatus}`
       );
       return;
     }
@@ -139,7 +139,7 @@ const DishManagementStaff = () => {
       });
     } catch (err) {
       console.error("Error updating status:", err);
-      toast.error(`Error: ${err.message}`);
+      toast.error(`Lỗi: ${err.message}`);
     }
   };
 
@@ -166,18 +166,18 @@ const DishManagementStaff = () => {
   };
 
   return (
-    <div className="h-screen w-screen !bg-blue-50 flex flex-col">
+    <div className="min-h-screen w-full bg-cream flex flex-col">
       <div className={`h-full w-full ${showConfirmation ? "blur-sm" : ""}`}>
         <MenuBar
-          title="Dish Management"
+          title="Quản lý món ăn"
           icon="https://img.icons8.com/?size=100&id=99345&format=png&color=FFFFFF"
         />
         <div className="flex-1 p-6 bg-rgb(141, 158, 197)-100 overflow-y-auto">
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold mb-4">Unpaid Order Items</h2>
+            <h2 className="text-xl font-bold mb-4">Món chưa thanh toán</h2>
             <div className="mb-4">
               <label className="block text-gray-700 mb-2">
-                Select an Order:
+                Chọn đơn:
               </label>
               <select
                 className="w-full p-2 border rounded"
@@ -186,7 +186,7 @@ const DishManagementStaff = () => {
                 disabled={loading || !!error}
               >
                 <option value="" disabled>
-                  Choose an order
+                  Chọn một đơn
                 </option>
                 {kitchenOrders.map((order) => (
                   <option key={order.orderId} value={order.orderId}>
@@ -197,37 +197,37 @@ const DishManagementStaff = () => {
               </select>
             </div>
             {loading ? (
-              <p>Loading...</p>
+              <p>Đang tải...</p>
             ) : error ? (
               <div className="text-red-500">
                 <p>Error: {error.message}</p>
                 <button
-                  className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                  className="mt-2 px-4 py-2 bg-brand text-white rounded hover:bg-brand-hover"
                   onClick={handleRetry}
                 >
-                  Retry
+                  Thử lại
                 </button>
               </div>
             ) : !kitchenOrders.length ? (
-              <p className="text-gray-500">No unpaid orders found.</p>
+              <p className="text-gray-500">Không có đơn chưa thanh toán.</p>
             ) : !selectedOrderId ? (
               <p className="text-gray-500">
-                Please select an order to view items.
+                Chọn một đơn để xem món.
               </p>
             ) : !orderItems.length ? (
-              <p className="text-gray-500">No items found for this order.</p>
+              <p className="text-gray-500">Đơn này chưa có món nào.</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="min-w-full bg-white border">
                   <thead>
-                    <tr className="bg-blue-900 text-white">
-                      <th className="py-3 px-4 text-left">Order ID</th>
-                      <th className="py-3 px-4 text-left">Table</th>
-                      <th className="py-3 px-4 text-left">Dish Name</th>
-                      <th className="py-3 px-4 text-left">Quantity</th>
-                      <th className="py-3 px-4 text-left">Note</th>
-                      <th className="py-3 px-4 text-left">Status</th>
-                      <th className="py-3 px-4 text-center">Action</th>
+                    <tr className="bg-brand-hover text-white">
+                      <th className="py-3 px-4 text-left">Mã đơn</th>
+                      <th className="py-3 px-4 text-left">Bàn</th>
+                      <th className="py-3 px-4 text-left">Tên món</th>
+                      <th className="py-3 px-4 text-left">Số lượng</th>
+                      <th className="py-3 px-4 text-left">Ghi chú</th>
+                      <th className="py-3 px-4 text-left">Trạng thái</th>
+                      <th className="py-3 px-4 text-center">Thao tác</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -250,17 +250,17 @@ const DishManagementStaff = () => {
                               }
                               style={{ backgroundColor: "#8DD8FF" }}
                             >
-                              Accept
+                              Nhận
                             </button>
                           ) : item.status === "PROCESSING" ? (
                             <button
-                              className="px-4 py-1 bg-blue-500 text-white rounded hover:bg-blue-600"
+                              className="px-4 py-1 bg-brand text-white rounded hover:bg-brand-hover"
                               onClick={() =>
                                 handleStatusChange(item, "COMPLETED")
                               }
                               style={{ backgroundColor: "#4CAF50" }}
                             >
-                              Done
+                              Xong
                             </button>
                           ) : null}
                           {item.status !== "CANCELLED" &&
@@ -270,7 +270,7 @@ const DishManagementStaff = () => {
                                 onClick={() => handleCancelClick(item)}
                                 style={{ backgroundColor: "#F44336" }}
                               >
-                                Cancel
+                                Hủy
                               </button>
                             )}
                         </td>
@@ -285,7 +285,7 @@ const DishManagementStaff = () => {
       </div>
       {showConfirmation && (
         <div className="fixed inset-0 flex items-center justify-center z-50">
-          <div className="absolute inset-0 bg-opacity-30 backdrop-blur-sm"></div>
+          <div className="absolute inset-0 bg-black/30 backdrop-blur-sm"></div>
           <div className="bg-white rounded-lg shadow-xl p-6 w-80 relative z-50">
             <div className="flex flex-col items-center mb-4">
               <div className="flex justify-center mb-2">
@@ -295,14 +295,14 @@ const DishManagementStaff = () => {
                   src="/img/logo.png"
                 />
               </div>
-              <p className="text-gray-600 mb-4">ARE YOU SURE?</p>
+              <p className="text-gray-600 mb-4">BẠN CÓ CHẮC CHẮN?</p>
             </div>
             <div className="flex justify-center space-x-4">
               <button
                 className="px-6 py-2 !bg-gray-300 text-gray-800 rounded-lg font-medium hover:bg-gray-400 transition-colors"
                 onClick={cancelDelete}
               >
-                NO
+                KHÔNG
               </button>
               <button
                 className="px-6 py-2 !bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors"

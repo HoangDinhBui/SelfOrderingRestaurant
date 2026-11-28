@@ -840,7 +840,7 @@ const TableManagementAdmin = () => {
       )}&size=200x200`;
 
       const response = await fetch(qrApiUrl);
-      if (!response.ok) throw new Error("Failed to fetch QR code!");
+      if (!response.ok) throw new Error("Không tải được mã QR!");
       const blob = await response.blob();
       const formData = new FormData();
       formData.append("file", blob, `table_${newTableId}_qr.png`);
@@ -858,7 +858,7 @@ const TableManagementAdmin = () => {
         fetchTables();
         fetchAllNotifications();
       } else {
-        throw new Error("Error saving QR code!");
+        throw new Error("Lỗi khi lưu mã QR!");
       }
     } catch (err) {
       console.error("Error generating QR code:", err);
@@ -1293,9 +1293,9 @@ const TableManagementAdmin = () => {
       {/* Thanh mục lục chuẩn hóa: Tiếng Việt, tone sáng vàng nhạt - cam nhạt - trắng */}
       <MenuBar title="Quản lý sơ đồ bàn" />
 
-      {/* Cảnh báo lỗi nếu có */}
+      {/* Cảnh báo lỗi nếu có: nổi phía trên nội dung để không đẩy layout khi xuất hiện muộn */}
       {(authError || error || orderError || socketError) && (
-        <div className="shrink-0 px-4 sm:px-6 pt-3 space-y-1.5">
+        <div role="alert" className="fixed top-[72px] inset-x-0 z-30 px-4 sm:px-6 space-y-1.5 pointer-events-none [&>*]:pointer-events-auto [&>*]:shadow-md max-w-3xl mx-auto">
           {authError && (
             <div className="bg-[#FFF2EC] border border-[#F6C8B4] text-[#A63A14] px-4 py-2 rounded-lg text-xs font-medium">
               {authError}
@@ -2013,7 +2013,7 @@ const TableManagementAdmin = () => {
                                     d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
                                   />
                                 </svg>
-                                <span>In bill</span>
+                                <span>In hóa đơn</span>
                               </button>
 
                               <button
@@ -2306,7 +2306,7 @@ const TableManagementAdmin = () => {
                     d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"
                   />
                 </svg>
-                <span>In bill</span>
+                <span>In hóa đơn</span>
               </button>
               <button
                 type="button"
