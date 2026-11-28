@@ -14,6 +14,66 @@ const publicAPI = axios.create({
   timeout: 30000,
 });
 
+const clearSession = () => {
+  ["accessToken", "refreshToken", "username", "userType", "staffId"].forEach((key) =>
+    localStorage.removeItem(key),
+  );
+};
+
+// One refresh at a time: parallel 401s share the same request, so a rotated refresh token
+// is never spent twice.
+let refreshing = null;
+const refreshAccessToken = () => {
+  if (!refreshing) {
+    refreshing = (async () => {
+      const refreshToken = localStorage.getItem("refreshToken");
+      if (!refreshToken) throw new Error("No refresh token");
+      const { data } = await publicAPI.post("/api/auth/refresh-token", { refreshToken });
+      if (!data.accessToken) throw new Error("Không nhận được access token");
+      localStorage.setItem("accessToken", data.accessToken);
+      if (data.refreshToken) localStorage.setItem("refreshToken", data.refreshToken);
+      return data.accessToken;
+    })().finally(() => {
+      refreshing = null;
+    });
+  }
+  return refreshing;
+};
+
+// Many staff/admin pages call the default axios instance directly with an Authorization header.
+// The access token lives 1 hour, so without this those pages failed ("Không tải được đánh giá...")
+// while pages using authAPI kept working. Refresh once and retry, like authAPI does.
+axios.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const config = error.config;
+    const auth = config?.headers?.Authorization || config?.headers?.authorization;
+    const url = config?.url || "";
+    if (
+      error.response?.status === 401 &&
+      config &&
+      !config._retry &&
+      typeof auth === "string" &&
+      auth.startsWith("Bearer ") &&
+      url.startsWith(API_BASE_URL) &&
+      !url.includes("/api/auth/") &&
+      !error.response?.data?.code
+    ) {
+      config._retry = true;
+      try {
+        const token = await refreshAccessToken();
+        config.headers.Authorization = `Bearer ${token}`;
+        return axios(config);
+      } catch (refreshError) {
+        console.error("Làm mới token thất bại:", refreshError);
+        clearSession();
+        window.location.assign("/login");
+      }
+    }
+    return Promise.reject(error);
+  },
+);
+
 authAPI.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("accessToken");
@@ -86,40 +146,12 @@ authAPI.interceptors.response.use(
     ) {
       originalRequest._retry = true;
       try {
-        const refreshToken = localStorage.getItem("refreshToken");
-        if (!refreshToken) {
-          console.log("No refreshToken, authentication required");
-          localStorage.removeItem("accessToken");
-          localStorage.removeItem("username");
-          localStorage.removeItem("userType");
-          localStorage.removeItem("staffId");
-          return Promise.reject(error);
-        }
-        const refreshResponse = await publicAPI.post(
-          "/api/auth/refresh-token",
-          { refreshToken },
-        );
-        if (refreshResponse.data.accessToken) {
-          localStorage.setItem("accessToken", refreshResponse.data.accessToken);
-          if (refreshResponse.data.refreshToken) {
-            localStorage.setItem(
-              "refreshToken",
-              refreshResponse.data.refreshToken,
-            );
-          }
-          originalRequest.headers.Authorization = `Bearer ${refreshResponse.data.accessToken}`;
-          return authAPI(originalRequest);
-        } else {
-          throw new Error("Không nhận được access token");
-        }
+        const token = await refreshAccessToken();
+        originalRequest.headers.Authorization = `Bearer ${token}`;
+        return authAPI(originalRequest);
       } catch (refreshError) {
         console.error("Làm mới token thất bại:", refreshError);
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
-        localStorage.removeItem("username");
-        localStorage.removeItem("userType");
-        localStorage.removeItem("staffId");
-        console.log("Refresh failed, authentication required");
+        clearSession();
         return Promise.reject(refreshError);
       }
     }
