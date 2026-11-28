@@ -33,7 +33,9 @@ export const submitCustomerOrder = async ({ tableId, items, totalAmount }) => {
 
   const result = await response.json();
   if (result.errors) {
-    throw new Error(result.errors[0].message || "Lỗi khi tạo đơn");
+    const error = new Error(result.errors[0].message || "Lỗi khi tạo đơn");
+    error.code = result.errors[0].extensions?.code;
+    throw error;
   }
 
   const orderId = result.data.createOrder;

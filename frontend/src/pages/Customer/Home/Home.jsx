@@ -5,6 +5,7 @@ import Banner from "../../../components/ui/Banner";
 import { CartContext } from "../../../context/CartContext";
 import { gql, useLazyQuery } from "@apollo/client";
 import { toast } from "react-toastify";
+import { getApiErrorMessage, isNoStaffOnShift, showNoStaffNotice } from "../../../utils/apiError";
 
 import { BACKEND_URL, BACKEND_WS_URL } from "../../../config";
 // GraphQL Query for Table Validation
@@ -335,12 +336,19 @@ const Home = () => {
 
       if (response.ok) {
         return true;
-      } else {
-        throw new Error("Không gửi được thông báo");
       }
+      const body = await response.json().catch(() => null);
+      if (isNoStaffOnShift(body)) {
+        showNoStaffNotice(type === "PAYMENT_REQUEST" ? "payment" : "call");
+      } else {
+        toast.error(getApiErrorMessage(body, "Không gửi được yêu cầu tới nhân viên. Vui lòng thử lại."), {
+          toastId: "home-notify",
+        });
+      }
+      return false;
     } catch (error) {
       console.error("Error sending notification:", error);
-      toast.error("Không gửi được yêu cầu tới nhân viên. Vui lòng thử lại.", {
+      toast.error("Không gửi được yêu cầu tới nhân viên. Vui lòng kiểm tra kết nối mạng.", {
         toastId: "home-notify",
       });
       return false;

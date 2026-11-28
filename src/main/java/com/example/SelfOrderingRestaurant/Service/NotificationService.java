@@ -2,6 +2,7 @@ package com.example.SelfOrderingRestaurant.Service;
 
 
 
+import com.example.SelfOrderingRestaurant.Exception.NoStaffOnShiftException;
 import com.example.SelfOrderingRestaurant.Exception.ValidationException;
 import com.example.SelfOrderingRestaurant.Exception.ResourceNotFoundException;
 import com.example.SelfOrderingRestaurant.Dto.Request.NotificationRequestDTO.NotificationRequestDTO;
@@ -106,7 +107,7 @@ public class NotificationService implements INotificationService {
         List<Staff> onShiftStaff = staffShiftRepository.findStaffOnCurrentShift(today, currentTime);
 
         if (onShiftStaff.isEmpty()) {
-            throw new ValidationException("Hiện không có nhân viên trong ca, vui lòng thử lại sau");
+            throw new NoStaffOnShiftException("Hiện không có nhân viên trong ca, vui lòng thử lại sau");
         }
 
         // Create a notification for each staff member on shift

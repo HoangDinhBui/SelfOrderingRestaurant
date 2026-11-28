@@ -2,6 +2,7 @@ package com.example.SelfOrderingRestaurant.GraphQL;
 
 import com.example.SelfOrderingRestaurant.Exception.AuthorizationException;
 import com.example.SelfOrderingRestaurant.Exception.BadRequestException;
+import com.example.SelfOrderingRestaurant.Exception.NoStaffOnShiftException;
 import com.example.SelfOrderingRestaurant.Exception.ResourceNotFoundException;
 import com.example.SelfOrderingRestaurant.Exception.TableNotFoundException;
 import com.example.SelfOrderingRestaurant.Exception.ValidationException;
@@ -13,6 +14,8 @@ import org.springframework.graphql.execution.ErrorType;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.stereotype.Component;
+
+import java.util.Map;
 
 /**
  * Turns business errors thrown by resolvers into readable GraphQL errors instead of the opaque
@@ -28,10 +31,13 @@ public class GraphQLExceptionResolver extends DataFetcherExceptionResolverAdapte
         if (root == null) {
             return null;
         }
-        return GraphqlErrorBuilder.newError(env)
+        GraphqlErrorBuilder<?> error = GraphqlErrorBuilder.newError(env)
                 .errorType(errorType(root))
-                .message(root.getMessage())
-                .build();
+                .message(root.getMessage());
+        if (root instanceof NoStaffOnShiftException) {
+            error.extensions(Map.of("code", NoStaffOnShiftException.CODE));
+        }
+        return error.build();
     }
 
     static Throwable businessCause(Throwable ex) {

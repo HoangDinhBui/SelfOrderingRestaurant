@@ -2,6 +2,8 @@ package com.example.SelfOrderingRestaurant.Controller;
 
 import com.example.SelfOrderingRestaurant.Dto.Request.NotificationRequestDTO.NotificationRequestDTO;
 import com.example.SelfOrderingRestaurant.Dto.Response.NotificationResponseDTO.NotificationResponseDTO;
+import com.example.SelfOrderingRestaurant.Exception.NoStaffOnShiftException;
+import com.example.SelfOrderingRestaurant.Exception.ValidationException;
 import com.example.SelfOrderingRestaurant.Service.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -11,7 +13,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @AllArgsConstructor
 @RestController
 @RequestMapping("/api/notifications")
@@ -59,9 +63,17 @@ public class NotificationController {
 
             notificationService.createNotification(requestDTO);
             return ResponseEntity.ok(Map.of("message", "Notification sent successfully"));
+        } catch (NoStaffOnShiftException e) {
+            // Not a server fault: tell the guest plainly, with a code the app can recognise
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("code", NoStaffOnShiftException.CODE, "message", e.getMessage(), "error", e.getMessage()));
+        } catch (ValidationException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage(), "error", e.getMessage()));
         } catch (Exception e) {
+            log.error("Failed to create notification", e);
+            String message = "Không gửi được yêu cầu tới nhân viên, vui lòng thử lại";
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(Map.of("error", "Failed to create notification: " + e.getMessage()));
+                    .body(Map.of("message", message, "error", message));
         }
     }
 

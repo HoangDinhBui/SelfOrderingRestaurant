@@ -4,6 +4,7 @@ import { authAPI, publicAPI } from "../../../services/api";
 import { getPaymentStatus } from "../../../services/paymentAPI";
 
 import { BACKEND_URL } from "../../../config";
+import { getApiErrorMessage, isNoStaffOnShift, showNoStaffNotice } from "../../../utils/apiError";
 const Payment = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -364,11 +365,13 @@ const Payment = () => {
       setShowModal(false);
     } catch (err) {
       console.error("Error requesting payment:", err);
-      setError(
-        err.response?.data?.message ||
-          "Không gửi được yêu cầu thanh toán, vui lòng gọi nhân viên."
-      );
-      setShowModal(true);
+      if (isNoStaffOnShift(err)) {
+        setShowModal(false);
+        showNoStaffNotice("payment");
+      } else {
+        setError(getApiErrorMessage(err, "Không gửi được yêu cầu thanh toán, vui lòng gọi nhân viên."));
+        setShowModal(true);
+      }
     } finally {
       setProcessingPayment(false);
     }
@@ -377,11 +380,11 @@ const Payment = () => {
   const getPaymentMethodDisplayText = (method) => {
     switch (method) {
       case "CASH":
-        return "Cash";
+        return "Tiền mặt";
       case "VNPAY":
         return "VNPay";
       case "CREDIT":
-        return "Credit Card";
+        return "Thẻ tín dụng";
       case "MOMO":
         return "Momo";
       case "ONLINE":

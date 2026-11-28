@@ -11,6 +11,7 @@ import com.example.SelfOrderingRestaurant.Enum.*;
 import com.example.SelfOrderingRestaurant.Entity.Key.OrderItemKey;
 import com.example.SelfOrderingRestaurant.Exception.AuthorizationException;
 import com.example.SelfOrderingRestaurant.Exception.ResourceNotFoundException;
+import com.example.SelfOrderingRestaurant.Exception.NoStaffOnShiftException;
 import com.example.SelfOrderingRestaurant.Exception.ValidationException;
 import com.example.SelfOrderingRestaurant.Repository.*;
 import com.example.SelfOrderingRestaurant.Security.SecurityUtils;
@@ -87,7 +88,7 @@ public class OrderService implements IOrderService {
         List<Staff> staffOnShift = staffShiftRepository.findStaffOnCurrentShift(LocalDate.now(clock), LocalTime.now(clock));
         if (staffOnShift.isEmpty()) {
             log.error("Cannot create order: No staff is currently on shift");
-            throw new ValidationException("Hiện không có nhân viên trong ca nên chưa thể đặt món, vui lòng gọi nhân viên");
+            throw new NoStaffOnShiftException("Hiện không có nhân viên trong ca nên chưa thể đặt món, vui lòng thử lại sau");
         }
         validateOrderRequest(request);
 

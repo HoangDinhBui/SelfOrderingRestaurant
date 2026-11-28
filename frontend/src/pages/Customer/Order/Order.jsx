@@ -2,6 +2,7 @@ import { useState, useEffect, useContext, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { CartContext } from "../../../context/CartContext";
 import { submitCustomerOrder } from "../../../services/customerOrder";
+import { getApiErrorMessage, isNoStaffOnShift, showNoStaffNotice } from "../../../utils/apiError";
 
 import { BACKEND_URL } from "../../../config";
 const Order = () => {
@@ -136,8 +137,12 @@ const Order = () => {
       }, 3000);
     } catch (err) {
       console.error("Error in order/payment flow:", err);
-      setError(`Không gửi được đơn: ${err.message}`);
       setShowModal(false);
+      if (isNoStaffOnShift(err)) {
+        showNoStaffNotice("order");
+      } else {
+        setError(`Không gửi được đơn: ${getApiErrorMessage(err, "vui lòng thử lại")}`);
+      }
     } finally {
       setProcessingOrder(false);
     }

@@ -16,6 +16,7 @@ import "react-toastify/dist/ReactToastify.css";
 import RequireRole from "./components/RequireRole";
 import PageLoader from "./components/ui/PageLoader";
 import UpdateNotifier from "./components/UpdateNotifier";
+import NoStaffNotice from "./components/NoStaffNotice";
 
 // After a deploy the old hashed page chunks are gone, so opening another page in a tab that was
 // loaded before the deploy fails to download. Instead of crashing, show the update popup.
@@ -164,6 +165,7 @@ function App() {
             </Suspense>
           </Router>
           <UpdateNotifier />
+          <NoStaffNotice />
           <ToastContainer
             position="top-center"
             autoClose={3500}
