@@ -241,14 +241,6 @@ const ViewItem = () => {
             {item.description || "Chưa có mô tả cho món này."}
           </p>
 
-          <button
-            onClick={() => navigate(`/note_cus/${id}`, { state: { name: name } })}
-            className="mt-5 w-full h-12 rounded-xl border border-line bg-white text-sm font-semibold text-ink flex items-center justify-center gap-2 hover:border-brand/40 transition"
-          >
-            <i className="fa-regular fa-pen-to-square text-ink-muted" aria-hidden="true" />
-            Thêm ghi chú cho bếp
-          </button>
-
           {error && (
             <div role="alert" className="mt-4 p-3 bg-red-50 border border-red-200 text-red-800 rounded-xl text-sm">
               {error}

@@ -37,8 +37,6 @@ const Menu = () => {
   const [inventory, setInventory] = useState([]);
   const [dishIngredients, setDishIngredients] = useState([]);
   const [voiceOpen, setVoiceOpen] = useState(false);
-  const [noteDishId, setNoteDishId] = useState(null);
-  const [noteDraft, setNoteDraft] = useState("");
 
   // Categories come from the dishes themselves; the old hardcoded English names
   // ("Main Course"...) never matched the backend's Vietnamese categoryName, so filtering showed nothing.
@@ -295,20 +293,6 @@ const Menu = () => {
     }
   };
 
-  const handleNote = (dishId) => {
-    // In-app sheet instead of window.prompt(): prompts are blocked by the Zalo/Facebook
-    // in-app browsers guests open from the table QR, so the Note button "did nothing".
-    setNoteDraft(notes[dishId] || "");
-    setNoteDishId(dishId);
-  };
-
-  const saveNote = () => {
-    setNotes((prev) => ({ ...prev, [noteDishId]: noteDraft.trim() }));
-    setNoteDishId(null);
-  };
-
-  const noteDish = dishes.find((d) => d.dishId === noteDishId);
-
   if (loading) {
     return (
       <div className="min-h-screen bg-cream">
@@ -464,12 +448,6 @@ const Menu = () => {
                   </div>
                 </div>
 
-                {notes[item.dishId] && (
-                  <div className="text-xs text-ink-muted mt-2 px-2.5 py-1.5 bg-brand-soft rounded-lg">
-                    <span className="font-medium text-ink">Ghi chú:</span> {notes[item.dishId]}
-                  </div>
-                )}
-
                 <div className="flex items-center justify-between gap-2 mt-3">
                   <div className="flex items-center gap-2">
                     <div className="flex items-center rounded-xl border border-line bg-white">
@@ -491,15 +469,6 @@ const Menu = () => {
                         +
                       </button>
                     </div>
-                    <button
-                      onClick={() => handleNote(item.dishId)}
-                      aria-label="Thêm ghi chú"
-                      className={`w-10 h-10 rounded-xl border flex items-center justify-center transition ${
-                        notes[item.dishId] ? "border-brand bg-brand-soft text-brand" : "border-line bg-white text-ink-muted hover:text-ink"
-                      }`}
-                    >
-                      <i className="fa-regular fa-pen-to-square" aria-hidden="true" />
-                    </button>
                   </div>
 
                   <button
@@ -526,37 +495,6 @@ const Menu = () => {
         </div>
       </div>
 
-      {noteDishId !== null && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="note-title">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setNoteDishId(null)} />
-          <div className="relative w-full max-w-md bg-card rounded-t-3xl sm:rounded-3xl p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-xl page-enter">
-            <h2 id="note-title" className="text-lg font-bold text-ink">Ghi chú cho món</h2>
-            <p className="text-sm text-ink-muted mt-0.5">{noteDish?.dishName}</p>
-            <textarea
-              autoFocus
-              rows={3}
-              value={noteDraft}
-              onChange={(e) => setNoteDraft(e.target.value)}
-              placeholder="VD: ít cay, không hành..."
-              className="mt-4 w-full rounded-xl border border-line bg-white p-3 text-sm focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
-            />
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <button
-                onClick={() => setNoteDishId(null)}
-                className="h-11 rounded-xl border border-line bg-white font-semibold text-ink hover:bg-brand-soft transition"
-              >
-                Hủy
-              </button>
-              <button
-                onClick={saveNote}
-                className="h-11 rounded-xl bg-brand font-semibold text-white hover:bg-brand-hover transition"
-              >
-                Lưu ghi chú
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

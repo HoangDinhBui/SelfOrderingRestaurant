@@ -15,14 +15,37 @@ const Order = () => {
     state?.tableNumber || localStorage.getItem("tableNumber") || "1"
   );
   const [processingOrder, setProcessingOrder] = useState(false);
+  // Note popup: edited right here in the cart instead of navigating to a separate page
+  const [noteItem, setNoteItem] = useState(null);
+  const [noteDraft, setNoteDraft] = useState("");
+  const [savingNote, setSavingNote] = useState(false);
 
   const {
     cartItems,
     fetchCartData,
     updateItemQuantity,
     removeItem,
+    updateItemNotes,
     updateCartWithGraphQLData,
   } = useContext(CartContext);
+
+  const openNote = (item) => {
+    setNoteDraft(item.notes || "");
+    setNoteItem(item);
+  };
+
+  const saveNote = async () => {
+    setSavingNote(true);
+    try {
+      await updateItemNotes(noteItem.dishId, noteDraft.trim());
+      setNoteItem(null);
+    } catch (err) {
+      console.error("Error saving note:", err);
+      setError("Không lưu được ghi chú. Vui lòng thử lại.");
+    } finally {
+      setSavingNote(false);
+    }
+  };
 
   const API_BASE_URL = BACKEND_URL;
 
@@ -248,15 +271,13 @@ const Order = () => {
                       </button>
                     </div>
                     <button
-                      onClick={() =>
-                        navigate(`/note_cus/${item.dishId}`, {
-                          state: { name: item.dishName },
-                        })
-                      }
-                      className="h-9 px-3 rounded-xl border border-line bg-white text-sm font-medium text-ink flex items-center gap-1.5 hover:border-brand/40 transition"
+                      onClick={() => openNote(item)}
+                      className={`h-9 px-3 rounded-xl border text-sm font-medium flex items-center gap-1.5 transition ${
+                        item.notes ? "border-brand bg-brand-soft text-brand" : "border-line bg-white text-ink hover:border-brand/40"
+                      }`}
                     >
-                      <i className="fa-regular fa-pen-to-square text-ink-muted" aria-hidden="true" />
-                      Ghi chú
+                      <i className="fa-regular fa-pen-to-square" aria-hidden="true" />
+                      {item.notes ? "Sửa ghi chú" : "Ghi chú"}
                     </button>
                   </div>
                 </div>
@@ -281,6 +302,53 @@ const Order = () => {
             >
               {processingOrder ? "Đang gửi..." : "Đặt món"}
             </button>
+          </div>
+        </div>
+      )}
+
+      {noteItem && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="note-title">
+          <div className="absolute inset-0 bg-black/40" onClick={() => !savingNote && setNoteItem(null)} />
+          <div className="relative w-full max-w-md bg-card rounded-t-3xl sm:rounded-3xl p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-xl page-enter">
+            <h2 id="note-title" className="text-lg font-bold text-ink">Ghi chú cho bếp</h2>
+            <p className="text-sm text-ink-muted mt-0.5">{noteItem.dishName}</p>
+            <textarea
+              autoFocus
+              rows={3}
+              value={noteDraft}
+              onChange={(e) => setNoteDraft(e.target.value)}
+              placeholder="VD: ít cay, không hành..."
+              aria-label="Ghi chú cho món"
+              className="mt-4 w-full rounded-xl border border-line bg-white p-3 text-base focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
+            />
+            <div className="mt-2 flex flex-wrap gap-2">
+              {["Ít cay", "Không hành", "Không đá", "Ít đường"].map((hint) => (
+                <button
+                  key={hint}
+                  type="button"
+                  onClick={() => setNoteDraft((prev) => (prev ? `${prev}, ${hint.toLowerCase()}` : hint))}
+                  className="min-h-[36px] px-3 rounded-full border border-line bg-white text-sm text-ink hover:border-brand/40 transition"
+                >
+                  + {hint}
+                </button>
+              ))}
+            </div>
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setNoteItem(null)}
+                disabled={savingNote}
+                className="h-11 rounded-xl border border-line bg-white font-semibold text-ink hover:bg-brand-soft transition"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={saveNote}
+                disabled={savingNote}
+                className="h-11 rounded-xl bg-brand font-semibold text-white hover:bg-brand-hover transition disabled:opacity-60"
+              >
+                {savingNote ? "Đang lưu..." : "Lưu ghi chú"}
+              </button>
+            </div>
           </div>
         </div>
       )}
