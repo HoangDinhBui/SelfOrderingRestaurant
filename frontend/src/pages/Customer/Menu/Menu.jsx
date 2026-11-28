@@ -211,6 +211,7 @@ const Menu = () => {
         notes: notes[dishId] || "",
         dishName: currentDish.dishName,
         price: currentDish.price,
+        imageUrl: currentDish.imageUrl,
       };
 
       let result;

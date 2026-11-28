@@ -61,7 +61,6 @@ export const CartProvider = ({ children }) => {
   const [totalAmount, setTotalAmount] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [useGraphQL, setUseGraphQL] = useState(false);
 
   // Order state
   const [orders, setOrders] = useState([]);
@@ -145,178 +144,83 @@ export const CartProvider = ({ children }) => {
     }
   };
 
-  // Fetch cart data using REST API
-  const fetchCartDataREST = useCallback(async () => {
+  // ================ CART (client-side) ================
+  // The cart lives in localStorage instead of the backend's @SessionScope cart. That cart is keyed
+  // by the JSESSIONID cookie, which browsers do not send cross-site (vercel.app -> onrender.com,
+  // SameSite=Lax by default; Safari/in-app browsers block third-party cookies outright), so every
+  // request got a fresh, empty session and the cart emptied on reload. Orders are created from
+  // the items sent by the client (submitCustomerOrder), so no server-side cart is needed.
+
+  const commitCart = (items) => {
+    const totalAmount = items.reduce(
+      (sum, item) => sum + parseFloat(item.price || 0) * item.quantity,
+      0
+    );
+    const cartData = { items, totalAmount };
+    setCartItems(items);
+    updateCartMetrics(items);
+    saveCartToLocalStorage(cartData);
+    return cartData;
+  };
+
+  const readCart = () => {
     try {
-      // Adding a check to prevent error cascade
-      if (useGraphQL) {
-        throw new Error("Skipping REST API due to previous failures");
-      }
-
-      const response = await API.get("/api/orders/cart");
-      console.log("Cart data fetched via REST:", response.data);
-
-      const items =
-        response.data && response.data.items ? response.data.items : [];
-      setCartItems(items);
-      updateCartMetrics(items);
-      saveCartToLocalStorage(response.data);
-
-      return response.data;
-    } catch (err) {
-      console.error("Error fetching cart via REST:", err);
-      throw err;
+      const parsed = JSON.parse(localStorage.getItem("cartData") || "null");
+      return parsed && Array.isArray(parsed.items) ? parsed.items : [];
+    } catch {
+      return [];
     }
-  }, [useGraphQL]);
+  };
 
-  // Fetch cart data using GraphQL
-  const fetchCartDataGraphQL = useCallback(async () => {
-    try {
-      const query = `
-        query GetOrderCart {
-          orderCart {
-            items {
-              dishId
-              dishName
-              dishImage
-              quantity
-              price
-              notes
-            }
-            totalAmount
-          }
-        }
-      `;
+  // Callers may pass only a dishId (detail page, voice order); look the dish up when needed
+  const resolveDish = async (item) => {
+    if (item.dishName && item.price != null) return item;
+    const { data } = await API.get(`/api/dishes/${item.dishId}`);
+    return {
+      ...item,
+      dishName: data.dishName || data.name,
+      price: data.price,
+      dishImage: data.imageUrl || null,
+    };
+  };
 
-      const result = await executeGraphQL(query);
-
-      if (!result || !result.orderCart) {
-        throw new Error("Invalid GraphQL response structure");
-      }
-
-      const cartData = result.orderCart;
-      console.log("Cart data fetched via GraphQL:", cartData);
-
-      if (cartData && cartData.items) {
-        setCartItems(cartData.items);
-        updateCartMetrics(cartData.items);
-        saveCartToLocalStorage(cartData);
-      }
-
-      return cartData;
-    } catch (err) {
-      console.error("Error fetching cart via GraphQL:", err);
-      throw err;
+  const fetchCartData = useCallback(async () => {
+    const data = loadCartFromLocalStorage();
+    if (!data) {
+      setCartItems([]);
+      updateCartMetrics([]);
     }
+    return data || { items: [], totalAmount: 0 };
   }, []);
 
-  // Main fetch cart function that tries GraphQL first, then REST if GraphQL fails
-  const fetchCartData = useCallback(async () => {
+  const addToCartGraphQL = useCallback(async (item) => {
     setLoading(true);
     setError(null);
-
     try {
-      // Use GraphQL as primary method
-      return await fetchCartDataGraphQL();
+      const dish = await resolveDish(item);
+      const dishId = Number(dish.dishId);
+      const quantity = Number(dish.quantity) || 1;
+      const items = readCart();
+      const existing = items.find((i) => Number(i.dishId) === dishId);
+      const next = existing
+        ? items.map((i) =>
+            Number(i.dishId) === dishId
+              ? { ...i, quantity: i.quantity + quantity, notes: dish.notes || i.notes }
+              : i
+          )
+        : [
+            ...items,
+            {
+              dishId,
+              dishName: dish.dishName,
+              dishImage: dish.dishImage || dish.imageUrl || null,
+              price: Number(dish.price) || 0,
+              quantity,
+              notes: dish.notes || "",
+            },
+          ];
+      return commitCart(next);
     } catch (err) {
-      console.error("GraphQL fetch failed:", err);
-
-      try {
-        // Fall back to REST API
-        return await fetchCartDataREST();
-      } catch (restErr) {
-        console.error("REST fetch also failed:", restErr);
-
-        // Try to use cached data as last resort
-        const cachedData = loadCartFromLocalStorage();
-        if (cachedData) {
-          setError("Mất kết nối mạng, đang dùng dữ liệu giỏ hàng đã lưu.");
-          return cachedData;
-        }
-
-        // Initialize with empty cart if nothing else works
-        const emptyCart = { items: [] };
-        setCartItems(emptyCart.items);
-        updateCartMetrics(emptyCart.items);
-        setError("Không tải được giỏ hàng, đang hiển thị giỏ trống");
-        return emptyCart;
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, [fetchCartDataGraphQL, fetchCartDataREST]);
-
-  // Initialize cart and set up refresh interval with error handling
-  useEffect(() => {
-    let intervalId;
-
-    const initializeCart = async () => {
-      try {
-        await fetchCartData();
-
-        // Only set up interval if initial fetch succeeded
-        intervalId = setInterval(() => {
-          fetchCartData().catch((err) => {
-            console.error("Error in cart refresh interval:", err);
-            // Don't clear interval, just log the error
-          });
-        }, 30000);
-      } catch (err) {
-        console.error("Failed to initialize cart:", err);
-        // Try again in 10 seconds if initial fetch failed
-        setTimeout(initializeCart, 10000);
-      }
-    };
-
-    initializeCart();
-
-    return () => {
-      if (intervalId) clearInterval(intervalId);
-    };
-  }, [fetchCartData]);
-
-  // Add item to cart with GraphQL
-  const addToCartGraphQL = useCallback(async (item) => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const mutation = `
-        mutation AddDishToCart($input: OrderItemInput!) {
-          addDishToOrderCart(input: $input) {
-            items {
-              dishId
-              dishName
-              quantity
-              price
-              notes
-              dishImage
-            }
-            totalAmount
-          }
-        }
-      `;
-
-      const variables = {
-        input: {
-          dishId: item.dishId.toString(),
-          quantity: item.quantity || 1,
-          notes: item.notes || "",
-        },
-      };
-
-      const result = await executeGraphQL(mutation, variables);
-
-      if (!result || !result.addDishToOrderCart) {
-        throw new Error("Invalid GraphQL response structure");
-      }
-
-      const updatedCart = result.addDishToOrderCart;
-      updateCartWithGraphQLData(updatedCart);
-
-      return updatedCart;
-    } catch (err) {
-      console.error("Error adding to cart using GraphQL:", err);
       setError("Không thêm được món vào giỏ");
       throw err;
     } finally {
@@ -324,348 +228,47 @@ export const CartProvider = ({ children }) => {
     }
   }, []);
 
-  // Add item to cart - uses REST API by default, falls back to GraphQL
-  const addToCart = useCallback(
-    async (item) => {
-      try {
-        setLoading(true);
-        setError(null);
+  const addToCart = addToCartGraphQL;
 
-        // If we're using GraphQL mode, use GraphQL endpoint
-        if (useGraphQL) {
-          return await addToCartGraphQL(item);
-        }
-
-        const orderItemData = {
-          dishId: item.dishId,
-          quantity: item.quantity || 1,
-          notes: item.notes || "",
-        };
-
-        console.log("Adding to cart via REST:", orderItemData);
-        const response = await API.post("/api/orders/cart/add", orderItemData);
-
-        const updatedCart = response.data;
-        if (updatedCart && updatedCart.items) {
-          setCartItems(updatedCart.items);
-          updateCartMetrics(updatedCart.items);
-          saveCartToLocalStorage(updatedCart);
-        }
-
-        return updatedCart;
-      } catch (err) {
-        console.error("Error adding to cart:", err);
-
-        // If REST fails, try GraphQL
-        if (!useGraphQL) {
-          console.log("Falling back to GraphQL for add to cart");
-          setUseGraphQL(true);
-          return await addToCartGraphQL(item);
-        }
-
-        setError("Không thêm được món vào giỏ");
-        throw err;
-      } finally {
-        setLoading(false);
-      }
-    },
-    [addToCartGraphQL, useGraphQL]
-  );
-
-  // Update item quantity with GraphQL
-  const updateItemQuantityGraphQL = useCallback(async (dishId, quantity) => {
-    try {
-      const mutation = `
-        mutation UpdateItemQuantity($dishId: ID!, $quantity: Int!) {
-          updateItemQuantity(dishId: $dishId, quantity: $quantity) {
-            items {
-              dishId
-              dishName
-              quantity
-              price
-              notes
-              dishImage
-            }
-            totalAmount
-          }
-        }
-      `;
-
-      const variables = {
-        dishId: dishId.toString(),
-        quantity: quantity,
-      };
-
-      const result = await executeGraphQL(mutation, variables);
-
-      if (!result || !result.updateItemQuantity) {
-        throw new Error("Invalid GraphQL response structure");
-      }
-
-      const updatedCart = result.updateItemQuantity;
-      setCartItems(updatedCart.items);
-      updateCartMetrics(updatedCart.items);
-      saveCartToLocalStorage(updatedCart);
-
-      return updatedCart;
-    } catch (err) {
-      console.error("Error updating quantity with GraphQL:", err);
-      throw err;
+  const updateItemQuantity = useCallback(async (dishId, quantity) => {
+    const items = readCart();
+    if (!items.some((i) => Number(i.dishId) === Number(dishId))) {
+      throw new Error("Món không có trong giỏ");
     }
+    const next =
+      quantity <= 0
+        ? items.filter((i) => Number(i.dishId) !== Number(dishId))
+        : items.map((i) => (Number(i.dishId) === Number(dishId) ? { ...i, quantity } : i));
+    return commitCart(next);
   }, []);
 
-  // Update item quantity - uses REST API by default, falls back to GraphQL
-  const updateItemQuantity = useCallback(
-    async (dishId, quantity) => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // If we're in GraphQL mode
-        if (useGraphQL) {
-          return await updateItemQuantityGraphQL(dishId, quantity);
-        }
-
-        // REST API approach
-        const response = await API.put(
-          `/api/orders/cart/items/${dishId}?quantity=${quantity}`
-        );
-
-        const updatedCart = response.data;
-        if (updatedCart && updatedCart.items) {
-          setCartItems(updatedCart.items);
-          updateCartMetrics(updatedCart.items);
-          saveCartToLocalStorage(updatedCart);
-        }
-
-        return updatedCart;
-      } catch (err) {
-        console.error("Error updating quantity:", err);
-
-        // If REST fails and we weren't already using GraphQL, try GraphQL
-        if (!useGraphQL) {
-          console.log("Falling back to GraphQL for update quantity");
-          setUseGraphQL(true);
-          return await updateItemQuantityGraphQL(dishId, quantity);
-        }
-
-        setError("Không cập nhật được số lượng");
-        throw err;
-      } finally {
-        setLoading(false);
-      }
-    },
-    [updateItemQuantityGraphQL, useGraphQL]
-  );
-
-  // Remove item from cart with GraphQL
-  const removeItemGraphQL = useCallback(async (dishId) => {
-    try {
-      const mutation = `
-        mutation RemoveItemFromCart($dishId: ID!) {
-          removeItemFromCart(dishId: $dishId) {
-            items {
-              dishId
-              dishName
-              quantity
-              price
-              notes
-              dishImage
-            }
-            totalAmount
-          }
-        }
-      `;
-
-      const variables = {
-        dishId: dishId.toString(),
-      };
-
-      const result = await executeGraphQL(mutation, variables);
-
-      if (!result || !result.removeItemFromCart) {
-        throw new Error("Invalid GraphQL response structure");
-      }
-
-      const updatedCart = result.removeItemFromCart;
-      setCartItems(updatedCart.items);
-      updateCartMetrics(updatedCart.items);
-      saveCartToLocalStorage(updatedCart);
-
-      return updatedCart;
-    } catch (err) {
-      console.error("Error removing item with GraphQL:", err);
-      throw err;
-    }
+  const removeItem = useCallback(async (dishId) => {
+    return commitCart(readCart().filter((i) => Number(i.dishId) !== Number(dishId)));
   }, []);
 
-  // Remove item from cart - uses REST API by default, falls back to GraphQL
-  const removeItem = useCallback(
-    async (dishId) => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // If we're in GraphQL mode
-        if (useGraphQL) {
-          return await removeItemGraphQL(dishId);
-        }
-
-        // REST API approach
-        const response = await API.delete(`/api/orders/cart/items/${dishId}`);
-
-        const updatedCart = response.data;
-        if (updatedCart && updatedCart.items) {
-          setCartItems(updatedCart.items);
-          updateCartMetrics(updatedCart.items);
-          saveCartToLocalStorage(updatedCart);
-        }
-
-        return updatedCart;
-      } catch (err) {
-        console.error("Error removing item:", err);
-
-        // If REST fails and we weren't already using GraphQL, try GraphQL
-        if (!useGraphQL) {
-          console.log("Falling back to GraphQL for remove item");
-          setUseGraphQL(true);
-          return await removeItemGraphQL(dishId);
-        }
-
-        setError("Không xóa được món");
-        throw err;
-      } finally {
-        setLoading(false);
-      }
-    },
-    [removeItemGraphQL, useGraphQL]
-  );
-
-  // Update item notes with GraphQL
-  const updateItemNotesGraphQL = useCallback(async (dishId, notes) => {
-    try {
-      const mutation = `
-        mutation UpdateItemNotes($dishId: ID!, $input: UpdateItemNotesInput!) {
-          updateItemNotes(dishId: $dishId, input: $input) {
-            items {
-              dishId
-              dishName
-              quantity
-              price
-              notes
-              dishImage
-            }
-            totalAmount
-          }
-        }
-      `;
-
-      const variables = {
-        dishId: dishId.toString(),
-        input: {
-          notes: notes,
-        },
-      };
-
-      const result = await executeGraphQL(mutation, variables);
-
-      if (!result || !result.updateItemNotes) {
-        throw new Error("Invalid GraphQL response structure");
-      }
-
-      const updatedCart = result.updateItemNotes;
-      setCartItems(updatedCart.items);
-      updateCartMetrics(updatedCart.items);
-      saveCartToLocalStorage(updatedCart);
-
-      return updatedCart;
-    } catch (err) {
-      console.error("Error updating item notes with GraphQL:", err);
-      throw err;
+  const updateItemNotes = useCallback(async (dishId, notes) => {
+    const items = readCart();
+    if (!items.some((i) => Number(i.dishId) === Number(dishId))) {
+      throw new Error("Món không có trong giỏ");
     }
+    return commitCart(
+      items.map((i) => (Number(i.dishId) === Number(dishId) ? { ...i, notes } : i))
+    );
   }, []);
 
-  // Update item notes - uses REST API by default, falls back to GraphQL
-  const updateItemNotes = useCallback(
-    async (dishId, notes) => {
-      try {
-        setLoading(true);
-        setError(null);
-
-        // Store notes locally as a backup
-        localStorage.setItem(`note-${dishId}`, notes);
-
-        // If we're in GraphQL mode
-        if (useGraphQL) {
-          return await updateItemNotesGraphQL(dishId, notes);
-        }
-
-        // REST API approach
-        const existingItem = cartItems.find((item) => item.dishId === dishId);
-        if (!existingItem) {
-          console.warn(`Item with ID ${dishId} not found in cart`);
-          throw new Error("Món không có trong giỏ");
-        }
-
-        const response = await API.put(
-          `/api/orders/cart/items/${dishId}/notes`,
-          { notes }
-        );
-
-        // Update local state first for better UX
-        const updatedItems = cartItems.map((item) =>
-          item.dishId === dishId ? { ...item, notes } : item
-        );
-        setCartItems(updatedItems);
-
-        const cartData = {
-          items: updatedItems,
-          totalAmount: updatedItems.reduce(
-            (total, item) => total + parseFloat(item.price) * item.quantity,
-            0
-          ),
-        };
-        saveCartToLocalStorage(cartData);
-
-        return response.data;
-      } catch (err) {
-        console.error("Error updating item notes:", err);
-
-        // If REST fails and we weren't already using GraphQL, try GraphQL
-        if (!useGraphQL) {
-          console.log("Falling back to GraphQL for update notes");
-          setUseGraphQL(true);
-          return await updateItemNotesGraphQL(dishId, notes);
-        }
-
-        // If even GraphQL fails, just update the UI locally
-        const updatedItems = cartItems.map((item) =>
-          item.dishId === dishId ? { ...item, notes } : item
-        );
-        setCartItems(updatedItems);
-
-        setError("Lỗi máy chủ, ghi chú chỉ được lưu trên máy");
-        throw err;
-      } finally {
-        setLoading(false);
-      }
-    },
-    [cartItems, updateItemNotesGraphQL, useGraphQL]
-  );
-
-  // Update cart with data from GraphQL response
-  const updateCartWithGraphQLData = useCallback((graphQLCartData) => {
-    if (!graphQLCartData || !graphQLCartData.items) {
-      console.warn("Invalid GraphQL cart data received", graphQLCartData);
-      return;
-    }
-
-    setCartItems(graphQLCartData.items);
-    updateCartMetrics(graphQLCartData.items);
-    saveCartToLocalStorage(graphQLCartData);
-
-    return graphQLCartData;
+  const updateCartWithGraphQLData = useCallback((cartData) => {
+    if (!cartData || !Array.isArray(cartData.items)) return;
+    return commitCart(cartData.items);
   }, []);
+
+  // Keep every open tab/page in sync, and restore the cart on first load
+  useEffect(() => {
+    loadCartFromLocalStorage();
+    const onStorage = (e) => e.key === "cartData" && loadCartFromLocalStorage();
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
+
 
   // ================ NEW ORDER FUNCTIONS ================
 

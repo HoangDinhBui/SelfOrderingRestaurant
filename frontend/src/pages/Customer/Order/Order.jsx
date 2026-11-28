@@ -18,17 +18,17 @@ const Order = () => {
 
   const {
     cartItems,
-    setCartItems,
     fetchCartData,
     updateItemQuantity,
     removeItem,
-    updateItemNotes,
+    updateCartWithGraphQLData,
   } = useContext(CartContext);
 
   const API_BASE_URL = BACKEND_URL;
 
   const getImageUrl = (imageName) => {
-    if (!imageName) return "/img/placeholder.jpg";
+    if (!imageName) return "/img/logoremovebg.png";
+    if (/^https?:\/\//.test(imageName)) return imageName;
     return `${API_BASE_URL}/api/images/${imageName}`;
   };
 
@@ -51,105 +51,23 @@ const Order = () => {
     }
   }, [state?.tableNumber, tableId, navigate]);
 
+  // The cart is stored on this device (see CartContext); just reload it
   const fetchCartItems = useCallback(async () => {
     try {
-      setLoading(true);
-      console.log("Fetching cart items...");
-
-      const cachedCartData = localStorage.getItem("cartData");
-      let localItems = [];
-
-      if (cachedCartData) {
-        try {
-          const parsedData = JSON.parse(cachedCartData);
-          if (parsedData && Array.isArray(parsedData.items)) {
-            localItems = parsedData.items;
-            setCartItems(localItems);
-            console.log("Using cached cart data initially", localItems);
-          }
-        } catch (e) {
-          console.error("Error parsing cached cart data", e);
-        }
-      }
-
-      try {
-        const graphqlQuery = {
-          query: `
-            query GetOrderCart {
-              orderCart {
-                items {
-                  dishId
-                  dishName
-                  quantity
-                  price
-                  notes
-                  dishImage
-                }
-                totalAmount
-              }
-            }
-          `,
-        };
-
-        const graphqlResponse = await fetch(`${API_BASE_URL}/graphql`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify(graphqlQuery),
-        });
-
-        const result = await graphqlResponse.json();
-
-        if (!result.errors && result.data && result.data.orderCart) {
-          console.log(
-            "Successfully fetched cart via GraphQL",
-            result.data.orderCart
-          );
-          setCartItems(result.data.orderCart.items);
-          localStorage.setItem(
-            "cartData",
-            JSON.stringify(result.data.orderCart)
-          );
-        } else if (localItems.length > 0) {
-          console.log("API returned no items, using cached data");
-        } else {
-          setCartItems([]);
-        }
-      } catch (graphqlError) {
-        console.error("GraphQL cart fetch failed:", graphqlError);
-        if (localItems.length > 0) {
-          console.log("Using cached data as fallback after API failures");
-        } else {
-          setError("Không tải được giỏ hàng. Vui lòng thử lại.");
-        }
-      }
-
-      setLoading(false);
+      await fetchCartData();
     } catch (err) {
-      console.error("Error in fetchCartItems:", err);
+      console.error("Error loading cart:", err);
       setError("Không tải được giỏ hàng. Vui lòng thử lại.");
+    } finally {
       setLoading(false);
     }
-  }, [setCartItems]);
+  }, [fetchCartData]);
 
   useEffect(() => {
     console.log("Order component mounted, fetching cart items");
     console.log("Initial tableId:", tableId);
     fetchCartItems();
-
-    const intervalId = setInterval(() => {
-      fetchCartItems();
-    }, 30000);
-
-    return () => clearInterval(intervalId);
   }, [fetchCartItems]);
-
-  useEffect(() => {
-    console.log("Calling fetchCartData from context");
-    fetchCartData();
-  }, [fetchCartData]);
 
   const updateQuantity = async (id, delta) => {
     const item = cartItems.find((item) => item.dishId === id);
@@ -186,8 +104,8 @@ const Order = () => {
       setShowModal(false);
       setShowConfirmation(true);
 
-      setCartItems([]);
-      localStorage.removeItem("cartData");
+      // Empty the cart through the context so the badge count resets too
+      updateCartWithGraphQLData({ items: [] });
 
       setTimeout(() => {
         setShowConfirmation(false);

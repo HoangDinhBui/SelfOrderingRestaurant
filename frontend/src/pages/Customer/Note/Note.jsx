@@ -78,45 +78,6 @@ const Note = () => {
 
       if (itemInCart) {
         try {
-          // Try to update using GraphQL mutation
-          const graphqlMutation = {
-            query: `
-              mutation UpdateItemNotes($dishId: ID!, $input: UpdateItemNotesInput!) {
-                updateItemNotes(dishId: $dishId, input: $input) {
-                  items {
-                    dishId
-                    dishName
-                    quantity
-                    price
-                    notes
-                  }
-                  totalAmount
-                }
-              }
-            `,
-            variables: {
-              dishId: id,
-              input: {
-                notes: note,
-              },
-            },
-          };
-
-          const response = await fetch(`${API_BASE_URL}/graphql`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            credentials: "include", // Important for session cookies
-            body: JSON.stringify(graphqlMutation),
-          });
-
-          const result = await response.json();
-
-          if (result.errors) {
-            throw new Error(result.errors[0].message || "Lỗi khi cập nhật ghi chú");
-          }
-
           // Call context method to update local state
           await updateItemNotes(parseInt(id, 10), note);
 
@@ -125,7 +86,7 @@ const Note = () => {
         } catch (apiError) {
           console.error("API error:", apiError);
           setError(
-            `Lỗi máy chủ: ${
+            `Không lưu được ghi chú: ${
               apiError.message || "không rõ"
             }. Ghi chú đã được lưu trên máy.`
           );
