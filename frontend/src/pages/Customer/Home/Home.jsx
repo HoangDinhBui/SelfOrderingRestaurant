@@ -2,6 +2,7 @@ import { useEffect, useState, useContext } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Header from "../../../components/layout/Header";
 import Banner from "../../../components/ui/Banner";
+import InfoDialog from "../../../components/ui/InfoDialog";
 import { CartContext } from "../../../context/CartContext";
 import { gql, useLazyQuery } from "@apollo/client";
 import { toast } from "react-toastify";
@@ -40,7 +41,11 @@ const Home = () => {
   // out of view of the button the guest had just tapped, so it looked like nothing happened.
   const setSocketError = (msg) => msg && toast.warn(msg, { toastId: "home-socket" });
   const setValidationError = (msg) => msg && toast.error(msg, { toastId: "home-validation" });
-  const setPaymentError = (msg) => msg && toast.error(msg, { toastId: "home-payment", autoClose: 6000 });
+  // Payment problems open a popup the guest cannot miss (a toast vanished before it was read)
+  const [paymentDialog, setPaymentDialog] = useState(null);
+  const setPaymentError = (message) =>
+    message &&
+    setPaymentDialog({ tone: "error", icon: "fa-circle-exclamation", title: "Chưa thể thanh toán", message });
 
   const API_BASE_URL = BACKEND_URL;
 
@@ -375,7 +380,13 @@ const Home = () => {
         localStorage.getItem("latestOrderInfo") ||
         sessionStorage.getItem("latestOrderInfo");
       if (!orderInfo) {
-        setPaymentError("Bạn chưa có đơn nào. Vui lòng gọi món trước khi thanh toán.");
+        setPaymentDialog({
+          tone: "info",
+          icon: "fa-receipt",
+          title: "Bạn chưa có đơn nào",
+          message: "Vui lòng gọi món trước, sau đó bấm Thanh toán để thanh toán cho đơn của bạn.",
+          goToMenu: true,
+        });
         setProcessingPayment(false);
         return;
       }
@@ -395,7 +406,12 @@ const Home = () => {
           navigate(`/table/${validationResult.correctTableNumber}`, {
             replace: true,
           });
-          setPaymentError("Số bàn vừa được cập nhật. Vui lòng bấm thanh toán lại.");
+          setPaymentDialog({
+            tone: "warning",
+            icon: "fa-arrows-rotate",
+            title: "Số bàn vừa được cập nhật",
+            message: `Đơn của bạn thuộc bàn ${validationResult.correctTableNumber}. Vui lòng bấm Thanh toán lại.`,
+          });
           setProcessingPayment(false);
           return;
         } else {
@@ -574,6 +590,30 @@ const Home = () => {
           </div>
         </section>
       </div>
+
+      <InfoDialog
+        open={Boolean(paymentDialog)}
+        tone={paymentDialog?.tone}
+        icon={paymentDialog?.icon}
+        title={paymentDialog?.title}
+        message={paymentDialog?.message}
+        onClose={() => setPaymentDialog(null)}
+        actions={
+          paymentDialog?.goToMenu
+            ? [
+                { label: "Để sau", onClick: () => setPaymentDialog(null) },
+                {
+                  label: "Xem thực đơn",
+                  primary: true,
+                  onClick: () => {
+                    setPaymentDialog(null);
+                    handleViewMenu();
+                  },
+                },
+              ]
+            : undefined
+        }
+      />
     </div>
   );
 };
