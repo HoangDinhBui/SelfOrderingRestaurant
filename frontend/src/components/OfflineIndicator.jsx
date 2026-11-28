@@ -41,18 +41,18 @@ const OfflineIndicator = () => {
               onClick={handleModeToggle}
               className="ml-2 bg-white text-yellow-500 px-2 py-1 rounded text-xs"
             >
-              Switch to Online Mode
+              Chuyển sang chế độ trực tuyến
             </button>
           )}
         </>
       ) : (
         <>
-          Server connection failed
+          Không kết nối được máy chủ
           <button
             onClick={handleModeToggle}
             className="ml-2 bg-white text-red-500 px-2 py-1 rounded text-xs"
           >
-            Switch to Offline Mode
+            Chuyển sang chế độ ngoại tuyến
           </button>
         </>
       )}

@@ -52,7 +52,7 @@ const OrderHistory = () => {
     ? data.orders.map((order) => ({
         id: order.orderId,
         customer: order.customerName,
-        table: `Table ${order.tableNumber}`,
+        table: `Bàn ${order.tableNumber}`,
         paymentSlip: order.orderId,
         total: order.totalAmount,
         time: new Date().toLocaleTimeString(), // You can adjust to use order date
@@ -99,7 +99,7 @@ const OrderHistory = () => {
       });
 
       if (!response.ok) {
-        throw new Error("Failed to generate PDF");
+        throw new Error("Không tạo được PDF");
       }
 
       // Convert response to blob and trigger download
@@ -117,7 +117,7 @@ const OrderHistory = () => {
       setIsPrintModalOpen(false);
     } catch (error) {
       console.error("Error generating PDF:", error);
-      alert("Failed to generate receipt. Please try again.");
+      alert("Không tạo được hóa đơn. Vui lòng thử lại.");
     }
   };
 
@@ -175,7 +175,7 @@ const OrderHistory = () => {
       case "Payment request":
         return <FaMoneyBillWave className="text-green-500 mr-2" />;
       case "Call staff":
-        return <FaBell className="text-blue-500 mr-2" />;
+        return <FaBell className="text-brand mr-2" />;
       case "Other":
         return <FaUtensils className="text-orange-500 mr-2" />;
       default:
@@ -185,21 +185,21 @@ const OrderHistory = () => {
 
   const isModalOpen = isBillModalOpen || isPrintModalOpen;
 
-  if (loading) return <p>Loading orders...</p>;
+  if (loading) return <p>Đang tải đơn hàng...</p>;
   if (error) return <p>Error loading orders: {error.message}</p>;
 
   return (
-    <div className="h-screen w-screen !bg-blue-50 flex flex-col">
+    <div className="min-h-screen w-full bg-cream flex flex-col">
       <div className={isModalOpen ? "blur-sm" : ""}>
         <MenuBar
-          title="Order History"
+          title="Lịch sử đơn hàng"
           icon="https://img.icons8.com/?size=100&id=24874&format=png&color=FFFFFF"
         />
       </div>
 
       {/* Main  Main Content */}
       <div
-        className={`flex-1 p-6 bg-gray-100 overflow-y-auto ${
+        className={`flex-1 p-6 bg-cream overflow-y-auto ${
           isModalOpen ? "blur-sm" : ""
         }`}
       >
@@ -238,10 +238,10 @@ const OrderHistory = () => {
                         className="flex items-center px-3 py-1 !bg-[#49B02D] text-white rounded hover:bg-green-600"
                         onClick={() => handleViewBill(notification)}
                       >
-                        View
+                        Xem
                       </button>
                       <button
-                        className="flex items-center px-3 py-1 !bg-[#3F26B9] text-white rounded hover:bg-blue-700"
+                        className="flex items-center px-3 py-1 !bg-[#3F26B9] text-white rounded hover:bg-brand-hover"
                         onClick={() => {
                           setSelectedTable({
                             id: notification.table,
@@ -250,7 +250,7 @@ const OrderHistory = () => {
                           setIsPrintModalOpen(true);
                         }}
                       >
-                        <FaTrash className="mr-1" /> Print
+                        <FaTrash className="mr-1" /> In
                       </button>
                     </div>
                   </div>
@@ -271,10 +271,10 @@ const OrderHistory = () => {
           <div className="bg-white rounded-lg shadow-xl p-6 w-2/3 relative z-50">
             <div className="text-center mb-4">
               <p className="text-sm text-gray-600">
-                450 Le Van Viet Street, Tang Nhon Phu A Ward, District 9
+                450 Lê Văn Việt, Phường Tăng Nhơn Phú A, TP. Thủ Đức
               </p>
-              <p className="text-sm text-gray-600">Phone: 0987654321</p>
-              <h3 className="font-bold mt-2 text-xl text-blue-800">
+              <p className="text-sm text-gray-600">SĐT: 0987654321</p>
+              <h3 className="font-bold mt-2 text-xl text-brand">
                 Payment Slip {selectedTable.id.split(" ")[1].padStart(3, "0")}
               </h3>
             </div>
@@ -291,19 +291,19 @@ const OrderHistory = () => {
                 <thead className="sticky top-0 bg-white">
                   <tr className="border-b">
                     <th className="text-left py-2 font-medium text-gray-700">
-                      Dish name
+                      Tên món
                     </th>
                     <th className="text-left py-2 font-medium text-gray-700">
-                      Qty
+                      SL
                     </th>
                     <th className="text-left py-2 font-medium text-gray-700">
-                      Unit price
+                      Đơn giá
                     </th>
                     <th className="text-left py-2 font-medium text-gray-700">
-                      Total amount
+                      Tổng tiền
                     </th>
                     <th className="text-left py-2 font-medium text-gray-700">
-                      Note
+                      Ghi chú
                     </th>
                   </tr>
                 </thead>
@@ -328,8 +328,8 @@ const OrderHistory = () => {
             </div>
 
             <div className="flex justify-between mt-4 border-t pt-4">
-              <span className="font-bold text-gray-700">Staff: 1</span>
-              <span className="font-bold text-lg text-blue-800">
+              <span className="font-bold text-gray-700">Nhân viên: 1</span>
+              <span className="font-bold text-lg text-brand">
                 Total Amount: {totalAmount.toLocaleString()} VND
               </span>
             </div>
@@ -339,13 +339,13 @@ const OrderHistory = () => {
                 className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg"
                 onClick={() => setIsBillModalOpen(false)}
               >
-                Cancel
+                Hủy
               </button>
               <button
                 className="!bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg"
                 onClick={handlePrintReceipt}
               >
-                Confirm Payment
+                Xác nhận thanh toán
               </button>
             </div>
           </div>
@@ -368,7 +368,7 @@ const OrderHistory = () => {
               />
             </div>
             <h3 className="text-xl font-bold mb-4 text-center">
-              CONFIRM PRINT?
+              XÁC NHẬN IN?
             </h3>
             <div className="flex justify-center space-x-4">
               <button
@@ -381,7 +381,7 @@ const OrderHistory = () => {
                 className="px-4 py-2 !bg-gray-500 text-white rounded hover:bg-gray-600"
                 onClick={handleCancelPrint}
               >
-                NO
+                KHÔNG
               </button>
             </div>
           </div>

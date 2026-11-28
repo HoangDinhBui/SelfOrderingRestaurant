@@ -12,18 +12,8 @@ const Evaluate = () => {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [error, setError] = useState(null);
 
-  const positiveTags = [
-    "Enthusiastic staff",
-    "Delicious food",
-    "Clean",
-    "Airy space",
-  ];
-  const negativeTags = [
-    "Unfriendly staff",
-    "Orthes",
-    "Not hygienic",
-    "The food is not delicious",
-  ];
+  const positiveTags = ["Nhân viên nhiệt tình", "Món ăn ngon", "Sạch sẽ", "Không gian thoáng"];
+  const negativeTags = ["Nhân viên chưa thân thiện", "Phục vụ chậm", "Chưa sạch sẽ", "Món ăn chưa ngon"];
   const tags = rating >= 4 ? positiveTags : negativeTags;
 
   const handleTagClick = (tag) => {
@@ -41,7 +31,7 @@ const Evaluate = () => {
       new URLSearchParams(location.search).get("orderId") || localStorage.getItem("orderId");
 
     if (!rating) {
-      setError("Please select a rating.");
+      setError("Vui lòng chọn số sao đánh giá.");
       return;
     }
     if (!orderId && !customerInfo?.id) {
@@ -76,7 +66,7 @@ const Evaluate = () => {
       }
     } catch (error) {
       console.error("Error submitting feedback:", error);
-      setError(error.response?.data?.message || "Failed to submit feedback. Please try again.");
+      setError(error.response?.data?.message || "Không gửi được đánh giá. Vui lòng thử lại.");
     }
   };
 
@@ -91,157 +81,127 @@ const Evaluate = () => {
     navigate("/menu_cus");
   };
 
-  // ... (phần JSX giữ nguyên như trong câu hỏi trước)
+  const ratingLabel =
+    ["Bạn thấy chúng tôi phục vụ thế nào?", "Rất không hài lòng", "Không hài lòng", "Bình thường", "Hài lòng", "Rất hài lòng"][
+      rating
+    ];
+
   return (
-    <div className="min-h-screen bg-[#DCE5EB]/44 flex flex-col items-center justify-start">
-      {/* Header */}
-      <div className="w-full max-w-sm bg-white flex items-center justify-between p-4 border-b border-gray-200">
-        <button onClick={handleBack} className="text-gray-600">
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-            xmlns="http://www.w3.org/2000/svg"
+    <div className="min-h-screen bg-cream">
+      <header className="bg-card/95 backdrop-blur border-b border-line sticky top-0 z-20">
+        <div className="max-w-md mx-auto flex items-center px-2 h-14">
+          <button
+            onClick={handleBack}
+            aria-label="Quay lại"
+            className="w-11 h-11 flex items-center justify-center rounded-full hover:bg-brand-soft transition"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-        </button>
-        <div className="text-base font-semibold text-center flex-1">
-          Service quality assessment
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <h1 className="flex-1 text-center text-base font-bold text-ink pr-11">Đánh giá chất lượng phục vụ</h1>
         </div>
-      </div>
+      </header>
 
-      {isSubmitted ? (
-        <>
-          <div>
-            <img
-              src="/img/logoremovebg.png"
-              alt="Thank You"
-              className="w-40 h-40 mt-2"
+      <main className="max-w-md mx-auto px-4 py-6 page-enter">
+        {isSubmitted ? (
+          <div className="flex flex-col items-center text-center bg-card border border-line rounded-3xl p-6 shadow-sm">
+            <img src="/img/logoremovebg.png" alt="" width="500" height="500" className="w-28 h-28" />
+            <h2 className="mt-2 text-xl font-bold text-ink">Chân thành cảm ơn quý khách!</h2>
+            <p className="mt-2 text-sm text-ink-muted">
+              Chúng tôi sẽ không ngừng cố gắng để phục vụ bạn ngày một tốt hơn.
+            </p>
+            <img src="/img/thanks.png" alt="" width="640" height="493" className="mt-4 w-56 h-auto" />
+            <button
+              onClick={handleDone}
+              className="mt-6 w-full h-12 rounded-xl bg-brand text-white font-semibold hover:bg-brand-hover transition"
+            >
+              Về trang chủ
+            </button>
+          </div>
+        ) : (
+          <div className="bg-card border border-line rounded-3xl p-5 shadow-sm">
+            {/* Rating */}
+            <div className="text-center">
+              <p className="text-base font-semibold text-ink min-h-[24px]" aria-live="polite">
+                {ratingLabel}
+              </p>
+              <div className="mt-3 flex justify-center gap-1" role="radiogroup" aria-label="Số sao">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    role="radio"
+                    aria-checked={rating === star}
+                    aria-label={`${star} sao`}
+                    onClick={() => {
+                      setRating(star);
+                      setError(null);
+                    }}
+                    className={`w-12 h-12 text-4xl leading-none transition-transform active:scale-90 ${
+                      rating >= star ? "text-amber-500" : "text-line"
+                    }`}
+                  >
+                    ★
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Tags */}
+            {rating > 0 && (
+              <div className="mt-6">
+                <p className="text-sm font-semibold text-ink text-center">
+                  {rating >= 4 ? "Bạn hài lòng điều gì?" : "Chúng tôi cần cải thiện điều gì?"}
+                </p>
+                <div className="mt-3 flex flex-wrap justify-center gap-2">
+                  {tags.map((tag) => {
+                    const active = selectedTags.includes(tag);
+                    return (
+                      <button
+                        key={tag}
+                        onClick={() => handleTagClick(tag)}
+                        aria-pressed={active}
+                        className={`min-h-[40px] px-4 rounded-full border text-sm transition ${
+                          active
+                            ? "bg-brand-soft border-brand text-brand font-semibold"
+                            : "bg-white border-line text-ink hover:border-brand/40"
+                        }`}
+                      >
+                        {tag}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Feedback */}
+            <label htmlFor="feedback" className="block mt-6 text-sm font-semibold text-ink">
+              Góp ý thêm <span className="font-normal text-ink-muted">(không bắt buộc)</span>
+            </label>
+            <textarea
+              id="feedback"
+              value={feedback}
+              onChange={(e) => setFeedback(e.target.value)}
+              placeholder="Chia sẻ thêm để chúng tôi phục vụ tốt hơn"
+              className="mt-2 w-full p-3 border border-line bg-white rounded-xl text-sm h-28 resize-none focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
             />
-          </div>
-          <div className="text-center text-xl mb-2 w-full max-w-sm p-2">
-            <h3>
-              <b>We sincerely thank our customers!</b>
-            </h3>
-          </div>
-          <div className="text-center text-l mb-1 w-full max-w-sm p-2 text-gray-400">
-            <h3>
-              We will continue to strive to serve you <br />
-              better and better.
-            </h3>
-          </div>
-          <div className="text-center mb-4 w-60 max-w-sm p-4">
-            <img src="/img/thanks.png" alt="Thanks" />
-          </div>
-          <button
-            onClick={handleDone}
-            className="text-white text-l mt-3"
-            style={{
-              backgroundColor: "#000",
-              padding: "10px 20px",
-              borderRadius: "5px",
-              fontSize: "16px",
-              cursor: "pointer",
-            }}
-          >
-            Done
-          </button>
-        </>
-      ) : (
-        <>
-          {/* Hiển thị lỗi nếu có */}
-          {error && (
-            <div className="text-red-500 text-sm mb-4 w-full max-w-sm p-2">
-              {error}
-            </div>
-          )}
 
-          {/* Rating */}
-          <div className="text-center mb-4 w-full max-w-sm p-4">
-            <p className="text-l font-semibold mb-2 mt-4">
-              {rating === 5
-                ? "Very satisfied"
-                : rating === 4
-                ? "Satisfied"
-                : rating === 3
-                ? "Neutral"
-                : rating === 2
-                ? "Dissatisfied"
-                : rating === 1
-                ? "Very dissatisfied"
-                : "Rate our service"}
-            </p>
-            <div className="mt-7 flex justify-center space-x-1">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <button
-                  key={star}
-                  onClick={() => setRating(star)}
-                  tabIndex="-1"
-                  className={`text-xl bg-transparent ${
-                    rating >= star ? "text-yellow-500" : "text-gray-300"
-                  }`}
-                >
-                  ★
-                </button>
-              ))}
-            </div>
+            {error && (
+              <p role="alert" className="mt-3 text-sm text-red-700">
+                {error}
+              </p>
+            )}
+
+            <button
+              onClick={handleSubmit}
+              className="mt-5 w-full h-12 rounded-xl bg-brand text-white font-semibold hover:bg-brand-hover active:scale-[0.99] transition"
+            >
+              Gửi đánh giá
+            </button>
           </div>
-
-          {/* Tags */}
-          <div className="text-center mb-4 w-full max-w-sm">
-            <p className="text-sm font-semibold mb-5">
-              {rating >= 4
-                ? "What do you like about the service?"
-                : "What don't you like about the service?"}
-            </p>
-            <div className="flex flex-wrap justify-center gap-2">
-              {tags.map((tag) => (
-                <button
-                  key={tag}
-                  onClick={() => handleTagClick(tag)}
-                  className={`px-3 py-1 rounded-full border text-xs ${
-                    selectedTags.includes(tag)
-                      ? "bg-blue-100 text-green-500"
-                      : "bg-gray-200 text-gray-700"
-                  }`}
-                >
-                  {tag}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Feedback */}
-          <textarea
-            value={feedback}
-            onChange={(e) => setFeedback(e.target.value)}
-            placeholder="Help us understand better"
-            className="w-90 max-w-sm p-2 mt-5 border rounded-lg mb-4 text-xs h-24 resize-none"
-          ></textarea>
-
-          {/* Submit Button */}
-          <button
-            onClick={handleSubmit}
-            className="text-white text-l mt-3"
-            style={{
-              backgroundColor: "#000",
-              padding: "10px 20px",
-              borderRadius: "5px",
-              fontSize: "16px",
-              cursor: "pointer",
-            }}
-          >
-            Submit
-          </button>
-        </>
-      )}
+        )}
+      </main>
     </div>
   );
 };

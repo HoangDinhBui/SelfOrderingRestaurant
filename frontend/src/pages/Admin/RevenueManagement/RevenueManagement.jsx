@@ -163,14 +163,14 @@ const RevenueManagementAdmin = () => {
         return fetchRevenueData(false); // Retry once
       }
 
-      let errorMessage = "Unable to load revenue data. Please try again.";
+      let errorMessage = "Không tải được dữ liệu doanh thu. Vui lòng thử lại.";
       if (err.response?.status === 401) {
-        errorMessage = "Session expired. Please log in again.";
+        errorMessage = "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
       } else if (err.response?.status === 403) {
         errorMessage =
-          "You do not have access. Please log in with an ADMIN account.";
+          "Bạn không có quyền. Vui lòng đăng nhập bằng tài khoản quản trị.";
       } else if (err.response?.status === 500) {
-        errorMessage = `Server error loading data ${viewMode.toLowerCase()}. Please check server logs or try again later.`;
+        errorMessage = `Lỗi máy chủ khi tải dữ liệu ${viewMode.toLowerCase()}. Please check server logs or try again later.`;
       }
 
       setError(errorMessage);
@@ -183,7 +183,7 @@ const RevenueManagementAdmin = () => {
   useEffect(() => {
     const userType = localStorage.getItem("userType");
     if (userType !== "ADMIN") {
-      setError("You need ADMIN privileges to access this page.");
+      setError("Trang này chỉ dành cho quản trị viên.");
       return;
     }
     fetchRevenueData();
@@ -192,7 +192,7 @@ const RevenueManagementAdmin = () => {
   // Handle Apply button click
   const handleApplyFilter = () => {
     if (viewMode === "Day" && startDate > endDate) {
-      setError("Start date must be before or equal to end date.");
+      setError("Ngày bắt đầu phải trước hoặc bằng ngày kết thúc.");
       return;
     }
     fetchRevenueData();
@@ -206,7 +206,7 @@ const RevenueManagementAdmin = () => {
     // Kiểm tra quyền ADMIN
     const userType = localStorage.getItem("userType");
     if (userType !== "ADMIN") {
-      setError("You need ADMIN privileges to print reports.");
+      setError("Chỉ quản trị viên mới được in báo cáo.");
       setLoading(false);
       return;
     }
@@ -217,7 +217,7 @@ const RevenueManagementAdmin = () => {
       chartData.length === 0
     ) {
       setError(
-        "No data available for report printing. Please load data first."
+        "Chưa có dữ liệu để in. Vui lòng tải dữ liệu trước."
       );
       setLoading(false);
       return;
@@ -274,7 +274,7 @@ const RevenueManagementAdmin = () => {
         try {
           iframe.contentWindow.print();
         } catch (e) {
-          setError("Unable to open print dialog. Please check your browser.");
+          setError("Không mở được hộp thoại in. Vui lòng kiểm tra trình duyệt.");
         }
         // Cleanup after printing
         setTimeout(() => {
@@ -290,17 +290,17 @@ const RevenueManagementAdmin = () => {
         data: err.response?.data,
       });
 
-      let errorMessage = "Unable to create print report. Please try again.";
+      let errorMessage = "Không tạo được báo cáo in. Vui lòng thử lại.";
       if (err.response?.status === 401) {
-        errorMessage = "Session expired. Please log in again.";
+        errorMessage = "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
       } else if (err.response?.status === 403) {
         errorMessage =
-          "You do not have permission to print reports. Please log in with an ADMIN account.";
+          "Bạn không có quyền in báo cáo. Vui lòng đăng nhập bằng tài khoản quản trị.";
       } else if (err.response?.status === 400) {
-        errorMessage = err.response.data?.message || "Invalid input data.";
+        errorMessage = err.response.data?.message || "Dữ liệu không hợp lệ.";
       } else if (err.response?.status === 500) {
         errorMessage =
-          "Server error creating report. Please check server logs.";
+          "Lỗi máy chủ khi tạo báo cáo.";
       }
 
       setError(errorMessage);
@@ -317,7 +317,7 @@ const RevenueManagementAdmin = () => {
     // Check for ADMIN privileges
     const userType = localStorage.getItem("userType");
     if (userType !== "ADMIN") {
-      setError("You need ADMIN privileges to export reports.");
+      setError("Chỉ quản trị viên mới được xuất báo cáo.");
       setLoading(false);
       return;
     }
@@ -327,7 +327,7 @@ const RevenueManagementAdmin = () => {
       (viewMode === "Day" || viewMode === "Month") &&
       chartData.length === 0
     ) {
-      setError("No data available for report export. Please load data first.");
+      setError("Chưa có dữ liệu để xuất. Vui lòng tải dữ liệu trước.");
       setLoading(false);
       return;
     }
@@ -383,17 +383,17 @@ const RevenueManagementAdmin = () => {
         data: err.response?.data,
       });
 
-      let errorMessage = "Unable to export Excel report. Please try again.";
+      let errorMessage = "Không xuất được báo cáo Excel. Vui lòng thử lại.";
       if (err.response?.status === 401) {
-        errorMessage = "Session expired. Please log in again.";
+        errorMessage = "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
       } else if (err.response?.status === 403) {
         errorMessage =
-          "You do not have permission to export reports. Please log in with an ADMIN account.";
+          "Bạn không có quyền xuất báo cáo. Vui lòng đăng nhập bằng tài khoản quản trị.";
       } else if (err.response?.status === 400) {
-        errorMessage = err.response.data?.message || "Invalid input data.";
+        errorMessage = err.response.data?.message || "Dữ liệu không hợp lệ.";
       } else if (err.response?.status === 500) {
         errorMessage =
-          "Server error exporting report. Please check server logs.";
+          "Lỗi máy chủ khi xuất báo cáo.";
       }
 
       setError(errorMessage);
@@ -448,15 +448,15 @@ const RevenueManagementAdmin = () => {
         return fetchEmployeeData(false); // Retry once
       }
 
-      let errorMessage = "Unable to load employee data. Please try again.";
+      let errorMessage = "Không tải được dữ liệu nhân viên. Vui lòng thử lại.";
       if (err.response?.status === 401) {
-        errorMessage = "Session expired. Please log in again.";
+        errorMessage = "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
       } else if (err.response?.status === 403) {
         errorMessage =
-          "You do not have access. Please log in with an ADMIN account.";
+          "Bạn không có quyền. Vui lòng đăng nhập bằng tài khoản quản trị.";
       } else if (err.response?.status === 500) {
         errorMessage =
-          "Server error loading employee data. Please check server logs or try again later.";
+          "Lỗi máy chủ khi tải dữ liệu nhân viên. Vui lòng thử lại sau.";
       }
 
       setError(errorMessage);
@@ -473,16 +473,16 @@ const RevenueManagementAdmin = () => {
   };
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-gray-100">
+    <div className="min-h-screen w-full bg-cream flex flex-col">
       <MenuBar
-        title="Revenue Management"
+        title="Quản lý doanh thu"
         icon="https://img.icons8.com/ios-filled/50/FFFFFF/money.png"
       />
       <div className="flex-1 p-5 overflow-auto">
         <div className="bg-white rounded-lg shadow-md overflow-hidden mb-5">
           <div className="px-5 py-4 border-b border-gray-200">
-            <h1 className="text-l font-medium text-gray-800 text-center">
-              Statistical
+            <h1 className="text-lg font-semibold text-ink text-center">
+              Thống kê
             </h1>
             <div className="flex flex-wrap items-center mt-3 pb-3 border-b justify-between gap-1">
               <div className="flex gap-2">
@@ -490,21 +490,21 @@ const RevenueManagementAdmin = () => {
                   onClick={() => setDisplayMode("Revenue")}
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
                     displayMode === "Revenue"
-                      ? "bg-gradient-to-r from-blue-400 to-blue-500 text-white"
+                      ? "bg-gradient-to-r from-brand to-brand-hover text-white"
                       : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                   }`}
                 >
-                  Revenue
+                  Doanh thu
                 </button>
                 <button
                   onClick={handleEmployeeButtonClick}
                   className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all duration-200 ${
                     displayMode === "Employee"
-                      ? "bg-gradient-to-r from-blue-400 to-blue-500 text-white"
+                      ? "bg-gradient-to-r from-brand to-brand-hover text-white"
                       : "bg-gray-200 text-gray-700 hover:bg-gray-300"
                   }`}
                 >
-                  Employees
+                  Nhân viên
                 </button>
               </div>
 
@@ -512,16 +512,16 @@ const RevenueManagementAdmin = () => {
               {displayMode === "Revenue" && (
                 <div className="flex flex-wrap items-center gap-1">
                   <select
-                    className="w-20 px-2 py-1.5 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 text-sm"
+                    className="w-20 px-2 py-1.5 rounded-md border border-gray-300 focus:ring-2 focus:ring-brand/40 text-sm"
                     value={viewMode}
                     onChange={(e) => {
                       setViewMode(e.target.value);
                       setError(null);
                     }}
                   >
-                    <option value="Day">Day</option>
-                    <option value="Month">Month</option>
-                    <option value="Year">Year</option>
+                    <option value="Day">Ngày</option>
+                    <option value="Month">Tháng</option>
+                    <option value="Year">Năm</option>
                   </select>
 
                   {/* Filter theo Day */}
@@ -534,8 +534,8 @@ const RevenueManagementAdmin = () => {
                         startDate={startDate}
                         endDate={endDate}
                         dateFormat="dd/MM/yyyy"
-                        className="w-20 px-2 py-1.5 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 text-sm"
-                        placeholderText="Start Date"
+                        className="w-20 px-2 py-1.5 rounded-md border border-gray-300 focus:ring-2 focus:ring-brand/40 text-sm"
+                        placeholderText="Từ ngày"
                       />
                       <DatePicker
                         selected={endDate}
@@ -545,8 +545,8 @@ const RevenueManagementAdmin = () => {
                         endDate={endDate}
                         minDate={startDate}
                         dateFormat="dd/MM/yyyy"
-                        className="w-20 px-2 py-1.5 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 text-sm"
-                        placeholderText="End Date"
+                        className="w-20 px-2 py-1.5 rounded-md border border-gray-300 focus:ring-2 focus:ring-brand/40 text-sm"
+                        placeholderText="Đến ngày"
                       />
                     </div>
                   )}
@@ -558,8 +558,8 @@ const RevenueManagementAdmin = () => {
                       onChange={(date) => setSelectedMonth(date)}
                       dateFormat="MM/yyyy"
                       showMonthYearPicker
-                      className="w-20 px-2 py-1.5 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 text-sm"
-                      placeholderText="Select Month"
+                      className="w-20 px-2 py-1.5 rounded-md border border-gray-300 focus:ring-2 focus:ring-brand/40 text-sm"
+                      placeholderText="Chọn tháng"
                     />
                   )}
 
@@ -570,14 +570,14 @@ const RevenueManagementAdmin = () => {
                       onChange={(date) => setSelectedYear(moment(date).year())}
                       dateFormat="yyyy"
                       showYearPicker
-                      className="w-20 px-2 py-1.5 rounded-md border border-gray-300 focus:ring-2 focus:ring-blue-400 text-sm"
-                      placeholderText="Select Year"
+                      className="w-20 px-2 py-1.5 rounded-md border border-gray-300 focus:ring-2 focus:ring-brand/40 text-sm"
+                      placeholderText="Chọn năm"
                     />
                   )}
 
                   <button
                     onClick={handleApplyFilter}
-                    className="flex items-center px-3 py-1.5 bg-gradient-to-r from-blue-400 to-blue-500 text-white rounded-md shadow-sm hover:from-blue-500 hover:to-blue-600 hover:scale-105 transition-all duration-200 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-sm"
+                    className="flex items-center px-3 py-1.5 bg-gradient-to-r from-brand to-brand-hover text-white rounded-md shadow-sm hover:from-brand hover:to-brand-hover hover:scale-105 transition-all duration-200 disabled:from-gray-300 disabled:to-gray-400 disabled:cursor-not-allowed text-sm"
                     disabled={loading}
                   >
                     <svg
@@ -594,12 +594,12 @@ const RevenueManagementAdmin = () => {
                         d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
                       />
                     </svg>
-                    Apply
+                    Áp dụng
                   </button>
 
                   <div className="flex flex-row gap-1">
                     <Dropdown
-                      label="Export PDF"
+                      label="Xuất PDF"
                       items={pdfItems}
                       onSelect={handlePrintReport}
                       gradientFrom="from-green-400"
@@ -622,11 +622,11 @@ const RevenueManagementAdmin = () => {
                       }
                     />
                     <Dropdown
-                      label="Export Excel"
+                      label="Xuất Excel"
                       items={excelItems}
                       onSelect={handleExportExcel}
-                      gradientFrom="from-purple-400"
-                      gradientTo="to-purple-500"
+                      gradientFrom="from-brand"
+                      gradientTo="to-brand-hover"
                       icon={
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -658,7 +658,7 @@ const RevenueManagementAdmin = () => {
           {displayMode === "Revenue" && !loading && !error && (
             <>
               {chartData.length === 0 ? (
-                <div className="text-center p-4">No data to display.</div>
+                <div className="text-center p-4">Không có dữ liệu để hiển thị.</div>
               ) : (
                 <div className="flex flex-col md:flex-row p-3">
                   <div className="w-full md:w-2/5 overflow-y-auto">
@@ -666,10 +666,10 @@ const RevenueManagementAdmin = () => {
                       <thead>
                         <tr className="border-b bg-gray-50">
                           <th className="py-3 px-4 text-left text-gray-600">
-                            Date
+                            Ngày
                           </th>
                           <th className="py-3 px-4 text-left text-gray-600">
-                            Revenue
+                            Doanh thu
                           </th>
                         </tr>
                       </thead>
@@ -678,7 +678,7 @@ const RevenueManagementAdmin = () => {
                           <tr
                             key={item.id}
                             className={`border-b ${
-                              index % 2 === 0 ? "bg-blue-100" : "bg-gray-100"
+                              index % 2 === 0 ? "bg-brand-soft" : "bg-gray-100"
                             } hover:bg-gray-50`}
                           >
                             <td className="py-3 px-4 text-gray-700">
@@ -735,7 +735,7 @@ const RevenueManagementAdmin = () => {
             <>
               {employeeData.length === 0 ? (
                 <div className="text-center p-4">
-                  No employee data available.
+                  Chưa có dữ liệu nhân viên.
                 </div>
               ) : (
                 <div className="flex flex-col md:flex-row p-3">
@@ -747,13 +747,13 @@ const RevenueManagementAdmin = () => {
                             ID
                           </th>
                           <th className="py-3 px-4 text-left text-gray-600">
-                            Name
+                            Tên
                           </th>
                           <th className="py-3 px-4 text-left text-gray-600">
-                            Salary
+                            Lương
                           </th>
                           <th className="py-3 px-4 text-left text-gray-600">
-                            Hours worked
+                            Số giờ làm
                           </th>
                         </tr>
                       </thead>
@@ -762,7 +762,7 @@ const RevenueManagementAdmin = () => {
                           <tr
                             key={item.id}
                             className={`border-b ${
-                              index % 2 === 0 ? "bg-blue-100" : "bg-gray-100"
+                              index % 2 === 0 ? "bg-brand-soft" : "bg-gray-100"
                             } hover:bg-gray-50`}
                           >
                             <td className="py-3 px-4 text-gray-700">
@@ -820,7 +820,7 @@ const RevenueManagementAdmin = () => {
           {displayMode === "Dish" && !loading && !error && (
             <>
               {dishData.length === 0 ? (
-                <div className="text-center p-4">No dishes data available.</div>
+                <div className="text-center p-4">Chưa có dữ liệu món ăn.</div>
               ) : (
                 <div className="flex flex-col md:flex-row p-3">
                   <div className="w-full md:w-2/5 overflow-y-auto max-h-96">
@@ -831,10 +831,10 @@ const RevenueManagementAdmin = () => {
                             ID
                           </th>
                           <th className="py-3 px-4 text-left text-gray-600">
-                            Name
+                            Tên
                           </th>
                           <th className="py-3 px-4 text-left text-gray-600">
-                            Quantity sold
+                            Số lượng bán
                           </th>
                         </tr>
                       </thead>
@@ -843,7 +843,7 @@ const RevenueManagementAdmin = () => {
                           <tr
                             key={item.id}
                             className={`border-b ${
-                              index % 2 === 0 ? "bg-blue-100" : "bg-gray-100"
+                              index % 2 === 0 ? "bg-brand-soft" : "bg-gray-100"
                             } hover:bg-gray-50`}
                           >
                             <td className="py-3 px-4 text-gray-700">

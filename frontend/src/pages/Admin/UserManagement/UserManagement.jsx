@@ -27,7 +27,7 @@ const UserManagement = () => {
     const role = localStorage.getItem("userType");
     setUserRole(role);
     if (role !== "ADMIN") {
-      setErrorMessage("Access denied: Administrator privileges required.");
+      setErrorMessage("Không có quyền truy cập: cần quyền quản trị viên.");
     } else {
       fetchUsers();
     }
@@ -47,15 +47,15 @@ const UserManagement = () => {
       console.error("Error fetching users:", error);
       setErrorMessage(
         error.response?.status === 403
-          ? "Access denied: Administrator privileges required."
-          : "Error while fetching users list"
+          ? "Không có quyền truy cập: cần quyền quản trị viên."
+          : "Lỗi khi tải danh sách người dùng"
       );
     }
   };
 
   const handleAddUser = async () => {
     if (!newUser.username || !newUser.password || !newUser.role) {
-      setErrorMessage("Please fill all fields");
+      setErrorMessage("Vui lòng điền đầy đủ thông tin");
       return;
     }
     try {
@@ -64,18 +64,18 @@ const UserManagement = () => {
       });
       setShowAddForm(false);
       setNewUser({ username: "", password: "", role: "CUSTOMER" });
-      setSuccessMessage("User created successfully!");
+      setSuccessMessage("Đã tạo người dùng!");
       setShowSuccessPopup(true);
       setTimeout(() => setShowSuccessPopup(false), 2000);
       fetchUsers();
     } catch (error) {
-      setErrorMessage(error.response?.data || "Error creating user");
+      setErrorMessage(error.response?.data || "Lỗi khi tạo người dùng");
     }
   };
 
   const handleEditUser = async () => {
     if (!userToEdit.role || !userToEdit.userStatus) {
-      setErrorMessage("Please fill all fields");
+      setErrorMessage("Vui lòng điền đầy đủ thông tin");
       return;
     }
     try {
@@ -92,12 +92,12 @@ const UserManagement = () => {
       });
       setShowEditForm(false);
       setUserToEdit(null);
-      setSuccessMessage("User updated successfully!");
+      setSuccessMessage("Đã cập nhật người dùng!");
       setShowSuccessPopup(true);
       setTimeout(() => setShowSuccessPopup(false), 2000);
       fetchUsers();
     } catch (error) {
-      setErrorMessage(error.response?.data || "Error updating user");
+      setErrorMessage(error.response?.data || "Lỗi khi cập nhật người dùng");
     }
   };
 
@@ -108,19 +108,19 @@ const UserManagement = () => {
       });
       setShowDeletePopup(false);
       setUserToDelete(null);
-      setSuccessMessage("User deleted successfully!");
+      setSuccessMessage("Đã xóa người dùng!");
       setShowSuccessPopup(true);
       setTimeout(() => setShowSuccessPopup(false), 2000);
       fetchUsers();
     } catch (error) {
-      setErrorMessage(error.response?.data || "Error deleting user");
+      setErrorMessage(error.response?.data || "Lỗi khi xóa người dùng");
     }
   };
 
   if (userRole !== "ADMIN") {
     return (
-      <div style={{ height: "100vh", width: "100vw", display: "flex", flexDirection: "column", backgroundColor: "#f0f8fd" }}>
-        <MenuBar title="User Management" icon="https://img.icons8.com/ios-filled/50/FFFFFF/user.png" />
+      <div style={{ height: "100vh", width: "100%", display: "flex", flexDirection: "column", backgroundColor: "#f0f8fd" }}>
+        <MenuBar title="Quản lý người dùng" icon="https://img.icons8.com/ios-filled/50/FFFFFF/user.png" />
         <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
           <div style={{ backgroundColor: "#fee2e2", border: "1px solid #f87171", color: "#b91c1c", padding: "16px 24px", borderRadius: "8px", fontSize: "20px" }}>
             {errorMessage}
@@ -132,22 +132,22 @@ const UserManagement = () => {
 
   const styles = {
     outerContainer: {
-      fontFamily: "Arial, sans-serif",
-      backgroundColor: "rgba(157, 198, 206, 0.33)",
-      minHeight: "100vh",
-      width: "100vw",
+      fontFamily: "inherit",
+      backgroundColor: "#FAF7F2",
+      minHeight: "calc(100vh - 64px)",
+      width: "100%",
       display: "flex",
       justifyContent: "center",
-      alignItems: "center",
-      padding: "30px",
+      alignItems: "flex-start",
+      padding: "24px 16px",
       boxSizing: "border-box",
     },
     innerContainer: {
-      backgroundColor: "#F0F8FD",
-      borderRadius: "10px",
-      padding: "20px",
-      boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-      border: "3px solid rgba(0, 0, 0, 0.1)",
+      backgroundColor: "#FFFDF8",
+      borderRadius: "16px",
+      padding: "24px",
+      boxShadow: "0 1px 3px rgba(51, 38, 29, 0.08)",
+      border: "1px solid #EADBC8",
       width: "100%",
       maxWidth: "1200px",
       display: "flex",
@@ -162,7 +162,7 @@ const UserManagement = () => {
     },
     tableContainer: {
       flex: 3,
-      backgroundColor: "rgba(157, 198, 206, 0.3)",
+      backgroundColor: "#F6EEE3",
       borderRadius: "10px",
       overflowY: "auto",
       maxHeight: "500px",
@@ -172,32 +172,34 @@ const UserManagement = () => {
     table: {
       width: "100%",
       borderCollapse: "collapse",
-      border: "2px solid #9DC6CE",
+      border: "2px solid #EADBC8",
     },
     thead: {
       position: "sticky",
       top: 0,
-      backgroundColor: "#9DC6CE",
+      backgroundColor: "#F3E4D2",
       border: "1px solid rgb(0, 0, 0)",
     },
     th: {
-      backgroundColor: "#9DC6CE",
+      backgroundColor: "#F3E4D2",
       fontWeight: "bold",
       border: "1px solid #dddddd",
       padding: "10px",
       textAlign: "center",
     },
     td: {
-      border: "1px solid #9DC6CE",
+      border: "1px solid #EADBC8",
       padding: "10px",
       textAlign: "center",
     },
     addButton: {
       padding: "10px 20px",
-      backgroundColor: "#4CAF50",
+      backgroundColor: "#C2410C",
       color: "white",
       border: "none",
-      borderRadius: "5px",
+      borderRadius: "10px",
+      fontWeight: 600,
+      minHeight: "40px",
       cursor: "pointer",
       alignSelf: "flex-end"
     },
@@ -213,7 +215,7 @@ const UserManagement = () => {
       position: "fixed",
       top: 0,
       left: 0,
-      width: "100vw",
+      width: "100%",
       height: "100vh",
       backgroundColor: "rgba(0, 0, 0, 0.5)",
       zIndex: 999,
@@ -241,8 +243,9 @@ const UserManagement = () => {
       width: "100%",
       padding: "10px",
       marginBottom: "10px",
-      borderRadius: "5px",
-      border: "1px solid #ddd",
+      borderRadius: "10px",
+      border: "1px solid #EADBC8",
+      minHeight: "40px",
       boxSizing: "border-box",
     },
     actionButtons: {
@@ -253,14 +256,16 @@ const UserManagement = () => {
     },
     cancelButton: {
       padding: "10px 20px",
-      backgroundColor: "#e74c3c",
-      color: "white",
-      border: "none",
-      borderRadius: "5px",
+      backgroundColor: "#FFFFFF",
+      color: "#33261D",
+      border: "1px solid #EADBC8",
+      borderRadius: "10px",
+      fontWeight: 600,
+      minHeight: "40px",
       cursor: "pointer",
     },
     errorText: {
-      color: "#e74c3c",
+      color: "#C2410C",
       fontSize: "14px",
       marginBottom: "10px",
       textAlign: "center",
@@ -269,13 +274,13 @@ const UserManagement = () => {
 
   return (
     <>
-      <MenuBar title="User Management" icon="https://img.icons8.com/ios-filled/50/FFFFFF/user.png" />
+      <MenuBar title="Quản lý người dùng" icon="https://img.icons8.com/ios-filled/50/FFFFFF/user.png" />
       <div style={styles.outerContainer}>
         <div style={styles.innerContainer}>
-          <h2 style={styles.title}>System Users</h2>
+          <h2 style={styles.title}>Người dùng hệ thống</h2>
           
           <button style={styles.addButton} onClick={() => setShowAddForm(true)}>
-            + Add User
+            + Thêm người dùng
           </button>
 
           <div style={styles.tableContainer}>
@@ -283,10 +288,10 @@ const UserManagement = () => {
               <thead style={styles.thead}>
                 <tr>
                   <th style={styles.th}>ID</th>
-                  <th style={styles.th}>Username</th>
-                  <th style={styles.th}>Role</th>
-                  <th style={styles.th}>Status</th>
-                  <th style={styles.th}>Actions</th>
+                  <th style={styles.th}>Tên đăng nhập</th>
+                  <th style={styles.th}>Vai trò</th>
+                  <th style={styles.th}>Trạng thái</th>
+                  <th style={styles.th}>Thao tác</th>
                 </tr>
               </thead>
               <tbody>
@@ -304,7 +309,7 @@ const UserManagement = () => {
                           setShowEditForm(true);
                         }}
                       >
-                        Edit
+                        Sửa
                       </button>
                       <button 
                         style={{...styles.actionButton, backgroundColor: "#e74c3c"}}
@@ -313,7 +318,7 @@ const UserManagement = () => {
                           setShowDeletePopup(true);
                         }}
                       >
-                        Delete
+                        Xóa
                       </button>
                     </td>
                   </tr>
@@ -329,18 +334,18 @@ const UserManagement = () => {
         <>
           <div style={styles.overlay} onClick={() => setShowAddForm(false)}></div>
           <div style={styles.modalContainer}>
-            <h3 style={styles.modalTitle}>Add New User</h3>
+            <h3 style={styles.modalTitle}>Thêm người dùng mới</h3>
             {errorMessage && <p style={styles.errorText}>{errorMessage}</p>}
             <input 
               style={styles.inputField} 
-              placeholder="Username" 
+              placeholder="Tên đăng nhập" 
               value={newUser.username}
               onChange={(e) => setNewUser({...newUser, username: e.target.value})}
             />
             <input 
               style={styles.inputField} 
               type="password"
-              placeholder="Password" 
+              placeholder="Mật khẩu" 
               value={newUser.password}
               onChange={(e) => setNewUser({...newUser, password: e.target.value})}
             />
@@ -355,8 +360,8 @@ const UserManagement = () => {
             </select>
             
             <div style={styles.actionButtons}>
-              <button style={styles.cancelButton} onClick={() => setShowAddForm(false)}>Cancel</button>
-              <button style={styles.addButton} onClick={handleAddUser}>Save</button>
+              <button style={styles.cancelButton} onClick={() => setShowAddForm(false)}>Hủy</button>
+              <button style={styles.addButton} onClick={handleAddUser}>Lưu</button>
             </div>
           </div>
         </>
@@ -367,7 +372,7 @@ const UserManagement = () => {
         <>
           <div style={styles.overlay} onClick={() => setShowEditForm(false)}></div>
           <div style={styles.modalContainer}>
-            <h3 style={styles.modalTitle}>Edit User</h3>
+            <h3 style={styles.modalTitle}>Sửa người dùng</h3>
             {errorMessage && <p style={styles.errorText}>{errorMessage}</p>}
             
             <input 
@@ -379,7 +384,7 @@ const UserManagement = () => {
             <input 
               style={styles.inputField} 
               type="password"
-              placeholder="New Password (leave blank to keep current)" 
+              placeholder="Mật khẩu mới (để trống nếu giữ nguyên)" 
               value={userToEdit.password}
               onChange={(e) => setUserToEdit({...userToEdit, password: e.target.value})}
             />
@@ -405,8 +410,8 @@ const UserManagement = () => {
             </select>
             
             <div style={styles.actionButtons}>
-              <button style={styles.cancelButton} onClick={() => setShowEditForm(false)}>Cancel</button>
-              <button style={styles.addButton} onClick={handleEditUser}>Update</button>
+              <button style={styles.cancelButton} onClick={() => setShowEditForm(false)}>Hủy</button>
+              <button style={styles.addButton} onClick={handleEditUser}>Cập nhật</button>
             </div>
           </div>
         </>
@@ -417,11 +422,11 @@ const UserManagement = () => {
         <>
           <div style={styles.overlay} onClick={() => setShowDeletePopup(false)}></div>
           <div style={{...styles.modalContainer, textAlign: "center"}}>
-            <h3 style={styles.modalTitle}>Confirm Delete</h3>
-            <p>Are you sure you want to delete user <strong>{userToDelete?.username}</strong>?</p>
+            <h3 style={styles.modalTitle}>Xác nhận xóa</h3>
+            <p>Bạn có chắc muốn xóa người dùng <strong>{userToDelete?.username}</strong>?</p>
             <div style={{...styles.actionButtons, justifyContent: "center"}}>
-              <button style={styles.cancelButton} onClick={() => setShowDeletePopup(false)}>Cancel</button>
-              <button style={{...styles.addButton, backgroundColor: "#e74c3c"}} onClick={confirmDeleteUser}>Delete</button>
+              <button style={styles.cancelButton} onClick={() => setShowDeletePopup(false)}>Hủy</button>
+              <button style={{...styles.addButton, backgroundColor: "#e74c3c"}} onClick={confirmDeleteUser}>Xóa</button>
             </div>
           </div>
         </>

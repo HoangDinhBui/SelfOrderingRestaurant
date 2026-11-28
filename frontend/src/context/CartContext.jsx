@@ -134,7 +134,7 @@ export const CartProvider = ({ children }) => {
 
       if (result.errors && result.errors.length > 0) {
         throw new Error(
-          result.errors[0].message || "Unknown GraphQL error occurred"
+          result.errors[0].message || "Đã có lỗi xảy ra"
         );
       }
 
@@ -230,7 +230,7 @@ export const CartProvider = ({ children }) => {
         // Try to use cached data as last resort
         const cachedData = loadCartFromLocalStorage();
         if (cachedData) {
-          setError("Using cached cart data. Network error occurred.");
+          setError("Mất kết nối mạng, đang dùng dữ liệu giỏ hàng đã lưu.");
           return cachedData;
         }
 
@@ -238,7 +238,7 @@ export const CartProvider = ({ children }) => {
         const emptyCart = { items: [] };
         setCartItems(emptyCart.items);
         updateCartMetrics(emptyCart.items);
-        setError("Failed to load cart data - using empty cart");
+        setError("Không tải được giỏ hàng, đang hiển thị giỏ trống");
         return emptyCart;
       }
     } finally {
@@ -317,7 +317,7 @@ export const CartProvider = ({ children }) => {
       return updatedCart;
     } catch (err) {
       console.error("Error adding to cart using GraphQL:", err);
-      setError("Failed to add item to cart");
+      setError("Không thêm được món vào giỏ");
       throw err;
     } finally {
       setLoading(false);
@@ -363,7 +363,7 @@ export const CartProvider = ({ children }) => {
           return await addToCartGraphQL(item);
         }
 
-        setError("Failed to add item to cart");
+        setError("Không thêm được món vào giỏ");
         throw err;
       } finally {
         setLoading(false);
@@ -449,7 +449,7 @@ export const CartProvider = ({ children }) => {
           return await updateItemQuantityGraphQL(dishId, quantity);
         }
 
-        setError("Failed to update quantity");
+        setError("Không cập nhật được số lượng");
         throw err;
       } finally {
         setLoading(false);
@@ -532,7 +532,7 @@ export const CartProvider = ({ children }) => {
           return await removeItemGraphQL(dishId);
         }
 
-        setError("Failed to remove item");
+        setError("Không xóa được món");
         throw err;
       } finally {
         setLoading(false);
@@ -604,7 +604,7 @@ export const CartProvider = ({ children }) => {
         const existingItem = cartItems.find((item) => item.dishId === dishId);
         if (!existingItem) {
           console.warn(`Item with ID ${dishId} not found in cart`);
-          throw new Error("Item not found in cart");
+          throw new Error("Món không có trong giỏ");
         }
 
         const response = await API.put(
@@ -644,7 +644,7 @@ export const CartProvider = ({ children }) => {
         );
         setCartItems(updatedItems);
 
-        setError("Server error, notes updated locally only");
+        setError("Lỗi máy chủ, ghi chú chỉ được lưu trên máy");
         throw err;
       } finally {
         setLoading(false);
@@ -725,7 +725,7 @@ export const CartProvider = ({ children }) => {
         return response.data;
       } catch (restErr) {
         console.error("REST orders fetch also failed:", restErr);
-        setOrderError("Failed to load orders data");
+        setOrderError("Không tải được dữ liệu đơn hàng");
         return [];
       }
     } finally {
@@ -778,7 +778,7 @@ export const CartProvider = ({ children }) => {
     async (orderId) => {
       if (!orderId) {
         console.error("Cannot fetch order without orderId");
-        setOrderError("Invalid order ID");
+        setOrderError("Mã đơn hàng không hợp lệ");
         return null;
       }
 
@@ -800,7 +800,7 @@ export const CartProvider = ({ children }) => {
           return response.data;
         } catch (restErr) {
           console.error("REST order fetch also failed:", restErr);
-          setOrderError(`Failed to load order #${orderId}`);
+          setOrderError(`Không tải được đơn #${orderId}`);
           return null;
         }
       } finally {
@@ -814,7 +814,7 @@ export const CartProvider = ({ children }) => {
   const fetchOrdersByTableId = useCallback(async (tableId) => {
     if (!tableId) {
       console.error("Cannot fetch orders without tableId");
-      setOrderError("Invalid table ID");
+      setOrderError("Mã bàn không hợp lệ");
       return [];
     }
 
@@ -828,7 +828,7 @@ export const CartProvider = ({ children }) => {
       return response.data || [];
     } catch (err) {
       console.error(`Error fetching orders for table ${tableId}:`, err);
-      setOrderError(`Failed to load orders for table #${tableId}`);
+      setOrderError(`Không tải được đơn của bàn #${tableId}`);
       return [];
     } finally {
       setOrderLoading(false);
@@ -864,7 +864,7 @@ export const CartProvider = ({ children }) => {
     async (orderId, status) => {
       if (!orderId || !status) {
         console.error("Cannot update order status without orderId and status");
-        setOrderError("Invalid order ID or status");
+        setOrderError("Mã đơn hoặc trạng thái không hợp lệ");
         return false;
       }
 
@@ -896,7 +896,7 @@ export const CartProvider = ({ children }) => {
           return true;
         } catch (restErr) {
           console.error("REST update status failed:", restErr);
-          setOrderError(`Failed to update order status`);
+          setOrderError(`Không cập nhật được trạng thái đơn`);
           return false;
         }
       } finally {

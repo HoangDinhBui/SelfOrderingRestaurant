@@ -4,7 +4,7 @@ import MenuBar from "../../../components/layout/MenuBar";
 import { authAPI } from "../../../services/api";
 
 const MAX_STAFF_PER_SHIFT = 3;
-const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+const DAY_LABELS = ["T2", "T3", "T4", "T5", "T6", "T7", "CN"];
 
 // Local calendar dates only: toISOString() would shift the day for UTC+7
 const toIsoDate = (d) =>
@@ -76,7 +76,7 @@ const ShiftSchedule = () => {
         const [, staffRes] = await Promise.all([loadShifts(), authAPI.get("/api/admin/staff")]);
         setStaff(staffRes.data || []);
       } catch (error) {
-        toast.error(errorMessage(error, "Could not load shifts and staff"));
+        toast.error(errorMessage(error, "Không tải được ca làm và nhân viên"));
       }
     })();
   }, []);
@@ -84,7 +84,7 @@ const ShiftSchedule = () => {
   useEffect(() => {
     setLoading(true);
     loadWeek()
-      .catch((error) => toast.error(errorMessage(error, "Could not load the schedule")))
+      .catch((error) => toast.error(errorMessage(error, "Không tải được lịch làm việc")))
       .finally(() => setLoading(false));
   }, [loadWeek]);
 
@@ -105,11 +105,11 @@ const ShiftSchedule = () => {
         shiftId: assignTarget.shift.shiftId,
         date: assignTarget.date,
       });
-      toast.success("Shift assigned");
+      toast.success("Đã phân công ca");
       setAssignTarget(null);
       await loadWeek();
     } catch (error) {
-      toast.error(errorMessage(error, "Could not assign the shift"));
+      toast.error(errorMessage(error, "Không phân công được ca"));
     } finally {
       setBusy(false);
     }
@@ -119,10 +119,10 @@ const ShiftSchedule = () => {
     setBusy(true);
     try {
       await authAPI.delete(`/api/admin/staff-shifts/${assignment.staffShiftId}`);
-      toast.success(`Removed ${assignment.staffName} from ${assignment.shiftName}`);
+      toast.success(`Đã gỡ ${assignment.staffName} khỏi ${assignment.shiftName}`);
       await loadWeek();
     } catch (error) {
-      toast.error(errorMessage(error, "Could not remove the assignment"));
+      toast.error(errorMessage(error, "Không gỡ được phân công"));
     } finally {
       setBusy(false);
     }
@@ -131,7 +131,7 @@ const ShiftSchedule = () => {
   const saveShift = async () => {
     const { shiftId, name, startTime, endTime } = shiftForm;
     if (!name.trim() || !startTime || !endTime) {
-      toast.error("Enter a name, a start time and an end time");
+      toast.error("Vui lòng nhập tên ca, giờ bắt đầu và giờ kết thúc");
       return;
     }
     setBusy(true);
@@ -142,11 +142,11 @@ const ShiftSchedule = () => {
       } else {
         await authAPI.post("/api/admin/shifts", body);
       }
-      toast.success(shiftId ? "Shift updated" : "Shift created");
+      toast.success(shiftId ? "Đã cập nhật ca" : "Đã tạo ca");
       setShiftForm(null);
       await Promise.all([loadShifts(), loadWeek()]);
     } catch (error) {
-      toast.error(errorMessage(error, "Could not save the shift"));
+      toast.error(errorMessage(error, "Không lưu được ca"));
     } finally {
       setBusy(false);
     }
@@ -156,10 +156,10 @@ const ShiftSchedule = () => {
     setBusy(true);
     try {
       await authAPI.delete(`/api/admin/shifts/${shift.shiftId}`);
-      toast.success(`Deleted ${shift.name}`);
+      toast.success(`Đã xóa ${shift.name}`);
       await loadShifts();
     } catch (error) {
-      toast.error(errorMessage(error, "Could not delete the shift"));
+      toast.error(errorMessage(error, "Không xóa được ca"));
     } finally {
       setBusy(false);
     }
@@ -172,40 +172,40 @@ const ShiftSchedule = () => {
   const weekLabel = `${days[0].dayOfMonth} – ${days[6].dayOfMonth}/${addDays(weekStart, 6).getFullYear()}`;
 
   return (
-    <div className="min-h-screen bg-[#f0f8fd]">
-      <MenuBar title="Shift Schedule" icon="https://img.icons8.com/ios-filled/50/FFFFFF/calendar.png" />
+    <div className="min-h-screen bg-cream">
+      <MenuBar title="Lịch ca làm" icon="https://img.icons8.com/ios-filled/50/FFFFFF/calendar.png" />
 
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         <section className="bg-white rounded-xl shadow p-4">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-            <h2 className="text-xl font-semibold text-[#1C2E4A]">Weekly schedule · {weekLabel}</h2>
+            <h2 className="text-xl font-semibold text-ink">Lịch theo tuần · {weekLabel}</h2>
             <div className="flex gap-2">
               <button type="button" onClick={() => setWeekStart((w) => addDays(w, -7))}
                 className="px-3 py-1.5 rounded-lg border border-gray-300 text-sm hover:bg-gray-50">
-                ← Previous
+                ← Tuần trước
               </button>
               <button type="button" onClick={() => setWeekStart(startOfWeek(new Date()))}
                 className="px-3 py-1.5 rounded-lg border border-gray-300 text-sm hover:bg-gray-50">
-                This week
+                Tuần này
               </button>
               <button type="button" onClick={() => setWeekStart((w) => addDays(w, 7))}
                 className="px-3 py-1.5 rounded-lg border border-gray-300 text-sm hover:bg-gray-50">
-                Next →
+                Tuần sau →
               </button>
             </div>
           </div>
 
           {sortedShifts.length === 0 ? (
-            <p className="text-gray-500 text-sm">No shifts yet. Create one below, then assign staff to it.</p>
+            <p className="text-gray-500 text-sm">Chưa có ca nào. Hãy tạo ca bên dưới rồi phân công nhân viên.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full min-w-[900px] border-collapse text-sm">
                 <thead>
                   <tr>
-                    <th className="w-36 p-2 text-left text-gray-500 font-medium border-b">Shift</th>
+                    <th className="w-36 p-2 text-left text-gray-500 font-medium border-b">Ca</th>
                     {days.map((d) => (
                       <th key={d.date}
-                        className={`p-2 text-left font-medium border-b ${d.date === today ? "text-blue-600" : "text-gray-700"}`}>
+                        className={`p-2 text-left font-medium border-b ${d.date === today ? "text-brand" : "text-gray-700"}`}>
                         {d.label} <span className="font-normal text-gray-400">{d.dayOfMonth}</span>
                       </th>
                     ))}
@@ -215,7 +215,7 @@ const ShiftSchedule = () => {
                   {sortedShifts.map((shift) => (
                     <tr key={shift.shiftId} className="align-top">
                       <td className="p-2 border-b">
-                        <div className="font-medium text-[#1C2E4A]">{shift.name}</div>
+                        <div className="font-medium text-ink">{shift.name}</div>
                         <div className="text-xs text-gray-500">{hhmm(shift.startTime)} – {hhmm(shift.endTime)}</div>
                       </td>
                       {days.map((d) => {
@@ -223,16 +223,16 @@ const ShiftSchedule = () => {
                         const past = d.date < today;
                         return (
                           <td key={d.date}
-                            className={`p-2 border-b border-l border-gray-100 ${past ? "bg-gray-50" : ""} ${d.date === today ? "bg-blue-50/60" : ""}`}>
+                            className={`p-2 border-b border-l border-gray-100 ${past ? "bg-gray-50" : ""} ${d.date === today ? "bg-brand-soft/60" : ""}`}>
                             <div className="space-y-1">
                               {cell.map((a) => (
                                 <div key={a.staffShiftId}
-                                  className="flex items-center justify-between gap-1 rounded-md bg-blue-100 text-blue-900 px-2 py-1">
+                                  className="flex items-center justify-between gap-1 rounded-md bg-brand-soft text-brand px-2 py-1">
                                   <span className="truncate" title={a.staffName}>{a.staffName}</span>
                                   {!past && (
                                     <button type="button" disabled={busy} onClick={() => removeAssignment(a)}
-                                      aria-label={`Remove ${a.staffName}`}
-                                      className="text-blue-700 hover:text-red-600 leading-none">
+                                      aria-label={`Gỡ ${a.staffName}`}
+                                      className="text-brand hover:text-red-600 leading-none">
                                       ×
                                     </button>
                                   )}
@@ -240,8 +240,8 @@ const ShiftSchedule = () => {
                               ))}
                               {!past && cell.length < MAX_STAFF_PER_SHIFT && (
                                 <button type="button" disabled={busy || loading} onClick={() => openAssign(d.date, shift)}
-                                  className="w-full rounded-md border border-dashed border-gray-300 text-gray-500 py-1 hover:border-blue-400 hover:text-blue-600">
-                                  + Assign
+                                  className="w-full rounded-md border border-dashed border-gray-300 text-gray-500 py-1 hover:border-brand hover:text-brand">
+                                  + Phân công
                                 </button>
                               )}
                               {past && cell.length === 0 && <span className="text-xs text-gray-400">—</span>}
@@ -256,17 +256,17 @@ const ShiftSchedule = () => {
             </div>
           )}
           <p className="mt-3 text-xs text-gray-500">
-            Up to {MAX_STAFF_PER_SHIFT} staff per shift. A staff member cannot hold two overlapping shifts on the same day.
-            Past days are read-only because attendance and salary are computed from them.
+            Tối đa {MAX_STAFF_PER_SHIFT} nhân viên mỗi ca. Một nhân viên không thể nhận hai ca trùng giờ trong cùng ngày.
+            Không sửa được các ngày đã qua vì chấm công và lương được tính từ đó.
           </p>
         </section>
 
         <section className="bg-white rounded-xl shadow p-4">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-xl font-semibold text-[#1C2E4A]">Shifts</h2>
+            <h2 className="text-xl font-semibold text-ink">Ca làm</h2>
             <button type="button" onClick={() => setShiftForm(emptyShiftForm)}
-              className="px-3 py-1.5 rounded-lg !bg-blue-500 text-white text-sm hover:!bg-blue-600">
-              + New shift
+              className="px-3 py-1.5 rounded-lg !bg-brand text-white text-sm hover:!bg-brand-hover">
+              + Ca mới
             </button>
           </div>
           <ul className="divide-y">
@@ -283,11 +283,11 @@ const ShiftSchedule = () => {
                       startTime: hhmm(shift.startTime), endTime: hhmm(shift.endTime),
                     })}
                     className="px-3 py-1 rounded-lg border border-gray-300 text-sm hover:bg-gray-50">
-                    Edit
+                    Sửa
                   </button>
                   <button type="button" disabled={busy} onClick={() => deleteShift(shift)}
                     className="px-3 py-1 rounded-lg border border-red-200 text-red-600 text-sm hover:bg-red-50">
-                    Delete
+                    Xóa
                   </button>
                 </span>
               </li>
@@ -299,16 +299,16 @@ const ShiftSchedule = () => {
       {assignTarget && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center px-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-5">
-            <h3 className="text-lg font-semibold mb-1">Assign staff</h3>
+            <h3 className="text-lg font-semibold mb-1">Phân công nhân viên</h3>
             <p className="text-sm text-gray-500 mb-4">
               {assignTarget.shift.name} ({hhmm(assignTarget.shift.startTime)} – {hhmm(assignTarget.shift.endTime)}) · {assignTarget.date}
             </p>
             {assignableStaff.length === 0 ? (
-              <p className="text-sm text-gray-500">Every active staff member is already on this shift.</p>
+              <p className="text-sm text-gray-500">Tất cả nhân viên đang làm đã có trong ca này.</p>
             ) : (
               <select value={selectedStaffId} onChange={(e) => setSelectedStaffId(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg px-3 py-2">
-                <option value="">Choose a staff member</option>
+                <option value="">Chọn nhân viên</option>
                 {assignableStaff.map((s) => (
                   <option key={s.staff_id} value={s.staff_id}>
                     {s.fullname}{s.position ? ` · ${s.position}` : ""}
@@ -319,11 +319,11 @@ const ShiftSchedule = () => {
             <div className="flex gap-2 mt-5">
               <button type="button" onClick={() => setAssignTarget(null)} disabled={busy}
                 className="flex-1 py-2 rounded-lg border border-gray-300">
-                Cancel
+                Hủy
               </button>
               <button type="button" onClick={assign} disabled={busy || !selectedStaffId}
-                className="flex-1 py-2 rounded-lg !bg-blue-500 text-white disabled:opacity-50">
-                {busy ? "Saving…" : "Assign"}
+                className="flex-1 py-2 rounded-lg !bg-brand text-white disabled:opacity-50">
+                {busy ? "Đang lưu…" : "Assign"}
               </button>
             </div>
           </div>
@@ -333,35 +333,35 @@ const ShiftSchedule = () => {
       {shiftForm && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center px-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-sm p-5 space-y-3">
-            <h3 className="text-lg font-semibold">{shiftForm.shiftId ? "Edit shift" : "New shift"}</h3>
+            <h3 className="text-lg font-semibold">{shiftForm.shiftId ? "Sửa ca" : "Ca mới"}</h3>
             <label className="block text-sm">
-              Name
+              Tên
               <input value={shiftForm.name} onChange={(e) => setShiftForm({ ...shiftForm, name: e.target.value })}
-                className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="e.g. Morning" />
+                className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2" placeholder="VD: Ca sáng" />
             </label>
             <div className="flex gap-3">
               <label className="block text-sm flex-1">
-                Start
+                Bắt đầu
                 <input type="time" value={shiftForm.startTime}
                   onChange={(e) => setShiftForm({ ...shiftForm, startTime: e.target.value })}
                   className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2" />
               </label>
               <label className="block text-sm flex-1">
-                End
+                Kết thúc
                 <input type="time" value={shiftForm.endTime}
                   onChange={(e) => setShiftForm({ ...shiftForm, endTime: e.target.value })}
                   className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2" />
               </label>
             </div>
-            <p className="text-xs text-gray-500">An end time earlier than the start time makes an overnight shift.</p>
+            <p className="text-xs text-gray-500">Giờ kết thúc sớm hơn giờ bắt đầu sẽ là ca qua đêm.</p>
             <div className="flex gap-2 pt-2">
               <button type="button" onClick={() => setShiftForm(null)} disabled={busy}
                 className="flex-1 py-2 rounded-lg border border-gray-300">
-                Cancel
+                Hủy
               </button>
               <button type="button" onClick={saveShift} disabled={busy}
-                className="flex-1 py-2 rounded-lg !bg-blue-500 text-white disabled:opacity-50">
-                {busy ? "Saving…" : "Save"}
+                className="flex-1 py-2 rounded-lg !bg-brand text-white disabled:opacity-50">
+                {busy ? "Đang lưu…" : "Save"}
               </button>
             </div>
           </div>

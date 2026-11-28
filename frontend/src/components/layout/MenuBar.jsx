@@ -485,7 +485,7 @@ const MenuBar = ({ title = "Quản lý sơ đồ bàn" }) => {
                   e.target.src =
                     "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80";
                 }}
-                alt="Avatar"
+                alt="Ảnh đại diện"
                 className="w-8 h-8 rounded-xl object-cover border border-[#E8D4BE]"
               />
               <div className="text-left hidden sm:block leading-tight">

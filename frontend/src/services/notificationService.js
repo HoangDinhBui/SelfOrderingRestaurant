@@ -32,7 +32,7 @@ const handleApiError = (error) => {
     return error.response.data;
   } else if (error.request) {
     console.error("API Request Error:", error.request);
-    return { error: "No response received from server" };
+    return { error: "Máy chủ không phản hồi" };
   } else {
     console.error("API Error:", error.message);
     return { error: error.message };
@@ -55,7 +55,7 @@ export const markNotificationAsRead = async (notificationId) => {
     // Check if notificationId is valid before making the request
     if (!notificationId && notificationId !== 0) {
       console.error("Invalid notification ID:", notificationId);
-      return { error: "Invalid notification ID" };
+      return { error: "Mã thông báo không hợp lệ" };
     }
 
     const response = await notificationAPI.put(
@@ -73,7 +73,7 @@ export const deleteNotification = async (notificationId) => {
     // Check if notificationId is valid before making the request
     if (!notificationId && notificationId !== 0) {
       console.error("Invalid notification ID:", notificationId);
-      return { error: "Invalid notification ID" };
+      return { error: "Mã thông báo không hợp lệ" };
     }
 
     const response = await notificationAPI.delete(
@@ -90,7 +90,7 @@ export const getNotificationsByTable = async (tableId) => {
   try {
     if (!tableId && tableId !== 0) {
       console.error("Invalid table ID:", tableId);
-      return { error: "Invalid table ID" };
+      return { error: "Mã bàn không hợp lệ" };
     }
 
     const response = await notificationAPI.get(

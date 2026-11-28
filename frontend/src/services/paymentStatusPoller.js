@@ -74,7 +74,7 @@ function updateUI(data) {
 
 function handlePollingTimeout() {
   // Example: Show timeout message
-  alert("Payment status check timed out. Please try again later.");
+  alert("Kiểm tra thanh toán quá thời gian. Vui lòng thử lại sau.");
 }
 
 function handlePollingError(error) {

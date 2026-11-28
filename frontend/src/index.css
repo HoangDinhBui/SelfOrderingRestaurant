@@ -1,47 +1,113 @@
 @import "tailwindcss";
 
+/* Design tokens (ui-ux-pro-max: warm restaurant palette, Be Vietnam Pro for full Vietnamese diacritics).
+   Use them as Tailwind utilities: bg-brand, text-ink, border-line, bg-cream ... */
+@theme {
+  --font-sans: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-serif: "Lora", Georgia, "Times New Roman", serif;
+
+  --color-brand: #C2410C;
+  --color-brand-hover: #9A3412;
+  --color-brand-soft: #FFF1E6;
+  --color-accent: #B45309;
+  --color-cream: #FAF7F2;
+  --color-card: #FFFDF8;
+  --color-ink: #33261D;
+  --color-ink-muted: #6B5B4B;
+  --color-line: #EADBC8;
+}
+
+/* Everything here lives in @layer base so Tailwind utilities can override it.
+   The old unlayered `button { padding: 0; margin: 0; color: inherit }` reset beat every
+   px-*, py-*, m-*, text-* class on buttons, which is why buttons had no padding and stuck together. */
+@layer base {
+  :root {
+    font-family: var(--font-sans);
+    color-scheme: light;
+  }
+
+  html,
+  body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    min-height: 100vh;
+    background-color: var(--color-cream);
+    color: var(--color-ink);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  #root {
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  button,
+  [role="button"] {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+  }
+
+  /* Keyboard users need a visible focus ring; mouse/touch clicks don't show it */
+  :focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+  }
+}
+
+/* Toasts: brand colours, readable on phones */
 :root {
-  font-family: 'Be Vietnam Pro', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  color-scheme: light;
+  --toastify-font-family: var(--font-sans);
+  --toastify-color-success: #15803d;
+  --toastify-color-error: #b91c1c;
+  --toastify-color-warning: #b45309;
+  --toastify-color-info: #c2410c;
+  --toastify-toast-min-height: 56px;
 }
 
-* {
-  box-sizing: border-box;
+.Toastify__toast {
+  border-radius: 14px;
+  font-size: 14px;
+  line-height: 1.45;
 }
 
-html,
-body {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  min-height: 100vh;
-  background-color: #FAF7F2;
-  color: #33261D;
-  display: block !important;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@keyframes page-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
-#root {
-  width: 100%;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
+@keyframes boot-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(250%);
+  }
 }
 
-/* Reset default button styling so Tailwind classes take full effect */
-button {
-  background-color: transparent;
-  color: inherit;
-  font-family: inherit;
-  border: none;
-  padding: 0;
-  margin: 0;
-  cursor: pointer;
-  outline: none;
+/* Route content fades in instead of popping in */
+.page-enter {
+  animation: page-enter 180ms ease-out;
 }
 
-button:focus,
-button:focus-visible {
-  outline: none;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

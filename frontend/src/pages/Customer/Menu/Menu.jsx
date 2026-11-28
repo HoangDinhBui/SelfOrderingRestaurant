@@ -4,21 +4,24 @@ import { CartContext } from "../../../context/CartContext";
 import VoiceOrderModal from "../../../components/voice/VoiceOrderModal";
 import { hasSufficientIngredients as hasEnoughStock } from "../../../utils/inventory";
 import { submitCustomerOrder } from "../../../services/customerOrder";
+import { toast } from "react-toastify";
 
 import { BACKEND_URL } from "../../../config";
+
+const ALL = "__all__";
+
 const Menu = () => {
   const [dishes, setDishes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedCategory, setSelectedCategory] = useState(ALL);
   const navigate = useNavigate();
-  const [orderFeedback, setOrderFeedback] = useState({
-    show: false,
-    message: "",
-    type: "",
-  });
-  const { addToCartGraphQL, updateCartWithGraphQLData, fetchCartData } =
+  // Feedback goes through toasts (the old fixed banner sat under the sticky header)
+  const setOrderFeedback = ({ show, message, type }) => {
+    if (show && message) (type === "error" ? toast.error : toast.success)(message);
+  };
+  const { addToCartGraphQL, updateCartWithGraphQLData, fetchCartData, cartItemCount } =
     useContext(CartContext);
 
   // Retrieve tableNumber from query params or localStorage
@@ -28,20 +31,21 @@ const Menu = () => {
   const savedTableNumber = localStorage.getItem("tableNumber");
   const tableNumber = tableNumberFromUrl || savedTableNumber || "1";
 
-  const categories = [
-    { id: 0, name: "All", icon: "🍽️" },
-    { id: 1, name: "Main Course", icon: "🍽️" },
-    { id: 2, name: "Appetizers", icon: "🍴" },
-    { id: 3, name: "Drink", icon: "🍹" },
-    { id: 4, name: "Dessert", icon: "🍰" },
-  ];
-
   const [quantities, setQuantities] = useState({});
   const [notes, setNotes] = useState({});
   const [loadingDish, setLoadingDish] = useState(null);
   const [inventory, setInventory] = useState([]);
   const [dishIngredients, setDishIngredients] = useState([]);
   const [voiceOpen, setVoiceOpen] = useState(false);
+  const [noteDishId, setNoteDishId] = useState(null);
+  const [noteDraft, setNoteDraft] = useState("");
+
+  // Categories come from the dishes themselves; the old hardcoded English names
+  // ("Main Course"...) never matched the backend's Vietnamese categoryName, so filtering showed nothing.
+  const categories = useMemo(
+    () => [ALL, ...new Set(dishes.map((d) => d.categoryName).filter(Boolean))],
+    [dishes]
+  );
 
   useEffect(() => {
     const fetchData = async () => {
@@ -94,7 +98,7 @@ const Menu = () => {
         setDishIngredients(dishIngredientsData);
         setLoading(false);
       } catch (err) {
-        setError("Failed to load dish list or inventory data");
+        setError("Không tải được danh sách món");
         setLoading(false);
         console.error("Error loading data:", err);
       }
@@ -146,10 +150,7 @@ const Menu = () => {
       message: `Đã đặt đơn #${orderId}, món đang được chuyển xuống bếp`,
       type: "success",
     });
-    setTimeout(() => {
-      setOrderFeedback({ show: false, message: "", type: "" });
-      navigate(`/table/${tableNumber}`);
-    }, 3000);
+    setTimeout(() => navigate(`/table/${tableNumber}`), 2500);
   };
 
   const handleVoiceOrder = async (items) => {
@@ -162,9 +163,6 @@ const Menu = () => {
       message: `Đã thêm ${portions} phần vào giỏ hàng`,
       type: "success",
     });
-    setTimeout(() => {
-      setOrderFeedback({ show: false, message: "", type: "" });
-    }, 3000);
   };
 
   // Filter dishes based on search, category, and ingredients
@@ -174,9 +172,7 @@ const Menu = () => {
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
     const matchesCategory =
-      selectedCategory === "All" ||
-      (item.categoryName &&
-        item.categoryName.toLowerCase() === selectedCategory.toLowerCase());
+      selectedCategory === ALL || item.categoryName === selectedCategory;
     const hasIngredients = hasSufficientIngredients(item.dishId);
     return matchesSearch && matchesCategory && hasIngredients;
   });
@@ -206,7 +202,7 @@ const Menu = () => {
 
       const currentDish = dishes.find((d) => d.dishId === dishId);
       if (!currentDish) {
-        throw new Error("Dish not found");
+        throw new Error("Không tìm thấy món");
       }
 
       const itemToAdd = {
@@ -261,7 +257,7 @@ const Menu = () => {
 
         if (responseData.errors) {
           throw new Error(
-            responseData.errors[0].message || "Error adding dish to cart"
+            responseData.errors[0].message || "Không thêm được món vào giỏ"
           );
         }
 
@@ -278,13 +274,9 @@ const Menu = () => {
 
       setOrderFeedback({
         show: true,
-        message: `Added ${quantities[dishId]} x ${currentDish.dishName} to cart`,
+        message: `Đã thêm ${quantities[dishId]} × ${currentDish.dishName} vào giỏ`,
         type: "success",
       });
-
-      setTimeout(() => {
-        setOrderFeedback({ show: false, message: "", type: "" });
-      }, 3000);
 
       return result;
     } catch (error) {
@@ -292,13 +284,9 @@ const Menu = () => {
 
       setOrderFeedback({
         show: true,
-        message: `Failed to add to cart: ${error.message}`,
+        message: `Không thêm được vào giỏ: ${error.message}`,
         type: "error",
       });
-
-      setTimeout(() => {
-        setOrderFeedback({ show: false, message: "", type: "" });
-      }, 3000);
 
       throw error;
     } finally {
@@ -307,24 +295,33 @@ const Menu = () => {
   };
 
   const handleNote = (dishId) => {
-    const currentNote = notes[dishId] || "";
-    const newNote = prompt("Add note for the dish:", currentNote);
-
-    if (newNote !== null) {
-      setNotes((prev) => ({
-        ...prev,
-        [dishId]: newNote,
-      }));
-    }
+    // In-app sheet instead of window.prompt(): prompts are blocked by the Zalo/Facebook
+    // in-app browsers guests open from the table QR, so the Note button "did nothing".
+    setNoteDraft(notes[dishId] || "");
+    setNoteDishId(dishId);
   };
+
+  const saveNote = () => {
+    setNotes((prev) => ({ ...prev, [noteDishId]: noteDraft.trim() }));
+    setNoteDishId(null);
+  };
+
+  const noteDish = dishes.find((d) => d.dishId === noteDishId);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-lg font-medium text-gray-700">
-            Loading menu...
-          </div>
+      <div className="min-h-screen bg-cream">
+        <div className="max-w-md mx-auto px-4 pt-16 space-y-3">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="flex gap-3 rounded-2xl bg-card border border-line p-3 animate-pulse">
+              <div className="w-20 h-20 rounded-xl bg-line/70" />
+              <div className="flex-1 space-y-2 py-1">
+                <div className="h-4 w-2/3 rounded bg-line/70" />
+                <div className="h-3 w-1/3 rounded bg-line/70" />
+                <div className="h-4 w-1/4 rounded bg-line/70" />
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -332,15 +329,15 @@ const Menu = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-center p-4 bg-white rounded-lg shadow">
-          <div className="text-lg font-medium text-red-600 mb-2">Error</div>
-          <p className="text-gray-700">{error}</p>
+      <div className="min-h-screen bg-cream flex items-center justify-center px-4">
+        <div className="text-center p-6 bg-card border border-line rounded-2xl shadow-sm max-w-sm w-full">
+          <div className="text-lg font-semibold text-red-700 mb-2">Có lỗi xảy ra</div>
+          <p className="text-ink-muted text-sm">{error}</p>
           <button
-            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            className="mt-5 min-h-[44px] px-6 rounded-xl bg-brand text-white font-semibold hover:bg-brand-hover transition"
             onClick={() => window.location.reload()}
           >
-            Try Again
+            Thử lại
           </button>
         </div>
       </div>
@@ -348,73 +345,57 @@ const Menu = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <div className="bg-white py-2 shadow-md sticky top-0 z-10">
-        <div className="max-w-md mx-auto flex items-center px-3">
+    <div className="min-h-screen bg-cream">
+      <header className="bg-card/95 backdrop-blur border-b border-line sticky top-0 z-20">
+        <div className="max-w-md mx-auto flex items-center justify-between px-2 h-14">
           <button
             onClick={() => navigate(`/table/${tableNumber}`)}
-            className="p-1.5 rounded-full bg-gray-200 hover:bg-gray-300"
+            aria-label="Quay lại"
+            className="w-11 h-11 flex items-center justify-center rounded-full hover:bg-brand-soft transition"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth="2"
-              stroke="currentColor"
-              className="w-4 h-4"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 19l-7-7 7-7"
-              />
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-5 h-5" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <div className="flex-1 text-center">
-            <div className="text-base font-bold">Menu</div>
+          <div className="text-center">
+            <div className="text-base font-bold text-ink">Thực đơn</div>
+            <div className="text-[11px] text-ink-muted">Bàn {tableNumber}</div>
           </div>
           <button
             onClick={() => navigate("/order_cus")}
-            className=" rounded-full bg-white-100 hover:bg-gray-300"
+            aria-label={`Giỏ hàng${cartItemCount ? `, ${cartItemCount} món` : ""}`}
+            className="relative w-11 h-11 flex items-center justify-center rounded-full hover:bg-brand-soft transition"
           >
-            <img
-              src="https://img.icons8.com/?size=100&id=59997&format=png&color=000000"
-              alt="Cart Icon"
-              className="w-5 h-5"
-            />
+            <i className="fa-solid fa-basket-shopping text-lg text-ink" aria-hidden="true" />
+            {cartItemCount > 0 && (
+              <span className="absolute top-1 right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-brand text-white text-[10px] font-bold flex items-center justify-center">
+                {cartItemCount}
+              </span>
+            )}
           </button>
-          <div className="w-6"></div>
         </div>
-      </div>
+      </header>
 
-      <div className="max-w-md mx-auto px-3 py-3 bg-gray-100">
-        {orderFeedback.show && (
-          <div
-            className={`fixed top-16 left-1/2 transform -translate-x-1/2 z-50 px-4 py-2 rounded-lg shadow-lg text-sm ${
-              orderFeedback.type === "success"
-                ? "bg-green-500 text-white"
-                : "bg-red-500 text-white"
-            }`}
-          >
-            {orderFeedback.message}
-          </div>
-        )}
-
+      <div className="max-w-md mx-auto px-4 py-4 pb-10">
         <div className="mb-4 flex gap-2">
-          <input
-            type="text"
-            placeholder="Search"
-            className="flex-1 min-w-0 py-2.5 px-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+          <div className="relative flex-1 min-w-0">
+            <i className="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-sm text-ink-muted" aria-hidden="true" />
+            <input
+              type="search"
+              placeholder="Tìm món..."
+              aria-label="Tìm món"
+              className="w-full h-11 pl-10 pr-3 text-sm bg-white border border-line rounded-xl focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
           <button
             type="button"
             onClick={() => setVoiceOpen(true)}
-            className="shrink-0 px-3 rounded-lg text-white text-sm font-medium flex items-center gap-1"
-            style={{ backgroundColor: "#EE6363" }}
+            className="shrink-0 h-11 px-3.5 rounded-xl bg-brand text-white text-sm font-semibold flex items-center gap-2 hover:bg-brand-hover transition"
           >
-            🎤 Gọi bằng giọng nói
+            <i className="fa-solid fa-microphone" aria-hidden="true" />
+            Giọng nói
           </button>
         </div>
 
@@ -426,150 +407,155 @@ const Menu = () => {
           onPlaceOrder={handleVoicePlaceOrder}
         />
 
-        <div className="bg-white p-3 rounded-lg shadow-sm mb-4">
-          <div className="flex items-center mb-2">
-            <span className="text-yellow-500 text-lg mr-2">⭐</span>
-            <h3 className="font-bold text-base">Select Category</h3>
-          </div>
-          <div className="flex overflow-x-auto space-x-2 py-2 scrollbar-hide">
-            {categories.map((category) => (
+        <div className="-mx-4 px-4 mb-4 flex gap-2 overflow-x-auto pb-1 [scrollbar-width:none]" role="tablist" aria-label="Danh mục">
+          {categories.map((category) => {
+            const active = selectedCategory === category;
+            return (
               <button
-                key={category.id}
-                onClick={() => {
-                  console.log("Selected category:", category.name);
-                  setSelectedCategory(category.name);
-                }}
-                style={{
-                  backgroundColor:
-                    selectedCategory === category.name ? "#f87171" : "#f9fafb",
-                  color:
-                    selectedCategory === category.name ? "white" : "#1f2937",
-                }}
-                className="min-w-[80px] flex flex-col items-center justify-center p-2 rounded-lg transition-all duration-200 flex-shrink-0"
+                key={category}
+                role="tab"
+                aria-selected={active}
+                onClick={() => setSelectedCategory(category)}
+                className={`shrink-0 h-10 px-4 rounded-full text-sm font-medium border transition ${
+                  active
+                    ? "bg-brand border-brand text-white shadow-sm"
+                    : "bg-white border-line text-ink hover:border-brand/40"
+                }`}
               >
-                <span className="text-xl mb-1">{category.icon}</span>
-                <span className="text-xs text-center">{category.name}</span>
+                {category === ALL ? "Tất cả" : category}
               </button>
-            ))}
-          </div>
+            );
+          })}
         </div>
 
         <div className="space-y-3">
           {filteredItems.length > 0 ? (
             filteredItems.map((item) => (
-              <div
-                key={item.dishId}
-                className="bg-white rounded-lg shadow-sm p-3"
-              >
-                <div className="flex w-full mb-2">
-                  <div className="w-16 h-16 flex-shrink-0">
+              <article key={item.dishId} className="bg-card border border-line rounded-2xl shadow-sm p-3">
+                <div className="flex w-full gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handleViewDish(item.dishId)}
+                    className="w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden bg-line"
+                    aria-label={`Xem ${item.dishName}`}
+                  >
                     <img
                       src={item.imageUrl}
-                      alt={item.dishName}
-                      className="w-full h-full object-cover rounded-lg"
+                      alt=""
+                      loading="lazy"
+                      className="w-full h-full object-cover"
                       onError={(e) => {
                         e.target.onerror = null;
-                        e.target.src = "/placeholder-dish.jpg";
+                        e.target.src = "/img/logoremovebg.png";
                       }}
                     />
-                  </div>
+                  </button>
 
-                  <div className="flex-1 ml-3">
-                    <h3 className="font-bold text-sm">{item.dishName}</h3>
-                    <div className="flex items-center text-xs text-gray-500 mt-0.5">
-                      <span className="text-yellow-500 mr-1">★</span>
-                      <span>5.0</span>
-                      <span className="mx-1.5">•</span>
-                      <span>{item.categoryName}</span>
-                    </div>
-                    <div className="font-semibold text-sm mt-0.5">
-                      {Number(item.price).toLocaleString("en-US")} VNĐ
-                    </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold text-[15px] text-ink leading-snug">{item.dishName}</h3>
+                    <div className="text-xs text-ink-muted mt-0.5">{item.categoryName}</div>
                     {item.description && (
-                      <div className="text-xs text-gray-600 mt-0.5 line-clamp-1">
-                        {item.description}
-                      </div>
+                      <div className="text-xs text-ink-muted mt-1 line-clamp-1">{item.description}</div>
                     )}
+                    <div className="font-bold text-brand text-[15px] mt-1">
+                      {Number(item.price).toLocaleString("vi-VN")}đ
+                    </div>
                   </div>
                 </div>
 
                 {notes[item.dishId] && (
-                  <div className="text-xs text-gray-500 mb-1 px-2 py-1 bg-gray-50 rounded">
-                    <span className="font-medium">Note:</span>{" "}
-                    {notes[item.dishId]}
+                  <div className="text-xs text-ink-muted mt-2 px-2.5 py-1.5 bg-brand-soft rounded-lg">
+                    <span className="font-medium text-ink">Ghi chú:</span> {notes[item.dishId]}
                   </div>
                 )}
 
-                <div className="flex justify-between items-center mt-2">
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => handleNote(item.dishId)}
-                      className="text-[#1f2937] text-xs h-7 w-16 rounded-lg flex items-center justify-center"
-                      style={{ backgroundColor: "#D9D9D9", opacity: 0.5 }}
-                    >
-                      Note
-                    </button>
-                    <div className="flex items-center bg-white bg-opacity-50 rounded-lg">
+                <div className="flex items-center justify-between gap-2 mt-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center rounded-xl border border-line bg-white">
                       <button
                         onClick={() => handleDecreaseQuantity(item.dishId)}
-                        className="w-7 h-7 flex items-center justify-center text-[#1f2937] rounded-l-lg"
-                        style={{ backgroundColor: "#D9D9D9", opacity: 0.5 }}
+                        aria-label="Giảm số lượng"
+                        className="w-10 h-10 flex items-center justify-center text-ink text-lg rounded-l-xl hover:bg-brand-soft transition"
                       >
-                        -
+                        −
                       </button>
-                      <span className="w-6 h-7 flex items-center justify-center text-[#1f2937] text-xs bg-transparent">
+                      <span className="w-7 text-center text-sm font-semibold text-ink" aria-live="polite">
                         {quantities[item.dishId] || 1}
                       </span>
                       <button
                         onClick={() => handleIncreaseQuantity(item.dishId)}
-                        className="w-7 h-7 flex items-center justify-center text-[#1f2937] rounded-r-lg"
-                        style={{ backgroundColor: "#D9D9D9", opacity: 0.5 }}
+                        aria-label="Tăng số lượng"
+                        className="w-10 h-10 flex items-center justify-center text-ink text-lg rounded-r-xl hover:bg-brand-soft transition"
                       >
                         +
                       </button>
                     </div>
+                    <button
+                      onClick={() => handleNote(item.dishId)}
+                      aria-label="Thêm ghi chú"
+                      className={`w-10 h-10 rounded-xl border flex items-center justify-center transition ${
+                        notes[item.dishId] ? "border-brand bg-brand-soft text-brand" : "border-line bg-white text-ink-muted hover:text-ink"
+                      }`}
+                    >
+                      <i className="fa-regular fa-pen-to-square" aria-hidden="true" />
+                    </button>
                   </div>
 
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => handleViewDish(item.dishId)}
-                      className="text-white text-xs w-16 h-7 rounded-lg flex items-center justify-center"
-                      style={{ backgroundColor: "#EE6363" }}
-                    >
-                      View
-                    </button>
-                    <button
-                      onClick={() => handleOrderDish(item.dishId)}
-                      className="text-white text-xs w-16 h-7 rounded-lg flex items-center justify-center"
-                      style={{ backgroundColor: "#EE6363" }}
-                    >
-                      Order
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        className="h-3 w-3 ml-0.5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M9 5l7 7-7 7"
-                        />
-                      </svg>
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => handleOrderDish(item.dishId).catch(() => {})}
+                    disabled={loadingDish === item.dishId}
+                    className="h-10 px-4 rounded-xl bg-brand text-white text-sm font-semibold flex items-center gap-1.5 hover:bg-brand-hover active:scale-[0.97] transition disabled:opacity-60"
+                  >
+                    {loadingDish === item.dishId ? (
+                      <i className="fa-solid fa-spinner fa-spin" aria-hidden="true" />
+                    ) : (
+                      <i className="fa-solid fa-plus" aria-hidden="true" />
+                    )}
+                    Thêm vào giỏ
+                  </button>
                 </div>
-              </div>
+              </article>
             ))
           ) : (
-            <p className="text-center text-gray-500 py-6 text-sm">
-              No dishes match the search criteria or category.
-            </p>
+            <div className="text-center py-12">
+              <i className="fa-solid fa-bowl-food text-3xl text-line" aria-hidden="true" />
+              <p className="mt-3 text-ink-muted text-sm">Không có món nào phù hợp.</p>
+            </div>
           )}
         </div>
       </div>
+
+      {noteDishId !== null && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="note-title">
+          <div className="absolute inset-0 bg-black/40" onClick={() => setNoteDishId(null)} />
+          <div className="relative w-full max-w-md bg-card rounded-t-3xl sm:rounded-3xl p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-xl page-enter">
+            <h2 id="note-title" className="text-lg font-bold text-ink">Ghi chú cho món</h2>
+            <p className="text-sm text-ink-muted mt-0.5">{noteDish?.dishName}</p>
+            <textarea
+              autoFocus
+              rows={3}
+              value={noteDraft}
+              onChange={(e) => setNoteDraft(e.target.value)}
+              placeholder="VD: ít cay, không hành..."
+              className="mt-4 w-full rounded-xl border border-line bg-white p-3 text-sm focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
+            />
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setNoteDishId(null)}
+                className="h-11 rounded-xl border border-line bg-white font-semibold text-ink hover:bg-brand-soft transition"
+              >
+                Hủy
+              </button>
+              <button
+                onClick={saveNote}
+                className="h-11 rounded-xl bg-brand font-semibold text-white hover:bg-brand-hover transition"
+              >
+                Lưu ghi chú
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

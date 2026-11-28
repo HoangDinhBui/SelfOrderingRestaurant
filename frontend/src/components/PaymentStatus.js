@@ -10,23 +10,23 @@ function PaymentStatus() {
 
     // Check if token exists
     if (!token) {
-      setError("No access token found. Please log in.");
+      setError("Bạn chưa đăng nhập. Vui lòng đăng nhập.");
       return;
     }
 
     // Start polling with the order ID and token
     pollPaymentStatus(189, token).catch((err) => {
-      setError(`Failed to poll payment status: ${err.message}`);
+      setError(`Không kiểm tra được trạng thái thanh toán: ${err.message}`);
     });
   }, []);
 
   return (
     <div>
-      <h2>Payment Status</h2>
+      <h2>Trạng thái thanh toán</h2>
       {error ? (
         <p style={{ color: "red" }}>{error}</p>
       ) : (
-        <p id="payment-status">Checking payment status...</p>
+        <p id="payment-status">Đang kiểm tra trạng thái thanh toán...</p>
       )}
     </div>
   );

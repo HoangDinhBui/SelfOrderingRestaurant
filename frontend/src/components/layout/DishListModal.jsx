@@ -27,7 +27,7 @@ const DishListModal = ({ isOpen, onClose, Staff, tableId }) => {
   );
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
       <div className="bg-white p-6 rounded-lg shadow-lg max-w-4xl w-full max-h-[80vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6">
           <h2 className="text-2xl font-bold">Staff for Table {tableId}</h2>
@@ -69,7 +69,7 @@ const DishListModal = ({ isOpen, onClose, Staff, tableId }) => {
               />
             </svg>
             <p className="text-xl text-gray-500">
-              No Staff available for this table
+              Chưa có nhân viên phụ trách bàn này
             </p>
           </div>
         ) : (
@@ -82,11 +82,11 @@ const DishListModal = ({ isOpen, onClose, Staff, tableId }) => {
                     <span className="text-sm text-gray-600">
                       {orderStaff[0].status === "Complete" ? (
                         <span className="text-green-600 font-medium">
-                          Completed
+                          Hoàn thành
                         </span>
                       ) : (
                         <span className="text-yellow-600 font-medium">
-                          In Progress
+                          Đang xử lý
                         </span>
                       )}
                     </span>
@@ -140,7 +140,7 @@ const DishListModal = ({ isOpen, onClose, Staff, tableId }) => {
 
             <div className="mt-6 border-t pt-4">
               <div className="flex justify-between items-center text-lg font-bold">
-                <span>Total</span>
+                <span>Tổng</span>
                 <span>{formatCurrency(totalAmount)}</span>
               </div>
             </div>
@@ -152,7 +152,7 @@ const DishListModal = ({ isOpen, onClose, Staff, tableId }) => {
             onClick={onClose}
             className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400"
           >
-            Close
+            Đóng
           </button>
         </div>
       </div>

@@ -36,7 +36,7 @@ const InventoryManagement = () => {
     const role = localStorage.getItem("userType"); // Use userType instead of userRole
     setUserRole(role);
     if (role !== "ADMIN") {
-      setErrorMessage("Access denied: Administrator privileges required.");
+      setErrorMessage("Không có quyền truy cập: cần quyền quản trị viên.");
     }
   }, []);
 
@@ -51,7 +51,7 @@ const InventoryManagement = () => {
       await fetchInventories();
     } catch (error) {
       console.error("Error fetching data:", error);
-      setErrorMessage("Failed to load data. Please try again.");
+      setErrorMessage("Không tải được dữ liệu. Vui lòng thử lại.");
     } finally {
       setIsLoading(false);
     }
@@ -84,7 +84,7 @@ const InventoryManagement = () => {
       setInventory(mappedData);
       setFilteredInventory(mappedData);
     } catch (error) {
-      await handleApiError(error, "Failed to fetch inventory list");
+      await handleApiError(error, "Không tải được danh sách kho");
     }
   };
 
@@ -95,7 +95,7 @@ const InventoryManagement = () => {
       });
       setSuppliers(response.data || []);
     } catch (error) {
-      await handleApiError(error, "Failed to fetch suppliers list");
+      await handleApiError(error, "Không tải được danh sách nhà cung cấp");
     }
   };
 
@@ -106,7 +106,7 @@ const InventoryManagement = () => {
       });
       setIngredients(response.data || []);
     } catch (error) {
-      await handleApiError(error, "Failed to fetch ingredients list");
+      await handleApiError(error, "Không tải được danh sách nguyên liệu");
     }
   };
 
@@ -177,19 +177,19 @@ const InventoryManagement = () => {
           console.error("Retry failed:", retryError);
         }
       }
-      message = "Session expired. Please log in again.";
+      message = "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
       localStorage.clear();
       navigate("/login");
     } else if (status === 403) {
-      message = "You do not have permission to access this resource!";
+      message = "Bạn không có quyền truy cập chức năng này!";
       setTimeout(() => {
         navigate("/dashboard");
       }, 2000);
     } else if (status === 404) {
-      message = `Endpoint not found: ${error.config.url}`;
+      message = `Không tìm thấy API: ${error.config.url}`;
     } else if (status === 400) {
       message =
-        error.response?.data?.message || "Invalid data. Please check again!";
+        error.response?.data?.message || "Dữ liệu không hợp lệ. Vui lòng kiểm tra lại!";
     }
     setErrorMessage(message);
   };
@@ -225,7 +225,7 @@ const InventoryManagement = () => {
       setInventory(updatedInventory);
       setFilteredInventory(updatedInventory);
     } catch (error) {
-      await handleApiError(error, "Failed to delete inventory");
+      await handleApiError(error, "Không xóa được nguyên liệu");
     }
     setShowDeleteModal(false);
     setItemToDelete(null);
@@ -253,18 +253,18 @@ const InventoryManagement = () => {
   const confirmEditItem = async () => {
     if (userRole !== "ADMIN") return;
     if (!newItem.quantity || !newItem.unit) {
-      setErrorMessage("Quantity and unit are required!");
+      setErrorMessage("Vui lòng nhập số lượng và đơn vị!");
       return;
     }
     const parsedQuantity = parseFloat(newItem.quantity);
     const finalUnit =
       newItem.unit === "new" ? newItem.customUnit : newItem.unit;
     if (isNaN(parsedQuantity) || parsedQuantity <= 0) {
-      setErrorMessage("Quantity must be a positive number!");
+      setErrorMessage("Số lượng phải là số dương!");
       return;
     }
     if (!finalUnit) {
-      setErrorMessage("Invalid unit!");
+      setErrorMessage("Đơn vị không hợp lệ!");
       return;
     }
     try {
@@ -285,7 +285,7 @@ const InventoryManagement = () => {
       setShowSuccessModal(true);
       setTimeout(() => setShowSuccessModal(false), 2000);
     } catch (error) {
-      await handleApiError(error, "Failed to update inventory");
+      await handleApiError(error, "Không cập nhật được nguyên liệu");
     }
   };
 
@@ -293,7 +293,7 @@ const InventoryManagement = () => {
   const validateAndAddItem = async () => {
     if (userRole !== "ADMIN") return;
     if (!newItem.ingredientId || !newItem.quantity || !newItem.unit) {
-      setErrorMessage("All fields are required!");
+      setErrorMessage("Vui lòng điền đầy đủ thông tin!");
       return;
     }
     const parsedIngredientId = parseInt(newItem.ingredientId);
@@ -301,11 +301,11 @@ const InventoryManagement = () => {
     const finalUnit =
       newItem.unit === "new" ? newItem.customUnit : newItem.unit;
     if (isNaN(parsedIngredientId) || parsedIngredientId <= 0) {
-      setErrorMessage("Ingredient ID must be a valid positive number!");
+      setErrorMessage("Mã nguyên liệu phải là số dương!");
       return;
     }
     if (ingredients.length === 0) {
-      setErrorMessage("Unable to load ingredients. Please try again!");
+      setErrorMessage("Không tải được nguyên liệu. Vui lòng thử lại!");
       return;
     }
     const ingredient = ingredients.find(
@@ -313,16 +313,16 @@ const InventoryManagement = () => {
     );
     if (!ingredient) {
       setErrorMessage(
-        `Ingredient with ID ${parsedIngredientId} does not exist!`
+        `Nguyên liệu có mã ${parsedIngredientId} không tồn tại!`
       );
       return;
     }
     if (isNaN(parsedQuantity) || parsedQuantity <= 0) {
-      setErrorMessage("Quantity must be a positive number!");
+      setErrorMessage("Số lượng phải là số dương!");
       return;
     }
     if (!finalUnit) {
-      setErrorMessage("Invalid unit!");
+      setErrorMessage("Đơn vị không hợp lệ!");
       return;
     }
     try {
@@ -343,16 +343,16 @@ const InventoryManagement = () => {
       setShowSuccessModal(true);
       setTimeout(() => setShowSuccessModal(false), 2000);
     } catch (error) {
-      await handleApiError(error, "Failed to add inventory");
+      await handleApiError(error, "Không thêm được nguyên liệu");
     }
   };
 
   // Render "Access Denied" message if user is not ADMIN
   if (userRole !== "ADMIN") {
     return (
-      <div className="h-screen w-screen flex flex-col bg-gradient-to-br from-blue-50 to-gray-100">
+      <div className="min-h-screen w-full flex flex-col bg-cream">
         <MenuBar
-          title="Inventory Management"
+          title="Quản lý kho"
           icon="https://img.icons8.com/?size=100&id=4NUeu__UwtXf&format=png&color=FFFFFF"
         />
         <div className="flex-1 flex items-center justify-center">
@@ -365,9 +365,9 @@ const InventoryManagement = () => {
   }
 
   return (
-    <div className="h-screen w-screen flex flex-col bg-gradient-to-br from-blue-50 to-gray-100">
+    <div className="min-h-screen w-full flex flex-col bg-cream">
       <MenuBar
-        title="Inventory Management"
+        title="Quản lý kho"
         icon="https://img.icons8.com/?size=100&id=4NUeu__UwtXf&format=png&color=FFFFFF"
       />
 
@@ -382,42 +382,42 @@ const InventoryManagement = () => {
 
         {/* Loading State */}
         {isLoading && (
-          <div className="text-center text-gray-600">Loading inventory...</div>
+          <div className="text-center text-gray-600">Đang tải kho...</div>
         )}
 
         {/* Search and Filter */}
         <div className="mb-6 flex space-x-4 items-center">
           <div className="relative flex-1">
             <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-lg">
-              🔍
+              <i className="fa-solid fa-magnifying-glass" aria-hidden="true" />
             </div>
             <input
               type="text"
-              placeholder="Search by ingredient name..."
+              placeholder="Tìm theo tên nguyên liệu..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full h-12 p-3 pl-10 pr-4 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 hover:shadow-md placeholder-gray-400 text-gray-700"
+              className="w-full h-12 p-3 pl-10 pr-4 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-transparent transition-all duration-300 hover:shadow-md placeholder-gray-400 text-gray-700"
               disabled={userRole !== "ADMIN"}
             />
           </div>
           <select
             value={filterUnit}
             onChange={(e) => setFilterUnit(e.target.value)}
-            className="h-12 px-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 hover:shadow-md text-gray-700"
+            className="h-12 px-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-transparent transition-all duration-300 hover:shadow-md text-gray-700"
             disabled={userRole !== "ADMIN"}
           >
             {uniqueUnits.map((unit) => (
               <option key={unit} value={unit}>
-                {unit}
+                {unit === "All" ? "Tất cả" : unit}
               </option>
             ))}
           </select>
           <button
-            className="h-12 px-6 !bg-green-500 text-white rounded-xl shadow-md hover:bg-green-600 transition-all duration-200"
+            className="h-12 px-6 bg-brand text-white font-semibold rounded-xl shadow-md hover:bg-brand-hover transition-all duration-200"
             onClick={() => setShowAddForm(true)}
             disabled={ingredients.length === 0 || userRole !== "ADMIN"}
           >
-            Add Item
+            Thêm nguyên liệu
           </button>
         </div>
 
@@ -425,7 +425,7 @@ const InventoryManagement = () => {
         <div className="bg-white rounded-xl shadow-lg p-8">
           {filteredInventory.length === 0 && !isLoading ? (
             <div className="text-center text-gray-600">
-              No inventory items found.
+              Kho chưa có nguyên liệu nào.
             </div>
           ) : (
             filteredInventory.map((item) => (
@@ -435,8 +435,8 @@ const InventoryManagement = () => {
               >
                 {/* Left Section: Ingredient Info */}
                 <div className="flex items-center">
-                  <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-r from-blue-100 to-blue-200 rounded-full mr-4 shadow-sm">
-                    <span className="text-blue-600 font-semibold">
+                  <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-r from-brand to-brand-hover rounded-full mr-4 shadow-sm">
+                    <span className="text-brand font-semibold">
                       {item.quantity}
                     </span>
                   </div>
@@ -462,14 +462,14 @@ const InventoryManagement = () => {
                       onClick={() => handleEditClick(item)}
                       disabled={userRole !== "ADMIN"}
                     >
-                      <FaEdit className="mr-2" /> Edit
+                      <FaEdit className="mr-2" /> Sửa
                     </button>
                     <button
                       className="flex items-center px-4 py-2 !bg-red-500 text-white rounded-lg shadow-md hover:bg-red-600 transition-all duration-200"
                       onClick={() => handleDeleteClick(item)}
                       disabled={userRole !== "ADMIN"}
                     >
-                      <FaTrash className="mr-2" /> Delete
+                      <FaTrash className="mr-2" /> Xóa
                     </button>
                   </div>
                 </div>
@@ -488,21 +488,21 @@ const InventoryManagement = () => {
               <img alt="Logo" className="w-24 h-24" src="/img/logoremovebg.png" />
             </div>
             <h3 className="text-2xl font-bold mb-6 text-center text-gray-800">
-              Add Inventory Item
+              Thêm nguyên liệu vào kho
             </h3>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Ingredient <span className="text-red-500">*</span>
+                  Nguyên liệu <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={newItem.ingredientId}
                   onChange={(e) =>
                     setNewItem({ ...newItem, ingredientId: e.target.value })
                   }
-                  className="w-full h-12 p-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                  className="w-full h-12 p-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-transparent transition-all duration-300"
                 >
-                  <option value="">Select ingredient</option>
+                  <option value="">Chọn nguyên liệu</option>
                   {ingredients.map((ingredient) => (
                     <option
                       key={ingredient.ingredientId}
@@ -515,7 +515,7 @@ const InventoryManagement = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Quantity <span className="text-red-500">*</span>
+                  Số lượng <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -525,22 +525,22 @@ const InventoryManagement = () => {
                   onChange={(e) =>
                     setNewItem({ ...newItem, quantity: e.target.value })
                   }
-                  className="w-full h-12 p-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
-                  placeholder="Enter quantity (e.g., 25.5)"
+                  className="w-full h-12 p-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-transparent transition-all duration-300"
+                  placeholder="Nhập số lượng (VD: 25.5)"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Unit <span className="text-red-500">*</span>
+                  Đơn vị <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={newItem.unit === "new" ? "" : newItem.unit}
                   onChange={(e) =>
                     setNewItem({ ...newItem, unit: e.target.value || "new" })
                   }
-                  className="w-full h-12 p-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                  className="w-full h-12 p-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-transparent transition-all duration-300"
                 >
-                  <option value="">Select unit</option>
+                  <option value="">Chọn đơn vị</option>
                   {uniqueUnits
                     .filter((u) => u !== "All")
                     .map((unit) => (
@@ -548,7 +548,7 @@ const InventoryManagement = () => {
                         {unit}
                       </option>
                     ))}
-                  <option value="new">Add new unit</option>
+                  <option value="new">Thêm đơn vị mới</option>
                 </select>
                 {newItem.unit === "new" && (
                   <input
@@ -561,14 +561,14 @@ const InventoryManagement = () => {
                         unit: e.target.value,
                       })
                     }
-                    className="w-full h-12 p-3 mt-2 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
-                    placeholder="Enter new unit (e.g., liters)"
+                    className="w-full h-12 p-3 mt-2 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-transparent transition-all duration-300"
+                    placeholder="Nhập đơn vị mới (VD: lít)"
                   />
                 )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Last Updated
+                  Cập nhật lần cuối
                 </label>
                 <input
                   type="text"
@@ -586,13 +586,13 @@ const InventoryManagement = () => {
                 className="px-6 py-3 bg-green-500 text-white rounded-lg shadow-md hover:bg-green-600 transition-all duration-200"
                 onClick={validateAndAddItem}
               >
-                Add
+                Thêm
               </button>
               <button
                 className="px-6 py-3 bg-gray-500 text-white rounded-lg shadow-md hover:bg-gray-600 transition-all duration-200"
                 onClick={() => setShowAddForm(false)}
               >
-                Cancel
+                Hủy
               </button>
             </div>
           </div>
@@ -608,22 +608,22 @@ const InventoryManagement = () => {
               <img alt="Logo" className="w-24 h-24" src="/img/logoremovebg.png" />
             </div>
             <h3 className="text-2xl font-bold mb-6 text-center text-gray-800">
-              Edit Inventory Item
+              Sửa nguyên liệu
             </h3>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Ingredient <span className="text-red-500">*</span>
+                  Nguyên liệu <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={newItem.ingredientId}
                   onChange={(e) =>
                     setNewItem({ ...newItem, ingredientId: e.target.value })
                   }
-                  className="w-full h-12 p-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                  className="w-full h-12 p-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-transparent transition-all duration-300"
                   disabled
                 >
-                  <option value="">Select ingredient</option>
+                  <option value="">Chọn nguyên liệu</option>
                   {ingredients.map((ingredient) => (
                     <option
                       key={ingredient.ingredientId}
@@ -636,7 +636,7 @@ const InventoryManagement = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Quantity <span className="text-red-500">*</span>
+                  Số lượng <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="number"
@@ -646,22 +646,22 @@ const InventoryManagement = () => {
                   onChange={(e) =>
                     setNewItem({ ...newItem, quantity: e.target.value })
                   }
-                  className="w-full h-12 p-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
-                  placeholder="Enter quantity (e.g., 25.5)"
+                  className="w-full h-12 p-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-transparent transition-all duration-300"
+                  placeholder="Nhập số lượng (VD: 25.5)"
                 />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Unit <span className="text-red-500">*</span>
+                  Đơn vị <span className="text-red-500">*</span>
                 </label>
                 <select
                   value={newItem.unit === "new" ? "" : newItem.unit}
                   onChange={(e) =>
                     setNewItem({ ...newItem, unit: e.target.value || "new" })
                   }
-                  className="w-full h-12 p-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
+                  className="w-full h-12 p-3 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-transparent transition-all duration-300"
                 >
-                  <option value="">Select unit</option>
+                  <option value="">Chọn đơn vị</option>
                   {uniqueUnits
                     .filter((u) => u !== "All")
                     .map((unit) => (
@@ -669,7 +669,7 @@ const InventoryManagement = () => {
                         {unit}
                       </option>
                     ))}
-                  <option value="new">Add new unit</option>
+                  <option value="new">Thêm đơn vị mới</option>
                 </select>
                 {newItem.unit === "new" && (
                   <input
@@ -682,14 +682,14 @@ const InventoryManagement = () => {
                         unit: e.target.value,
                       })
                     }
-                    className="w-full h-12 p-3 mt-2 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300"
-                    placeholder="Enter new unit (e.g., liters)"
+                    className="w-full h-12 p-3 mt-2 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-brand/40 focus:border-transparent transition-all duration-300"
+                    placeholder="Nhập đơn vị mới (VD: lít)"
                   />
                 )}
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Last Updated
+                  Cập nhật lần cuối
                 </label>
                 <input
                   type="text"
@@ -707,13 +707,13 @@ const InventoryManagement = () => {
                 className="px-6 py-3 bg-green-500 text-white rounded-lg shadow-md hover:bg-green-600 transition-all duration-200"
                 onClick={confirmEditItem}
               >
-                Save
+                Lưu
               </button>
               <button
                 className="px-6 py-3 bg-gray-500 text-white rounded-lg shadow-md hover:bg-gray-600 transition-all duration-200"
                 onClick={() => setShowEditForm(false)}
               >
-                Cancel
+                Hủy
               </button>
             </div>
           </div>
@@ -729,7 +729,7 @@ const InventoryManagement = () => {
               <img alt="Logo" className="w-24 h-24" src="/img/logoremovebg.png" />
             </div>
             <h3 className="text-2xl font-bold mb-6 text-center text-gray-800">
-              Success
+              Thành công
             </h3>
             <div className="flex justify-center">
               <FaCheck className="text-4xl text-green-500" />
@@ -747,7 +747,7 @@ const InventoryManagement = () => {
               <img alt="Logo" className="w-24 h-24" src="/img/logoremovebg.png" />
             </div>
             <h3 className="text-2xl font-bold mb-6 text-center text-gray-800">
-              ARE YOU SURE?
+              BẠN CÓ CHẮC CHẮN?
             </h3>
             <div className="flex justify-center space-x-4">
               <button
@@ -760,7 +760,7 @@ const InventoryManagement = () => {
                 className="px-6 py-3 bg-gray-500 text-white rounded-lg shadow-md hover:bg-gray-600 transition-all duration-200"
                 onClick={handleCancelDelete}
               >
-                NO
+                KHÔNG
               </button>
             </div>
           </div>

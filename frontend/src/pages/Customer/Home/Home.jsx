@@ -4,6 +4,7 @@ import Header from "../../../components/layout/Header";
 import Banner from "../../../components/ui/Banner";
 import { CartContext } from "../../../context/CartContext";
 import { gql, useLazyQuery } from "@apollo/client";
+import { toast } from "react-toastify";
 
 import { BACKEND_URL, BACKEND_WS_URL } from "../../../config";
 // GraphQL Query for Table Validation
@@ -22,12 +23,8 @@ const Home = () => {
   const navigate = useNavigate();
   const { tableNumber: tableNumberFromUrl } = useParams();
   const [processingPayment, setProcessingPayment] = useState(false);
-  const [paymentError, setPaymentError] = useState(null);
-  const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [lastOrderInfo, setLastOrderInfo] = useState(null);
   const [sendingNotification, setSendingNotification] = useState(false);
-  const [notificationError, setNotificationError] = useState(null);
-  const [notificationSuccess, setNotificationSuccess] = useState(false);
   const [tableNumber, setTableNumber] = useState(() => {
     const savedTableNumber = localStorage.getItem("tableNumber");
     return savedTableNumber &&
@@ -37,8 +34,12 @@ const Home = () => {
       : "1";
   });
   const [socket, setSocket] = useState(null);
-  const [socketError, setSocketError] = useState(null);
-  const [validationError, setValidationError] = useState(null);
+
+  // Feedback is shown as toasts: the old inline banners rendered at the top of the page,
+  // out of view of the button the guest had just tapped, so it looked like nothing happened.
+  const setSocketError = (msg) => msg && toast.warn(msg, { toastId: "home-socket" });
+  const setValidationError = (msg) => msg && toast.error(msg, { toastId: "home-validation" });
+  const setPaymentError = (msg) => msg && toast.error(msg, { toastId: "home-payment", autoClose: 6000 });
 
   const API_BASE_URL = BACKEND_URL;
 
@@ -70,7 +71,7 @@ const Home = () => {
       console.error("Error validating table number:", error);
       return {
         isValid: false,
-        error: error.message || "Failed to validate table number",
+        error: error.message || "Không kiểm tra được số bàn",
       };
     }
   };
@@ -136,20 +137,18 @@ const Home = () => {
               console.log(
                 `Updated table number to ${newTableNumber} in state, localStorage, and URL`
               );
-              alert(`Your table has been changed to Table ${newTableNumber}`);
+              toast.info(`Bạn đã được chuyển sang bàn ${newTableNumber}`);
             }
           }
         } catch (err) {
           console.error("Error processing WebSocket message:", err);
-          setSocketError(
-            "Failed to process notification. Please check your connection."
-          );
+          setSocketError("Không xử lý được thông báo. Vui lòng kiểm tra kết nối.");
         }
       };
 
       ws.onerror = (error) => {
         console.error("WebSocket error:", error);
-        setSocketError("Failed to connect to notifications server");
+        // Silent: the socket retries on its own; a toast on every retry only alarms guests
       };
 
       ws.onclose = () => {
@@ -236,7 +235,7 @@ const Home = () => {
                 return;
               } else {
                 setValidationError(
-                  validationResult.error || "Invalid order or table number"
+                  validationResult.error || "Đơn hàng hoặc số bàn không hợp lệ"
                 );
                 localStorage.removeItem("latestOrderInfo");
                 sessionStorage.removeItem("latestOrderInfo");
@@ -247,7 +246,7 @@ const Home = () => {
           }
         } catch (e) {
           console.error("Error parsing order info:", e);
-          setValidationError("Failed to load order information");
+          setValidationError("Không tải được thông tin đơn hàng");
         }
       }
 
@@ -292,7 +291,7 @@ const Home = () => {
       isNaN(newTableNumber) ||
       parseInt(newTableNumber) <= 0
     ) {
-      alert("Please enter a valid table number");
+      toast.error("Vui lòng nhập số bàn hợp lệ");
       return;
     }
     setTableNumber(newTableNumber);
@@ -313,8 +312,6 @@ const Home = () => {
 
   const sendNotification = async (type, additionalMessage = "") => {
     setSendingNotification(true);
-    setNotificationError(null);
-    setNotificationSuccess(false);
 
     try {
       // Guests have no account; the backend falls back to the order's customer / the table
@@ -337,16 +334,15 @@ const Home = () => {
       });
 
       if (response.ok) {
-        setNotificationSuccess(true);
         return true;
       } else {
-        throw new Error("Failed to send notification");
+        throw new Error("Không gửi được thông báo");
       }
     } catch (error) {
       console.error("Error sending notification:", error);
-      setNotificationError(
-        error.message || "Failed to notify staff. Please try again."
-      );
+      toast.error("Không gửi được yêu cầu tới nhân viên. Vui lòng thử lại.", {
+        toastId: "home-notify",
+      });
       return false;
     } finally {
       setSendingNotification(false);
@@ -359,20 +355,19 @@ const Home = () => {
       "Customer needs assistance"
     );
     if (success) {
-      alert("Staff has been notified and will assist you shortly.");
+      toast.success("Đã báo nhân viên. Nhân viên sẽ đến bàn bạn ngay!");
     }
   };
 
   const handleCallPayment = async () => {
     try {
       setProcessingPayment(true);
-      setPaymentError(null);
 
       let orderInfo =
         localStorage.getItem("latestOrderInfo") ||
         sessionStorage.getItem("latestOrderInfo");
       if (!orderInfo) {
-        setPaymentError("No active order found. Please place an order first.");
+        setPaymentError("Bạn chưa có đơn nào. Vui lòng gọi món trước khi thanh toán.");
         setProcessingPayment(false);
         return;
       }
@@ -392,12 +387,12 @@ const Home = () => {
           navigate(`/table/${validationResult.correctTableNumber}`, {
             replace: true,
           });
-          setPaymentError("Table number updated. Please try payment again.");
+          setPaymentError("Số bàn vừa được cập nhật. Vui lòng bấm thanh toán lại.");
           setProcessingPayment(false);
           return;
         } else {
           setPaymentError(
-            validationResult.error || "Invalid order or table number"
+            validationResult.error || "Đơn hàng hoặc số bàn không hợp lệ"
           );
           localStorage.removeItem("latestOrderInfo");
           sessionStorage.removeItem("latestOrderInfo");
@@ -411,7 +406,7 @@ const Home = () => {
     } catch (err) {
       console.error("Error in payment flow:", err);
       setPaymentError(
-        err.message || "Cannot process payment. Please try again."
+        err.message || "Không thể thanh toán lúc này. Vui lòng thử lại."
       );
     } finally {
       setProcessingPayment(false);
@@ -444,182 +439,130 @@ const Home = () => {
       .catch(() => setSpecialStaff([]));
   }, []);
 
+  const hour = new Date().getHours();
+  const greeting =
+    hour < 11 ? "Chào buổi sáng" : hour < 14 ? "Chào buổi trưa" : hour < 18 ? "Chào buổi chiều" : "Chào buổi tối";
+
   return (
-    <div className="flex justify-center items-center min-h-screen">
-      <div className="w-full max-w-md px-4">
+    <div className="flex justify-center min-h-screen bg-cream">
+      <div className="w-full max-w-md px-4 pb-8 page-enter">
         <Header />
         <Banner />
 
-        {validationError && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            <p>{validationError}</p>
-          </div>
-        )}
-
-        {socketError && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            <p>{socketError}</p>
-          </div>
-        )}
-
-        {paymentError && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            <p>{paymentError}</p>
-          </div>
-        )}
-
-        {notificationError && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-            <p>{notificationError}</p>
-          </div>
-        )}
-
-        {notificationSuccess && (
-          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-            <p>Notification sent successfully!</p>
-          </div>
-        )}
-
-        <section className="mt-4 grid grid-cols-2 gap-4">
-          <div>
-            <div className="text-center mb-4">
-              <p className="text-lg">
-                Good Morning{" "}
-                <span className="text-blue-500 font-semibold">Customer!</span>
-              </p>
-              <p className="text-gray-600">
-                We will deliver your food to your table:{" "}
-                <strong>{tableNumber}</strong>
-              </p>
-              <input
-                type="text"
-                value={tableNumber}
-                disabled
-                onChange={(e) => handleTableNumberChange(e.target.value)}
-                className="mt-2 border rounded p-1 w-24 text-center"
-                placeholder="Table number"
-              />
-            </div>
+        <section className="rounded-2xl bg-card border border-line p-4 shadow-sm">
+          <p className="text-base text-ink">
+            {greeting}, <span className="font-semibold text-brand">quý khách!</span>
+          </p>
+          <p className="mt-1 text-sm text-ink-muted">Món ăn sẽ được phục vụ tận bàn của bạn</p>
+          <div className="mt-3 inline-flex items-center gap-2 rounded-xl bg-brand-soft px-3 py-1.5">
+            <span className="text-sm text-ink-muted">Bàn số</span>
+            <span className="text-lg font-bold text-brand">{tableNumber}</span>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col items-center space-y-2">
-              <button
-                onClick={handleCallStaff}
-                disabled={sendingNotification}
-                className="w-20 h-20 flex items-center justify-center text-black font-bold rounded-lg"
-                style={{
-                  backgroundImage: "url('/img/callstaff.png')",
-                  backgroundSize: "cover",
-                  backgroundPosition: "center top",
-                }}
-              ></button>
-              <span
-                className="text-sm font-medium"
-                style={{ color: "#747474" }}
-              >
-                {sendingNotification ? "Calling..." : "Call Staff"}
+          <div className="mt-4 grid grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={handleCallStaff}
+              disabled={sendingNotification}
+              aria-busy={sendingNotification}
+              className="flex items-center gap-3 rounded-xl border border-line bg-white p-3 text-left shadow-sm transition hover:border-brand/40 hover:shadow active:scale-[0.98] disabled:opacity-60"
+            >
+              <img src="/img/callstaff.png" alt="" width="231" height="384" className="h-12 w-auto shrink-0" />
+              <span className="text-sm font-semibold text-ink leading-tight">
+                {sendingNotification ? "Đang gọi..." : "Gọi nhân viên"}
               </span>
-            </div>
+            </button>
 
-            <div className="flex flex-col items-center space-y-2">
-              <button
-                onClick={handleCallPayment}
-                disabled={processingPayment || sendingNotification}
-                className="w-20 h-20 flex items-center justify-center font-bold rounded-lg"
-                style={{
-                  backgroundImage: "url('/img/callpayment.png')",
-                  backgroundSize: "cover",
-                  backgroundPosition: "center top",
-                }}
-              ></button>
-              <span
-                className="text-sm font-semibold"
-                style={{ color: "#747474" }}
-              >
-                {processingPayment || sendingNotification
-                  ? "Processing..."
-                  : "Call Payment"}
+            <button
+              type="button"
+              onClick={handleCallPayment}
+              disabled={processingPayment || sendingNotification}
+              aria-busy={processingPayment}
+              className="flex items-center gap-3 rounded-xl border border-line bg-white p-3 text-left shadow-sm transition hover:border-brand/40 hover:shadow active:scale-[0.98] disabled:opacity-60"
+            >
+              <img src="/img/callpayment.png" alt="" width="384" height="384" className="h-12 w-12 shrink-0 object-contain" />
+              <span className="text-sm font-semibold text-ink leading-tight">
+                {processingPayment ? "Đang xử lý..." : "Thanh toán"}
               </span>
-            </div>
+            </button>
           </div>
         </section>
 
-        <div className="w-full h-20 mt-1 relative col-span-2">
-          <button
-            onClick={handleViewMenu}
-            className="absolute inset-0 flex items-center justify-center gap-2 text-black font-bold rounded-lg overflow-hidden"
-            style={{
-              backgroundImage: "url('/img/viewmenu.jpg')",
-              backgroundSize: "cover",
-              backgroundPosition: "center",
-            }}
-          >
-            <div className="absolute inset-0 bg-[#D9D9D9] opacity-20 z-0" />
-            <span
-              className="text-xl relative z-10 flex items-center gap-2"
-              style={{ color: "#747474" }}
-            >
-              View menu - Order
-              <img
-                src="/img/viewmenu.png"
-                alt="Menu icon"
-                className="w-15 h-15"
-              />
-            </span>
-          </button>
-        </div>
-
         <button
-          onClick={() => navigate("/reservation")}
-          className="mt-3 w-full rounded-lg bg-[#B73512] py-4 text-lg font-bold text-white shadow-md"
+          type="button"
+          onClick={handleViewMenu}
+          className="mt-4 flex w-full items-center justify-between rounded-2xl bg-brand px-5 py-4 text-white shadow-md shadow-brand/25 transition hover:bg-brand-hover active:scale-[0.99]"
         >
-          📅 Đặt bàn trước
+          <span className="text-left">
+            <span className="block text-lg font-bold">Xem thực đơn & gọi món</span>
+            <span className="block text-xs text-white/80">
+              {cartItemCount > 0 ? `${cartItemCount} món trong giỏ` : "Chọn món yêu thích của bạn"}
+            </span>
+          </span>
+          <img src="/img/viewmenu.png" alt="" width="384" height="384" className="h-12 w-12 shrink-0 object-contain" />
         </button>
 
-        <section className="mt-4">
-          <div className="flex items-center space-x-2 mb-3">
-            <h2 className="text-xl font-bold">Today's Special</h2>
+        <button
+          type="button"
+          onClick={() => navigate("/reservation")}
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-brand/30 bg-white py-3.5 text-base font-semibold text-brand shadow-sm transition hover:bg-brand-soft active:scale-[0.99]"
+        >
+          <i className="fa-regular fa-calendar" aria-hidden="true" />
+          Đặt bàn trước
+        </button>
+
+        <section className="mt-6">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-xl font-bold text-ink">Món đặc biệt hôm nay</h2>
             <button
-              className="text-black text-sm font-semibold flex items-center"
+              type="button"
+              className="flex min-h-[44px] items-center gap-1 px-1 text-sm font-semibold text-brand"
               onClick={handleViewMenu}
             >
+              Xem tất cả
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
                 strokeWidth="2"
                 stroke="currentColor"
-                className="w-4 h-4 ml-1"
+                className="w-4 h-4"
+                aria-hidden="true"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 5l7 7-7 7"
-                />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
             </button>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            {specialStaff.map((dish) => (
-              <div
-                key={dish.id}
-                className="flex flex-col items-start cursor-pointer"
-                onClick={() => navigate(`/viewitem/${dish.id}`)}
-              >
-                <img
-                  src={dish.image}
-                  alt={dish.name}
-                  className="w-full h-[150px] object-cover rounded-lg mb-2"
-                />
-                <p className="text-sm text-gray-500">{dish.type}</p>
-                <p className="text-lg font-semibold">{dish.name}</p>
-                <p className="text-sm font-bold text-gray-800">
-                  {dish.price} VND
-                </p>
-              </div>
-            ))}
+            {specialStaff.length === 0
+              ? // Skeletons hold the space until dishes arrive, so the page does not jump
+                [0, 1].map((i) => (
+                  <div key={i} className="animate-pulse">
+                    <div className="h-[150px] rounded-xl bg-line/70 mb-2" />
+                    <div className="h-3 w-1/2 rounded bg-line/70 mb-2" />
+                    <div className="h-4 w-3/4 rounded bg-line/70 mb-2" />
+                    <div className="h-3 w-1/3 rounded bg-line/70" />
+                  </div>
+                ))
+              : specialStaff.map((dish) => (
+                  <button
+                    type="button"
+                    key={dish.id}
+                    className="flex flex-col items-start text-left rounded-xl transition active:scale-[0.98]"
+                    onClick={() => navigate(`/viewitem/${dish.id}`)}
+                  >
+                    <img
+                      src={dish.image}
+                      alt={dish.name}
+                      loading="lazy"
+                      className="w-full h-[150px] object-cover rounded-xl mb-2 bg-line"
+                    />
+                    <p className="text-xs text-ink-muted">{dish.type}</p>
+                    <p className="text-base font-semibold text-ink">{dish.name}</p>
+                    <p className="text-sm font-bold text-brand">{dish.price}đ</p>
+                  </button>
+                ))}
           </div>
         </section>
       </div>

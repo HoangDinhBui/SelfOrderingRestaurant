@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -13,38 +14,39 @@ import "@fortawesome/fontawesome-free/css/all.min.css";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import RequireRole from "./components/RequireRole";
+import PageLoader from "./components/ui/PageLoader";
 
-import Home from "./pages/Customer/Home/Home";
-import Menu from "./pages/Customer/Menu/Menu";
-import Order from "./pages/Customer/Order/Order";
-import ViewItem from "./pages/Customer/ViewItem/ViewItem";
-import Note from "./pages/Customer/Note/Note";
-import Payment from "./pages/Customer/PayMent/Payment";
-import Evaluate from "./pages/Customer/Evaluate/Evaluate";
-import CreateTable from "./components/CreateTable";
-import CaptivePortal from "./pages/Customer/CaptivePortal/CaptivePortal";
-import Reservation from "./pages/Customer/Reservation/Reservation";
+const Home = lazy(() => import("./pages/Customer/Home/Home"));
+const Menu = lazy(() => import("./pages/Customer/Menu/Menu"));
+const Order = lazy(() => import("./pages/Customer/Order/Order"));
+const ViewItem = lazy(() => import("./pages/Customer/ViewItem/ViewItem"));
+const Note = lazy(() => import("./pages/Customer/Note/Note"));
+const Payment = lazy(() => import("./pages/Customer/PayMent/Payment"));
+const Evaluate = lazy(() => import("./pages/Customer/Evaluate/Evaluate"));
+const CreateTable = lazy(() => import("./components/CreateTable"));
+const CaptivePortal = lazy(() => import("./pages/Customer/CaptivePortal/CaptivePortal"));
+const Reservation = lazy(() => import("./pages/Customer/Reservation/Reservation"));
 
-import AdminInformation from "./pages/Admin/AdminInformation/AdminInformation";
-import DishManagementAdmin from "./pages/Admin/DishManagement/DishManagment";
-import EvaluateAdmin from "./pages/Admin/Evaluate/Evaluate";
-import InventoryManagement from "./pages/Admin/InventoryManagement/InventoryManagement";
-import Login from "./pages/Staff/Login/Login";
-import NotificationManagementStaff from "./pages/Staff/NotificationManagement/NotificationManagement";
-import OrderHistoryAdmin from "./pages/Admin/OrderHistory/OrderHistory";
-import TableManagementAdmin from "./pages/Admin/TableManagement/TableManagement";
-import MenuManagementAdmin from "./pages/Admin/MenuManagement/MenuManagement";
-import RevenueManagement from "./pages/Admin/RevenueManagement/RevenueManagement";
-import StaffManagement from "./pages/Admin/StaffManagement/StaffManagement";
-import ShiftSchedule from "./pages/Admin/ShiftSchedule/ShiftSchedule";
-import UserManagementAdmin from "./pages/Admin/UserManagement/UserManagement";
+const AdminInformation = lazy(() => import("./pages/Admin/AdminInformation/AdminInformation"));
+const DishManagementAdmin = lazy(() => import("./pages/Admin/DishManagement/DishManagment"));
+const EvaluateAdmin = lazy(() => import("./pages/Admin/Evaluate/Evaluate"));
+const InventoryManagement = lazy(() => import("./pages/Admin/InventoryManagement/InventoryManagement"));
+const Login = lazy(() => import("./pages/Staff/Login/Login"));
+const NotificationManagementStaff = lazy(() => import("./pages/Staff/NotificationManagement/NotificationManagement"));
+const OrderHistoryAdmin = lazy(() => import("./pages/Admin/OrderHistory/OrderHistory"));
+const TableManagementAdmin = lazy(() => import("./pages/Admin/TableManagement/TableManagement"));
+const MenuManagementAdmin = lazy(() => import("./pages/Admin/MenuManagement/MenuManagement"));
+const RevenueManagement = lazy(() => import("./pages/Admin/RevenueManagement/RevenueManagement"));
+const StaffManagement = lazy(() => import("./pages/Admin/StaffManagement/StaffManagement"));
+const ShiftSchedule = lazy(() => import("./pages/Admin/ShiftSchedule/ShiftSchedule"));
+const UserManagementAdmin = lazy(() => import("./pages/Admin/UserManagement/UserManagement"));
 
-import DishManagementStaff from "./pages/Staff/DishManagement/DishManagement";
-import OrderHistoryStaff from "./pages/Staff/OrderHistory/OrderHistory";
-import TableManagementStaff from "./pages/Staff/TableManagement/TableManagement";
-import StaffInformation from "./pages/Staff/StaffInformation/StaffInformation";
+const DishManagementStaff = lazy(() => import("./pages/Staff/DishManagement/DishManagement"));
+const OrderHistoryStaff = lazy(() => import("./pages/Staff/OrderHistory/OrderHistory"));
+const TableManagementStaff = lazy(() => import("./pages/Staff/TableManagement/TableManagement"));
+const StaffInformation = lazy(() => import("./pages/Staff/StaffInformation/StaffInformation"));
 
-import Attendance from "./pages/Staff/Attendance/Attendance";
+const Attendance = lazy(() => import("./pages/Staff/Attendance/Attendance"));
 
 function App() {
   return (
@@ -52,6 +54,7 @@ function App() {
       <CartProvider>
         <MenuProvider>
           <Router>
+            <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route
                 path="/"
@@ -146,17 +149,17 @@ function App() {
                 }
               />
             </Routes>
+            </Suspense>
           </Router>
           <ToastContainer
-            position="top-right"
-            autoClose={3000}
-            hideProgressBar={false}
+            position="top-center"
+            autoClose={3500}
             newestOnTop
             closeOnClick
-            rtl={false}
             pauseOnFocusLoss
             draggable
             pauseOnHover
+            limit={3}
           />
         </MenuProvider>
       </CartProvider>

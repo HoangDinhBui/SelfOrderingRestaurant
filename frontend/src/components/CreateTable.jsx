@@ -116,7 +116,7 @@ const CreateTable = () => {
   };
 
   return (
-    <div className="flex justify-center items-center min-h-screen bg-gray-100">
+    <div className="flex justify-center items-center min-h-screen bg-cream">
       <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-md">
         <h2 className="text-2xl font-bold mb-4 text-center">Tạo Mã QR Cho Bàn</h2>
 
@@ -140,7 +140,7 @@ const CreateTable = () => {
         <button
           onClick={handleCreateTable}
           disabled={uploading}
-          className="w-full !bg-blue-500 text-white font-bold py-2 rounded hover:bg-blue-600 disabled:bg-gray-400"
+          className="w-full !bg-brand text-white font-bold py-2 rounded hover:bg-brand-hover disabled:bg-gray-400"
         >
           {uploading ? "Đang lưu..." : "Tạo và Lưu Mã QR"}
         </button>
@@ -150,7 +150,7 @@ const CreateTable = () => {
             <h3 className="text-lg font-semibold mb-2">
               Mã QR cho bàn {tableNumber}
             </h3>
-            <img src={qrUrl} alt={`QR Code for table ${tableNumber}`} style={{ width: "200px", height: "200px" }} />
+            <img src={qrUrl} alt={`Mã QR cho bàn ${tableNumber}`} style={{ width: "200px", height: "200px" }} />
             <div className="mt-4 flex justify-center gap-4">
               <button
                 onClick={handleDownloadQr}
@@ -166,7 +166,7 @@ const CreateTable = () => {
               </button>
             </div>
             <p className="mt-2 text-gray-600">
-              URL: <a href={`${APP_BASE_URL}/table/${tableNumber}`} target="_blank" className="text-blue-500">{`${APP_BASE_URL}/table/${tableNumber}`}</a>
+              URL: <a href={`${APP_BASE_URL}/table/${tableNumber}`} target="_blank" className="text-brand">{`${APP_BASE_URL}/table/${tableNumber}`}</a>
             </p>
           </div>
         )}

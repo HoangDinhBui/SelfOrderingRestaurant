@@ -146,26 +146,26 @@ const DishManagementAdmin = () => {
   }
 };
   return (
-    <div className="h-screen w-screen !bg-blue-50 flex flex-col">
+    <div className="min-h-screen w-full bg-cream flex flex-col">
       <div className={`h-full w-full ${showConfirmation ? "blur-sm" : ""}`}>
         <MenuBar
-          title="Dish Management"
+          title="Quản lý món ăn"
           icon="https://img.icons8.com/?size=50&id=6483&format=png"
         />
 
         <div className="flex-1 p-6 bg-gray-100 overflow-y-auto">
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold mb-4">Table</h2>
+            <h2 className="text-xl font-bold mb-4">Bàn</h2>
 
             <div className="overflow-x-auto">
               <table className="min-w-full bg-white border">
                 <thead>
-                  <tr className="bg-blue-900 text-white">
-                    <th className="py-3 px-4 text-left">Table</th>
-                    <th className="py-3 px-4 text-left">Dish Name</th>
-                    <th className="py-3 px-4 text-left">Quantity</th>
-                    <th className="py-3 px-4 text-left">Note</th>
-                    <th className="py-3 px-4 text-center">Action</th>
+                  <tr className="bg-brand-hover text-white">
+                    <th className="py-3 px-4 text-left">Bàn</th>
+                    <th className="py-3 px-4 text-left">Tên món</th>
+                    <th className="py-3 px-4 text-left">Số lượng</th>
+                    <th className="py-3 px-4 text-left">Ghi chú</th>
+                    <th className="py-3 px-4 text-center">Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -181,7 +181,7 @@ const DishManagementAdmin = () => {
                         <button
                           className="delete-button mr-2"
                           onClick={() => handleDeleteClick(dish.id)}
-                          aria-label="Delete"
+                          aria-label="Xóa"
                         >
                           <FontAwesomeIcon
                             icon={faCircleXmark}
@@ -198,7 +198,7 @@ const DishManagementAdmin = () => {
                           }
                           disabled={processing}
                         >
-                          {processing ? "Processing..." : "Accept"}
+                          {processing ? "Đang xử lý..." : "Accept"}
                         </button>
                       </td>
                     </tr>
@@ -224,14 +224,14 @@ const DishManagementAdmin = () => {
                 />
               </div>
               <div className="text-center">
-                <p className="text-gray-600 mb-4">ARE YOU SURE?</p>
+                <p className="text-gray-600 mb-4">BẠN CÓ CHẮC CHẮN?</p>
               </div>
               <div className="flex justify-center gap-4">
                 <button
                   className="px-6 py-2 bg-gray-200 text-gray-800 rounded-full font-medium hover:bg-gray-300 transition-colors"
                   onClick={() => cancelDelete()}
                 >
-                  NO
+                  KHÔNG
                 </button>
                 <button
                   className="px-6 py-2 bg-red-500 text-white rounded-full font-medium hover:bg-red-600 transition-colors"

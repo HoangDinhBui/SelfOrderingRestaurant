@@ -29,7 +29,7 @@ const TABS = [
 const STATUS_STYLE = {
   SCHEDULED: "bg-[#FFF5E8] text-[#A65B00]",
   CONFIRMED: "bg-[#E8F7EF] text-[#047857]",
-  CANCELLED: "bg-slate-100 text-slate-500",
+  CANCELLED: "bg-slate-100 text-ink-muted",
 };
 
 /**
@@ -155,7 +155,7 @@ export default function ReservationManager({ isOpen, onClose, tables = [], onCha
         key="move"
         disabled={busy}
         onClick={() => setMoving({ reservation: r, tableId: "" })}
-        className={`${btn} bg-white text-slate-600 border border-slate-200 hover:bg-slate-50`}
+        className={`${btn} bg-white text-ink-muted border border-line hover:bg-slate-50`}
       >
         Đổi bàn
       </button>
@@ -167,7 +167,7 @@ export default function ReservationManager({ isOpen, onClose, tables = [], onCha
           key="reject"
           disabled={busy}
           onClick={() => setConfirmAction({ reservation: r, kind: "reject" })}
-          className={`${btn} text-slate-500 hover:bg-slate-100`}
+          className={`${btn} text-ink-muted hover:bg-slate-100`}
         >
           Từ chối
         </button>,
@@ -188,7 +188,7 @@ export default function ReservationManager({ isOpen, onClose, tables = [], onCha
           key="cancel"
           disabled={busy}
           onClick={() => setConfirmAction({ reservation: r, kind: "cancel" })}
-          className={`${btn} text-slate-500 hover:bg-slate-100`}
+          className={`${btn} text-ink-muted hover:bg-slate-100`}
         >
           Hủy
         </button>,
@@ -198,7 +198,7 @@ export default function ReservationManager({ isOpen, onClose, tables = [], onCha
           onClick={() =>
             run(r, checkInReservation, `Đã nhận khách bàn ${r.tableNumber}, món đặt trước đã chuyển xuống bếp.`, true)
           }
-          className={`${btn} bg-[#B73512] text-white hover:bg-[#9a2c0f]`}
+          className={`${btn} bg-brand text-white hover:bg-[#9a2c0f]`}
         >
           Khách đã đến
         </button>,
@@ -215,7 +215,7 @@ export default function ReservationManager({ isOpen, onClose, tables = [], onCha
 
   return createPortal(
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-950/45 p-2 backdrop-blur-sm sm:p-5">
-      <div className="relative flex max-h-[96vh] w-full max-w-[1180px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+      <div className="relative flex max-h-[96vh] w-full max-w-[1180px] flex-col overflow-hidden rounded-2xl border border-line bg-white shadow-2xl">
         <header className="flex items-center justify-between bg-[#EEF4FD] px-5 py-4">
           <h2 className="text-lg font-bold text-slate-900">Quản lý lịch hẹn</h2>
           <div className="flex items-center gap-2">
@@ -227,7 +227,7 @@ export default function ReservationManager({ isOpen, onClose, tables = [], onCha
             </button>
             <button
               onClick={onClose}
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-slate-500 hover:bg-slate-100"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-ink-muted hover:bg-slate-100"
               aria-label="Đóng"
             >
               ×
@@ -241,12 +241,12 @@ export default function ReservationManager({ isOpen, onClose, tables = [], onCha
               key={t.key}
               onClick={() => setTab(t.key)}
               className={`border-b-2 px-1 pb-3 pt-1 text-sm font-semibold ${
-                tab === t.key ? "border-[#B73512] text-[#B73512]" : "border-transparent text-slate-500"
+                tab === t.key ? "border-[#B73512] text-brand" : "border-transparent text-ink-muted"
               }`}
             >
               {t.label}
               {t.key === "pending" && pending.length > 0 && (
-                <span className="ml-1.5 rounded-full bg-[#B73512] px-1.5 py-0.5 text-[10px] text-white">
+                <span className="ml-1.5 rounded-full bg-brand px-1.5 py-0.5 text-[10px] text-white">
                   {pending.length}
                 </span>
               )}
@@ -257,15 +257,15 @@ export default function ReservationManager({ isOpen, onClose, tables = [], onCha
         <div className="flex-1 overflow-y-auto p-4 sm:p-5">
           <div className={`grid grid-cols-1 items-start gap-4 ${showForm ? "lg:grid-cols-[minmax(0,1.3fr)_minmax(340px,1fr)]" : ""}`}>
             <section className="min-w-0">
-              <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl bg-[#F0F5FD] p-3">
+              <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl bg-white p-3">
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Tìm theo tên, SĐT, mã lịch hẹn..."
-                  className="w-full max-w-[260px] rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-orange-500"
+                  className="w-full max-w-[260px] rounded-lg border border-line bg-white px-3 py-2 text-sm outline-none focus:border-orange-500"
                 />
                 {tab !== "pending" && (
-                  <label className="flex items-center gap-2 rounded-lg bg-white px-3 py-1.5 text-xs text-slate-600">
+                  <label className="flex items-center gap-2 rounded-lg bg-white px-3 py-1.5 text-xs text-ink-muted">
                     Ngày
                     <input
                       type="date"
@@ -275,26 +275,26 @@ export default function ReservationManager({ isOpen, onClose, tables = [], onCha
                     />
                   </label>
                 )}
-                <button onClick={load} className="ml-auto text-xs text-slate-500 hover:text-[#B73512]">
+                <button onClick={load} className="ml-auto text-xs text-ink-muted hover:text-brand">
                   ↻ Làm mới
                 </button>
               </div>
 
               {loading && visible.length === 0 ? (
-                <p className="p-8 text-center text-sm text-slate-500">Đang tải...</p>
+                <p className="p-8 text-center text-sm text-ink-muted">Đang tải...</p>
               ) : visible.length === 0 ? (
-                <p className="rounded-xl border border-dashed p-8 text-center text-sm text-slate-500">
+                <p className="rounded-xl border border-dashed p-8 text-center text-sm text-ink-muted">
                   {tab === "pending" ? "Không có yêu cầu nào cần duyệt." : "Không có lịch hẹn trong ngày này."}
                 </p>
               ) : (
                 <div className="space-y-3">
                   {visible.map((r) => (
-                    <article key={r.orderId} className="rounded-xl border border-slate-200 bg-white p-3">
+                    <article key={r.orderId} className="rounded-xl border border-line bg-white p-3">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="flex flex-wrap items-center gap-2 text-sm">
                           <strong className="text-slate-900">{r.customerName}</strong>
                           {r.contactPhone && (
-                            <a href={`tel:${r.contactPhone}`} className="text-slate-500 hover:text-[#B73512]">
+                            <a href={`tel:${r.contactPhone}`} className="text-ink-muted hover:text-brand">
                               {r.contactPhone}
                             </a>
                           )}
@@ -302,25 +302,25 @@ export default function ReservationManager({ isOpen, onClose, tables = [], onCha
                         </div>
                         <span
                           className={`rounded px-2 py-1 text-[11px] font-semibold ${
-                            STATUS_STYLE[r.status] || "bg-[#EEF3FA] text-slate-600"
+                            STATUS_STYLE[r.status] || "bg-[#EEF3FA] text-ink-muted"
                           }`}
                         >
                           {RESERVATION_STATUS_LABEL[r.status] || r.status}
                         </span>
                       </div>
-                      <div className="mt-2 grid grid-cols-2 gap-1 text-xs text-slate-600 sm:grid-cols-4">
-                        <span className="font-semibold text-[#B73512]">{formatReservationTime(r.reservationTime)}</span>
+                      <div className="mt-2 grid grid-cols-2 gap-1 text-xs text-ink-muted sm:grid-cols-4">
+                        <span className="font-semibold text-brand">{formatReservationTime(r.reservationTime)}</span>
                         <span>• Bàn {r.tableNumber}</span>
                         <span>• {r.guestCount ?? "?"} khách</span>
                         <span>• {r.items?.length ? formatVnd(r.totalAmount) : "Chưa đặt món"}</span>
                       </div>
                       {r.items?.length > 0 && (
-                        <p className="mt-2 text-xs text-slate-600">
+                        <p className="mt-2 text-xs text-ink-muted">
                           {r.items.map((i) => `${i.dishName} x${i.quantity}`).join(", ")}
                         </p>
                       )}
                       {r.notes && (
-                        <p className="mt-2 rounded-lg bg-[#F7FAFE] px-2.5 py-2 text-xs text-slate-600">
+                        <p className="mt-2 rounded-lg bg-[#F7FAFE] px-2.5 py-2 text-xs text-ink-muted">
                           Ghi chú: {r.notes}
                         </p>
                       )}
@@ -334,10 +334,10 @@ export default function ReservationManager({ isOpen, onClose, tables = [], onCha
             </section>
 
             {showForm && (
-              <aside className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+              <aside className="rounded-xl border border-line bg-white p-4 shadow-sm">
                 <h3 className="mb-3 border-b border-slate-100 pb-3 text-sm font-bold text-slate-900">
                   Đặt bàn thủ công
-                  <span className="block text-xs font-normal text-slate-500">
+                  <span className="block text-xs font-normal text-ink-muted">
                     Lịch hẹn do nhân viên nhập được xác nhận ngay.
                   </span>
                 </h3>
@@ -361,11 +361,11 @@ export default function ReservationManager({ isOpen, onClose, tables = [], onCha
               <p className="text-base font-semibold text-slate-900">
                 {confirmAction.kind === "reject" ? "Từ chối" : "Hủy"} lịch hẹn #{confirmAction.reservation.orderId}?
               </p>
-              <p className="mt-2 text-sm text-slate-600">
+              <p className="mt-2 text-sm text-ink-muted">
                 {confirmAction.reservation.customerName} · {formatReservationTime(confirmAction.reservation.reservationTime)}
               </p>
               <div className="mt-4 flex justify-end gap-2">
-                <button onClick={() => setConfirmAction(null)} className={`${btn} text-slate-600 hover:bg-slate-100`}>
+                <button onClick={() => setConfirmAction(null)} className={`${btn} text-ink-muted hover:bg-slate-100`}>
                   Không
                 </button>
                 <button
@@ -380,7 +380,7 @@ export default function ReservationManager({ isOpen, onClose, tables = [], onCha
                         : `Đã hủy lịch hẹn #${reservation.orderId}.`,
                     );
                   }}
-                  className={`${btn} bg-[#B73512] text-white`}
+                  className={`${btn} bg-brand text-white`}
                 >
                   {confirmAction.kind === "reject" ? "Từ chối" : "Hủy lịch hẹn"}
                 </button>
@@ -395,13 +395,13 @@ export default function ReservationManager({ isOpen, onClose, tables = [], onCha
               <p className="text-base font-semibold text-slate-900">
                 Đổi bàn cho lịch hẹn #{moving.reservation.orderId}
               </p>
-              <p className="mt-1 text-sm text-slate-600">
+              <p className="mt-1 text-sm text-ink-muted">
                 Hiện tại: bàn {moving.reservation.tableNumber} · {moving.reservation.guestCount ?? "?"} khách
               </p>
               <select
                 value={moving.tableId}
                 onChange={(e) => setMoving({ ...moving, tableId: e.target.value })}
-                className="mt-3 w-full rounded-lg border border-slate-200 bg-[#F0F5FD] px-3 py-2.5 text-sm"
+                className="mt-3 w-full rounded-lg border border-line bg-white px-3 py-2.5 text-sm"
               >
                 <option value="">-- Chọn bàn --</option>
                 {movableTables.map((t) => (
@@ -411,13 +411,13 @@ export default function ReservationManager({ isOpen, onClose, tables = [], onCha
                 ))}
               </select>
               <div className="mt-4 flex justify-end gap-2">
-                <button onClick={() => setMoving(null)} className={`${btn} text-slate-600 hover:bg-slate-100`}>
+                <button onClick={() => setMoving(null)} className={`${btn} text-ink-muted hover:bg-slate-100`}>
                   Hủy
                 </button>
                 <button
                   disabled={!moving.tableId}
                   onClick={submitMove}
-                  className={`${btn} bg-[#B73512] text-white`}
+                  className={`${btn} bg-brand text-white`}
                 >
                   Đổi bàn
                 </button>

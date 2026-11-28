@@ -35,7 +35,7 @@ class PaymentService {
   async generateReceipt(tableData) {
     try {
       if (!tableData || !tableData.id) {
-        throw new Error("Invalid table data");
+        throw new Error("Dữ liệu bàn không hợp lệ");
       }
 
       // Get all unique order IDs for this table
@@ -44,7 +44,7 @@ class PaymentService {
         .filter((value, index, self) => self.indexOf(value) === index);
 
       if (orderIds.length === 0) {
-        throw new Error("No orders found for this table");
+        throw new Error("Bàn này chưa có đơn nào");
       }
 
       // For simplicity, we'll use the first order ID
@@ -99,7 +99,7 @@ export const confirmPayment = async (orderId) => {
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.message || "Failed to confirm payment");
+      throw new Error(errorData.message || "Không xác nhận được thanh toán");
     }
 
     return await response.json();
@@ -126,7 +126,7 @@ export const processPayment = async (paymentData) => {
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.message || "Failed to process payment");
+      throw new Error(errorData.message || "Không xử lý được thanh toán");
     }
 
     return await response.json();
@@ -147,7 +147,7 @@ export const getPaymentStatus = async (orderId) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(errorText || "Failed to get payment status");
+      throw new Error(errorText || "Không lấy được trạng thái thanh toán");
     }
 
     return await response.json();
@@ -171,7 +171,7 @@ export const processCashPayment = async (orderId) => {
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(errorText || "Failed to process cash payment");
+      throw new Error(errorText || "Không xử lý được thanh toán tiền mặt");
     }
 
     return await response.text();

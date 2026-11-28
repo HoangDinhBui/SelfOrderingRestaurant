@@ -54,7 +54,7 @@ const EvaluteAdmin = () => {
       setReviews(response.data);
     } catch (error) {
       console.error("Error fetching feedbacks:", error);
-      setError("Failed to load feedbacks. Please try again.");
+      setError("Không tải được đánh giá. Vui lòng thử lại.");
     } finally {
       setLoading(false);
     }
@@ -101,7 +101,7 @@ const EvaluteAdmin = () => {
       );
     } catch (error) {
       console.error("Error marking feedback as read:", error);
-      setError("Failed to mark feedback as read. Please try again.");
+      setError("Không đánh dấu đã đọc được. Vui lòng thử lại.");
     }
   };
 
@@ -122,7 +122,7 @@ const EvaluteAdmin = () => {
         setReviews(reviews.filter((rev) => rev.id !== reviewToDelete));
       } catch (error) {
         console.error("Error deleting feedback:", error);
-        setError("Failed to delete feedback. Please try again.");
+        setError("Không xóa được đánh giá. Vui lòng thử lại.");
       }
     }
     setShowDeleteModal(false);
@@ -139,7 +139,7 @@ const EvaluteAdmin = () => {
   const renderStars = (rating) => {
     return (
       <div className="flex items-center justify-center w-12 h-12 bg-gradient-to-r from-yellow-100 to-yellow-200 rounded-full mr-4 shadow-sm">
-        <span className="text-yellow-600 font-semibold">{rating} ⭐</span>
+        <span className="text-yellow-600 font-semibold">{rating} <i className="fa-solid fa-star text-amber-500" aria-hidden="true" /></span>
       </div>
     );
   };
@@ -147,7 +147,7 @@ const EvaluteAdmin = () => {
   // Function to render star rating filter with counts
   const renderStarFilter = () => {
     return (
-      <div className="flex items-center space-x-2 h-12 px-3 bg-white border border-gray-200 rounded-xl shadow-sm focus-within:ring-2 focus-within:ring-blue-500 transition-all">
+      <div className="flex items-center space-x-2 h-12 px-3 bg-white border border-gray-200 rounded-xl shadow-sm focus-within:ring-2 focus-within:ring-brand/40 transition-all">
         {[1, 2, 3, 4, 5].map((star) => (
           <button
             key={star}
@@ -158,7 +158,7 @@ const EvaluteAdmin = () => {
                 : "text-gray-300"
             } hover:text-yellow-500 transition-colors`}
           >
-            <span className="mr-1 text-sm">{star}</span>⭐
+            <span className="mr-1 text-sm">{star}</span><i className="fa-solid fa-star text-amber-500" aria-hidden="true" />
             <span className="ml-1 text-sm text-gray-600">
               ({starCounts[star]})
             </span>
@@ -167,8 +167,8 @@ const EvaluteAdmin = () => {
         <button
           onClick={() => setFilterRating("All")}
           className={`ml-4 text-sm ${
-            filterRating === "All" ? "text-blue-500" : "text-gray-500"
-          } hover:text-blue-500 transition-colors`}
+            filterRating === "All" ? "text-brand" : "text-gray-500"
+          } hover:text-brand transition-colors`}
         >
           All ({reviews.length})
         </button>
@@ -208,18 +208,18 @@ const EvaluteAdmin = () => {
 
         {/* Loading State */}
         {loading && (
-          <div className="text-center text-gray-600">Loading feedbacks...</div>
+          <div className="text-center text-gray-600">Đang tải đánh giá...</div>
         )}
 
         {/* Filter and Search */}
         <div className="mb-6 flex space-x-4 items-center">
           <div className="relative flex-1">
             <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-lg">
-              🔍
+              <i className="fa-solid fa-magnifying-glass" aria-hidden="true" />
             </div>
             <input
               type="text"
-              placeholder="Search by customer name..."
+              placeholder="Tìm theo tên khách hàng..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full h-12 p-3 pl-10 pr-4 bg-white border border-gray-200 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-[#EA580C] focus:border-transparent transition-all duration-300 hover:shadow-md placeholder-gray-400 text-gray-700"
@@ -233,7 +233,7 @@ const EvaluteAdmin = () => {
           >
             {uniqueDates.map((date) => (
               <option key={date} value={date}>
-                {date}
+                {date === "All" ? "Tất cả" : date}
               </option>
             ))}
           </select>
@@ -242,7 +242,7 @@ const EvaluteAdmin = () => {
         {/* Review List */}
         <div className="bg-white rounded-xl shadow-lg p-8">
           {sortedDates.length === 0 && !loading ? (
-            <div className="text-center text-gray-600">No feedbacks found.</div>
+            <div className="text-center text-gray-600">Chưa có đánh giá nào.</div>
           ) : (
             sortedDates.map((date) => (
               <div key={date} className="mb-8">
@@ -292,7 +292,7 @@ const EvaluteAdmin = () => {
                           onClick={() => handleDeleteClick(review.id)}
                           disabled={userRole !== "ADMIN"}
                         >
-                          <FaTrash className="mr-2" /> Delete
+                          <FaTrash className="mr-2" /> Xóa
                         </button>
                       </div>
                     </div>
@@ -304,7 +304,6 @@ const EvaluteAdmin = () => {
         </div>
       </div>
       {/* Delete Confirmation Modal */}
-      oportunidades
       {showDeleteModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
@@ -317,7 +316,7 @@ const EvaluteAdmin = () => {
               />
             </div>
             <h3 className="text-2xl font-bold mb-6 text-center text-gray-800">
-              ARE YOU SURE?
+              BẠN CÓ CHẮC CHẮN?
             </h3>
             <div className="flex justify-center space-x-4">
               <button
@@ -332,7 +331,7 @@ const EvaluteAdmin = () => {
                 onClick={handleCancelDelete}
                 disabled={userRole !== "ADMIN"}
               >
-                NO
+                KHÔNG
               </button>
             </div>
           </div>

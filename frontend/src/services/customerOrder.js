@@ -33,12 +33,12 @@ export const submitCustomerOrder = async ({ tableId, items, totalAmount }) => {
 
   const result = await response.json();
   if (result.errors) {
-    throw new Error(result.errors[0].message || "Error creating order");
+    throw new Error(result.errors[0].message || "Lỗi khi tạo đơn");
   }
 
   const orderId = result.data.createOrder;
   if (!orderId) {
-    throw new Error("Could not get orderId from response");
+    throw new Error("Không nhận được mã đơn từ máy chủ");
   }
 
   const paymentInfo = {

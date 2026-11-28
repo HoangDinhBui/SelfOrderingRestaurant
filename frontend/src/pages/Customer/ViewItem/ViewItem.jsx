@@ -73,7 +73,7 @@ const ViewItem = () => {
       } catch (err) {
         console.error("Error fetching dish details:", err);
         setError(
-          err.message || "Failed to load dish details. Please try again!"
+          err.message || "Không tải được thông tin món. Vui lòng thử lại!"
         );
       } finally {
         setLoading(false);
@@ -89,7 +89,7 @@ const ViewItem = () => {
       const newQuantity = Math.max(1, prev + change);
       // Optional: Check against available stock
       if (item && item.stock && newQuantity > item.stock) {
-        setError(`Sorry, only ${item.stock} items available in stock.`);
+        setError(`Xin lỗi, chỉ còn ${item.stock} phần.`);
         return prev;
       }
       setError(null);
@@ -133,7 +133,7 @@ const ViewItem = () => {
       setTimeout(() => setOrderSuccess(false), 2000);
     } catch (err) {
       console.error("Error adding to cart:", err);
-      let errorMessage = "Failed to add item to cart. Please try again.";
+      let errorMessage = "Không thêm được món vào giỏ. Vui lòng thử lại.";
 
       // Extract more specific error message if available
       if (err.response && err.response.data) {
@@ -156,166 +156,145 @@ const ViewItem = () => {
 
   if (loading)
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <p className="text-center text-gray-500">Loading dish details...</p>
+      <div className="min-h-screen bg-cream">
+        <div className="max-w-md mx-auto px-4 pt-16 animate-pulse">
+          <div className="h-72 rounded-3xl bg-line/70" />
+          <div className="mt-4 h-6 w-2/3 rounded bg-line/70" />
+          <div className="mt-2 h-4 w-1/3 rounded bg-line/70" />
+          <div className="mt-6 h-16 rounded bg-line/70" />
+        </div>
       </div>
     );
 
   if (error || contextError)
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <p className="text-center text-red-500 p-4">{error || contextError}</p>
+      <div className="min-h-screen bg-cream flex items-center justify-center px-4">
+        <div className="text-center bg-card border border-line rounded-2xl p-6 max-w-sm w-full">
+          <p className="text-red-700">{error || contextError}</p>
+          <button
+            onClick={() => navigate("/menu_cus")}
+            className="mt-4 min-h-[44px] px-6 rounded-xl bg-brand text-white font-semibold hover:bg-brand-hover transition"
+          >
+            Quay lại thực đơn
+          </button>
+        </div>
       </div>
     );
 
   if (!item)
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <p className="text-center text-red-500">Dish not found</p>
+      <div className="min-h-screen bg-cream flex items-center justify-center px-4">
+        <div className="text-center">
+          <p className="text-ink-muted">Không tìm thấy món</p>
+          <button
+            onClick={() => navigate("/menu_cus")}
+            className="mt-4 min-h-[44px] px-6 rounded-xl bg-brand text-white font-semibold hover:bg-brand-hover transition"
+          >
+            Quay lại thực đơn
+          </button>
+        </div>
       </div>
     );
 
   // Extract dish details with fallbacks
-  const name = item.dishName || item.name || "Unnamed Dish";
+  const name = item.dishName || item.name || "Món ăn";
   const price = item.price || 0;
-  const category = item.categoryName || item.category || "Uncategorized";
-  const imageUrl = item.imageUrl || item.image || "/placeholder-dish.jpg";
-  const rating = item.rating || 4.5;
-  const sold = item.sold || 0;
-  const stock = item.stock || 0;
+  const category = item.categoryName || item.category || "";
+  const imageUrl = item.imageUrl || item.image || "/img/logoremovebg.png";
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4">
-      {/* Header */}
-      <div className="bg-white py-3 shadow-md sticky top-0 z-10 flex items-center px-4">
-        <button
-          onClick={() => navigate("/menu_cus")}
-          className="p-2 rounded-full bg-gray-200 hover:bg-gray-300"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth="2"
-            stroke="currentColor"
-            className="w-4 h-4"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-        </button>
-        <h2 className="text-lg font-bold flex-1 text-center">View</h2>
-      </div>
-
-      {/* Dish details content */}
-      <div className="bg-white rounded-lg shadow-sm p-4 mt-4">
-        {/* Dish image */}
-        <img
-          src={imageUrl}
-          alt={name}
-          className="w-full h-64 object-cover rounded-lg"
-          onError={(e) => {
-            e.target.onerror = null;
-            e.target.src = "/placeholder-dish.jpg";
-          }}
-        />
-
-        {/* Name and price */}
-        <div className="flex justify-between items-center mt-4">
-          <h3 className="font-bold text-xl">{name}</h3>
-          <p className="text-gray-500 text-lg">
-            {Number(price).toLocaleString()} VND
-          </p>
-        </div>
-
-        {/* Sales count and inventory status */}
-        <div className="flex justify-between items-center mt-2">
-          <div className="mt-2">
-            {/* Items sold and in stock */}
-            <div className="flex items-center space-x-2"></div>
-
-            {/* Rating and category */}
-            <div className="flex items-center space-x-2 mt-1">
-              <span className="text-yellow-500 text-lg">⭐</span>
-              <span className="text-sm font-medium">{rating}</span>
-              <span className="text-sm text-gray-600">• {category}</span>
-            </div>
-          </div>
+    <div className="min-h-screen bg-cream">
+      <div className="max-w-md mx-auto pb-32 page-enter">
+        <div className="relative">
+          <img
+            src={imageUrl}
+            alt={name}
+            className="w-full h-72 object-cover bg-line"
+            onError={(e) => {
+              e.target.onerror = null;
+              e.target.src = "/img/logoremovebg.png";
+            }}
+          />
           <button
-            onClick={() => navigate(`/note/${id}`, { state: { name: name } })}
-            className="!bg-gray-400 text-white px-4 py-2 rounded-lg hover:bg-gray-800"
+            onClick={() => navigate("/menu_cus")}
+            aria-label="Quay lại thực đơn"
+            className="absolute top-3 left-3 w-11 h-11 flex items-center justify-center rounded-full bg-white/90 backdrop-blur shadow-md hover:bg-white transition"
           >
-            Note
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-5 h-5" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
           </button>
         </div>
 
-        {/* Description */}
-        <p className="text-sm text-gray-600 mt-4">
-          {item.description || "No description available."}
-        </p>
+        <div className="relative -mt-6 bg-card rounded-t-3xl px-5 pt-6">
+          {category && (
+            <span className="inline-block text-xs font-medium text-brand bg-brand-soft px-2.5 py-1 rounded-full">
+              {category}
+            </span>
+          )}
+          <div className="mt-2 flex items-start justify-between gap-3">
+            <h1 className="font-bold text-2xl text-ink leading-tight">{name}</h1>
+            <p className="shrink-0 text-xl font-bold text-brand">{Number(price).toLocaleString("vi-VN")}đ</p>
+          </div>
 
-        {/* Quantity, total price and Order button */}
-        <div className="flex items-center justify-between mt-6">
-          <div className="flex items-center space-x-2">
+          <p className="text-sm text-ink-muted mt-3 leading-relaxed">
+            {item.description || "Chưa có mô tả cho món này."}
+          </p>
+
+          <button
+            onClick={() => navigate(`/note_cus/${id}`, { state: { name: name } })}
+            className="mt-5 w-full h-12 rounded-xl border border-line bg-white text-sm font-semibold text-ink flex items-center justify-center gap-2 hover:border-brand/40 transition"
+          >
+            <i className="fa-regular fa-pen-to-square text-ink-muted" aria-hidden="true" />
+            Thêm ghi chú cho bếp
+          </button>
+
+          {error && (
+            <div role="alert" className="mt-4 p-3 bg-red-50 border border-red-200 text-red-800 rounded-xl text-sm">
+              {error}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Sticky add-to-cart bar */}
+      <div className="fixed bottom-0 inset-x-0 z-30 bg-card/95 backdrop-blur border-t border-line">
+        <div className="max-w-md mx-auto px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex items-center gap-3">
+          <div className="flex items-center rounded-xl border border-line bg-white">
             <button
               onClick={() => handleQuantityChange(-1)}
               disabled={orderLoading}
-              className="bg-gray-400 px-2 py-1 rounded hover:bg-gray-300 disabled:opacity-50"
+              aria-label="Giảm số lượng"
+              className="w-11 h-11 flex items-center justify-center text-ink text-lg rounded-l-xl hover:bg-brand-soft transition disabled:opacity-50"
             >
-              -
+              −
             </button>
-            <span className="text-lg">{quantity}</span>
+            <span className="w-8 text-center font-semibold text-ink" aria-live="polite">
+              {quantity}
+            </span>
             <button
               onClick={() => handleQuantityChange(1)}
               disabled={orderLoading}
-              className="bg-gray-400 px-2 py-1 rounded hover:bg-gray-300 disabled:opacity-50"
+              aria-label="Tăng số lượng"
+              className="w-11 h-11 flex items-center justify-center text-ink text-lg rounded-r-xl hover:bg-brand-soft transition disabled:opacity-50"
             >
               +
             </button>
           </div>
-          <p className="font-bold text-lg">
-            {(Number(price) * quantity).toLocaleString()} VND
-          </p>
           <button
             onClick={handleAddToCart}
             disabled={orderLoading}
-            className={`${
-              orderLoading
-                ? "!bg-gray-400"
-                : orderSuccess
-                ? "!bg-green-500"
-                : "!bg-red-400"
-            } text-white py-2 px-6 rounded-lg flex items-center disabled:opacity-50`}
+            className={`flex-1 h-12 rounded-xl text-white font-semibold flex items-center justify-center gap-2 transition active:scale-[0.98] disabled:opacity-60 ${
+              orderSuccess ? "bg-green-700" : "bg-brand hover:bg-brand-hover"
+            }`}
           >
-            {orderLoading ? "Adding..." : orderSuccess ? "Added!" : "Order"}
-            {!orderLoading && !orderSuccess && (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 ml-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 6h16M4 12h16m-7 6h7"
-                />
-              </svg>
-            )}
+            {orderLoading
+              ? "Đang thêm..."
+              : orderSuccess
+              ? "Đã thêm vào giỏ!"
+              : `Thêm · ${(Number(price) * quantity).toLocaleString("vi-VN")}đ`}
           </button>
         </div>
-
-        {/* Display error message if any */}
-        {error && (
-          <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded">
-            <p className="text-sm">{error}</p>
-          </div>
-        )}
       </div>
     </div>
   );

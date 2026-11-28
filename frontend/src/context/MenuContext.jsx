@@ -67,7 +67,7 @@ export const MenuProvider = ({ children }) => {
       return response.data;
     } catch (error) {
       console.error(`Error fetching dish ${dishId}:`, error);
-      setError("Failed to load dish details. Please try again!");
+      setError("Không tải được thông tin món. Vui lòng thử lại!");
       setLoading(false);
       throw error;
     }

@@ -114,7 +114,7 @@ const Note = () => {
           const result = await response.json();
 
           if (result.errors) {
-            throw new Error(result.errors[0].message || "Error updating notes");
+            throw new Error(result.errors[0].message || "Lỗi khi cập nhật ghi chú");
           }
 
           // Call context method to update local state
@@ -125,21 +125,21 @@ const Note = () => {
         } catch (apiError) {
           console.error("API error:", apiError);
           setError(
-            `Server error: ${
-              apiError.message || "Unknown error"
-            }. Note saved locally.`
+            `Lỗi máy chủ: ${
+              apiError.message || "không rõ"
+            }. Ghi chú đã được lưu trên máy.`
           );
           // Stay on page to show error
         }
       } else {
         // Item not in cart, just store locally and inform user
         console.log("Item not in cart locally, stored note locally");
-        setError("Item not found in cart. Note saved locally only.");
+        setError("Món không có trong giỏ. Ghi chú chỉ được lưu trên máy.");
         setTimeout(() => navigate(-1), 2000);
       }
     } catch (err) {
       console.error("General error:", err);
-      setError("Failed to save note. Your note is saved locally.");
+      setError("Không lưu được ghi chú lên máy chủ. Ghi chú đã được lưu trên máy.");
     } finally {
       setSaving(false);
     }
@@ -151,71 +151,72 @@ const Note = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center">
-      {/* Header */}
-      <div className="bg-white py-3 shadow-md sticky top-0 z-10 flex items-center justify-between w-full max-w-2xl px-4">
-        <button
-          onClick={handleCancel}
-          className="p-2 rounded-full bg-gray-200 hover:bg-gray-300"
-          aria-label="Go back"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth="2"
-            stroke="currentColor"
-            className="w-4 h-4"
+    <div className="min-h-screen bg-cream">
+      <header className="bg-card/95 backdrop-blur border-b border-line sticky top-0 z-20">
+        <div className="max-w-md mx-auto flex items-center px-2 h-14">
+          <button
+            onClick={handleCancel}
+            className="w-11 h-11 flex items-center justify-center rounded-full hover:bg-brand-soft transition"
+            aria-label="Quay lại"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-        </button>
-        <h2 className="text-lg font-bold text-center flex-1">Note</h2>
-        <div className="w-8"></div> {/* Spacer for balance */}
-      </div>
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-5 h-5" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <h1 className="flex-1 text-center text-base font-bold text-ink pr-11">Ghi chú cho bếp</h1>
+        </div>
+      </header>
 
-      <div className="container mx-auto px-4 max-w-2xl mt-4">
-        {/* Dish name */}
-        <h3 className="text-center text-orange-500 font-bold text-xl mt-2 mb-4">
-          {dishName}
-        </h3>
+      <main className="max-w-md mx-auto px-4 py-5 page-enter">
+        <p className="text-sm text-ink-muted">Món</p>
+        <h2 className="text-xl font-bold text-ink">{dishName}</h2>
 
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
+          <div role="alert" className="mt-4 bg-amber-50 border border-amber-200 text-amber-900 px-4 py-3 rounded-xl text-sm">
             {error}
           </div>
         )}
 
-        {/* Note textarea */}
+        <label htmlFor="dish-note" className="sr-only">
+          Yêu cầu đặc biệt
+        </label>
         <textarea
+          id="dish-note"
           value={note}
           onChange={(e) => setNote(e.target.value)}
-          className="w-full h-64 p-6 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-lg"
-          placeholder="Write your special instructions here..."
-          aria-label="Special instructions"
-        ></textarea>
+          className="mt-4 w-full h-48 p-4 bg-white border border-line rounded-2xl text-base focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
+          placeholder="VD: ít cay, không hành, mang ra sau..."
+        />
 
-        {/* Action buttons */}
-        <div className="flex justify-between mt-6">
+        <div className="mt-2 flex flex-wrap gap-2">
+          {["Ít cay", "Không hành", "Không đá", "Ít đường"].map((hint) => (
+            <button
+              key={hint}
+              type="button"
+              onClick={() => setNote((prev) => (prev ? `${prev}, ${hint.toLowerCase()}` : hint))}
+              className="min-h-[36px] px-3 rounded-full border border-line bg-white text-sm text-ink hover:border-brand/40 transition"
+            >
+              + {hint}
+            </button>
+          ))}
+        </div>
+
+        <div className="mt-6 grid grid-cols-2 gap-3">
+          <button
+            onClick={handleCancel}
+            className="h-12 rounded-xl border border-line bg-white font-semibold text-ink hover:bg-brand-soft transition"
+          >
+            Hủy
+          </button>
           <button
             onClick={handleSave}
             disabled={saving}
-            className="!bg-black text-white px-6 py-2 rounded-lg hover:bg-gray-800 disabled:bg-gray-400 transition-colors duration-300"
+            className="h-12 rounded-xl bg-brand font-semibold text-white hover:bg-brand-hover transition disabled:opacity-60"
           >
-            {saving ? "SAVING..." : "SAVE"}
-          </button>
-          <button
-            onClick={handleCancel}
-            className="border border-black text-black px-6 py-2 rounded-lg hover:bg-gray-200 transition-colors duration-300"
-          >
-            CANCEL
+            {saving ? "Đang lưu..." : "Lưu ghi chú"}
           </button>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

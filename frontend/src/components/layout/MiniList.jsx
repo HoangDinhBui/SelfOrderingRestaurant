@@ -9,7 +9,7 @@ const MiniList = ({ items, onSelect }) => {
       display: "flex",
       flexDirection: "column",
       backgroundColor: "#EAF3FC", // Light background
-      border: "1px solid #9DC6CE",
+      border: "1px solid #EADBC8",
       borderRadius: "10px",
       width: "250px",
       padding: "10px",
@@ -34,7 +34,7 @@ const MiniList = ({ items, onSelect }) => {
       cursor: "pointer",
       fontWeight: isSelected ? "bold" : "normal",
       transition: "background-color 0.3s, color 0.3s", // Smooth color transition
-      border: "1px solid #9DC6CE", // Light border
+      border: "1px solid #EADBC8", // Light border
     }),
     icon: (isSelected, isHovered) => ({
       width: "24px",

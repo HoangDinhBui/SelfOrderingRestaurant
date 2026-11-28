@@ -240,7 +240,7 @@ export default function FaceScanner({ mode, onSuccess, onCancel }) {
         <button
           type="button"
           onClick={captureAndVerify}
-          className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 font-medium"
+          className="w-full py-3 rounded-xl bg-brand hover:bg-brand-hover font-medium"
         >
           Chụp ảnh
         </button>

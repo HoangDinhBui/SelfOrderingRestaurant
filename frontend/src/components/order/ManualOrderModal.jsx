@@ -176,7 +176,7 @@ export default function ManualOrderModal({
                 disabled={dishes.length === 0}
                 className="shrink-0 px-3 py-2 rounded-xl bg-[#EA580C] hover:bg-[#C2410C] text-white text-sm font-semibold disabled:opacity-50"
               >
-                🎤 Giọng nói
+                <i className="fa-solid fa-microphone" aria-hidden="true" /> Giọng nói
               </button>
             </div>
             <div className="flex items-center gap-1.5 overflow-x-auto pb-2 mb-3">
@@ -376,7 +376,7 @@ export default function ManualOrderModal({
               disabled={submitting}
               className="mt-4 w-full py-3 rounded-xl bg-gradient-to-r from-[#EA580C] to-[#C2410C] text-white text-base font-bold disabled:opacity-60"
             >
-              {submitting ? "Đang gửi..." : "📋 Đặt món & gửi bếp"}
+              {submitting ? "Đang gửi..." : "Đặt món & gửi bếp"}
             </button>
           </div>
         </div>

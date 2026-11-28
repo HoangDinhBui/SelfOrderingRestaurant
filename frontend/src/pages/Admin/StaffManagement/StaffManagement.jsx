@@ -62,7 +62,7 @@ const StaffManagementAdmin = () => {
     const role = localStorage.getItem("userType");
     setUserRole(role);
     if (role !== "ADMIN") {
-      setErrorMessage("Access denied: Administrator privileges required.");
+      setErrorMessage("Không có quyền truy cập: cần quyền quản trị viên.");
     }
   }, []);
 
@@ -97,8 +97,8 @@ const StaffManagementAdmin = () => {
           console.error("Error accessing camera:", error);
           setErrorMessage(
             error.name === "NotAllowedError"
-              ? "Camera access denied. Please grant camera permissions."
-              : "Failed to access camera. Ensure a camera is available and permissions are granted."
+              ? "Bị từ chối quyền camera. Vui lòng cho phép truy cập camera."
+              : "Không mở được camera. Hãy kiểm tra thiết bị và quyền truy cập."
           );
           setShowCamera(false);
         });
@@ -140,8 +140,8 @@ const StaffManagementAdmin = () => {
       console.error("Error fetching staff:", error);
       setErrorMessage(
         error.response?.status === 403
-          ? "Access denied: Administrator privileges required."
-          : error.response?.data?.message || "Error while fetching staff list"
+          ? "Không có quyền truy cập: cần quyền quản trị viên."
+          : error.response?.data?.message || "Lỗi khi tải danh sách nhân viên"
       );
     }
   };
@@ -170,9 +170,9 @@ const StaffManagementAdmin = () => {
       console.error("Error fetching monthly salaries:", error);
       setErrorMessage(
         error.response?.status === 403
-          ? "Access denied: Administrator privileges required."
+          ? "Không có quyền truy cập: cần quyền quản trị viên."
           : error.response?.data?.message ||
-              "Error while fetching monthly salary data"
+              "Lỗi khi tải dữ liệu lương"
       );
     }
   };
@@ -196,8 +196,8 @@ const StaffManagementAdmin = () => {
       console.error("Error deleting staff:", error);
       setErrorMessage(
         error.response?.status === 403
-          ? "Access denied: Administrator privileges required."
-          : error.response?.data?.message || "Error while deleting staff"
+          ? "Không có quyền truy cập: cần quyền quản trị viên."
+          : error.response?.data?.message || "Lỗi khi xóa nhân viên"
       );
       await fetchStaff();
     }
@@ -252,7 +252,7 @@ const StaffManagementAdmin = () => {
       setCapturedImage(imageData);
       setShowCamera(false);
     } else {
-      setErrorMessage("Failed to capture photo. Please try again.");
+      setErrorMessage("Không chụp được ảnh. Vui lòng thử lại.");
     }
   };
 
@@ -302,24 +302,24 @@ const StaffManagementAdmin = () => {
       !newStaff.username ||
       !newStaff.password
     ) {
-      setErrorMessage("Please fill in all required fields!");
+      setErrorMessage("Vui lòng điền đầy đủ các trường bắt buộc!");
       return;
     }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(newStaff.email)) {
-      setErrorMessage("Invalid email format!");
+      setErrorMessage("Email không đúng định dạng!");
       return;
     }
     if (newStaff.username.length < 3 || newStaff.username.length > 50) {
-      setErrorMessage("Username must be between 3 and 50 characters!");
+      setErrorMessage("Tên đăng nhập phải từ 3 đến 50 ký tự!");
       return;
     }
     if (newStaff.password.length < 8) {
-      setErrorMessage("Password must be at least 8 characters!");
+      setErrorMessage("Mật khẩu phải có ít nhất 8 ký tự!");
       return;
     }
     if (newStaff.salary && isNaN(parseFloat(newStaff.salary))) {
-      setErrorMessage("Salary must be a valid number!");
+      setErrorMessage("Lương phải là số hợp lệ!");
       return;
     }
     try {
@@ -365,8 +365,8 @@ const StaffManagementAdmin = () => {
       console.error("Error adding staff:", error);
       setErrorMessage(
         error.response?.status === 403
-          ? "Access denied: Administrator privileges required."
-          : error.response?.data?.message || "Error while adding staff!"
+          ? "Không có quyền truy cập: cần quyền quản trị viên."
+          : error.response?.data?.message || "Lỗi khi thêm nhân viên!"
       );
     }
   };
@@ -375,16 +375,16 @@ const StaffManagementAdmin = () => {
   const confirmEditStaff = async () => {
     if (userRole !== "ADMIN") return;
     if (!newStaff.position || !newStaff.salary) {
-      setErrorMessage("Please fill in position and salary!");
+      setErrorMessage("Vui lòng nhập chức vụ và lương!");
       return;
     }
     const salaryValue = parseFloat(newStaff.salary);
     if (isNaN(salaryValue) || salaryValue <= 0) {
-      setErrorMessage("Salary must be a positive number!");
+      setErrorMessage("Lương phải là số dương!");
       return;
     }
     if (!["ACTIVE", "INACTIVE"].includes(newStaff.status)) {
-      setErrorMessage("Invalid status!");
+      setErrorMessage("Trạng thái không hợp lệ!");
       return;
     }
     try {
@@ -417,8 +417,8 @@ const StaffManagementAdmin = () => {
       console.error("Error editing staff:", error);
       setErrorMessage(
         error.response?.status === 403
-          ? "Access denied: Administrator privileges required."
-          : error.response?.data?.message || "Error while updating staff"
+          ? "Không có quyền truy cập: cần quyền quản trị viên."
+          : error.response?.data?.message || "Lỗi khi cập nhật nhân viên"
       );
     }
   };
@@ -436,9 +436,9 @@ const StaffManagementAdmin = () => {
   // Kiểm tra quyền admin
   if (userRole !== "ADMIN") {
     return (
-      <div className="h-screen w-screen flex flex-col bg-gradient-to-br from-blue-50 to-glass-100">
+      <div className="min-h-screen w-full bg-cream flex flex-col">
         <MenuBar
-          title="Staff Management"
+          title="Quản lý nhân viên"
           icon="https://img.icons8.com/ios-filled/50/FFFFFF/user.png"
         />
         <div className="flex-1 flex items-center justify-center">
@@ -452,22 +452,22 @@ const StaffManagementAdmin = () => {
 
   const styles = {
     outerContainer: {
-      fontFamily: "Arial, sans-serif",
-      backgroundColor: "rgba(157, 198, 206, 0.33)",
-      minHeight: "100vh",
-      width: "100vw",
+      fontFamily: "inherit",
+      backgroundColor: "#FAF7F2",
+      minHeight: "calc(100vh - 64px)",
+      width: "100%",
       display: "flex",
       justifyContent: "center",
-      alignItems: "center",
-      padding: "30px",
+      alignItems: "flex-start",
+      padding: "24px 16px",
       boxSizing: "border-box",
     },
     innerContainer: {
-      backgroundColor: "#F0F8FD",
-      borderRadius: "10px",
-      padding: "20px",
-      boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-      border: "3px solid rgba(0, 0, 0, 0.1)",
+      backgroundColor: "#FFFDF8",
+      borderRadius: "16px",
+      padding: "24px",
+      boxShadow: "0 1px 3px rgba(51, 38, 29, 0.08)",
+      border: "1px solid #EADBC8",
       width: "100%",
       maxWidth: "1200px",
       display: "flex",
@@ -501,8 +501,9 @@ const StaffManagementAdmin = () => {
     },
     input: {
       padding: "10px",
-      borderRadius: "5px",
-      border: "1px solid #ddd",
+      borderRadius: "10px",
+      border: "1px solid #EADBC8",
+      minHeight: "40px",
       width: "200px",
     },
     chefMouseImage: {
@@ -512,7 +513,7 @@ const StaffManagementAdmin = () => {
     },
     tableContainer: {
       flex: 3,
-      backgroundColor: "rgba(157, 198, 206, 0.3)",
+      backgroundColor: "#F6EEE3",
       borderRadius: "10px",
       overflowY: "auto",
       maxHeight: "500px",
@@ -521,33 +522,33 @@ const StaffManagementAdmin = () => {
     table: {
       width: "100%",
       borderCollapse: "collapse",
-      border: "2px solid #9DC6CE",
+      border: "2px solid #EADBC8",
     },
     thead: {
       position: "sticky",
       top: 0,
       zIndex: 2,
-      backgroundColor: "#9DC6CE",
+      backgroundColor: "#F3E4D2",
       border: "1px solid rgb(0, 0, 0)",
     },
     th: {
-      backgroundColor: "#9DC6CE",
+      backgroundColor: "#F3E4D2",
       fontWeight: "bold",
       border: "1px solid #dddddd",
       padding: "10px",
       textAlign: "center",
     },
     td: {
-      border: "1px solid #9DC6CE",
+      border: "1px solid #EADBC8",
       padding: "10px",
       textAlign: "center",
     },
     price: {
-      color: "#e74c3c",
+      color: "#C2410C",
       fontWeight: "bold",
     },
     oddRow: {
-      backgroundColor: "rgba(157, 198, 206, 0.3)",
+      backgroundColor: "#F6EEE3",
     },
     evenRow: {
       backgroundColor: "#FFFFFF",
@@ -556,7 +557,7 @@ const StaffManagementAdmin = () => {
       position: "fixed",
       top: 0,
       left: 0,
-      width: "100vw",
+      width: "100%",
       height: "100vh",
       backgroundColor: "rgba(0, 0, 0, 0.5)",
       zIndex: 999,
@@ -590,18 +591,22 @@ const StaffManagementAdmin = () => {
     },
     addButton: {
       padding: "10px 20px",
-      backgroundColor: "#4CAF50",
+      backgroundColor: "#C2410C",
       color: "white",
       border: "none",
-      borderRadius: "5px",
+      borderRadius: "10px",
+      fontWeight: 600,
+      minHeight: "40px",
       cursor: "pointer",
     },
     timekeepingButton: {
       padding: "8px 12px",
-      backgroundColor: "#4CAF50",
+      backgroundColor: "#C2410C",
       color: "white",
       border: "none",
-      borderRadius: "5px",
+      borderRadius: "10px",
+      fontWeight: 600,
+      minHeight: "40px",
       cursor: "pointer",
       display: "flex",
       alignItems: "center",
@@ -609,10 +614,12 @@ const StaffManagementAdmin = () => {
     },
     cancelButton: {
       padding: "10px 20px",
-      backgroundColor: "#e74c3c",
-      color: "white",
-      border: "none",
-      borderRadius: "5px",
+      backgroundColor: "#FFFFFF",
+      color: "#33261D",
+      border: "1px solid #EADBC8",
+      borderRadius: "10px",
+      fontWeight: 600,
+      minHeight: "40px",
       cursor: "pointer",
     },
     addFormContent: {
@@ -702,29 +709,32 @@ const StaffManagementAdmin = () => {
       width: "100%",
     },
     requiredMark: {
-      color: "#e74c3c",
+      color: "#C2410C",
       marginLeft: "5px",
     },
     inputField: {
       padding: "10px",
-      borderRadius: "5px",
-      border: "1px solid #ddd",
+      borderRadius: "10px",
+      border: "1px solid #EADBC8",
+      minHeight: "40px",
       fontSize: "14px",
       width: "250px",
       boxSizing: "border-box",
     },
     selectField: {
       padding: "10px",
-      borderRadius: "5px",
-      border: "1px solid #ddd",
+      borderRadius: "10px",
+      border: "1px solid #EADBC8",
+      minHeight: "40px",
       fontSize: "14px",
       width: "250px",
       boxSizing: "border-box",
     },
     textareaField: {
       padding: "10px",
-      borderRadius: "5px",
-      border: "1px solid #ddd",
+      borderRadius: "10px",
+      border: "1px solid #EADBC8",
+      minHeight: "40px",
       fontSize: "14px",
       width: "100%",
       maxWidth: "300px",
@@ -764,7 +774,7 @@ const StaffManagementAdmin = () => {
       marginBottom: "5px",
     },
     errorText: {
-      color: "#e74c3c",
+      color: "#C2410C",
       fontSize: "14px",
       marginBottom: "10px",
       textAlign: "center",
@@ -797,7 +807,7 @@ const StaffManagementAdmin = () => {
     },
     cameraButton: {
       padding: "10px 20px",
-      backgroundColor: "#3498db",
+      backgroundColor: "#C2410C",
       color: "white",
       border: "none",
       borderRadius: "5px",
@@ -830,14 +840,14 @@ const StaffManagementAdmin = () => {
       marginTop: "10px",
     },
     timekeepingTh: {
-      backgroundColor: "#9DC6CE",
+      backgroundColor: "#F3E4D2",
       fontWeight: "bold",
       border: "1px solid #dddddd",
       padding: "10px",
       textAlign: "left",
     },
     timekeepingTd: {
-      border: "1px solid #9DC6CE",
+      border: "1px solid #EADBC8",
       padding: "10px",
       textAlign: "left",
     },
@@ -852,12 +862,12 @@ const StaffManagementAdmin = () => {
   return (
     <>
       <MenuBar
-        title="Staff Management"
+        title="Quản lý nhân viên"
         icon="https://img.icons8.com/ios-filled/50/FFFFFF/user.png"
       />
       <div style={styles.outerContainer}>
         <div style={styles.innerContainer}>
-          <h1 style={styles.title}>Staff</h1>
+          <h1 style={styles.title}>Nhân viên</h1>
           <PendingAttendancePanel />
           <div style={styles.tableAndControls}>
             <div style={styles.tableContainer}>
@@ -865,10 +875,10 @@ const StaffManagementAdmin = () => {
                 <thead style={styles.thead}>
                   <tr>
                     <th style={styles.th}>ID</th>
-                    <th style={styles.th}>Name</th>
-                    <th style={styles.th}>Shifts</th>
-                    <th style={styles.th}>Position</th>
-                    <th style={styles.th}>Actions</th>
+                    <th style={styles.th}>Tên</th>
+                    <th style={styles.th}>Ca làm</th>
+                    <th style={styles.th}>Chức vụ</th>
+                    <th style={styles.th}>Thao tác</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -888,25 +898,25 @@ const StaffManagementAdmin = () => {
                           style={{ marginRight: "10px", cursor: "pointer" }}
                           onClick={() => handleTimekeeping(item)}
                           disabled={userRole !== "ADMIN"}
-                          aria-label="View Timekeeping"
+                          aria-label="Xem chấm công"
                         >
-                          ⏰
+                          <i className="fa-regular fa-clock" aria-hidden="true" />
                         </button>
                         <button
                           style={{ marginRight: "10px", cursor: "pointer" }}
                           onClick={() => handleEditStaff(item)}
                           disabled={userRole !== "ADMIN"}
-                          aria-label="Edit Staff"
+                          aria-label="Sửa nhân viên"
                         >
-                          ✏️
+                          <i className="fa-regular fa-pen-to-square" aria-hidden="true" />
                         </button>
                         <button
                           style={{ cursor: "pointer" }}
                           onClick={() => handleDeleteStaff(item)}
                           disabled={userRole !== "ADMIN"}
-                          aria-label="Delete Staff"
+                          aria-label="Xóa nhân viên"
                         >
-                          🗑️
+                          <i className="fa-regular fa-trash-can" aria-hidden="true" />
                         </button>
                       </td>
                     </tr>
@@ -918,19 +928,19 @@ const StaffManagementAdmin = () => {
               <div style={styles.searchRow}>
                 <input
                   type="text"
-                  placeholder="Search by name..."
+                  placeholder="Tìm theo tên..."
                   style={styles.input}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   onKeyDown={handleSearch}
                   disabled={userRole !== "ADMIN"}
-                  aria-label="Search staff"
+                  aria-label="Tìm nhân viên"
                 />
                 <button
                   style={styles.addButton}
                   onClick={() => setShowAddForm(true)}
                   disabled={userRole !== "ADMIN"}
-                  aria-label="Add new staff"
+                  aria-label="Thêm nhân viên mới"
                 >
                   +
                 </button>
@@ -938,12 +948,12 @@ const StaffManagementAdmin = () => {
                   style={styles.timekeepingButton}
                   onClick={handleAllTimekeeping}
                   disabled={userRole !== "ADMIN"}
-                  aria-label="View all timekeeping records"
+                  aria-label="Xem toàn bộ chấm công"
                 >
-                  ⏰ Timekeeping
+                  <i className="fa-regular fa-clock" aria-hidden="true" /> Chấm công
                 </button>
               </div>
-              <img src="/img/chef.png" alt="Chef" style={styles.chefMouseImage} />
+              <img src="/img/chef.png" alt="Đầu bếp" style={styles.chefMouseImage} />
             </div>
           </div>
 
@@ -958,13 +968,13 @@ const StaffManagementAdmin = () => {
                 }}
               ></div>
               <div style={styles.addFormContainer}>
-                <h2 style={styles.addFormTitle}>Add Staff</h2>
+                <h2 style={styles.addFormTitle}>Thêm nhân viên</h2>
                 <div style={styles.addForm}>
                   <div style={styles.addFormContent}>
                     <div style={styles.formFields}>
                       <label style={styles.formLabel}>
                         <span style={styles.labelText}>
-                          Name<span style={styles.requiredMark}>*</span>:
+                          Tên<span style={styles.requiredMark}>*</span>:
                         </span>
                         <input
                           type="text"
@@ -979,7 +989,7 @@ const StaffManagementAdmin = () => {
                         />
                       </label>
                       <label style={styles.formLabel}>
-                        <span style={styles.labelText}>Start Date:</span>
+                        <span style={styles.labelText}>Ngày bắt đầu:</span>
                         <input
                           type="date"
                           value={newStaff.startDate}
@@ -993,7 +1003,7 @@ const StaffManagementAdmin = () => {
                         />
                       </label>
                       <label style={styles.formLabel}>
-                        <span style={styles.labelText}>Shift:</span>
+                        <span style={styles.labelText}>Ca:</span>
                         <select
                           value={newStaff.workShift}
                           onChange={(e) =>
@@ -1004,14 +1014,14 @@ const StaffManagementAdmin = () => {
                           }
                           style={styles.selectField}
                         >
-                          <option value="">Select a shift</option>
-                          <option value="Full-time">Full-time</option>
-                          <option value="Part-time">Part-time</option>
+                          <option value="">Chọn ca</option>
+                          <option value="Full-time">Toàn thời gian</option>
+                          <option value="Part-time">Bán thời gian</option>
                         </select>
                       </label>
                       <label style={styles.formLabel}>
                         <span style={styles.labelText}>
-                          Position<span style={styles.requiredMark}>*</span>:
+                          Chức vụ<span style={styles.requiredMark}>*</span>:
                         </span>
                         <input
                           type="text"
@@ -1026,7 +1036,7 @@ const StaffManagementAdmin = () => {
                         />
                       </label>
                       <label style={styles.formLabel}>
-                        <span style={styles.labelText}>Phone Number:</span>
+                        <span style={styles.labelText}>Số điện thoại:</span>
                         <input
                           type="text"
                           value={newStaff.phoneNumber}
@@ -1040,7 +1050,7 @@ const StaffManagementAdmin = () => {
                         />
                       </label>
                       <label style={styles.formLabel}>
-                        <span style={styles.labelText}>Address:</span>
+                        <span style={styles.labelText}>Địa chỉ:</span>
                         <input
                           type="text"
                           value={newStaff.address}
@@ -1067,7 +1077,7 @@ const StaffManagementAdmin = () => {
                         />
                       </label>
                       <label style={styles.formLabel}>
-                        <span style={styles.labelText}>Salary:</span>
+                        <span style={styles.labelText}>Lương:</span>
                         <input
                           type="number"
                           value={newStaff.salary}
@@ -1079,7 +1089,7 @@ const StaffManagementAdmin = () => {
                       </label>
                       <label style={styles.formLabel}>
                         <span style={styles.labelText}>
-                          Username<span style={styles.requiredMark}>*</span>:
+                          Tên đăng nhập<span style={styles.requiredMark}>*</span>:
                         </span>
                         <input
                           type="text"
@@ -1095,7 +1105,7 @@ const StaffManagementAdmin = () => {
                       </label>
                       <label style={styles.formLabel}>
                         <span style={styles.labelText}>
-                          Password<span style={styles.requiredMark}>*</span>:
+                          Mật khẩu<span style={styles.requiredMark}>*</span>:
                         </span>
                         <input
                           type="password"
@@ -1118,40 +1128,40 @@ const StaffManagementAdmin = () => {
                             onClick={capturePhoto}
                             style={styles.cameraButton}
                           >
-                            Capture Photo
+                            Chụp ảnh
                           </button>
                         </>
                       ) : capturedImage ? (
                         <>
                           <img
                             src={capturedImage}
-                            alt="Captured Face"
+                            alt="Ảnh khuôn mặt"
                             style={styles.capturedImage}
                           />
                           <button
                             onClick={startCamera}
                             style={styles.cameraButton}
                           >
-                            Retake Photo
+                            Chụp lại
                           </button>
                         </>
                       ) : (
                         <>
                           <div style={styles.capturedImage}>
                             <p style={styles.placeholderText}>
-                              No photo captured
+                              Chưa có ảnh
                             </p>
                           </div>
                           <button
                             onClick={startCamera}
                             style={styles.cameraButton}
                           >
-                            Open Camera
+                            Mở camera
                           </button>
                         </>
                       )}
                       <p style={styles.imageNote}>
-                        Please capture a clear photo of the staff's face.
+                        Vui lòng chụp rõ khuôn mặt nhân viên.
                       </p>
                     </div>
                     <canvas ref={canvasRef} style={styles.canvas} />
@@ -1164,7 +1174,7 @@ const StaffManagementAdmin = () => {
                       onClick={validateAndAddStaff}
                       style={styles.addButton}
                     >
-                      Add
+                      Thêm
                     </button>
                     <button
                       onClick={() => {
@@ -1173,7 +1183,7 @@ const StaffManagementAdmin = () => {
                       }}
                       style={styles.cancelButton}
                     >
-                      Cancel
+                      Hủy
                     </button>
                   </div>
                 </div>
@@ -1186,10 +1196,10 @@ const StaffManagementAdmin = () => {
             <div style={styles.successPopup}>
               <img
                 src="/img/logoremovebg.png"
-                alt="Success"
+                alt="Thành công"
                 style={styles.successImage}
               />
-              <p style={styles.successText}>Successful</p>
+              <p style={styles.successText}>Thành công</p>
               <div style={styles.successIcon}>✔</div>
             </div>
           )}
@@ -1199,19 +1209,19 @@ const StaffManagementAdmin = () => {
             <div style={styles.successPopup}>
               <img
                 src="/img/logoremovebg.png"
-                alt="Confirm Delete"
+                alt="Xác nhận xóa"
                 style={styles.successImage}
               />
-              <p style={styles.successText}>Are you sure?</p>
+              <p style={styles.successText}>Bạn có chắc chắn?</p>
               <div style={styles.actionButtons}>
                 <button onClick={confirmDeleteStaff} style={styles.addButton}>
-                  Yes
+                  Có
                 </button>
                 <button
                   onClick={() => setShowDeletePopup(false)}
                   style={styles.cancelButton}
                 >
-                  No
+                  Không
                 </button>
               </div>
             </div>
@@ -1225,13 +1235,13 @@ const StaffManagementAdmin = () => {
                 onClick={() => setShowEditForm(false)}
               ></div>
               <div style={styles.addFormContainer}>
-                <h2 style={styles.addFormTitle}>Edit Staff</h2>
+                <h2 style={styles.addFormTitle}>Sửa nhân viên</h2>
                 <div style={styles.addForm}>
                   <div style={styles.addFormContent}>
                     <div style={styles.formFields}>
                       <label style={styles.formLabel}>
                         <span style={styles.labelText}>
-                          Position<span style={styles.requiredMark}>*</span>:
+                          Chức vụ<span style={styles.requiredMark}>*</span>:
                         </span>
                         <input
                           type="text"
@@ -1247,7 +1257,7 @@ const StaffManagementAdmin = () => {
                       </label>
                       <label style={styles.formLabel}>
                         <span style={styles.labelText}>
-                          Salary<span style={styles.requiredMark}>*</span>:
+                          Lương<span style={styles.requiredMark}>*</span>:
                         </span>
                         <input
                           type="number"
@@ -1260,7 +1270,7 @@ const StaffManagementAdmin = () => {
                       </label>
                       <label style={styles.formLabel}>
                         <span style={styles.labelText}>
-                          Status<span style={styles.requiredMark}>*</span>:
+                          Trạng thái<span style={styles.requiredMark}>*</span>:
                         </span>
                         <select
                           value={newStaff.status}
@@ -1269,8 +1279,8 @@ const StaffManagementAdmin = () => {
                           }
                           style={styles.selectField}
                         >
-                          <option value="ACTIVE">Active</option>
-                          <option value="INACTIVE">Inactive</option>
+                          <option value="ACTIVE">Đang làm</option>
+                          <option value="INACTIVE">Đã nghỉ</option>
                         </select>
                       </label>
                     </div>
@@ -1280,13 +1290,13 @@ const StaffManagementAdmin = () => {
                   )}
                   <div style={styles.actionButtons}>
                     <button onClick={confirmEditStaff} style={styles.addButton}>
-                      Save
+                      Lưu
                     </button>
                     <button
                       onClick={() => setShowEditForm(false)}
                       style={styles.cancelButton}
                     >
-                      Cancel
+                      Hủy
                     </button>
                   </div>
                 </div>
@@ -1308,10 +1318,10 @@ const StaffManagementAdmin = () => {
                 <table style={styles.timekeepingTable}>
                   <thead>
                     <tr>
-                      <th style={styles.timekeepingTh}>Month/Year</th>
-                      <th style={styles.timekeepingTh}>Working Hours</th>
-                      <th style={styles.timekeepingTh}>Hourly Salary</th>
-                      <th style={styles.timekeepingTh}>Total Salary</th>
+                      <th style={styles.timekeepingTh}>Tháng/Năm</th>
+                      <th style={styles.timekeepingTh}>Số giờ làm</th>
+                      <th style={styles.timekeepingTh}>Lương theo giờ</th>
+                      <th style={styles.timekeepingTh}>Tổng lương</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1340,7 +1350,7 @@ const StaffManagementAdmin = () => {
                     onClick={() => setShowTimekeepingModal(false)}
                     style={styles.cancelButton}
                   >
-                    Close
+                    Đóng
                   </button>
                 </div>
               </div>
@@ -1355,16 +1365,16 @@ const StaffManagementAdmin = () => {
                 onClick={() => setShowAllTimekeepingModal(false)}
               ></div>
               <div style={styles.timekeepingModal}>
-                <h2 style={styles.addFormTitle}>All Monthly Salary Records</h2>
+                <h2 style={styles.addFormTitle}>Bảng lương theo tháng</h2>
                 <div style={styles.filterContainer}>
                   <label style={styles.formLabel}>
-                    <span style={styles.labelText}>Filter by Month/Year:</span>
+                    <span style={styles.labelText}>Lọc theo tháng/năm:</span>
                     <select
                       value={selectedMonthYear}
                       onChange={(e) => setSelectedMonthYear(e.target.value)}
                       style={styles.selectField}
                     >
-                      <option value="">All</option>
+                      <option value="">Tất cả</option>
                       {uniqueMonthYears.map((monthYear) => (
                         <option key={monthYear} value={monthYear}>
                           {monthYear}
@@ -1376,12 +1386,12 @@ const StaffManagementAdmin = () => {
                 <table style={styles.allTimekeepingTable}>
                   <thead>
                     <tr>
-                      <th style={styles.timekeepingTh}>Staff ID</th>
-                      <th style={styles.timekeepingTh}>Name</th>
-                      <th style={styles.timekeepingTh}>Month/Year</th>
-                      <th style={styles.timekeepingTh}>Working Hours</th>
-                      <th style={styles.timekeepingTh}>Hourly Salary</th>
-                      <th style={styles.timekeepingTh}>Total Salary</th>
+                      <th style={styles.timekeepingTh}>Mã NV</th>
+                      <th style={styles.timekeepingTh}>Tên</th>
+                      <th style={styles.timekeepingTh}>Tháng/Năm</th>
+                      <th style={styles.timekeepingTh}>Số giờ làm</th>
+                      <th style={styles.timekeepingTh}>Lương theo giờ</th>
+                      <th style={styles.timekeepingTh}>Tổng lương</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1411,7 +1421,7 @@ const StaffManagementAdmin = () => {
                             textAlign: "center",
                           }}
                         >
-                          No salary records found
+                          Chưa có dữ liệu lương
                         </td>
                       </tr>
                     )}
@@ -1422,7 +1432,7 @@ const StaffManagementAdmin = () => {
                     onClick={() => setShowAllTimekeepingModal(false)}
                     style={styles.cancelButton}
                   >
-                    Close
+                    Đóng
                   </button>
                 </div>
               </div>

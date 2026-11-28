@@ -52,7 +52,7 @@ export const CartProvider = ({ children }) => {
           if (parsedData && parsedData.items) {
             setCartItems(parsedData.items);
             updateCartMetrics(parsedData.items);
-            setError("Using cached cart data. Network error occurred.");
+            setError("Mất kết nối mạng, đang dùng dữ liệu giỏ hàng đã lưu.");
             return parsedData;
           }
         }
@@ -60,7 +60,7 @@ export const CartProvider = ({ children }) => {
         console.error("Error parsing cached data:", e);
       }
 
-      setError("Failed to load cart data");
+      setError("Không tải được giỏ hàng");
       return { items: [] };
     } finally {
       setLoading(false);
@@ -101,7 +101,7 @@ export const CartProvider = ({ children }) => {
       return updatedCart;
     } catch (err) {
       console.error("Error adding to cart:", err);
-      setError("Failed to add item to cart");
+      setError("Không thêm được món vào giỏ");
       throw err;
     } finally {
       setLoading(false);
@@ -127,7 +127,7 @@ export const CartProvider = ({ children }) => {
       return updatedCart;
     } catch (err) {
       console.error("Error updating quantity:", err);
-      setError("Failed to update quantity");
+      setError("Không cập nhật được số lượng");
       throw err;
     } finally {
       setLoading(false);
@@ -151,7 +151,7 @@ export const CartProvider = ({ children }) => {
       return updatedCart;
     } catch (err) {
       console.error("Error removing item:", err);
-      setError("Failed to remove item");
+      setError("Không xóa được món");
       throw err;
     } finally {
       setLoading(false);
@@ -166,7 +166,7 @@ export const CartProvider = ({ children }) => {
         const existingItem = cartItems.find((item) => item.dishId === dishId);
         if (!existingItem) {
           console.warn(`Item with ID ${dishId} not found in cart`);
-          throw new Error("Item not found in cart");
+          throw new Error("Món không có trong giỏ");
         }
 
         const response = await API.put(
@@ -258,7 +258,7 @@ export const CartProvider = ({ children }) => {
 
         if (result.errors) {
           throw new Error(
-            result.errors[0].message || "Error adding dish to cart"
+            result.errors[0].message || "Không thêm được món vào giỏ"
           );
         }
 
@@ -268,7 +268,7 @@ export const CartProvider = ({ children }) => {
         return updatedCart;
       } catch (err) {
         console.error("Error adding to cart using GraphQL:", err);
-        setError("Failed to add item to cart");
+        setError("Không thêm được món vào giỏ");
         throw err;
       } finally {
         setLoading(false);

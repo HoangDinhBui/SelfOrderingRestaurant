@@ -25,7 +25,7 @@ const Payment = () => {
   useEffect(() => {
     const fetchOrderDetails = async () => {
       if (!orderId) {
-        setError("No order ID provided");
+        setError("Không tìm thấy mã đơn hàng");
         setLoading(false);
         return;
       }
@@ -34,7 +34,7 @@ const Payment = () => {
         setLoading(true);
         const response = await getPaymentStatus(orderId);
         if (response.error) {
-          throw new Error(response.message || "Failed to load order details");
+          throw new Error(response.message || "Không tải được chi tiết đơn");
         }
         const orderData = response;
         console.log("Order details response:", orderData);
@@ -87,7 +87,7 @@ const Payment = () => {
         setLoading(false);
       } catch (err) {
         console.error("Error fetching order details:", err);
-        setError("Failed to load order details. Please try again.");
+        setError("Không tải được chi tiết đơn. Vui lòng thử lại.");
         setLoading(false);
       }
     };
@@ -100,7 +100,7 @@ const Payment = () => {
       const response = await getPaymentStatus(orderId);
       if (response.error) {
         throw new Error(
-          response.message || "Failed to check transaction status"
+          response.message || "Không kiểm tra được giao dịch"
         );
       }
       const orderData = response;
@@ -117,13 +117,13 @@ const Payment = () => {
         setShowModal(true);
       } else if (orderData.transactionStatus !== "PENDING") {
         setTransactionStatus(null);
-        setError("Transaction has been cancelled or failed. Please try again.");
+        setError("Giao dịch đã bị hủy hoặc thất bại. Vui lòng thử lại.");
       } else {
-        setError("Transaction is still pending. Please try again later.");
+        setError("Giao dịch vẫn đang chờ xử lý. Vui lòng thử lại sau.");
       }
     } catch (err) {
       console.error("Error checking transaction status:", err);
-      setError("Failed to check transaction status. Please try again.");
+      setError("Không kiểm tra được giao dịch. Vui lòng thử lại.");
     }
   };
 
@@ -140,13 +140,13 @@ const Payment = () => {
           setOrderDetails(refreshResponse);
         }
       } else {
-        throw new Error(response.data.message || "Failed to reset payment status");
+        throw new Error(response.data.message || "Không đặt lại được trạng thái thanh toán");
       }
     } catch (err) {
       console.error("Error resetting payment status:", err);
       setError(
         err.response?.data?.message ||
-        "Failed to reset payment status. Please try again."
+        "Không đặt lại được trạng thái thanh toán. Vui lòng thử lại."
       );
     }
   };
@@ -159,20 +159,20 @@ const Payment = () => {
 
     if (transactionStatus === "PENDING") {
       setError(
-        "A payment transaction is pending. Please wait for it to complete or check its status."
+        "Có một giao dịch đang chờ xử lý. Vui lòng đợi hoặc kiểm tra trạng thái giao dịch."
       );
       setShowModal(true);
       return;
     }
 
     if (!orderId) {
-      setError("Order ID is not provided. Please check your order.");
+      setError("Thiếu mã đơn hàng. Vui lòng kiểm tra lại đơn.");
       return;
     }
 
     const orderTotal = parseFloat(getOrderTotal());
     if (orderTotal <= 0) {
-      setError("Total amount is not valid. Please check your order.");
+      setError("Tổng tiền không hợp lệ. Vui lòng kiểm tra lại đơn.");
       return;
     }
 
@@ -182,7 +182,7 @@ const Payment = () => {
       const paymentStatusCheck = await getPaymentStatus(orderId);
       if (paymentStatusCheck.error) {
         throw new Error(
-          paymentStatusCheck.message || "Failed to check payment status"
+          paymentStatusCheck.message || "Không kiểm tra được trạng thái thanh toán"
         );
       }
       if (paymentStatusCheck.paymentStatus === "PAID") {
@@ -207,7 +207,7 @@ const Payment = () => {
         });
         setOrderDetails(paymentStatusCheck);
         setError(
-          "A payment transaction is pending. Please wait for it to complete or check its status."
+          "Có một giao dịch đang chờ xử lý. Vui lòng đợi hoặc kiểm tra trạng thái giao dịch."
         );
         setShowModal(true);
         setProcessingPayment(false);
@@ -219,7 +219,7 @@ const Payment = () => {
           const vnpayResponse = await authAPI.post(`/api/payment/vnpay`, {
             orderId: parseInt(orderId),
             total: Math.round(orderTotal),
-            orderInfo: `Payment for Order: ${orderId}`,
+            orderInfo: `Thanh toán đơn: ${orderId}`,
             returnUrl: `${window.location.origin}/payment_cus?orderId=${orderId}`,
           });
 
@@ -227,7 +227,7 @@ const Payment = () => {
             window.location.href = vnpayResponse.data.paymentUrl;
             return;
           } else {
-            throw new Error("Cannot get payment URL from VNPay.");
+            throw new Error("Không lấy được liên kết thanh toán VNPay.");
           }
 
         case "MOMO":
@@ -250,7 +250,7 @@ const Payment = () => {
           break;
 
         default:
-          throw new Error("Unsupported payment method");
+          throw new Error("Phương thức thanh toán chưa được hỗ trợ");
       }
 
       setProcessingPayment(false);
@@ -269,24 +269,24 @@ const Payment = () => {
           if (paymentStatusCheck.transactionStatus === "PENDING") {
             setTransactionStatus("PENDING");
             setError(
-              "A payment transaction is pending. Please wait for it to complete or check its status."
+              "Có một giao dịch đang chờ xử lý. Vui lòng đợi hoặc kiểm tra trạng thái giao dịch."
             );
           } else {
             setError(
-              "This order has already been paid. Please see the payment details."
+              "Đơn này đã được thanh toán. Vui lòng xem chi tiết thanh toán."
             );
           }
           setShowModal(true);
         } catch (detailsErr) {
           console.error("Error fetching payment details:", detailsErr);
           setError(
-            "Failed to verify existing payment. Please contact support."
+            "Không xác minh được thanh toán. Vui lòng liên hệ nhân viên."
           );
         }
       } else {
         setError(
           err.response?.data?.message ||
-            "Failed to process payment. Please try again."
+            "Không xử lý được thanh toán. Vui lòng thử lại."
         );
       }
       setProcessingPayment(false);
@@ -335,7 +335,7 @@ const Payment = () => {
 
       const statusResponse = await getPaymentStatus(orderId);
       if (statusResponse.error) {
-        throw new Error(statusResponse.message || "Failed to check payment status");
+        throw new Error(statusResponse.message || "Không kiểm tra được trạng thái thanh toán");
       }
 
       if (statusResponse.paymentStatus === "PAID") {
@@ -385,7 +385,7 @@ const Payment = () => {
       case "MOMO":
         return "Momo";
       case "ONLINE":
-        return "Online Payment";
+        return "Thanh toán trực tuyến";
       default:
         return method;
     }
@@ -425,7 +425,7 @@ const Payment = () => {
             const orderResponse = await getPaymentStatus(orderId);
             if (orderResponse.error) {
               throw new Error(
-                orderResponse.message || "Failed to fetch payment status"
+                orderResponse.message || "Không lấy được trạng thái thanh toán"
               );
             }
             setOrderDetails(orderResponse);
@@ -440,7 +440,7 @@ const Payment = () => {
             setShowModal(true);
           } else {
             setError(
-              "VNPay payment failed: " + verifyResponse.data.message
+              "Thanh toán VNPay thất bại: " + verifyResponse.data.message
             );
           }
           navigate(`/payment_cus?orderId=${orderId}`, { replace: true });
@@ -448,15 +448,15 @@ const Payment = () => {
           console.error("Error verifying VNPay payment:", err);
           if (err.response?.status === 401) {
             setError(
-              "Unauthorized access. Check token or API configuration."
+              "Không có quyền truy cập. Vui lòng đăng nhập lại."
             );
           } else if (err.response?.status === 400) {
             setError(
-              "Invalid payment data: " + err.response.data.message
+              "Dữ liệu thanh toán không hợp lệ: " + err.response.data.message
             );
           } else {
             setError(
-              "Unable to verify payment: " +
+              "Không xác minh được thanh toán: " +
                 (err.response?.data?.message || err.message)
             );
           }
@@ -471,9 +471,9 @@ const Payment = () => {
   }, [location.search, loading, orderId, navigate]);
 
   const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
+    if (!dateString) return "—";
     const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", {
+    return date.toLocaleString("vi-VN", {
       year: "numeric",
       month: "2-digit",
       day: "2-digit",
@@ -481,6 +481,9 @@ const Payment = () => {
       minute: "2-digit",
     });
   };
+
+  const PAYMENT_STATUS_LABEL = { PAID: "Đã thanh toán", UNPAID: "Chưa thanh toán" };
+  const TRANSACTION_STATUS_LABEL = { PENDING: "Đang chờ", PAID: "Thành công", FAILED: "Thất bại", CANCELLED: "Đã hủy" };
 
   const getOrderTotal = () => {
     if (orderDetails?.totalAmount) {
@@ -507,22 +510,28 @@ const Payment = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse">Loading payment details...</div>
+      <div className="min-h-screen bg-cream">
+        <div className="max-w-md mx-auto px-4 pt-20 space-y-3 animate-pulse">
+          <div className="h-40 rounded-2xl bg-card border border-line" />
+          <div className="h-48 rounded-2xl bg-card border border-line" />
+        </div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="bg-red-100 p-4 rounded-lg text-center">
-          <p className="text-red-700 mb-2">{error}</p>
+      <div className="min-h-screen bg-cream flex items-center justify-center px-4">
+        <div role="alert" className="bg-card border border-line p-6 rounded-2xl text-center max-w-sm w-full shadow-sm">
+          <div className="mx-auto mb-3 w-12 h-12 rounded-full bg-red-50 flex items-center justify-center">
+            <i className="fa-solid fa-triangle-exclamation text-red-700" aria-hidden="true" />
+          </div>
+          <p className="text-ink mb-5">{error}</p>
           <button
             onClick={() => navigate("/menu_cus")}
-            className="!bg-red-500 text-white py-2 px-4 rounded-lg"
+            className="w-full min-h-[44px] rounded-xl bg-brand text-white font-semibold hover:bg-brand-hover transition"
           >
-            Return to Menu
+            Quay lại thực đơn
           </button>
         </div>
       </div>
@@ -531,254 +540,193 @@ const Payment = () => {
 
   const orderTotal = getOrderTotal();
   const momoQrUrl = `https://nhantien.momo.vn/${momoPhoneNumber}`;
+  const isPaid = orderDetails?.paymentStatus === "PAID";
+  const paidMethodText = getPaymentMethodDisplayText(existingPaymentDetails?.method || "Unknown");
+  const Row = ({ label, children }) => (
+    <div className="flex justify-between gap-4 py-1.5">
+      <span className="text-sm text-ink-muted">{label}</span>
+      <span className="text-sm font-medium text-ink text-right">{children}</span>
+    </div>
+  );
+  const PAYMENT_OPTIONS = [
+    { value: "CASH", label: "Tiền mặt", icon: "fa-money-bill-wave" },
+    { value: "VNPAY", label: "VNPay", icon: "fa-qrcode" },
+    { value: "CREDIT", label: "Thẻ tín dụng", icon: "fa-credit-card" },
+    { value: "MOMO", label: "Momo", icon: "fa-wallet" },
+  ];
+  const selectLocked = isPaid || existingPaymentDetected || transactionStatus === "PENDING";
 
   return (
-    <div className="min-h-screen w-full bg-gray-100 flex flex-col">
-      <div className="max-w-lg mx-auto w-full bg-white py-2 shadow-md z-10">
-        <div className="flex items-center px-4 w-full">
+    <div className="min-h-screen w-full bg-cream flex flex-col">
+      <header className="bg-card/95 backdrop-blur border-b border-line sticky top-0 z-20">
+        <div className="max-w-md mx-auto flex items-center px-2 h-14">
           <button
             onClick={() => navigate(-1)}
-            className="p-2 rounded-full bg-gray-200 hover:bg-gray-300"
+            aria-label="Quay lại"
+            className="w-11 h-11 flex items-center justify-center rounded-full hover:bg-brand-soft transition"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth="2"
-              stroke="currentColor"
-              className="w-4 h-4"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M15 19l-7-7 7-7"
-              />
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-5 h-5" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <div className="flex-1 text-center">
-            <div className="text-lg font-bold">Payment</div>
-          </div>
-          <div className="w-8"></div>
+          <h1 className="flex-1 text-center text-base font-bold text-ink pr-11">Thanh toán</h1>
         </div>
-      </div>
+      </header>
 
-      <div className="flex-1 overflow-y-auto mt-6 p-4">
+      <main className="flex-1 w-full max-w-md mx-auto px-4 py-4 pb-8 space-y-4 page-enter">
         {(existingPaymentDetected || transactionStatus === "PENDING") && (
-          <div className="bg-green-100 border-l-4 border-green-500 p-4 mb-4 rounded-lg">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <svg
-                  className="h-5 w-5 text-green-500"
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </div>
-              <div className="ml-3">
-                {existingPaymentDetected ? (
-                  <p className="text-sm text-green-700">
-                    This order has already been paid using{" "}
-                    {getPaymentMethodDisplayText(
-                      existingPaymentDetails?.method || "Unknown"
-                    )}
-                    .
-                  </p>
-                ) : (
-                  <p className="text-sm text-yellow-700">
-                    A payment transaction is pending. Please wait for it to
-                    complete or check its status.
-                  </p>
-                )}
-                {existingPaymentDetails && (
-                  <p className="text-xs text-green-600 mt-1">
-                    Transaction date: {formatDate(existingPaymentDetails.date)}
-                  </p>
-                )}
-              </div>
+          <div
+            role="status"
+            className={`rounded-2xl border p-4 flex gap-3 ${
+              existingPaymentDetected ? "bg-green-50 border-green-200" : "bg-amber-50 border-amber-200"
+            }`}
+          >
+            <i
+              className={`fa-solid ${existingPaymentDetected ? "fa-circle-check text-green-700" : "fa-clock text-amber-700"} mt-0.5`}
+              aria-hidden="true"
+            />
+            <div className="text-sm">
+              {existingPaymentDetected ? (
+                <p className="text-green-900">Đơn này đã được thanh toán bằng {paidMethodText}.</p>
+              ) : (
+                <p className="text-amber-900">
+                  Có một giao dịch đang chờ xử lý. Vui lòng đợi hoặc kiểm tra trạng thái giao dịch.
+                </p>
+              )}
+              {existingPaymentDetails && (
+                <p className="text-xs text-ink-muted mt-1">Thời gian: {formatDate(existingPaymentDetails.date)}</p>
+              )}
             </div>
           </div>
         )}
 
-        <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
-          <h2 className="text-lg font-bold mb-4">ORDER BILL</h2>
-          <div className="space-y-2">
-            <div className="flex justify-between">
-              <span className="text-gray-500">ORDER ID</span>
-              <span>#{orderDetails?.orderId || orderId}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">TABLE NO.</span>
-              <span>#{orderDetails?.tableId || "1"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">ORDER DATE</span>
-              <span>{formatDate(orderDetails?.orderDate) || "N/A"}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">PAYMENT STATUS</span>
-              <span
-                className={
-                  orderDetails?.paymentStatus === "PAID"
-                    ? "text-green-500"
-                    : "text-red-500"
-                }
-              >
-                {orderDetails?.paymentStatus || "UNPAID"}
-              </span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">TRANSACTION STATUS</span>
-              <span
-                className={
-                  orderDetails?.transactionStatus === "PENDING"
-                    ? "text-yellow-500"
-                    : orderDetails?.transactionStatus === "PAID"
-                    ? "text-green-500"
-                    : "text-gray-500"
-                }
-              >
-                {orderDetails?.transactionStatus || "N/A"}
-              </span>
-            </div>
-            {orderDetails?.paymentStatus === "PAID" &&
-              orderDetails?.paymentMethod && (
-                <div className="flex justify-between">
-                  <span className="text-gray-500">PAYMENT METHOD</span>
-                  <span className="text-green-500">
-                    {getPaymentMethodDisplayText(orderDetails.paymentMethod)}
-                  </span>
-                </div>
-              )}
-            {orderDetails?.paymentStatus === "PAID" &&
-              orderDetails?.paymentDate && (
-                <div className="flex justify-between">
-                  <span className="text-gray-500">PAYMENT DATE</span>
-                  <span>{formatDate(orderDetails.paymentDate)}</span>
-                </div>
-              )}
+        <section className="bg-card border border-line rounded-2xl p-4 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-base font-bold text-ink">Hóa đơn #{orderDetails?.orderId || orderId}</h2>
+            <span
+              className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                isPaid ? "bg-green-100 text-green-800" : "bg-red-50 text-red-800"
+              }`}
+            >
+              {PAYMENT_STATUS_LABEL[orderDetails?.paymentStatus] || "Chưa thanh toán"}
+            </span>
           </div>
-        </div>
+          <Row label="Bàn">{orderDetails?.tableId || "1"}</Row>
+          <Row label="Ngày đặt">{formatDate(orderDetails?.orderDate)}</Row>
+          {orderDetails?.transactionStatus && (
+            <Row label="Giao dịch">
+              {TRANSACTION_STATUS_LABEL[orderDetails.transactionStatus] || orderDetails.transactionStatus}
+            </Row>
+          )}
+          {isPaid && orderDetails?.paymentMethod && (
+            <Row label="Phương thức">{getPaymentMethodDisplayText(orderDetails.paymentMethod)}</Row>
+          )}
+          {isPaid && orderDetails?.paymentDate && <Row label="Ngày thanh toán">{formatDate(orderDetails.paymentDate)}</Row>}
+        </section>
 
-        <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
-          <h2 className="text-lg font-bold mb-4">ITEMS LIST</h2>
-          <div className="grid grid-cols-3 gap-4 text-gray-500 text-sm font-medium border-b pb-2">
-            <span>ITEMS</span>
-            <span className="text-center">DESCRIPTION</span>
-            <span className="text-right">PRICE</span>
-          </div>
-          <div className="space-y-2 mt-2">
+        <section className="bg-card border border-line rounded-2xl p-4 shadow-sm">
+          <h2 className="text-base font-bold text-ink mb-2">Danh sách món</h2>
+          <ul className="divide-y divide-line">
             {orderDetails?.items && orderDetails.items.length > 0 ? (
-              orderDetails.items.map((item, index) => (
-                <div
-                  key={index}
-                  className="grid grid-cols-3 gap-4 items-center"
-                >
-                  <span className="font-bold">
-                    {item.dishName || "Unknown Dish"}
-                  </span>
-                  <span className="text-center">
-                    {item.notes || "No description"}
-                    <br />
-                    Quantity: {parseInt(item.quantity, 10) || 1}
-                  </span>
-                  <span className="text-right text-red-500">
-                    {(parseFloat(item.price) || 0).toLocaleString()} VND
-                  </span>
-                </div>
-              ))
+              orderDetails.items.map((item, index) => {
+                const qty = parseInt(item.quantity, 10) || 1;
+                return (
+                  <li key={index} className="py-2.5 flex justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-medium text-ink">
+                        <span className="text-ink-muted">{qty}×</span> {item.dishName || "Món ăn"}
+                      </p>
+                      {item.notes && <p className="text-xs text-ink-muted mt-0.5">{item.notes}</p>}
+                    </div>
+                    <span className="shrink-0 font-semibold text-ink">
+                      {((parseFloat(item.price) || 0) * qty).toLocaleString("vi-VN")}đ
+                    </span>
+                  </li>
+                );
+              })
             ) : (
-              <div className="text-center text-gray-500 py-2">
-                No items found
-              </div>
+              <li className="text-center text-ink-muted py-3 text-sm">Không có món nào</li>
             )}
-          </div>
-        </div>
+          </ul>
 
-        <div className="bg-white p-4 rounded-lg shadow-sm mt-4">
-          <div className="space-y-4 mb-4">
-            {orderDetails?.discount && orderDetails.discount > 0 && (
-              <div className="flex justify-between">
-                <span className="text-gray-500">DISCOUNT</span>
-                <span className="text-red-500">
-                  -{(parseFloat(orderDetails.discount) || 0).toLocaleString()}{" "}
-                  VND
+          <div className="mt-2 pt-3 border-t border-line space-y-1.5">
+            {orderDetails?.discount > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-ink-muted">Giảm giá</span>
+                <span className="text-green-800 font-medium">
+                  -{(parseFloat(orderDetails.discount) || 0).toLocaleString("vi-VN")}đ
                 </span>
               </div>
             )}
-            <div className="flex justify-between">
-              <span className="text-gray-500">PAYMENT METHOD</span>
-              {orderDetails?.paymentStatus === "PAID" ? (
-                <span className="font-medium">
-                  {getPaymentMethodDisplayText(
-                    orderDetails?.paymentMethod || "Unknown"
-                  )}
-                </span>
-              ) : (
-                <select
-                  className="border border-gray-300 rounded-lg px-2 py-1"
-                  value={paymentMethod}
-                  onChange={(e) => setPaymentMethod(e.target.value)}
-                  disabled={
-                    orderDetails?.paymentStatus === "PAID" ||
-                    existingPaymentDetected ||
-                    transactionStatus === "PENDING"
-                  }
-                >
-                  <option value="CASH">Cash</option>
-                  <option value="VNPAY">VNPay</option>
-                  <option value="CREDIT">Credit Card</option>
-                  <option value="MOMO">Momo</option>
-                </select>
-              )}
-            </div>
-            <div className="flex justify-between font-bold text-lg">
-              <span>TOTAL</span>
-              <span>{orderTotal.toLocaleString()} VND</span>
+            <div className="flex justify-between items-baseline">
+              <span className="font-semibold text-ink">Tổng cộng</span>
+              <span className="text-xl font-bold text-brand">{orderTotal.toLocaleString("vi-VN")}đ</span>
             </div>
           </div>
+        </section>
 
-          {orderDetails?.paymentStatus !== "PAID" &&
-            !existingPaymentDetected &&
-            transactionStatus !== "PENDING" && (
-              <button
-                className="w-full !bg-black text-white py-3 rounded-lg hover:bg-gray-800 transition"
-                onClick={handlePayment}
-                disabled={processingPayment || orderTotal <= 0}
-              >
-                {processingPayment ? "PROCESSING..." : "PAYMENT"}
-              </button>
-            )}
+        {!isPaid && (
+          <section className="bg-card border border-line rounded-2xl p-4 shadow-sm">
+            <h2 className="text-base font-bold text-ink mb-3">Phương thức thanh toán</h2>
+            <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Phương thức thanh toán">
+              {PAYMENT_OPTIONS.map((opt) => {
+                const active = paymentMethod === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    disabled={selectLocked}
+                    onClick={() => setPaymentMethod(opt.value)}
+                    className={`min-h-[52px] px-3 rounded-xl border flex items-center gap-2.5 text-sm font-medium transition disabled:opacity-60 ${
+                      active ? "border-brand bg-brand-soft text-brand" : "border-line bg-white text-ink hover:border-brand/40"
+                    }`}
+                  >
+                    <i className={`fa-solid ${opt.icon} w-4`} aria-hidden="true" />
+                    {opt.label}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
-          {(orderDetails?.paymentStatus === "PAID" ||
-            existingPaymentDetected) && (
+        <div className="space-y-3">
+          {!isPaid && !existingPaymentDetected && transactionStatus !== "PENDING" && (
             <button
-              className="w-full bg-green-500 text-white py-3 rounded-lg hover:bg-green-600 transition"
+              className="w-full h-12 rounded-xl bg-brand text-white font-semibold shadow-md shadow-brand/25 hover:bg-brand-hover active:scale-[0.99] transition disabled:opacity-60"
+              onClick={handlePayment}
+              disabled={processingPayment || orderTotal <= 0}
+            >
+              {processingPayment ? "Đang xử lý..." : `Thanh toán ${orderTotal.toLocaleString("vi-VN")}đ`}
+            </button>
+          )}
+
+          {(isPaid || existingPaymentDetected) && (
+            <button
+              className="w-full h-12 rounded-xl bg-green-700 text-white font-semibold hover:bg-green-800 transition"
               onClick={() => navigate(`/evaluate_cus?orderId=${orderId}`)}
             >
-              COMPLETE
+              Hoàn tất & đánh giá
             </button>
           )}
 
           {transactionStatus === "PENDING" && (
             <button
-              className="w-full !bg-yellow-500 text-white py-3 rounded-lg hover:bg-yellow-600 transition"
+              className="w-full h-12 rounded-xl border border-amber-300 bg-amber-50 text-amber-900 font-semibold hover:bg-amber-100 transition"
               onClick={checkTransactionStatus}
             >
-              CHECK TRANSACTION STATUS
+              Kiểm tra giao dịch
             </button>
           )}
         </div>
-      </div>
+      </main>
 
       {showModal && (
-        <div className="fixed inset-0 bg-opacity-20 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="relative bg-white p-6 rounded-lg shadow-lg w-96 border border-gray-300">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" role="dialog" aria-modal="true">
+          <div className="absolute inset-0 bg-black/40" />
+          <div className="relative w-full max-w-md bg-card rounded-t-3xl sm:rounded-3xl p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] shadow-xl page-enter">
             <button
               onClick={() => {
                 if (paymentMethod === "MOMO") {
@@ -786,174 +734,105 @@ const Payment = () => {
                 }
                 setShowModal(false);
               }}
-              className="absolute top-2 right-2 text-gray-500 hover:text-gray-800"
+              aria-label="Đóng"
+              className="absolute top-3 right-3 w-10 h-10 flex items-center justify-center rounded-full text-ink-muted hover:bg-brand-soft transition"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth="2"
-                stroke="currentColor"
-                className="w-6 h-6"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
+              <i className="fa-solid fa-xmark text-lg" aria-hidden="true" />
             </button>
 
             {existingPaymentDetected ? (
-              <>
-                <div className="flex items-center justify-center mb-4">
-                  <svg
-                    className="h-12 w-12 text-green-500"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+              <div className="text-center">
+                <div className="mx-auto mb-4 w-14 h-14 rounded-full bg-green-100 flex items-center justify-center">
+                  <i className="fa-solid fa-check text-2xl text-green-700" aria-hidden="true" />
                 </div>
-                <h3 className="text-xl font-bold text-center mb-2">
-                  Payment Already Completed
-                </h3>
-                <p className="text-center text-gray-700 mb-6">
-                  This order has already been paid using{" "}
-                  {getPaymentMethodDisplayText(
-                    existingPaymentDetails?.method || "Unknown"
-                  )}
-                  .
-                  <br />
-                  <span className="text-sm text-gray-500">
-                    {formatDate(existingPaymentDetails?.date)}
-                  </span>
+                <h3 className="text-xl font-bold text-ink mb-1">Đơn đã được thanh toán</h3>
+                <p className="text-sm text-ink-muted mb-6">
+                  Thanh toán bằng {paidMethodText} · {formatDate(existingPaymentDetails?.date)}
                 </p>
-                <div className="flex justify-center">
-                  <button
-                    onClick={() => {
-                      setShowModal(false);
-                      navigate(`/evaluate_cus?orderId=${orderId}`);
-                    }}
-                    className="w-1/2 !bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition"
-                  >
-                    Continue to Evaluation
-                  </button>
-                </div>
-              </>
+                <button
+                  onClick={() => {
+                    setShowModal(false);
+                    navigate(`/evaluate_cus?orderId=${orderId}`);
+                  }}
+                  className="w-full h-12 rounded-xl bg-green-700 text-white font-semibold hover:bg-green-800 transition"
+                >
+                  Tiếp tục đánh giá
+                </button>
+              </div>
             ) : transactionStatus === "PENDING" ? (
-              <>
-                <div className="flex items-center justify-center mb-4">
-                  <svg
-                    className="h-12 w-12 text-yellow-500"
-                    xmlns="http://www.w3.org/2000/svg"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 001.415-1.415L11 9.586V6z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
+              <div className="text-center">
+                <div className="mx-auto mb-4 w-14 h-14 rounded-full bg-amber-100 flex items-center justify-center">
+                  <i className="fa-solid fa-clock text-2xl text-amber-700" aria-hidden="true" />
                 </div>
-                <h3 className="text-xl font-bold text-center mb-2">
-                  Transaction Pending
-                </h3>
-                <p className="text-center text-gray-700 mb-6">
-                  A payment transaction is pending for order #{orderId}. Please
-                  wait for it to complete or check the status.
-                  <br />
-                  <span className="text-sm text-gray-500">
-                    {formatDate(existingPaymentDetails?.date)}
-                  </span>
+                <h3 className="text-xl font-bold text-ink mb-1">Giao dịch đang chờ</h3>
+                <p className="text-sm text-ink-muted mb-6">
+                  Giao dịch của đơn #{orderId} đang chờ xử lý. Vui lòng đợi hoặc kiểm tra lại trạng thái.
                 </p>
-                <div className="flex justify-between gap-2">
+                <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => setShowModal(false)}
-                    className="w-1/2 bg-gray-300 text-black py-2 rounded-lg hover:bg-gray-400 transition"
+                    className="h-12 rounded-xl border border-line bg-white font-semibold text-ink hover:bg-brand-soft transition"
                   >
-                    Cancel
+                    Đóng
                   </button>
                   <button
                     onClick={checkTransactionStatus}
-                    className="w-1/2 bg-yellow-500 text-white py-2 rounded-lg hover:bg-yellow-600 transition"
+                    className="h-12 rounded-xl bg-brand text-white font-semibold hover:bg-brand-hover transition"
                   >
-                    Check Status
+                    Kiểm tra
                   </button>
                 </div>
-              </>
+              </div>
             ) : paymentMethod === "MOMO" ? (
-              <>
-                <div className="flex items-center justify-center mb-4">
-                  <h3 className="text-xl font-bold text-pink-500">
-                    Momo Payment
-                  </h3>
-                </div>
-                <div className="flex justify-center mb-4">
-                  <img
-                    src={`${API_BASE_URL}/api/images/qrCode.png`}
-                    alt="Momo QR Code"
-                    className="w-48 h-48 border"
-                    onError={() => console.error("Failed to load Momo QR code")}
-                  />
-                </div>
-                <div className="flex justify-between gap-2">
+              <div className="text-center">
+                <h3 className="text-xl font-bold text-ink mb-1">Thanh toán Momo</h3>
+                <p className="text-sm text-ink-muted mb-4">Quét mã bằng ứng dụng Momo để thanh toán</p>
+                <img
+                  src={`${API_BASE_URL}/api/images/qrCode.png`}
+                  alt="Mã QR Momo"
+                  className="mx-auto w-52 h-52 rounded-xl border border-line bg-white"
+                  onError={() => console.error("Failed to load Momo QR code")}
+                />
+                <p className="mt-3 text-lg font-bold text-brand">{orderTotal.toLocaleString("vi-VN")}đ</p>
+                <div className="mt-5 grid grid-cols-2 gap-3">
                   <button
                     onClick={() => {
                       resetPayment();
                       setShowModal(false);
                     }}
-                    className="w-1/2 !bg-gray-300 text-black py-2 rounded-lg hover:bg-gray-400 transition"
+                    className="h-12 rounded-xl border border-line bg-white font-semibold text-ink hover:bg-brand-soft transition"
                   >
-                    Cancel
+                    Hủy
                   </button>
                   <button
                     onClick={confirmPayment}
-                    className="w-1/2 !bg-pink-500 text-white py-2 rounded-lg hover:bg-pink-600 transition"
+                    className="h-12 rounded-xl bg-brand text-white font-semibold hover:bg-brand-hover transition"
                   >
-                    Paid
+                    Tôi đã thanh toán
                   </button>
                 </div>
-              </>
+              </div>
             ) : (
-              <>
-                <img
-                  src={`${API_BASE_URL}/api/images/logo.png`}
-                  alt="Restaurant Logo"
-                  className="mx-auto mb-4 w-24 h-24 object-contain"
-                  onError={(e) => {
-                    e.target.style.display = "none";
-                  }}
-                />
-                <h3 className="text-xl font-bold text-center mb-2">
-                  Payment Confirmation
-                </h3>
-                <p className="text-center text-gray-700 mb-6">
-                  Are you sure to proceed with the payment?{" "}
-                  <strong>{orderTotal.toLocaleString()}đ</strong> for order #
-                  {orderId}?
+              <div className="text-center">
+                <h3 className="text-xl font-bold text-ink mb-1">Xác nhận thanh toán</h3>
+                <p className="text-sm text-ink-muted mb-6">
+                  Thanh toán <strong className="text-ink">{orderTotal.toLocaleString("vi-VN")}đ</strong> cho đơn #{orderId}?
                 </p>
-                <div className="flex justify-between gap-2">
+                <div className="grid grid-cols-2 gap-3">
                   <button
                     onClick={() => setShowModal(false)}
-                    className="w-1/2 !bg-gray-300 text-black py-2 rounded-lg hover:bg-gray-400 transition"
+                    className="h-12 rounded-xl border border-line bg-white font-semibold text-ink hover:bg-brand-soft transition"
                   >
-                    Cancel
+                    Hủy
                   </button>
                   <button
                     onClick={confirmPayment}
-                    className="w-1/2 !bg-green-500 text-white py-2 rounded-lg hover:bg-green-600 transition"
+                    className="h-12 rounded-xl bg-brand text-white font-semibold hover:bg-brand-hover transition"
                   >
-                    Confirm
+                    Xác nhận
                   </button>
                 </div>
-              </>
+              </div>
             )}
           </div>
         </div>

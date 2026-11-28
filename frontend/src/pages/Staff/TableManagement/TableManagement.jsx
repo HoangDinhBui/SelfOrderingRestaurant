@@ -369,7 +369,7 @@ const TableManagementStaff = () => {
         } catch (err) {
           console.error("Error processing WebSocket message:", err);
           setSocketError(
-            "Failed to process notification. Please check your connection."
+            "Không xử lý được thông báo. Vui lòng kiểm tra kết nối."
           );
           fetchOrders();
         }
@@ -377,7 +377,7 @@ const TableManagementStaff = () => {
 
       ws.onerror = (error) => {
         console.error("WebSocket error:", error);
-        setSocketError("Failed to connect to notifications server");
+        setSocketError("Không kết nối được máy chủ thông báo");
       };
 
       ws.onclose = () => {
@@ -460,7 +460,7 @@ const TableManagementStaff = () => {
         ) {
           originalRequest._retry = true;
           try {
-            setAuthError("Your session has expired. Please log in again.");
+            setAuthError("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
             return Promise.reject(error);
           } catch (refreshError) {
             return Promise.reject(refreshError);
@@ -588,7 +588,7 @@ const TableManagementStaff = () => {
         return response.data;
       } catch (restErr) {
         console.error("REST orders fetch also failed:", restErr);
-        setOrderError("Failed to load orders data");
+        setOrderError("Không tải được dữ liệu đơn hàng");
         return [];
       }
     } finally {
@@ -634,7 +634,7 @@ const TableManagementStaff = () => {
     async (orderId) => {
       if (!orderId) {
         console.error("Cannot fetch order without orderId");
-        setOrderError("Invalid order ID");
+        setOrderError("Mã đơn hàng không hợp lệ");
         return null;
       }
 
@@ -653,7 +653,7 @@ const TableManagementStaff = () => {
           return response.data;
         } catch (restErr) {
           console.error("REST order fetch also failed:", restErr);
-          setOrderError(`Failed to load order #${orderId}`);
+          setOrderError(`Không tải được đơn #${orderId}`);
           return null;
         }
       } finally {
@@ -666,7 +666,7 @@ const TableManagementStaff = () => {
   const fetchOrdersByTableId = useCallback(async (tableId) => {
     if (!tableId) {
       console.error("Cannot fetch orders without tableId");
-      setOrderError("Invalid table ID");
+      setOrderError("Mã bàn không hợp lệ");
       return [];
     }
 
@@ -678,7 +678,7 @@ const TableManagementStaff = () => {
       return response.data || [];
     } catch (err) {
       console.error(`Error fetching orders for table ${tableId}:`, err);
-      setOrderError(`Failed to load orders for table #${tableId}`);
+      setOrderError(`Không tải được đơn của bàn #${tableId}`);
       return [];
     } finally {
       setOrderLoading(false);
@@ -708,7 +708,7 @@ const TableManagementStaff = () => {
     async (orderId, status) => {
       if (!orderId) {
         console.error("Cannot update order without orderId");
-        setOrderError("Invalid order ID");
+        setOrderError("Mã đơn hàng không hợp lệ");
         return false;
       }
 
@@ -737,7 +737,7 @@ const TableManagementStaff = () => {
           return true;
         } catch (restErr) {
           console.error("REST order status update also failed:", restErr);
-          setOrderError(`Failed to update status for order #${orderId}`);
+          setOrderError(`Không cập nhật được trạng thái đơn #${orderId}`);
           return false;
         }
       } finally {
@@ -770,7 +770,7 @@ const TableManagementStaff = () => {
     async (orderId) => {
       if (!orderId) {
         console.error("Cannot delete order without orderId");
-        setOrderError("Invalid order ID");
+        setOrderError("Mã đơn hàng không hợp lệ");
         return false;
       }
 
@@ -810,7 +810,7 @@ const TableManagementStaff = () => {
         return true;
       } catch (err) {
         console.error(`Failed to delete order #${orderId}:`, err);
-        setOrderError(`Failed to delete order #${orderId}`);
+        setOrderError(`Không xóa được đơn #${orderId}`);
         return false;
       } finally {
         setOrderLoading(false);
@@ -847,10 +847,10 @@ const TableManagementStaff = () => {
         console.error("Error fetching tables:", err);
         if (err.response?.status === 403) {
           setError(
-            "You don't have permission to access this resource. Please check your authentication."
+            "Bạn không có quyền truy cập. Vui lòng đăng nhập lại."
           );
         } else {
-          setError("Failed to load tables. Please try again later.");
+          setError("Không tải được danh sách bàn. Vui lòng thử lại sau.");
         }
       } finally {
         setLoading(false);
@@ -925,7 +925,7 @@ const TableManagementStaff = () => {
   const fetchTableNotifications = async (tableId) => {
     if (!tableId) {
       console.error("Cannot fetch notifications for undefined table ID");
-      setNotificationsError("Invalid table selected");
+      setNotificationsError("Bàn đã chọn không hợp lệ");
       return;
     }
 
@@ -946,7 +946,7 @@ const TableManagementStaff = () => {
       });
     } catch (err) {
       console.error(`Error fetching notifications for table ${tableId}:`, err);
-      setNotificationsError("Failed to load notifications. Please try again.");
+      setNotificationsError("Không tải được thông báo. Vui lòng thử lại.");
     } finally {
       setNotificationsLoading(false);
     }
@@ -988,7 +988,7 @@ const TableManagementStaff = () => {
       });
     } catch (err) {
       console.error("Error fetching unread notifications:", err);
-      setNotificationsError("Failed to load unread notifications");
+      setNotificationsError("Không tải được thông báo chưa đọc");
     } finally {
       setNotificationsLoading(false);
     }
@@ -1023,7 +1023,7 @@ const TableManagementStaff = () => {
       setTableNotifications(allNotifications);
     } catch (err) {
       console.error("Error fetching all notifications:", err);
-      setNotificationsError("Failed to load notifications");
+      setNotificationsError("Không tải được thông báo");
       setTableNotifications([]);
     } finally {
       setNotificationsLoading(false);
@@ -1053,7 +1053,7 @@ const TableManagementStaff = () => {
         `Error marking notification ${notificationId} as read:`,
         err
       );
-      setNotificationsError("Failed to mark notification as read");
+      setNotificationsError("Không đánh dấu đã đọc được");
       // Revert optimistic update and sync
       fetchUnreadNotifications();
     }
@@ -1096,7 +1096,7 @@ const TableManagementStaff = () => {
         }));
       } catch (err) {
         console.error(`Failed to fetch orders for table ${table.id}:`, err);
-        setOrderError("Failed to load orders");
+        setOrderError("Không tải được đơn hàng");
       } finally {
         setOrderLoading(false);
       }
@@ -1107,7 +1107,7 @@ const TableManagementStaff = () => {
     async (tableId) => {
       if (!tableId) {
         console.error("Cannot fetch orders without tableId");
-        setOrderError("Invalid table ID");
+        setOrderError("Mã bàn không hợp lệ");
         return [];
       }
 
@@ -1132,7 +1132,7 @@ const TableManagementStaff = () => {
           `Error fetching unpaid orders for table ${tableId}:`,
           err
         );
-        setOrderError(`Failed to load unpaid orders for table #${tableId}`);
+        setOrderError(`Không tải được đơn chưa thanh toán của bàn #${tableId}`);
         return [];
       } finally {
         setOrderLoading(false);
@@ -1144,7 +1144,7 @@ const TableManagementStaff = () => {
   const handleShowDishModal = async (table) => {
     if (!table || !table.id) {
       console.error("Cannot show dish modal for undefined table");
-      setOrderError("Invalid table selected");
+      setOrderError("Bàn đã chọn không hợp lệ");
       return;
     }
 
@@ -1162,10 +1162,10 @@ const TableManagementStaff = () => {
       }));
     } catch (err) {
       console.error(
-        `Failed to fetch unpaid orders for table ${table.id}:`,
+        `Không tải được đơn chưa thanh toán của bàn ${table.id}:`,
         err
       );
-      setOrderError("Failed to load unpaid orders");
+      setOrderError("Không tải được đơn chưa thanh toán");
       setSelectedTable((prev) => ({
         ...prev,
         orders: [],
@@ -1184,7 +1184,7 @@ const TableManagementStaff = () => {
   const handlePaymentSuccess = async () => {
     if (!selectedTable || !selectedTable.id) {
       console.error("Cannot update status for undefined table");
-      setOrderError("Invalid table selected");
+      setOrderError("Bàn đã chọn không hợp lệ");
       return;
     }
 
@@ -1207,7 +1207,7 @@ const TableManagementStaff = () => {
               err
             );
             setOrderError(
-              `Failed to process payment for order ${order.orderId}`
+              `Không xử lý được thanh toán cho đơn ${order.orderId}`
             );
           }
         }
@@ -1227,7 +1227,7 @@ const TableManagementStaff = () => {
       await fetchAllNotifications();
     } catch (err) {
       console.error("Error processing payment:", err);
-      setOrderError("Failed to process payment");
+      setOrderError("Không xử lý được thanh toán");
       setIsPaymentModalOpen(false);
     }
     setIsConfirmModalOpen(false);
@@ -1291,7 +1291,7 @@ const TableManagementStaff = () => {
           minute: "2-digit",
         });
       } catch {
-        return "Invalid date";
+        return "Ngày không hợp lệ";
       }
     };
 
@@ -1312,8 +1312,8 @@ const TableManagementStaff = () => {
             onClick={() => setCurrentPage(i)}
             className={`px-3 py-1 rounded ${
               currentPage === i
-                ? "!bg-blue-400 text-white"
-                : "text-blue-600 hover:bg-blue-100"
+                ? "!bg-brand text-white"
+                : "text-brand hover:bg-brand-soft"
             }`}
           >
             {i}
@@ -1358,9 +1358,9 @@ const TableManagementStaff = () => {
           <div className="flex-1 overflow-y-auto">
             {notificationsLoading && (
               <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
+                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-brand"></div>
                 <span className="ml-2 text-gray-600">
-                  Loading notifications...
+                  Đang tải thông báo...
                 </span>
               </div>
             )}
@@ -1373,7 +1373,7 @@ const TableManagementStaff = () => {
               <>
                 {currentNotifications.length === 0 ? (
                   <div className="text-center py-10 text-gray-500">
-                    No notifications for this table
+                    Bàn này chưa có thông báo
                   </div>
                 ) : (
                   <ul className="divide-y divide-gray-200">
@@ -1381,7 +1381,7 @@ const TableManagementStaff = () => {
                       <li
                         key={notification.notificationId}
                         className={`py-4 ${
-                          !notification.isRead ? "bg-blue-50" : ""
+                          !notification.isRead ? "bg-brand-soft" : ""
                         }`}
                       >
                         <div className="flex justify-between items-start">
@@ -1404,9 +1404,9 @@ const TableManagementStaff = () => {
                                 notification.notificationId
                               )
                             }
-                            className="!bg-blue-600 mt-2 text-sm text-white hover:bg-blue-700 font-medium py-1 px-3 rounded"
+                            className="!bg-brand mt-2 text-sm text-white hover:bg-brand-hover font-medium py-1 px-3 rounded"
                           >
-                            Mark as Read
+                            Đánh dấu đã đọc
                           </button>
                         )}
                       </li>
@@ -1432,10 +1432,10 @@ const TableManagementStaff = () => {
                     className={`px-3 py-1 rounded ${
                       currentPage === 1
                         ? "text-gray-400 cursor-not-allowed"
-                        : "text-blue-600 hover:bg-blue-100"
+                        : "text-brand hover:bg-brand-soft"
                     }`}
                   >
-                    First
+                    Đầu
                   </button>
                   <button
                     onClick={() =>
@@ -1445,7 +1445,7 @@ const TableManagementStaff = () => {
                     className={`px-3 py-1 rounded ${
                       currentPage === 1
                         ? "text-gray-400 cursor-not-allowed"
-                        : "text-blue-600 hover:bg-blue-100"
+                        : "text-brand hover:bg-brand-soft"
                     }`}
                   >
                     «
@@ -1459,7 +1459,7 @@ const TableManagementStaff = () => {
                     className={`px-3 py-1 rounded ${
                       currentPage === totalPages
                         ? "text-gray-400 cursor-not-allowed"
-                        : "text-blue-600 hover:bg-blue-100"
+                        : "text-brand hover:bg-brand-soft"
                     }`}
                   >
                     »
@@ -1470,10 +1470,10 @@ const TableManagementStaff = () => {
                     className={`px-3 py-1 rounded ${
                       currentPage === totalPages
                         ? "text-gray-400 cursor-not-allowed"
-                        : "text-blue-600 hover:bg-blue-100"
+                        : "text-brand hover:bg-brand-soft"
                     }`}
                   >
-                    Last
+                    Cuối
                   </button>
                 </div>
               )}
@@ -1484,7 +1484,7 @@ const TableManagementStaff = () => {
               onClick={() => setIsNotificationModalOpen(false)}
               className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded"
             >
-              Close
+              Đóng
             </button>
           </div>
         </div>
@@ -1516,7 +1516,7 @@ const TableManagementStaff = () => {
         );
       } catch (err) {
         console.error(`Error updating status for order ${orderId}:`, err);
-        setOrderError("Failed to update order status");
+        setOrderError("Không cập nhật được trạng thái đơn");
       }
     };
 
@@ -1543,7 +1543,7 @@ const TableManagementStaff = () => {
         }));
       } catch (err) {
         console.error(`Error updating quantity for order ${orderId}:`, err);
-        setOrderError("Failed to update item quantity");
+        setOrderError("Không cập nhật được số lượng món");
       }
     };
 
@@ -1565,7 +1565,7 @@ const TableManagementStaff = () => {
         }));
       } catch (err) {
         console.error(`Error deleting item for order ${orderId}:`, err);
-        setOrderError("Failed to delete item");
+        setOrderError("Không xóa được món");
       }
     };
 
@@ -1583,7 +1583,7 @@ const TableManagementStaff = () => {
           text = "Processing";
           break;
         case "pending":
-          bgColor = "!bg-blue-500";
+          bgColor = "!bg-brand";
           text = "Pending";
           break;
         case "cancel":
@@ -1649,8 +1649,8 @@ const TableManagementStaff = () => {
           <div className="space-y-4">
             {orderLoading && (
               <div className="flex justify-center items-center h-64">
-                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500"></div>
-                <span className="ml-2 text-gray-600">Loading orders...</span>
+                <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-brand"></div>
+                <span className="ml-2 text-gray-600">Đang tải đơn hàng...</span>
               </div>
             )}
             {orderError && (
@@ -1662,7 +1662,7 @@ const TableManagementStaff = () => {
               <>
                 {orders.length === 0 ? (
                   <div className="text-center py-10 text-gray-500">
-                    No unpaid orders for this table
+                    Bàn này không có đơn chưa thanh toán
                   </div>
                 ) : (
                   <div>
@@ -1676,11 +1676,11 @@ const TableManagementStaff = () => {
                         <table className="w-full border-collapse">
                           <thead>
                             <tr className="bg-gray-100">
-                              <th className="text-left py-2 px-4">Dish Name</th>
-                              <th className="text-left py-2 px-4">Quantity</th>
-                              <th className="text-left py-2 px-4">Price</th>
-                              <th className="text-left py-2 px-4">Notes</th>
-                              <th className="text-left py-2 px-4">Status</th>
+                              <th className="text-left py-2 px-4">Tên món</th>
+                              <th className="text-left py-2 px-4">Số lượng</th>
+                              <th className="text-left py-2 px-4">Giá</th>
+                              <th className="text-left py-2 px-4">Ghi chú</th>
+                              <th className="text-left py-2 px-4">Trạng thái</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -1720,7 +1720,7 @@ const TableManagementStaff = () => {
                                   colSpan="5"
                                   className="py-2 px-4 text-center text-gray-500"
                                 >
-                                  No items in this order
+                                  Đơn này chưa có món nào
                                 </td>
                               </tr>
                             )}
@@ -1750,13 +1750,13 @@ const TableManagementStaff = () => {
                 className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-4 rounded"
                 onClick={() => setIsDishModalOpen(false)}
               >
-                Close
+                Đóng
               </button>
               <button
-                className="!bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded"
+                className="!bg-brand hover:bg-brand-hover text-white font-medium py-2 px-4 rounded"
                 onClick={handleShowPaymentModal}
               >
-                Process Payment
+                Thanh toán
               </button>
             </div>
           )}
@@ -1778,37 +1778,37 @@ const TableManagementStaff = () => {
         <div className="bg-white rounded-lg shadow-xl p-6 w-2/3 relative z-50">
           <div className="text-center mb-4">
             <p className="text-sm text-gray-600">
-              450 Le Van Viet Street, Tang Nhon Phu A Ward, District 9
+              450 Lê Văn Việt, Phường Tăng Nhơn Phú A, TP. Thủ Đức
             </p>
-            <p className="text-sm text-gray-600">Phone: 0987654321</p>
-            <h3 className="font-bold mt-2 text-xl text-blue-800">
-              Payment Slip 001
+            <p className="text-sm text-gray-600">SĐT: 0987654321</p>
+            <h3 className="font-bold mt-2 text-xl text-brand">
+              Phiếu thanh toán 001
             </h3>
           </div>
           <div className="flex justify-between border-b pb-2 mb-4">
             <span className="font-bold text-gray-700">
               Table {selectedTable.id}
             </span>
-            <span className="font-bold text-gray-700">Payment Slip 001</span>
+            <span className="font-bold text-gray-700">Phiếu thanh toán 001</span>
           </div>
           <div className="max-h-96 overflow-y-auto mb-4">
             <table className="w-full">
               <thead className="sticky top-0 bg-white">
                 <tr className="border-b">
                   <th className="text-left py-2 font-medium text-gray-700">
-                    Dish name
+                    Tên món
                   </th>
                   <th className="text-left py-2 font-medium text-gray-700">
-                    Qty
+                    SL
                   </th>
                   <th className="text-left py-2 font-medium text-gray-700">
-                    Unit price
+                    Đơn giá
                   </th>
                   <th className="text-left py-2 font-medium text-gray-700">
-                    Total amount
+                    Tổng tiền
                   </th>
                   <th className="text-left py-2 font-medium text-gray-700">
-                    Note
+                    Ghi chú
                   </th>
                 </tr>
               </thead>
@@ -1845,8 +1845,8 @@ const TableManagementStaff = () => {
             </table>
           </div>
           <div className="flex justify-between mt-4 border-t pt-4">
-            <span className="font-bold text-gray-700">Staff: 1</span>
-            <span className="font-bold text-lg text-blue-800">
+            <span className="font-bold text-gray-700">Nhân viên: 1</span>
+            <span className="font-bold text-lg text-brand">
               Total Amount: {totalAmount.toLocaleString("vi-VN")} VND
             </span>
           </div>
@@ -1855,13 +1855,13 @@ const TableManagementStaff = () => {
               className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg"
               onClick={() => setIsPaymentModalOpen(false)}
             >
-              Cancel
+              Hủy
             </button>
             <button
               className="!bg-green-500 hover:bg-green-600 text-white px-6 py-2 rounded-lg"
               onClick={handlePrintReceipt}
             >
-              Confirm Payment
+              Xác nhận thanh toán
             </button>
           </div>
         </div>
@@ -1885,7 +1885,7 @@ const TableManagementStaff = () => {
 
   const handlePrintBill = async (orderId) => {
     if (!orderId) {
-      setOrderError("Invalid order ID");
+      setOrderError("Mã đơn hàng không hợp lệ");
       return;
     }
     try {
@@ -1901,7 +1901,7 @@ const TableManagementStaff = () => {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(
           errorData.message ||
-            `Failed to generate PDF (Status: ${response.status})`
+            `Không tạo được PDF (mã lỗi: ${response.status})`
         );
       }
 
@@ -1917,7 +1917,7 @@ const TableManagementStaff = () => {
     } catch (error) {
       console.error("Error generating PDF:", error);
       setOrderError(
-        `Failed to generate receipt for order ${orderId}: ${error.message}`
+        `Không tạo được hóa đơn cho đơn ${orderId}: ${error.message}`
       );
     }
   };
@@ -1938,7 +1938,7 @@ const TableManagementStaff = () => {
               src="/img/logoremovebg.png"
             />
           </div>
-          <h3 className="text-xl font-bold mb-4 text-center">CONFIRM PRINT?</h3>
+          <h3 className="text-xl font-bold mb-4 text-center">XÁC NHẬN IN?</h3>
           <div className="flex justify-center space-x-4">
             <button
               className="px-4 py-2 !bg-green-500 text-white rounded hover:bg-green-600"
@@ -1950,7 +1950,7 @@ const TableManagementStaff = () => {
               className="px-4 py-2 !bg-gray-500 text-white rounded hover:bg-gray-600"
               onClick={() => setIsPrintModalOpen(false)}
             >
-              NO
+              KHÔNG
             </button>
           </div>
         </div>
@@ -1977,10 +1977,10 @@ const TableManagementStaff = () => {
             />
           </div>
           <p className="text-lg mb-6 text-green-600 font-medium">
-            Payment Successful
+            Thanh toán thành công
           </p>
           <button
-            className="!bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg"
+            className="!bg-brand hover:bg-brand-hover text-white px-6 py-2 rounded-lg"
             onClick={() => setIsSuccessModalOpen(false)}
           >
             OK
@@ -2002,7 +2002,7 @@ const TableManagementStaff = () => {
         ></div>
         <div className="bg-white rounded-lg shadow-lg p-6 w-96 relative z-50">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-bold">Empty Table List</h2>
+            <h2 className="text-xl font-bold">Danh sách bàn trống</h2>
             <button
               className="text-gray-500 hover:text-gray-700"
               onClick={() => setIsEmptyTableModalOpen(false)}
@@ -2014,8 +2014,8 @@ const TableManagementStaff = () => {
             <table className="w-full">
               <thead>
                 <tr className="bg-teal-100">
-                  <th className="p-2 text-left">Table</th>
-                  <th className="p-2 text-left">Capacity</th>
+                  <th className="p-2 text-left">Bàn</th>
+                  <th className="p-2 text-left">Sức chứa</th>
                 </tr>
               </thead>
               <tbody>
@@ -2063,20 +2063,20 @@ const TableManagementStaff = () => {
         ></div>
         <div className="bg-white rounded-lg shadow-xl p-6 w-2/3 relative z-50">
           <div className="text-center mb-4">
-            <h3 className="font-bold text-xl text-blue-800">Bill Details</h3>
+            <h3 className="font-bold text-xl text-brand">Chi tiết hóa đơn</h3>
           </div>
           <div className="max-h-96 overflow-y-auto mb-4">
             <table className="w-full">
               <thead className="sticky top-0 bg-white">
                 <tr className="border-b">
                   <th className="text-left py-2 font-medium text-gray-700">
-                    Dish name
+                    Tên món
                   </th>
                   <th className="text-left py-2 font-medium text-gray-700">
-                    Qty
+                    SL
                   </th>
                   <th className="text-left py-2 font-medium text-gray-700">
-                    Price
+                    Giá
                   </th>
                 </tr>
               </thead>
@@ -2104,7 +2104,7 @@ const TableManagementStaff = () => {
             </table>
           </div>
           <div className="flex justify-end mt-4 border-t pt-4">
-            <span className="font-bold text-lg text-blue-800">
+            <span className="font-bold text-lg text-brand">
               Total: {totalAmount.toLocaleString("vi-VN")} VND
             </span>
           </div>
@@ -2113,13 +2113,13 @@ const TableManagementStaff = () => {
               className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg"
               onClick={() => setIsBillModalOpen(false)}
             >
-              Close
+              Đóng
             </button>
             <button
-              className="!bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg"
+              className="!bg-brand hover:bg-brand-hover text-white px-6 py-2 rounded-lg"
               onClick={handlePrintReceipt}
             >
-              Print Receipt
+              In hóa đơn
             </button>
           </div>
         </div>
@@ -2145,16 +2145,16 @@ const TableManagementStaff = () => {
               src="/img/logoremovebg.png"
             />
           </div>
-          <p className="text-lg mb-6">ARE YOU SURE?</p>
+          <p className="text-lg mb-6">BẠN CÓ CHẮC CHẮN?</p>
           <div className="flex justify-center space-x-4">
             <button
               className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg"
               onClick={() => setIsConfirmModalOpen(false)}
             >
-              NO
+              KHÔNG
             </button>
             <button
-              className="!bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg"
+              className="!bg-brand hover:bg-brand-hover text-white px-6 py-2 rounded-lg"
               onClick={() => {
                 setIsConfirmModalOpen(false);
                 setIsSuccessModalOpen(true);
@@ -2202,10 +2202,10 @@ const TableManagementStaff = () => {
           >
             ✕
           </button>
-          <h2 className="text-center text-xl font-bold mb-4">Transfer Table</h2>
+          <h2 className="text-center text-xl font-bold mb-4">Chuyển bàn</h2>
           <div className="mb-4">
             <label className="block text-sm font-medium mb-1">
-              From Table (Occupied)
+              Từ bàn (đang phục vụ)
             </label>
             <select
               value={transferSourceTable?.id || ""}
@@ -2215,9 +2215,9 @@ const TableManagementStaff = () => {
                 );
                 setTransferSourceTable(selected || null);
               }}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand/40 bg-white"
             >
-              <option value="">Choose current</option>
+              <option value="">Chọn bàn hiện tại</option>
               {occupiedTables.map((table) => (
                 <option key={table.id} value={table.id}>
                   Table {table.id} (Capacity: {table.capacity})
@@ -2227,7 +2227,7 @@ const TableManagementStaff = () => {
           </div>
           <div className="mb-4">
             <label className="block text-sm font-medium mb-1">
-              To Table (Available)
+              Sang bàn (còn trống)
             </label>
             <select
               value={transferDestinationTable?.id || ""}
@@ -2237,9 +2237,9 @@ const TableManagementStaff = () => {
                 );
                 setTransferDestinationTable(selected || null);
               }}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-brand/40 bg-white"
             >
-              <option value="">Choose new</option>
+              <option value="">Chọn bàn mới</option>
               {availableTables.map((table) => (
                 <option key={table.id} value={table.id}>
                   Table {table.id} (Capacity: {table.capacity})
@@ -2263,7 +2263,7 @@ const TableManagementStaff = () => {
             }}
             disabled={!transferSourceTable || !transferDestinationTable}
           >
-            Transfer
+            Chuyển
           </button>
         </div>
       </div>
@@ -2271,7 +2271,7 @@ const TableManagementStaff = () => {
   };
   const handleSwapTables = async () => {
     if (!transferSourceTable || !transferDestinationTable) {
-      setErrorMessage("Please select both source and destination tables.");
+      setErrorMessage("Vui lòng chọn cả bàn hiện tại và bàn muốn chuyển đến.");
       return;
     }
 
@@ -2332,7 +2332,7 @@ const TableManagementStaff = () => {
       console.error("Swap tables error:", err.response || err);
       setErrorMessage(
         err.response?.data?.message ||
-          "Failed to swap tables. Please try again."
+          "Không chuyển được bàn. Vui lòng thử lại."
       );
       setIsTransferConfirmModalOpen(false);
     } finally {
@@ -2364,16 +2364,16 @@ const TableManagementStaff = () => {
           </p>
           <div className="flex justify-center space-x-4">
             <button
-              className="!bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg"
+              className="!bg-brand hover:bg-brand-hover text-white px-6 py-2 rounded-lg"
               onClick={handleSwapTables}
             >
-              Yes
+              Có
             </button>
             <button
               className="bg-gray-300 hover:bg-gray-400 text-gray-800 px-6 py-2 rounded-lg"
               onClick={() => setIsTransferConfirmModalOpen(false)}
             >
-              No
+              Không
             </button>
           </div>
         </div>
@@ -2401,10 +2401,10 @@ const TableManagementStaff = () => {
             />
           </div>
           <p className="text-lg mb-6 text-green-600 font-medium">
-            Transfer Successful!
+            Chuyển bàn thành công!
           </p>
           <button
-            className="!bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg"
+            className="!bg-brand hover:bg-brand-hover text-white px-6 py-2 rounded-lg"
             onClick={() => setIsTransferSuccessModalOpen(false)}
           >
             OK
@@ -2414,289 +2414,173 @@ const TableManagementStaff = () => {
     );
   };
 
+  const anyModalOpen =
+    isDishModalOpen ||
+    isPaymentModalOpen ||
+    isEmptyTableModalOpen ||
+    isBillModalOpen ||
+    isConfirmModalOpen ||
+    isSuccessModalOpen ||
+    isTransferTableModalOpen ||
+    isTransferConfirmModalOpen ||
+    isTransferSuccessModalOpen ||
+    isNotificationModalOpen;
+  const occupiedCount = tables.filter((t) => t.status === "occupied").length;
+
   return (
-    <div className="h-screen w-screen bg-[#C2C7CA] flex justify-center items-center">
+    <div className="min-h-screen w-full bg-cream flex flex-col">
       <div
-        className={`h-full w-full ${
-          isDishModalOpen ||
-          isPaymentModalOpen ||
-          isEmptyTableModalOpen ||
-          isBillModalOpen ||
-          isConfirmModalOpen ||
-          isSuccessModalOpen ||
-          isTransferTableModalOpen ||
-          isTransferConfirmModalOpen ||
-          isTransferSuccessModalOpen ||
-          isNotificationModalOpen
-            ? "blur-sm"
-            : ""
-        }`}
+        className={`flex-1 flex flex-col ${anyModalOpen ? "blur-sm" : ""}`}
         onClick={() => setIsNotificationModalOpen(false)}
       >
-        <MenuBar
-          title="Table Management"
-          icon="https://img.icons8.com/ios-filled/50/FFFFFF/table.png"
-        />
+        <MenuBar title="Quản lý bàn" />
         {socketError && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mx-auto w-[90%] mt-2">
+          <div role="alert" className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-xl mx-4 sm:mx-6 mt-3 text-sm">
             {socketError}
           </div>
         )}
-        <div
-          style={{ marginTop: "30px" }}
-          className="flex-1 flex justify-center items-center"
-        >
-          <div className="w-[90%] h-[95%] bg-[#F0F8FD] rounded-lg shadow-lg overflow-hidden">
-            <div className="flex-1 p-6 bg-gray-100 flex">
-              <div className="flex-1 grid grid-cols-2 gap-4">
-                {tables.map((table) => (
-                  <div
-                    key={table.id}
-                    className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer"
-                    onClick={() => handleSelectTable(table)}
-                  >
+        <main className="flex-1 w-full max-w-[1400px] mx-auto px-4 sm:px-6 py-5 flex flex-col lg:flex-row gap-5 page-enter">
+          <section className="flex-1 min-w-0">
+            <div className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-ink-muted">
+              <span>
+                Tổng: <b className="text-ink">{tables.length}</b> bàn
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-brand" /> Đang phục vụ: <b className="text-ink">{occupiedCount}</b>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-green-600" /> Trống: <b className="text-ink">{tables.length - occupiedCount}</b>
+              </span>
+            </div>
+
+            {tables.length === 0 ? (
+              <div className="rounded-2xl border border-line bg-card p-10 text-center text-ink-muted">
+                Chưa có bàn nào.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                {tables.map((table) => {
+                  const occupied = table.status === "occupied";
+                  const unpaid = (table.orders || []).filter(
+                    (order) => order.paymentStatus?.toUpperCase() === "UNPAID"
+                  ).length;
+                  return (
                     <div
-                      style={{ backgroundColor: "#1C2E4A" }}
-                      className="text-white p-3 flex justify-between items-center"
+                      key={table.id}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => e.key === "Enter" && handleSelectTable(table)}
+                      className={`rounded-2xl bg-card border shadow-sm overflow-hidden cursor-pointer transition hover:shadow-md ${
+                        occupied ? "border-brand/40" : "border-line"
+                      }`}
+                      onClick={() => handleSelectTable(table)}
                     >
-                      <h2 className="font-bold">Table {table.id}</h2>
-                      <div className="flex items-center gap-2">
-                        {table.nextReservationTime && (
-                          <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-[#EDE9FE] text-[#5B21B6]">
-                            Hẹn {table.nextReservationTime}
-                          </span>
-                        )}
-                        <span>{table.capacity}</span>
-                        <img
-                          width="15"
-                          height="15"
-                          src="https://img.icons8.com/ios-glyphs/90/FFFFFF/guest-male.png"
-                          alt="guest-male"
-                        />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 bg-gray-200">
                       <div
-                        style={{
-                          backgroundColor: "#BDC4D4",
-                          borderRight: "1px solid #fff",
-                        }}
-                        className="p-4 flex flex-col items-center justify-center"
+                        className={`px-4 py-3 flex justify-between items-center border-b ${
+                          occupied ? "bg-brand-soft border-brand/20" : "bg-white border-line"
+                        }`}
                       >
-                        <span className="text-lg">Time</span>
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-8 w-8 text-gray-500"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
+                        <h2 className="font-bold text-ink">Bàn {table.id}</h2>
+                        <div className="flex items-center gap-2 text-xs">
+                          {table.nextReservationTime && (
+                            <span className="px-2 py-0.5 rounded-full font-semibold bg-amber-100 text-amber-800">
+                              Hẹn {table.nextReservationTime}
+                            </span>
+                          )}
+                          <span className="flex items-center gap-1 text-ink-muted">
+                            <i className="fa-solid fa-user-group" aria-hidden="true" />
+                            {table.capacity}
+                          </span>
+                          <span
+                            className={`px-2 py-0.5 rounded-full font-semibold ${
+                              occupied ? "bg-brand text-white" : "bg-green-100 text-green-800"
+                            }`}
+                          >
+                            {occupied ? "Đang phục vụ" : "Trống"}
+                          </span>
+                        </div>
                       </div>
-                      <div
-                        style={{ backgroundColor: "#BDC4D4" }}
-                        className="p-4 flex items-center justify-center cursor-pointer"
+
+                      <button
+                        type="button"
+                        className="w-full px-4 py-4 text-left hover:bg-brand-soft/60 transition"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleShowDishModal(table);
                         }}
                       >
-                        <span className="text-lg">
-                          {table.orders && table.orders.length > 0
-                            ? `Unpaid Orders: ${
-                                table.orders.filter(
-                                  (order) =>
-                                    order.paymentStatus?.toUpperCase() ===
-                                    "UNPAID"
-                                ).length
-                              }`
-                            : "No unpaid orders"}
+                        <span className="text-xs text-ink-muted block">Đơn chưa thanh toán</span>
+                        <span className={`text-lg font-bold ${unpaid > 0 ? "text-brand" : "text-ink"}`}>
+                          {unpaid > 0 ? `${unpaid} đơn` : "Không có"}
                         </span>
-                      </div>
-                    </div>
-                    <div className="px-4 py-2 flex justify-between items-center">
-                      <div className="flex items-center">
-                        <div
-                          className={`w-6 h-6 ${
-                            table.status === "occupied"
-                              ? "bg-gray-700"
-                              : "bg-green-500"
-                          } rounded-full mr-2`}
-                        ></div>
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-6 w-6 text-gray-500 mx-2"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
-                        <div
-                          className="relative cursor-pointer"
+                      </button>
+
+                      <div className="px-4 py-2.5 flex justify-between items-center border-t border-line">
+                        <span className="flex items-center gap-2 text-xs text-ink-muted">
+                          <span className={`w-2.5 h-2.5 rounded-full ${unpaid > 0 ? "bg-ink" : "bg-green-600"}`} />
+                          {unpaid > 0 ? "Chưa thanh toán" : "Đã thanh toán"}
+                        </span>
+                        <button
+                          type="button"
+                          aria-label={`Thông báo bàn ${table.id}`}
+                          className="relative w-10 h-10 flex items-center justify-center rounded-full hover:bg-brand-soft transition"
                           onClick={(e) => toggleNotificationModal(e, table)}
                         >
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-6 w-6 text-gray-500"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"
-                            />
-                          </svg>
-                          {notificationsLoading ? (
-                            <span className="absolute -top-1 -right-1 bg-gray-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
-                              ...
-                            </span>
-                          ) : unreadNotificationsByTable[table.id] > 0 ? (
-                            <span className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 flex items-center justify-center text-xs">
+                          <i className="fa-regular fa-bell text-ink-muted" aria-hidden="true" />
+                          {notificationsLoading ? null : unreadNotificationsByTable[table.id] > 0 ? (
+                            <span className="absolute top-1 right-1 bg-red-600 text-white rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center text-[10px] font-bold">
                               {unreadNotificationsByTable[table.id]}
                             </span>
                           ) : null}
-                        </div>
-                      </div>
-                      <div className="flex items-center">
-                        {table.status === "occupied" ? (
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-6 w-6 text-red-500"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                        ) : (
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-6 w-6 text-green-500"
-                            viewBox="0 0 20 20"
-                            fill="currentColor"
-                          >
-                            <path
-                              fillRule="evenodd"
-                              d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                              clipRule="evenodd"
-                            />
-                          </svg>
-                        )}
+                        </button>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
+            )}
+          </section>
 
-              <div className="ml-4 w-64 flex flex-col gap-4">
-                <div className="bg-white rounded-lg shadow-md p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-6 w-6 text-green-500"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <p>: Available Table</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-6 w-6 text-red-500"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <p>: Occupied Table</p>
-                  </div>
-                </div>
-                <div className="bg-white rounded-lg shadow-md p-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-6 h-6 bg-green-500 rounded-full"></div>
-                    <p>: Paid</p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 bg-gray-700 rounded-full"></div>
-                    <p>: Unpaid</p>
-                  </div>
-                </div>
-
-                <div className="mt-2">
-                  <button
-                    style={{ backgroundColor: "#BDC4D4" }}
-                    className="w-full bg-gray-300 hover:bg-gray-400 text-gray-700 font-medium py-3 px-4 rounded-lg transition-colors duration-200"
-                    onClick={handleShowEmptyTableModal}
-                  >
-                    <b style={{ color: "#FFFFFF" }} className="text-lg">
-                      Empty Table List
-                    </b>
-                  </button>
-                  <button
-                    style={{ backgroundColor: "#FFFFFF" }}
-                    className="flex items-center justify-center bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 mt-4 px-4 rounded-lg shadow-md"
-                    onClick={() => setIsTransferTableModalOpen(true)}
-                  >
-                    <img
-                      width="20"
-                      height="20"
-                      src="https://img.icons8.com/ios-glyphs/90/000000/refresh.png"
-                      alt="transfer"
-                    />
-                  </button>
-                  <button
-                    className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-3 px-4 mt-4 rounded-lg shadow-md transition-colors duration-200"
-                    onClick={() => setIsManualOrderModalOpen(true)}
-                  >
-                    <b className="text-lg">
-                      Đặt món thủ công
-                    </b>
-                  </button>
-                  <button
-                    className="w-full bg-[#B73512] hover:bg-[#9a2c0f] text-white font-medium py-3 px-4 mt-3 rounded-lg shadow-md transition-colors duration-200"
-                    onClick={() => setIsReservationManagerOpen(true)}
-                  >
-                    <b className="text-lg">Lịch hẹn</b>
-                    {pendingReservationCount > 0 && (
-                      <span className="ml-2 rounded-full bg-white px-2 py-0.5 text-xs font-bold text-[#B73512]">
-                        {pendingReservationCount} chờ duyệt
-                      </span>
-                    )}
-                  </button>
-                </div>
+          <aside className="w-full lg:w-72 shrink-0 flex flex-col gap-4">
+            <div className="rounded-2xl bg-card border border-line p-4 shadow-sm">
+              <h3 className="text-xs font-bold tracking-wider text-ink-muted uppercase mb-3">Thao tác</h3>
+              <div className="flex flex-col gap-2.5">
+                <button
+                  className="w-full min-h-[44px] rounded-xl bg-brand text-white font-semibold hover:bg-brand-hover transition"
+                  onClick={() => setIsManualOrderModalOpen(true)}
+                >
+                  Đặt món thủ công
+                </button>
+                <button
+                  className="w-full min-h-[44px] rounded-xl border border-brand/40 bg-white text-brand font-semibold hover:bg-brand-soft transition flex items-center justify-center gap-2"
+                  onClick={() => setIsReservationManagerOpen(true)}
+                >
+                  Lịch hẹn
+                  {pendingReservationCount > 0 && (
+                    <span className="rounded-full bg-brand px-2 py-0.5 text-xs font-bold text-white">
+                      {pendingReservationCount} chờ duyệt
+                    </span>
+                  )}
+                </button>
+                <button
+                  className="w-full min-h-[44px] rounded-xl border border-line bg-white text-ink font-semibold hover:bg-brand-soft transition flex items-center justify-center gap-2"
+                  onClick={() => setIsTransferTableModalOpen(true)}
+                >
+                  <i className="fa-solid fa-right-left text-ink-muted" aria-hidden="true" />
+                  Chuyển bàn
+                </button>
+                <button
+                  className="w-full min-h-[44px] rounded-xl border border-line bg-white text-ink font-semibold hover:bg-brand-soft transition"
+                  onClick={handleShowEmptyTableModal}
+                >
+                  Danh sách bàn trống
+                </button>
               </div>
             </div>
-          </div>
-        </div>
+          </aside>
+        </main>
       </div>
+
 
       {renderNotificationModal()}
       {renderDishModal()}

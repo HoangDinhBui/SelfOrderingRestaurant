@@ -53,7 +53,7 @@ const MenuManagementAdmin = () => {
         const payload = JSON.parse(atob(accessToken.split(".")[1]));
         const currentTime = Math.floor(Date.now() / 1000);
         if (payload.exp < currentTime) {
-          setErrorMessage("Session expired. Please log in again.");
+          setErrorMessage("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
           setHasAdminAccess(false);
           localStorage.removeItem("accessToken");
           localStorage.removeItem("userType");
@@ -62,7 +62,7 @@ const MenuManagementAdmin = () => {
         }
       } catch (e) {
         console.error("Error decoding token:", e);
-        setErrorMessage("Invalid token. Please log in again.");
+        setErrorMessage("Phiên đăng nhập không hợp lệ. Vui lòng đăng nhập lại.");
         setHasAdminAccess(false);
         return;
       }
@@ -71,7 +71,7 @@ const MenuManagementAdmin = () => {
     if (!userType || userType.toUpperCase() !== "ADMIN") {
       setHasAdminAccess(false);
       setErrorMessage(
-        "Access Denied: You need ADMIN privileges to access this page."
+        "Không có quyền truy cập: trang này dành cho quản trị viên."
       );
       return;
     }
@@ -102,7 +102,7 @@ const MenuManagementAdmin = () => {
   };
 
   const handleApiError = (error) => {
-    let errorMessage = "An error occurred. Please try again.";
+    let errorMessage = "Đã có lỗi xảy ra. Vui lòng thử lại.";
     if (error.response) {
       console.error("API Error:", {
         status: error.response.status,
@@ -110,7 +110,7 @@ const MenuManagementAdmin = () => {
         headers: error.response.headers,
       });
       if (error.response.status === 401) {
-        errorMessage = "Session expired. Please log in again.";
+        errorMessage = "Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.";
         localStorage.removeItem("accessToken");
         localStorage.removeItem("userType");
         window.location.href = "/login";
@@ -120,7 +120,7 @@ const MenuManagementAdmin = () => {
       } else if (error.response.status === 500) {
         errorMessage =
           error.response.data.message ||
-          "Internal server error. Please try again.";
+          "Lỗi máy chủ. Vui lòng thử lại.";
       } else {
         errorMessage = error.response.data?.message || errorMessage;
       }
@@ -150,17 +150,17 @@ const MenuManagementAdmin = () => {
       !newDish.description ||
       !newDish.image
     ) {
-      setErrorMessage("All fields are required!");
+      setErrorMessage("Vui lòng điền đầy đủ thông tin!");
       return;
     }
 
     if (isNaN(parseFloat(newDish.price))) {
-      setErrorMessage("Price must be a valid number!");
+      setErrorMessage("Giá phải là số hợp lệ!");
       return;
     }
 
     if (newDish.name.length > 100) {
-      setErrorMessage("Dish name must be under 100 characters!");
+      setErrorMessage("Tên món phải dưới 100 ký tự!");
       return;
     }
 
@@ -168,13 +168,13 @@ const MenuManagementAdmin = () => {
       (dish) => dish.dishName.toLowerCase() === newDish.name.toLowerCase()
     );
     if (isDuplicate) {
-      setErrorMessage("Dish name already exists!");
+      setErrorMessage("Tên món đã tồn tại!");
       return;
     }
 
     const category = categories.find((cat) => cat.name === newDish.category);
     if (!category) {
-      setErrorMessage("Invalid category!");
+      setErrorMessage("Danh mục không hợp lệ!");
       return;
     }
 
@@ -224,23 +224,23 @@ const MenuManagementAdmin = () => {
 
   const confirmEditDish = async () => {
     if (!newDish.name || !newDish.price || !newDish.description) {
-      setErrorMessage("Name, price, and description are required!");
+      setErrorMessage("Vui lòng nhập tên, giá và mô tả!");
       return;
     }
 
     if (isNaN(parseFloat(newDish.price))) {
-      setErrorMessage("Price must be a valid number!");
+      setErrorMessage("Giá phải là số hợp lệ!");
       return;
     }
 
     if (newDish.name.length > 100) {
-      setErrorMessage("Dish name must be under 100 characters!");
+      setErrorMessage("Tên món phải dưới 100 ký tự!");
       return;
     }
 
     const category = categories.find((cat) => cat.name === newDish.category);
     if (!category || !category.id) {
-      setErrorMessage("Please select a valid category!");
+      setErrorMessage("Vui lòng chọn danh mục hợp lệ!");
       return;
     }
 
@@ -304,22 +304,22 @@ const MenuManagementAdmin = () => {
 
   const styles = {
     outerContainer: {
-      fontFamily: "Arial, sans-serif",
-      backgroundColor: "rgba(157, 198, 206, 0.33)",
-      minHeight: "100vh",
-      width: "100vw",
+      fontFamily: "inherit",
+      backgroundColor: "#FAF7F2",
+      minHeight: "calc(100vh - 64px)",
+      width: "100%",
       display: "flex",
       justifyContent: "center",
-      alignItems: "center",
-      padding: "30px",
+      alignItems: "flex-start",
+      padding: "24px 16px",
       boxSizing: "border-box",
     },
     innerContainer: {
-      backgroundColor: "#F0F8FD",
-      borderRadius: "10px",
-      padding: "20px",
-      boxShadow: "0 4px 8px rgba(0, 0, 0, 0.1)",
-      border: "3px solid rgba(0, 0, 0, 0.1)",
+      backgroundColor: "#FFFDF8",
+      borderRadius: "16px",
+      padding: "24px",
+      boxShadow: "0 1px 3px rgba(51, 38, 29, 0.08)",
+      border: "1px solid #EADBC8",
       width: "100%",
       maxWidth: "1200px",
       display: "flex",
@@ -353,8 +353,9 @@ const MenuManagementAdmin = () => {
     },
     input: {
       padding: "10px",
-      borderRadius: "5px",
-      border: "1px solid #ddd",
+      borderRadius: "10px",
+      border: "1px solid #EADBC8",
+      minHeight: "40px",
       width: "200px",
     },
     chefMouseImage: {
@@ -364,7 +365,7 @@ const MenuManagementAdmin = () => {
     },
     tableContainer: {
       flex: 3,
-      backgroundColor: "rgba(157, 198, 206, 0.3)",
+      backgroundColor: "#F6EEE3",
       borderRadius: "10px",
       overflowY: "auto",
       maxHeight: "500px",
@@ -373,34 +374,34 @@ const MenuManagementAdmin = () => {
     table: {
       width: "100%",
       borderCollapse: "collapse",
-      border: "2px solid #9DC6CE",
+      border: "2px solid #EADBC8",
     },
     thead: {
       position: "sticky",
       padding: "0 0 10px ",
       top: 0,
       zIndex: 2,
-      backgroundColor: "#9DC6CE",
+      backgroundColor: "#F3E4D2",
       border: "1px solid rgb(0, 0, 0)",
     },
     th: {
-      backgroundColor: "#9DC6CE",
+      backgroundColor: "#F3E4D2",
       fontWeight: "bold",
       border: "1px solid #dddddd",
       padding: "10px",
       textAlign: "center",
     },
     td: {
-      border: "1px solid #9DC6CE",
+      border: "1px solid #EADBC8",
       padding: "10px",
       textAlign: "center",
     },
     price: {
-      color: "#e74c3c",
+      color: "#C2410C",
       fontWeight: "bold",
     },
     oddRow: {
-      backgroundColor: "rgba(157, 198, 206, 0.3)",
+      backgroundColor: "#F6EEE3",
     },
     evenRow: {
       backgroundColor: "#FFFFFF",
@@ -409,7 +410,7 @@ const MenuManagementAdmin = () => {
       position: "fixed",
       top: 0,
       left: 0,
-      width: "100vw",
+      width: "100%",
       height: "100vh",
       backgroundColor: "rgba(0, 0, 0, 0.5)",
       zIndex: 999,
@@ -443,18 +444,22 @@ const MenuManagementAdmin = () => {
     },
     addButton: {
       padding: "10px 20px",
-      backgroundColor: "#4CAF50",
+      backgroundColor: "#C2410C",
       color: "white",
       border: "none",
-      borderRadius: "5px",
+      borderRadius: "10px",
+      fontWeight: 600,
+      minHeight: "40px",
       cursor: "pointer",
     },
     cancelButton: {
       padding: "10px 20px",
-      backgroundColor: "#e74c3c",
-      color: "white",
-      border: "none",
-      borderRadius: "5px",
+      backgroundColor: "#FFFFFF",
+      color: "#33261D",
+      border: "1px solid #EADBC8",
+      borderRadius: "10px",
+      fontWeight: 600,
+      minHeight: "40px",
       cursor: "pointer",
     },
     addFormContent: {
@@ -537,29 +542,32 @@ const MenuManagementAdmin = () => {
       gap: "5px",
     },
     requiredMark: {
-      color: "#e74c3c",
+      color: "#C2410C",
       marginLeft: "5px",
     },
     inputField: {
       padding: "10px",
-      borderRadius: "5px",
-      border: "1px solid #ddd",
+      borderRadius: "10px",
+      border: "1px solid #EADBC8",
+      minHeight: "40px",
       fontSize: "14px",
       width: "100%",
       maxWidth: "300px",
     },
     selectField: {
       padding: "10px",
-      borderRadius: "5px",
-      border: "1px solid #ddd",
+      borderRadius: "10px",
+      border: "1px solid #EADBC8",
+      minHeight: "40px",
       fontSize: "14px",
       width: "100%",
       maxWidth: "300px",
     },
     textareaField: {
       padding: "10px",
-      borderRadius: "5px",
-      border: "1px solid #ddd",
+      borderRadius: "10px",
+      border: "1px solid #EADBC8",
+      minHeight: "40px",
       fontSize: "14px",
       width: "100%",
       maxWidth: "300px",
@@ -599,7 +607,7 @@ const MenuManagementAdmin = () => {
       marginBottom: "5px",
     },
     errorText: {
-      color: "#e74c3c",
+      color: "#C2410C",
       fontSize: "14px",
       marginBottom: "10px",
       textAlign: "center",
@@ -607,7 +615,7 @@ const MenuManagementAdmin = () => {
     errorContainer: {
       textAlign: "center",
       padding: "20px",
-      color: "#e74c3c",
+      color: "#C2410C",
       fontSize: "16px",
       fontWeight: "bold",
     },
@@ -620,7 +628,7 @@ const MenuManagementAdmin = () => {
     actionButton: {
       padding: "6px 12px",
       fontSize: "16px",
-      border: "1px solid #9DC6CE",
+      border: "1px solid #EADBC8",
       borderRadius: "5px",
       backgroundColor: "#fff",
       cursor: "pointer",
@@ -630,16 +638,16 @@ const MenuManagementAdmin = () => {
       color: "#4CAF50",
     },
     deleteButton: {
-      color: "#e74c3c",
+      color: "#C2410C",
     },
   };
 
   return (
     <>
-      <MenuBar title="Menu Management" />
+      <MenuBar title="Quản lý thực đơn" />
       <div style={styles.outerContainer}>
         <div style={styles.innerContainer}>
-          <h1 style={styles.title}>Menu</h1>
+          <h1 style={styles.title}>Thực đơn</h1>
           {errorMessage && (
             <div style={styles.errorContainer}>
               {errorMessage}
@@ -651,7 +659,7 @@ const MenuManagementAdmin = () => {
                   window.location.href = "/login";
                 }}
               >
-                Log Out
+                Đăng xuất
               </button>
             </div>
           )}
@@ -661,13 +669,13 @@ const MenuManagementAdmin = () => {
                 <table style={styles.table}>
                   <thead style={styles.thead}>
                     <tr>
-                      <th style={styles.th}>Name</th>
+                      <th style={styles.th}>Tên</th>
                       <th style={styles.th}>ID</th>
-                      <th style={styles.th}>Price</th>
-                      <th style={styles.th}>Category</th>
-                      <th style={styles.th}>Description</th>
-                      <th style={styles.th}>Status</th>
-                      <th style={styles.th}>Actions</th>
+                      <th style={styles.th}>Giá</th>
+                      <th style={styles.th}>Danh mục</th>
+                      <th style={styles.th}>Mô tả</th>
+                      <th style={styles.th}>Trạng thái</th>
+                      <th style={styles.th}>Thao tác</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -702,7 +710,7 @@ const MenuManagementAdmin = () => {
                         </td>
                         <td style={styles.td}>{dish.categoryName}</td>
                         <td style={styles.td}>
-                          {dish.description || "No description"}
+                          {dish.description || "Chưa có mô tả"}
                         </td>
                         <td style={styles.td}>{dish.status || "N/A"}</td>{" "}
                         {/* Thêm dữ liệu Status */}
@@ -715,7 +723,7 @@ const MenuManagementAdmin = () => {
                               }}
                               onClick={() => handleEditDish(dish)}
                             >
-                              ✏️
+                              <i className="fa-regular fa-pen-to-square" aria-hidden="true" />
                             </button>
                             <button
                               style={{
@@ -724,7 +732,7 @@ const MenuManagementAdmin = () => {
                               }}
                               onClick={() => handleDeleteDish(dish)}
                             >
-                              🗑️
+                              <i className="fa-regular fa-trash-can" aria-hidden="true" />
                             </button>
                           </div>
                         </td>
@@ -737,7 +745,7 @@ const MenuManagementAdmin = () => {
                 <div style={styles.searchRow}>
                   <input
                     type="text"
-                    placeholder="Search..."
+                    placeholder="Tìm kiếm..."
                     style={styles.input}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -752,7 +760,7 @@ const MenuManagementAdmin = () => {
                 </div>
                 <img
                   src="/img/chefmouse.png"
-                  alt="Chef Mouse"
+                  alt="Đầu bếp"
                   style={styles.chefMouseImage}
                 />
               </div>
@@ -766,7 +774,7 @@ const MenuManagementAdmin = () => {
                 onClick={() => setShowAddForm(false)}
               ></div>
               <div style={styles.addFormContainer}>
-                <h2 style={styles.addFormTitle}>Add Dish</h2>
+                <h2 style={styles.addFormTitle}>Thêm món</h2>
                 <div style={styles.addForm}>
                   <div style={styles.addFormContent}>
                     <div style={styles.imageUploadSection}>
@@ -775,13 +783,12 @@ const MenuManagementAdmin = () => {
                           {newDish.image ? (
                             <img
                               src={URL.createObjectURL(newDish.image)}
-                              alt="Dish Preview"
+                              alt="Xem trước món"
                               style={styles.image}
                             />
                           ) : (
                             <div style={styles.placeholderText}>
-                              Select images in the formats (.jpg, .jpeg, .png,
-                              .gif)
+                              Chọn ảnh định dạng .jpg, .jpeg, .png, .gif
                             </div>
                           )}
                         </div>
@@ -795,12 +802,12 @@ const MenuManagementAdmin = () => {
                         />
                       </label>
                       <p style={styles.imageNote}>
-                        Select images in the formats (.jpg, .jpeg, .png, .gif)
+                        Chọn ảnh định dạng .jpg, .jpeg, .png, .gif
                       </p>
                     </div>
                     <div style={styles.formFields}>
                       <label style={styles.formLabel}>
-                        Name <span style={styles.requiredMark}>(*)</span>:
+                        Tên <span style={styles.requiredMark}>(*)</span>:
                         <input
                           type="text"
                           value={newDish.name}
@@ -811,7 +818,7 @@ const MenuManagementAdmin = () => {
                         />
                       </label>
                       <label style={styles.formLabel}>
-                        Price <span style={styles.requiredMark}>(*)</span>:
+                        Giá <span style={styles.requiredMark}>(*)</span>:
                         <input
                           type="text"
                           value={newDish.price}
@@ -822,7 +829,7 @@ const MenuManagementAdmin = () => {
                         />
                       </label>
                       <label style={styles.formLabel}>
-                        Category <span style={styles.requiredMark}>(*)</span>:
+                        Danh mục <span style={styles.requiredMark}>(*)</span>:
                         <select
                           value={newDish.category}
                           onChange={(e) =>
@@ -838,7 +845,7 @@ const MenuManagementAdmin = () => {
                         </select>
                       </label>
                       <label style={styles.formLabel}>
-                        Description <span style={styles.requiredMark}>(*)</span>
+                        Mô tả <span style={styles.requiredMark}>(*)</span>
                         :
                         <textarea
                           value={newDish.description}
@@ -861,13 +868,13 @@ const MenuManagementAdmin = () => {
                       onClick={validateAndAddDish}
                       style={styles.addButton}
                     >
-                      Add
+                      Thêm
                     </button>
                     <button
                       onClick={() => setShowAddForm(false)}
                       style={styles.cancelButton}
                     >
-                      Cancel
+                      Hủy
                     </button>
                   </div>
                 </div>
@@ -882,7 +889,7 @@ const MenuManagementAdmin = () => {
                 onClick={() => setShowEditForm(false)}
               ></div>
               <div style={styles.addFormContainer}>
-                <h2 style={styles.addFormTitle}>Edit Dish</h2>
+                <h2 style={styles.addFormTitle}>Sửa món</h2>
                 <div style={styles.addForm}>
                   <div style={styles.addFormContent}>
                     <div style={styles.imageUploadSection}>
@@ -891,19 +898,18 @@ const MenuManagementAdmin = () => {
                           {newDish.image ? (
                             <img
                               src={URL.createObjectURL(newDish.image)}
-                              alt="Dish Preview"
+                              alt="Xem trước món"
                               style={styles.image}
                             />
                           ) : dishToEdit.imageUrl ? (
                             <img
                               src={dishToEdit.imageUrl}
-                              alt="Dish Preview"
+                              alt="Xem trước món"
                               style={styles.image}
                             />
                           ) : (
                             <div style={styles.placeholderText}>
-                              Select images in the formats (.jpg, .jpeg, .png,
-                              .gif)
+                              Chọn ảnh định dạng .jpg, .jpeg, .png, .gif
                             </div>
                           )}
                         </div>
@@ -917,12 +923,12 @@ const MenuManagementAdmin = () => {
                         />
                       </label>
                       <p style={styles.imageNote}>
-                        Select images in the formats (.jpg, .jpeg, .png, .gif)
+                        Chọn ảnh định dạng .jpg, .jpeg, .png, .gif
                       </p>
                     </div>
                     <div style={styles.formFields}>
                       <label style={styles.formLabel}>
-                        Name <span style={styles.requiredMark}>(*)</span>:
+                        Tên <span style={styles.requiredMark}>(*)</span>:
                         <input
                           type="text"
                           value={newDish.name}
@@ -933,7 +939,7 @@ const MenuManagementAdmin = () => {
                         />
                       </label>
                       <label style={styles.formLabel}>
-                        Price <span style={styles.requiredMark}>(*)</span>:
+                        Giá <span style={styles.requiredMark}>(*)</span>:
                         <input
                           type="text"
                           value={newDish.price}
@@ -944,7 +950,7 @@ const MenuManagementAdmin = () => {
                         />
                       </label>
                       <label style={styles.formLabel}>
-                        Category <span style={styles.requiredMark}>(*)</span>:
+                        Danh mục <span style={styles.requiredMark}>(*)</span>:
                         <select
                           value={newDish.category}
                           onChange={(e) =>
@@ -960,7 +966,7 @@ const MenuManagementAdmin = () => {
                         </select>
                       </label>
                       <label style={styles.formLabel}>
-                        Description <span style={styles.requiredMark}>(*)</span>
+                        Mô tả <span style={styles.requiredMark}>(*)</span>
                         :
                         <textarea
                           value={newDish.description}
@@ -980,13 +986,13 @@ const MenuManagementAdmin = () => {
                   )}
                   <div style={styles.actionButtons}>
                     <button onClick={confirmEditDish} style={styles.addButton}>
-                      Save
+                      Lưu
                     </button>
                     <button
                       onClick={() => setShowEditForm(false)}
                       style={styles.cancelButton}
                     >
-                      Cancel
+                      Hủy
                     </button>
                   </div>
                 </div>
@@ -1002,7 +1008,7 @@ const MenuManagementAdmin = () => {
                 style={styles.successImage}
               />
               <p>
-                <b>Successful</b>
+                <b>Thành công</b>
               </p>
               <div style={styles.successIcon}>✔</div>
             </div>
@@ -1016,17 +1022,17 @@ const MenuManagementAdmin = () => {
                 style={styles.successImage}
               />
               <p>
-                <b>Are you sure?</b>
+                <b>Bạn có chắc chắn?</b>
               </p>
               <div style={styles.actionButtons}>
                 <button onClick={confirmDeleteDish} style={styles.addButton}>
-                  Yes
+                  Có
                 </button>
                 <button
                   onClick={() => setShowDeletePopup(false)}
                   style={styles.cancelButton}
                 >
-                  No
+                  Không
                 </button>
               </div>
             </div>
