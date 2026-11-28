@@ -15,38 +15,50 @@ import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import RequireRole from "./components/RequireRole";
 import PageLoader from "./components/ui/PageLoader";
+import UpdateNotifier from "./components/UpdateNotifier";
 
-const Home = lazy(() => import("./pages/Customer/Home/Home"));
-const Menu = lazy(() => import("./pages/Customer/Menu/Menu"));
-const Order = lazy(() => import("./pages/Customer/Order/Order"));
-const ViewItem = lazy(() => import("./pages/Customer/ViewItem/ViewItem"));
-const Note = lazy(() => import("./pages/Customer/Note/Note"));
-const Payment = lazy(() => import("./pages/Customer/PayMent/Payment"));
-const Evaluate = lazy(() => import("./pages/Customer/Evaluate/Evaluate"));
-const CreateTable = lazy(() => import("./components/CreateTable"));
-const CaptivePortal = lazy(() => import("./pages/Customer/CaptivePortal/CaptivePortal"));
-const Reservation = lazy(() => import("./pages/Customer/Reservation/Reservation"));
+// After a deploy the old hashed page chunks are gone, so opening another page in a tab that was
+// loaded before the deploy fails to download. Instead of crashing, show the update popup.
+const lazyWithReload = (load) =>
+  lazy(() =>
+    load().catch((err) => {
+      console.error("Failed to load page chunk:", err);
+      window.dispatchEvent(new Event("app:update-available"));
+      return { default: PageLoader };
+    })
+  );
 
-const AdminInformation = lazy(() => import("./pages/Admin/AdminInformation/AdminInformation"));
-const DishManagementAdmin = lazy(() => import("./pages/Admin/DishManagement/DishManagment"));
-const EvaluateAdmin = lazy(() => import("./pages/Admin/Evaluate/Evaluate"));
-const InventoryManagement = lazy(() => import("./pages/Admin/InventoryManagement/InventoryManagement"));
-const Login = lazy(() => import("./pages/Staff/Login/Login"));
-const NotificationManagementStaff = lazy(() => import("./pages/Staff/NotificationManagement/NotificationManagement"));
-const OrderHistoryAdmin = lazy(() => import("./pages/Admin/OrderHistory/OrderHistory"));
-const TableManagementAdmin = lazy(() => import("./pages/Admin/TableManagement/TableManagement"));
-const MenuManagementAdmin = lazy(() => import("./pages/Admin/MenuManagement/MenuManagement"));
-const RevenueManagement = lazy(() => import("./pages/Admin/RevenueManagement/RevenueManagement"));
-const StaffManagement = lazy(() => import("./pages/Admin/StaffManagement/StaffManagement"));
-const ShiftSchedule = lazy(() => import("./pages/Admin/ShiftSchedule/ShiftSchedule"));
-const UserManagementAdmin = lazy(() => import("./pages/Admin/UserManagement/UserManagement"));
+const Home = lazyWithReload(() => import("./pages/Customer/Home/Home"));
+const Menu = lazyWithReload(() => import("./pages/Customer/Menu/Menu"));
+const Order = lazyWithReload(() => import("./pages/Customer/Order/Order"));
+const ViewItem = lazyWithReload(() => import("./pages/Customer/ViewItem/ViewItem"));
+const Note = lazyWithReload(() => import("./pages/Customer/Note/Note"));
+const Payment = lazyWithReload(() => import("./pages/Customer/PayMent/Payment"));
+const Evaluate = lazyWithReload(() => import("./pages/Customer/Evaluate/Evaluate"));
+const CreateTable = lazyWithReload(() => import("./components/CreateTable"));
+const CaptivePortal = lazyWithReload(() => import("./pages/Customer/CaptivePortal/CaptivePortal"));
+const Reservation = lazyWithReload(() => import("./pages/Customer/Reservation/Reservation"));
 
-const DishManagementStaff = lazy(() => import("./pages/Staff/DishManagement/DishManagement"));
-const OrderHistoryStaff = lazy(() => import("./pages/Staff/OrderHistory/OrderHistory"));
-const TableManagementStaff = lazy(() => import("./pages/Staff/TableManagement/TableManagement"));
-const StaffInformation = lazy(() => import("./pages/Staff/StaffInformation/StaffInformation"));
+const AdminInformation = lazyWithReload(() => import("./pages/Admin/AdminInformation/AdminInformation"));
+const DishManagementAdmin = lazyWithReload(() => import("./pages/Admin/DishManagement/DishManagment"));
+const EvaluateAdmin = lazyWithReload(() => import("./pages/Admin/Evaluate/Evaluate"));
+const InventoryManagement = lazyWithReload(() => import("./pages/Admin/InventoryManagement/InventoryManagement"));
+const Login = lazyWithReload(() => import("./pages/Staff/Login/Login"));
+const NotificationManagementStaff = lazyWithReload(() => import("./pages/Staff/NotificationManagement/NotificationManagement"));
+const OrderHistoryAdmin = lazyWithReload(() => import("./pages/Admin/OrderHistory/OrderHistory"));
+const TableManagementAdmin = lazyWithReload(() => import("./pages/Admin/TableManagement/TableManagement"));
+const MenuManagementAdmin = lazyWithReload(() => import("./pages/Admin/MenuManagement/MenuManagement"));
+const RevenueManagement = lazyWithReload(() => import("./pages/Admin/RevenueManagement/RevenueManagement"));
+const StaffManagement = lazyWithReload(() => import("./pages/Admin/StaffManagement/StaffManagement"));
+const ShiftSchedule = lazyWithReload(() => import("./pages/Admin/ShiftSchedule/ShiftSchedule"));
+const UserManagementAdmin = lazyWithReload(() => import("./pages/Admin/UserManagement/UserManagement"));
 
-const Attendance = lazy(() => import("./pages/Staff/Attendance/Attendance"));
+const DishManagementStaff = lazyWithReload(() => import("./pages/Staff/DishManagement/DishManagement"));
+const OrderHistoryStaff = lazyWithReload(() => import("./pages/Staff/OrderHistory/OrderHistory"));
+const TableManagementStaff = lazyWithReload(() => import("./pages/Staff/TableManagement/TableManagement"));
+const StaffInformation = lazyWithReload(() => import("./pages/Staff/StaffInformation/StaffInformation"));
+
+const Attendance = lazyWithReload(() => import("./pages/Staff/Attendance/Attendance"));
 
 function App() {
   return (
@@ -151,6 +163,7 @@ function App() {
             </Routes>
             </Suspense>
           </Router>
+          <UpdateNotifier />
           <ToastContainer
             position="top-center"
             autoClose={3500}
